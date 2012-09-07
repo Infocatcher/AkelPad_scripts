@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/insertTag.js
 
 // (c) Infocatcher 2009-2012
-// version 0.2.4pre - 2012-08-23
+// version 0.2.4pre2 - 2012-08-23
 
 //===================
 // Simplify tags insertion.
@@ -160,7 +160,7 @@ function detectBBCode() {
 	}
 	else if(/\.[^.]*$/.test(file))
 		file = RegExp.lastMatch;
-	return !/\.([xs]?htm|js|css|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst)$/i.test(file);
+	return !/\.([xs]?html?|js|css|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst)$/i.test(file);
 }
 
 function insertNoScroll(str, ss, se) {
