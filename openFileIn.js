@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/openFileIn.js
 
 // (c) Infocatcher 2010-2012
-// version 0.2.0pre - 2012-01-30
+// version 0.2.0pre2 - 2012-05-24
 
 //===================
 // Open file in other application
@@ -43,6 +43,7 @@ var appsData = {
 	//	}
 	"Total Commander": {
 		paths: [
+			"%COMMANDER_EXE%",
 			"%COMMANDER_PATH%\\TOTALCMD.EXE",
 			"?x64?%COMMANDER_PATH%\\TOTALCMD64.EXE",
 			"%AkelDir%\\..\\totalcmd\\TOTALCMD.EXE",
