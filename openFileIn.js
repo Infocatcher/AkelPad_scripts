@@ -1,8 +1,8 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=9927#9927
 // http://infocatcher.ucoz.net/js/akelpad_scripts/openFileIn.js
 
-// (c) Infocatcher 2010-2011
-// version 0.1.4 - 2011-02-21
+// (c) Infocatcher 2010-2012
+// version 0.1.5pre - 2012-01-15
 
 //===================
 // Open file in other application
@@ -135,7 +135,7 @@ var fso = new ActiveXObject("Scripting.FileSystemObject");
 if(fso.FileExists(optionsPath))
 	eval(AkelPad.ReadFile(optionsPath));
 
-var allowMappings = getArg("mappings", true);
+var allowMappings = AkelPad.GetArgValue("mappings", true);
 
 var wsh = new ActiveXObject("WScript.Shell");
 var akelDir = AkelPad.GetAkelDir();
@@ -200,18 +200,4 @@ function getLine() {
 }
 function warn(msg) {
 	AkelPad.MessageBox(AkelPad.GetMainWnd(), msg, WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
-}
-
-function getArg(argName, defaultVal) {
-	var args = {};
-	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
-		if(/^[-\/](\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
-			args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
-	getArg = function(argName, defaultVal) {
-		argName = argName.toLowerCase();
-		return typeof args[argName] == "undefined" // argName in args
-			? defaultVal
-			: args[argName];
-	};
-	return getArg(argName, defaultVal);
 }
