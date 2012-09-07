@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/insertTag.js
 
 // (c) Infocatcher 2009-2012
-// version 0.2.4pre2 - 2012-08-23
+// version 0.2.4pre3 - 2012-08-26
 
 //===================
 // Simplify tags insertion.
@@ -12,7 +12,8 @@
 // Arguments:
 //   -bbcode=0                            - Use <tag>
 //          =1                            - Use [tag]
-//          =2                            - Autodetection
+//          =-1                           - Autodetection
+//   -xmlExts="[sx]html?|mht(ml)?|xml"    - Mask for file extension or Coder plugin alias (for -bbcode=-1)
 //   -clip=true                           - Use text from clipboard instead of selected text
 //   -selectMode=0                        - Select all inserted text: [<tag>text</tag>]
 //              =1                        - Select text inside tags:  <tag>[text]</tag>
@@ -31,7 +32,7 @@
 
 // Usage:
 //   Call("Scripts::Main", 1, "insertTag.js")
-//   Call("Scripts::Main", 1, "insertTag.js", `-bbcode=true -tag="quote"`)
+//   Call("Scripts::Main", 1, "insertTag.js", `-bbcode=1 -tag="quote"`)
 //   Call("Scripts::Main", 1, "insertTag.js", `'-template="<a href=\"%%C\">%%|%%S%%|</a>"'`)
 //===================
 
@@ -54,7 +55,8 @@ function _localize(s) {
 
 // Read arguments:
 // getArg(argName, defaultValue)
-var useBBCode    = getArg("bbcode", 2);
+var useBBCode    = getArg("bbcode", -1);
+var xmlExts      = getArg("xmlExts", "[xs]?html?|mht(ml)?|hta|asp|jsm?|css|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|resx|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst");
 var useClipboard = getArg("clip", false);
 var selectMode   = getArg("selectMode", 0);
 var tag          = getArg("tag"); // Override tag prompt
@@ -73,7 +75,7 @@ function insertTag() {
 	var txt, ss, se;
 	if(template) {
 		// Example: <a href="%C">%|%S%|</a>
-		if(useBBCode == 2) {
+		if(useBBCode == -1) {
 			template = detectBBCode()
 				? template.replace(/</g, "[").replace(/>/g, "]")
 				: template.replace(/\[/g, "<").replace(/\]/g, ">");
@@ -134,7 +136,7 @@ function insertTag() {
 			}
 		}
 
-		if(useBBCode == 2)
+		if(useBBCode == -1)
 			useBBCode = detectBBCode();
 
 		var attrs = /^([^\s=]+)([\s=].*)$/.test(tag) ? RegExp.$2 : "";
@@ -155,12 +157,26 @@ function insertTag() {
 }
 function detectBBCode() {
 	var file = AkelPad.GetEditFile(0);
-	if(!file) {
-		// Call("Coder::Settings", 18, WINDOW, DOCUMENT, *ALIAS, *ALIASLENGTH)
-	}
+	if(!file)
+		file = getCoderAlias();
 	else if(/\.[^.]*$/.test(file))
 		file = RegExp.lastMatch;
-	return !/\.([xs]?html?|js|css|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst)$/i.test(file);
+	return !new RegExp("\\.(" + xmlExts + ")$", "i").test(file);
+}
+function getCoderAlias() {
+	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
+	var hWndEdit = AkelPad.GetEditWnd();
+	var hDocEdit = AkelPad.GetEditDoc();
+	var pAlias = "";
+	if(hWndEdit && hDocEdit) {
+		var lpAlias = AkelPad.MemAlloc(256 * 2 /*sizeof(wchar_t)*/);
+		if(lpAlias) {
+			AkelPad.CallW("Coder::Settings", 18 /*DLLA_CODER_GETALIAS*/, hWndEdit, hDocEdit, lpAlias, 0);
+			pAlias = AkelPad.MemRead(lpAlias, 1 /*DT_UNICODE*/);
+			AkelPad.MemFree(lpAlias);
+		}
+	}
+	return pAlias;
 }
 
 function insertNoScroll(str, ss, se) {
