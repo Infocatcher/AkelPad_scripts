@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/openFileIn.js
 
 // (c) Infocatcher 2010-2012
-// version 0.1.5pre - 2012-01-15
+// version 0.2.0pre - 2012-01-30
 
 //===================
 // Open file in other application
@@ -17,6 +17,11 @@
 
 //== Settings begin
 // You can use openFileIn-options.js file for override or tweak settings
+// Override:
+//   var appsData = { ... };
+// Tweak:
+//   appsData["App"] = { ... };       - add application
+//   appsData["App"].paths = [ ... ]  - change paths
 var mappings = {
 	// Only for applications marked as 'isBrowser: true'
 	// Example:
@@ -28,7 +33,10 @@ var appsData = {
 	//	"appID": {
 	//		paths: [
 	//			"c:\\path\\to\\app.exe",
-	//			"%EnvVar%\\another\\path\\to\\app.exe"
+	//			"%EnvVar%\\another\\path\\to\\app.exe",
+	//			"<HKCU\\path\\from\\registry>app.exe",
+	//			"?x64?...\\app64.exe", - check only on x64 system
+	//			"?x86?...\\app32.exe"  - check only on x86 system
 	//		],
 	//		args: "-file:%f -line:%l",
 	//		isBrowser: true
@@ -36,6 +44,7 @@ var appsData = {
 	"Total Commander": {
 		paths: [
 			"%COMMANDER_PATH%\\TOTALCMD.EXE",
+			"?x64?%COMMANDER_PATH%\\TOTALCMD64.EXE",
 			"%AkelDir%\\..\\totalcmd\\TOTALCMD.EXE",
 			"%AkelDir%\\..\\Total Commander\\TOTALCMD.EXE",
 			"%__portable__%\\totalcmd\\TOTALCMD.EXE",
@@ -150,19 +159,24 @@ if(WScript.Arguments.length >= 2) {
 			if(appData.isBrowser) {
 				for(var p in mappings) {
 					var pl = p.length;
-					if(file.substr(0, p.length) == p) {
+					if(file.substr(0, pl) == p) {
 						file = mappings[p] + file.substr(pl).replace(/\\/g, "/");
 						break;
 					}
 				}
 			}
-			var args = file
-				? appData.args
-					.replace(/%f/g, '"' + file + '"')
-					.replace(/%l/g, getLine())
-				: appData.args
+			var args = appData.args;
+			if(file) {
+				if(/%f/.test(args))
+					args = args.replace(/%f/g, '"' + file + '"');
+				if(/%l/.test(args))
+					args = args.replace(/%l/g, getLine());
+			}
+			else {
+				args = args
 					.replace(/\s*\S*%f\S*\s*/g, " ")
 					.replace(/\s*\S*%l\S*\s*/g, " ");
+			}
 			var cmdLine = ('"' + path + '" ' + args).replace(/\s+$/, "");
 			try {
 				wsh.Exec(cmdLine);
@@ -185,10 +199,38 @@ else {
 	warn('Wrong arguments!\nUsage:\nCall("Scripts::Main", 1, "' + WScript.ScriptName + '", \'"appID" "%f"\')');
 }
 function getPath(paths) {
-	for(var i = 0, l = paths.length; i < l; i++) {
-		var path = wsh.ExpandEnvironmentStrings(paths[i].replace(/^%AkelDir%/, akelDir));
+	for(var i = 0, l = paths.length; i < l; ++i) {
+		var path = paths[i];
+		if(path.charAt(0) == "?") {
+			if(path.substr(0, 5) != (_X64 ? "?x64?" : "?x86?"))
+				continue;
+			path = path.substr(5);
+		}
+		var path = expandVariables(paths[i]);
 		if(fso.FileExists(path))
 			return path;
+	}
+	return "";
+}
+function expandVariables(s) {
+	return expandEnvironmentVariables(expandRegistryVariables(s));
+}
+function expandEnvironmentVariables(s) {
+	return wsh.ExpandEnvironmentStrings(s.replace(/^%AkelDir%/, akelDir));
+}
+function expandRegistryVariables(s) { // <HKCU\Software\Foo\installPath>\foo.exe
+	return s.replace(/<(.+?)>/g, function(s, path) {
+		var val = getRegistryValue(path);
+		if(val)
+			return val;
+		return s;
+	});
+}
+function getRegistryValue(path) {
+	try {
+		return wsh.RegRead(path);
+	}
+	catch(e) {
 	}
 	return "";
 }
