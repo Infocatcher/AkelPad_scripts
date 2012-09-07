@@ -1,0 +1,1 @@
+Scripts for <a href="http://akelpad.sf.net/">AkelPad</a> text editor with <a href="http://akelpad.sf.net/en/plugins.php">Scripts plugin</a>. 
