@@ -1,8 +1,8 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=11213#11213
 // http://infocatcher.ucoz.net/js/akelpad_scripts/insertTag.js
 
-// (c) Infocatcher 2009-2011
-// version 0.2.3 - 2011-12-20
+// (c) Infocatcher 2009-2012
+// version 0.2.4pre - 2012-08-23
 
 //===================
 // Simplify tags insertion.
@@ -10,7 +10,9 @@
 // <tag>{selected_text}</tag>
 
 // Arguments:
-//   -bbcode=true                         - Use [tag] instead of <tag>
+//   -bbcode=0                            - Use <tag>
+//          =1                            - Use [tag]
+//          =2                            - Autodetection
 //   -clip=true                           - Use text from clipboard instead of selected text
 //   -selectMode=0                        - Select all inserted text: [<tag>text</tag>]
 //              =1                        - Select text inside tags:  <tag>[text]</tag>
@@ -52,7 +54,7 @@ function _localize(s) {
 
 // Read arguments:
 // getArg(argName, defaultValue)
-var useBBCode    = getArg("bbcode", false);
+var useBBCode    = getArg("bbcode", 2);
 var useClipboard = getArg("clip", false);
 var selectMode   = getArg("selectMode", 0);
 var tag          = getArg("tag"); // Override tag prompt
@@ -71,6 +73,12 @@ function insertTag() {
 	var txt, ss, se;
 	if(template) {
 		// Example: <a href="%C">%|%S%|</a>
+		if(useBBCode == 2) {
+			template = detectBBCode()
+				? template.replace(/</g, "[").replace(/>/g, "]")
+				: template.replace(/\[/g, "<").replace(/\]/g, ">");
+		}
+
 		var rnd = function() {
 			return Math.random().toString(36).substr(2) + Math.random().toString(36).substr(2);
 		};
@@ -118,6 +126,17 @@ function insertTag() {
 		if(saveLastTag && (tagTyped || saveLastTag == 2))
 			pref("lastTag", 3 /*PO_STRING*/, tag);
 
+		if(tagTyped) {
+			var first = tag.charAt(0);
+			if(first == "<" || first == "[") {
+				useBBCode = first == "[";
+				tag = tag.substr(1);
+			}
+		}
+
+		if(useBBCode == 2)
+			useBBCode = detectBBCode();
+
 		var attrs = /^([^\s=]+)([\s=].*)$/.test(tag) ? RegExp.$2 : "";
 		if(attrs)
 			tag = RegExp.$1;
@@ -133,6 +152,15 @@ function insertTag() {
 		}
 	}
 	insertNoScroll(txt, ss, se);
+}
+function detectBBCode() {
+	var file = AkelPad.GetEditFile(0);
+	if(!file) {
+		// Call("Coder::Settings", 18, WINDOW, DOCUMENT, *ALIAS, *ALIASLENGTH)
+	}
+	else if(/\.[^.]*$/.test(file))
+		file = RegExp.lastMatch;
+	return !/\.([xs]?htm|js|css|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst)$/i.test(file);
 }
 
 function insertNoScroll(str, ss, se) {
