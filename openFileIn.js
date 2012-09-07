@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/openFileIn.js
 
 // (c) Infocatcher 2010-2012
-// version 0.2.0pre2 - 2012-05-24
+// version 0.2.0pre3 - 2012-09-07
 
 //===================
 // Open file in other application
@@ -49,6 +49,7 @@ var appsData = {
 			"%AkelDir%\\..\\totalcmd\\TOTALCMD.EXE",
 			"%AkelDir%\\..\\Total Commander\\TOTALCMD.EXE",
 			"%__portable__%\\totalcmd\\TOTALCMD.EXE",
+			"<HKCU\\Software\\Ghisler\\Total Commander\\InstallDir>\\TOTALCMD.EXE",
 			"%ProgramFiles%\\totalcmd\\TOTALCMD.EXE",
 			"%ProgramFiles%\\Total Commander\\TOTALCMD.EXE"
 		],
@@ -99,6 +100,7 @@ var appsData = {
 	},
 	"Firefox": {
 		paths: [
+			"<HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\firefox.exe\\>",
 			"%ProgramFiles%\\Mozilla Firefox\\firefox.exe",
 			"%COMMANDER_PATH%\\..\\FirefoxPortable\\FirefoxPortable.exe",
 			"%AkelDir%\\..\\FirefoxPortable\\FirefoxPortable.exe"
@@ -108,6 +110,7 @@ var appsData = {
 	},
 	"Opera": {
 		paths: [
+			"<HKCU\\Software\\Opera Software\\Last Install Path>\\opera.exe",
 			"%ProgramFiles%\\Opera\\opera.exe",
 			"%COMMANDER_PATH%\\..\\OperaUSB\\opera.exe",
 			"%COMMANDER_PATH%\\..\\Opera\\opera.exe",
