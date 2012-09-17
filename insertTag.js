@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/insertTag.js
 
 // (c) Infocatcher 2009-2012
-// version 0.2.4pre3 - 2012-08-26
+// version 0.2.4pre4 - 2012-09-17
 
 //===================
 // Simplify tags insertion.
@@ -86,17 +86,18 @@ function insertTag() {
 		};
 		var posMarker = rnd();
 		var percent   = rnd();
+
+		var sel  = /%C?S/.test(template) && AkelPad.GetSelText();
+		var clip = /%S?C/.test(template) && AkelPad.GetClipboardText();
+
 		txt = template
 			.replace(/%%/g, percent)
 			.replace(/%\|/g, posMarker)
-			.replace(/%SC/g, AkelPad.GetSelText() || AkelPad.GetClipboardText())
-			.replace(/%CS/g, AkelPad.GetClipboardText() || AkelPad.GetSelText())
-			.replace(/%S/g, AkelPad.GetSelText())
-			.replace(/%C/g, AkelPad.GetClipboardText())
+			.replace(/%SC/g, sel || clip)
+			.replace(/%CS/g, clip || sel)
+			.replace(/%S/g, sel)
+			.replace(/%C/g, clip)
 			.replace(new RegExp(percent, "g"), "%");
-
-		//if(/>(<\/\w+>)$/.test(txt) || /\](\[\/\w+\])$/.test(txt))
-		//	ss = se = AkelPad.GetSelEnd() - RegExp.$1.length;
 
 		var posMarkerRe = new RegExp(posMarker);
 		if(posMarkerRe.test(txt)) {
