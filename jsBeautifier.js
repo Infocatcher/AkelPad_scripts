@@ -3,7 +3,7 @@
 
 // (c) Infocatcher 2011-2012
 // version 0.2.1 - 2012-08-28
-// Based on scripts from http://jsbeautifier.org/ [2012-08-28 03:42:01 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2012-09-06 07:26:47 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1676,7 +1676,7 @@ function css_beautify(source_text, options) {
         indentString = indentString.slice(0, -indentSize);
     }
 
-    print = {}
+    var print = {}
     print["{"] = function(ch) {
         print.singleSpace();
         output.push(ch);
