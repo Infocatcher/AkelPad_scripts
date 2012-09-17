@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/insertTag.js
 
 // (c) Infocatcher 2009-2012
-// version 0.2.4pre4 - 2012-09-17
+// version 0.2.4 - 2012-09-17
 
 //===================
 // Simplify tags insertion.
@@ -42,10 +42,9 @@ function _localize(s) {
 			ru: "Òýã:"
 		}
 	};
-	var lng;
+	var lng = "en";
 	switch(AkelPad.GetLangId(1 /*LANGID_PRIMARY*/)) {
-		case 0x19: lng = "ru"; break;
-		default:   lng = "en";
+		case 0x19: lng = "ru";
 	}
 	_localize = function(s) {
 		return strings[s] && strings[s][lng] || s;
@@ -60,7 +59,7 @@ var xmlExts      = getArg("xmlExts", "[xs]?html?|mht(ml)?|hta|asp|jsm?|css|xml|a
 var useClipboard = getArg("clip", false);
 var selectMode   = getArg("selectMode", 0);
 var tag          = getArg("tag"); // Override tag prompt
-var template     = getArg("template"); // All above settings will be ignored, if template used!
+var template     = getArg("template"); // Use template and ignore all arguments except -bbcode=-1 (and -xmlExts)
 var saveLastTag  = getArg("saveLastTag", 1);
 
 
