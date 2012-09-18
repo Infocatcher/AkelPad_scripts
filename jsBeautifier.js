@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
 
 // (c) Infocatcher 2011-2012
-// version 0.2.1 - 2012-08-28
+// version 0.2.2pre - 2012-09-18
 // Based on scripts from http://jsbeautifier.org/ [2012-09-06 07:26:47 UTC]
 
 //===================
@@ -3310,6 +3310,7 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 	if(update)
 		selfUpdate();
 	else {
+		var res;
 		if(!test) {
 			var newLine = 2; //"\n"
 			var src = AkelPad.GetSelText(newLine);
@@ -3321,7 +3322,7 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 				src = src.replace(/\r/g, "\n");
 		}
 		if(test || !src) {
-			var res = runTests();
+			res = runTests();
 			var icon = /tests failed/.test(res) ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/;
 			AkelPad.MessageBox(hMainWnd, res, WScript.ScriptName, icon);
 		}
@@ -3329,17 +3330,25 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 			if(action == ACT_INSERT)
 				var lpFrameTarget = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
 
+			if(
+				selectAll
+				&& (action == ACT_INSERT || action == ACT_INSERT_NEW_DOC)
+			) {
+				var selStart = AkelPad.GetTextRange(0, AkelPad.GetSelStart())
+					.replace(/\s+/g, "");
+			}
+
 			if(beautifyCSS) {
 				var srcCSS = "<style>\n" + src + "\n</style>";
 				indentScripts = "separate";
 				var syntax = { value: "css" };
-				var res = (beautify(srcCSS) || "")
+				res = (beautify(srcCSS) || "")
 					.replace(/^\s*<style>\n?/, "")
 					.replace(/\n?<\/style>\s*/, "");
 			}
 			else {
 				var syntax = { value: undefined };
-				var res = beautify(src, syntax);
+				res = beautify(src, syntax);
 			}
 
 			if(action == ACT_INSERT) {
@@ -3352,13 +3361,13 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 					if(AkelPad.GetEditReadOnly(hWndEdit))
 						action = ACT_INSERT_NEW_DOC;
 					else
-						insertNoScroll(res, selectAll);
+						insertNoScroll(res, selectAll, getCaretPos(res, selStart));
 				}
 				if(action == ACT_INSERT_NEW_DOC) {
 					AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
 					setSyntax(syntax.value);
 					AkelPad.SetSel(0, 0);
-					insertNoScroll(res, true);
+					insertNoScroll(res, true, getCaretPos(res, selStart));
 				}
 				if(action == ACT_COPY && res != AkelPad.GetClipboardText())
 					AkelPad.SetClipboardText(res);
@@ -3493,23 +3502,59 @@ function setSyntax(ext) {
 		AkelPad.Call("Coder::Settings", 1, ext);
 }
 
-function insertNoScroll(str, selectAll) {
-	var lpPoint = AkelPad.MemAlloc(8 /*sizeof(POINT)*/);
-	if(!lpPoint)
-		return;
+function getCaretPos(newStr, oldSelStart) {
+	if(oldSelStart == undefined)
+		return undefined;
+	if(!newStr || !oldSelStart)
+		//return 0;
+		return "1:1";
+	var pos = 0;
+	var posStop = oldSelStart.length;
+	var line = 1;
+	var col = 1;
+	for(var i = 0, l = newStr.length; i < l; ++i) {
+		var chr = newStr.charAt(i);
+		if(chr != "\n")
+			++col;
+		else {
+			++line;
+			col = 1;
+		}
+		if(/^\s$/.test(chr))
+			continue;
+		var oldChr = oldSelStart.charAt(pos++);
+		if(chr != oldChr)
+			break;
+		if(pos == posStop)
+			//return i + 1;
+			return line + ":" + col;
+	}
+	return undefined;
+}
+function insertNoScroll(str, selectAll, caretPos) {
 	var hWndEdit = AkelPad.GetEditWnd();
 	setRedraw(hWndEdit, false);
-	AkelPad.SendMessage(hWndEdit, 1245 /*EM_GETSCROLLPOS*/, 0, lpPoint);
 
-	selectAll && AkelPad.SetSel(0, -1);
-	//var ss = AkelPad.GetSelStart();
+	var saveScrollPos = caretPos == undefined;
+	if(saveScrollPos) {
+		var lpPoint = AkelPad.MemAlloc(8 /*sizeof(POINT)*/);
+		if(!lpPoint)
+			return;
+		AkelPad.SendMessage(hWndEdit, 1245 /*EM_GETSCROLLPOS*/, 0, lpPoint);
+	}
+
+	if(selectAll)
+		AkelPad.SetSel(0, -1);
 	AkelPad.ReplaceSel(str, true);
-	//if(ss != AkelPad.GetSelStart())
-	//	AkelPad.SetSel(ss, ss + str.length);
+	if(!saveScrollPos)
+		//AkelPad.SetSel(caretPos, caretPos);
+		AkelPad.SendMessage(hMainWnd, 1206 /*AKD_GOTOW*/, 0x1 /*GT_LINE*/, AkelPad.MemStrPtr(caretPos));
 
-	AkelPad.SendMessage(hWndEdit, 1246 /*EM_SETSCROLLPOS*/, 0, lpPoint);
+	if(saveScrollPos) {
+		AkelPad.SendMessage(hWndEdit, 1246 /*EM_SETSCROLLPOS*/, 0, lpPoint);
+		AkelPad.MemFree(lpPoint);
+	}
 	setRedraw(hWndEdit, true);
-	AkelPad.MemFree(lpPoint);
 }
 function setRedraw(hWnd, bRedraw) {
 	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
