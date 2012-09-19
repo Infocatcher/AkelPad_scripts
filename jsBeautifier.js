@@ -11,6 +11,7 @@
 // Arguments:
 //   -onlySelected=true           - use only selected text
 //   -action=1                    - 0 - insert (default), 1 - insert to new document, 2 - copy, 3 - show
+//   -restoreCaretPos=true        - restore caret position (works only without selection)
 //   -indentSize=1                - indent with a tab character
 //              =4                - indent with 4 spaces
 //   -preserveNewlines=true       - preserve empty lines
@@ -75,6 +76,7 @@ var ACT_SHOW           = 3;
 // getArg(argName, defaultValue)
 var onlySelected           = getArg("onlySelected", false);
 var action                 = getArg("action", ACT_INSERT);
+var restoreCaretPos        = getArg("restoreCaretPos", true);
 var indentSize             = getArg("indentSize", 1);
 var preserveNewlines       = getArg("preserveNewlines", true);
 var braceStyle             = getArg("braceStyle", "end-expand");
@@ -3333,6 +3335,7 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 			if(
 				selectAll
 				&& (action == ACT_INSERT || action == ACT_INSERT_NEW_DOC)
+				&& restoreCaretPos
 			) {
 				var selStart = AkelPad.GetTextRange(0, AkelPad.GetSelStart())
 					.replace(/\s+/g, "");
@@ -3546,15 +3549,17 @@ function insertNoScroll(str, selectAll, caretPos) {
 	if(selectAll)
 		AkelPad.SetSel(0, -1);
 	AkelPad.ReplaceSel(str, true);
-	if(!saveScrollPos)
-		//AkelPad.SetSel(caretPos, caretPos);
-		AkelPad.SendMessage(hMainWnd, 1206 /*AKD_GOTOW*/, 0x1 /*GT_LINE*/, AkelPad.MemStrPtr(caretPos));
 
 	if(saveScrollPos) {
 		AkelPad.SendMessage(hWndEdit, 1246 /*EM_SETSCROLLPOS*/, 0, lpPoint);
 		AkelPad.MemFree(lpPoint);
+		setRedraw(hWndEdit, true);
 	}
-	setRedraw(hWndEdit, true);
+	else {
+		setRedraw(hWndEdit, true); // Should be here, otherwise caret doesn't redraw
+		//AkelPad.SetSel(caretPos, caretPos);
+		AkelPad.SendMessage(hMainWnd, 1206 /*AKD_GOTOW*/, 0x1 /*GT_LINE*/, AkelPad.MemStrPtr(caretPos));
+	}
 }
 function setRedraw(hWnd, bRedraw) {
 	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
