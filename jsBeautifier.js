@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
 
 // (c) Infocatcher 2011-2012
-// version 0.2.2pre - 2012-09-18
+// version 0.2.2pre2 - 2012-09-19
 // Based on scripts from http://jsbeautifier.org/ [2012-09-06 07:26:47 UTC]
 
 //===================
@@ -12,6 +12,10 @@
 //   -onlySelected=true           - use only selected text
 //   -action=1                    - 0 - insert (default), 1 - insert to new document, 2 - copy, 3 - show
 //   -restoreCaretPos=true        - restore caret position (works only without selection)
+//   -setSyntax=0                 - don't change syntax theme (Coder plugin)
+//             =1                 - set syntax theme only in documents without theme
+//             =2                 - (default) don't change syntax "type" (e.g. don't change "xml" to "html")
+//             =3                 - always set
 //   -indentSize=1                - indent with a tab character
 //              =4                - indent with 4 spaces
 //   -preserveNewlines=true       - preserve empty lines
@@ -77,6 +81,7 @@ var ACT_SHOW           = 3;
 var onlySelected           = getArg("onlySelected", false);
 var action                 = getArg("action", ACT_INSERT);
 var restoreCaretPos        = getArg("restoreCaretPos", true);
+var setSyntaxMode          = getArg("setSyntax", 2);
 var indentSize             = getArg("indentSize", 1);
 var preserveNewlines       = getArg("preserveNewlines", true);
 var braceStyle             = getArg("braceStyle", "end-expand");
@@ -3495,6 +3500,20 @@ function selfUpdate() {
 }
 
 function setSyntax(ext) {
+	if(!setSyntaxMode)
+		return;
+	var alias = getCoderAlias().toLowerCase();
+	if(setSyntaxMode == 1) {
+		if(alias)
+			return;
+	}
+	else if(setSyntaxMode == 2) {
+		var curType = getSyntaxType(alias);
+		var newType = getSyntaxType("." + ext);
+		if(curType == newType)
+			return;
+	}
+
 	if(
 		ext && (
 			AkelPad.IsPluginRunning("Coder::HighLight")
@@ -3503,6 +3522,30 @@ function setSyntax(ext) {
 		)
 	)
 		AkelPad.Call("Coder::Settings", 1, ext);
+}
+function getSyntaxType(alias) {
+	if(!alias)
+		return "";
+	if(alias == ".css")
+		return "css";
+	if(/\.([xs]?html?|mht(ml)?|hta|asp|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|resx|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst)$/.test(alias))
+		return "html";
+	return "js";
+}
+function getCoderAlias() {
+	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
+	var hWndEdit = AkelPad.GetEditWnd();
+	var hDocEdit = AkelPad.GetEditDoc();
+	var pAlias = "";
+	if(hWndEdit && hDocEdit) {
+		var lpAlias = AkelPad.MemAlloc(256 * 2 /*sizeof(wchar_t)*/);
+		if(lpAlias) {
+			AkelPad.CallW("Coder::Settings", 18 /*DLLA_CODER_GETALIAS*/, hWndEdit, hDocEdit, lpAlias, 0);
+			pAlias = AkelPad.MemRead(lpAlias, 1 /*DT_UNICODE*/);
+			AkelPad.MemFree(lpAlias);
+		}
+	}
+	return pAlias;
 }
 
 function getCaretPos(newStr, oldSelStart) {
