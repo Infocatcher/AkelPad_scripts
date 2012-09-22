@@ -3524,13 +3524,13 @@ function setSyntax(ext) {
 		AkelPad.Call("Coder::Settings", 1, ext);
 }
 function getSyntaxType(alias) {
-	if(!alias)
-		return "";
 	if(alias == ".css")
 		return "css";
 	if(/\.([xs]?html?|mht(ml)?|hta|asp|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|resx|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst)$/.test(alias))
 		return "html";
-	return "js";
+	if(/\.(jsm?|json|php|c|cpp|h|java|as|cs)$/.test(alias))
+		return "js";
+	return "";
 }
 function getCoderAlias() {
 	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
