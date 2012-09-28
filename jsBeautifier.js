@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2012
 // version 0.2.2pre2 - 2012-09-19
-// Based on scripts from http://jsbeautifier.org/ [2012-09-24 17:13:27 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2012-09-26 22:51:39 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -397,7 +397,6 @@ function js_beautify(js_source_text, options) {
 
         if (reset_statement_flags) {
             flags.if_line = false;
-            flags.chain_counter = 0;
             flags.chain_extra_indentation = 0;
         }
 
@@ -475,7 +474,6 @@ function js_beautify(js_source_text, options) {
             var_line_reindented: false,
             in_html_comment: false,
             if_line: false,
-            chain_counter: 0,
             chain_extra_indentation: 0,
             in_case_statement: false, // switch(..){ INSIDE HERE }
             in_case: false, // we're on the exact line with "case 0:"
@@ -1057,12 +1055,9 @@ function js_beautify(js_source_text, options) {
 
             if (is_special_word(last_text)) {
                 print_single_space();
-            } else if (last_text === ')' || ! last_text.match(/^\d+$/)) {
-                flags.chain_counter += 1;
+            } else if (last_text === ')') {
                 flags.chain_extra_indentation = 1;
-                if (flags.chain_counter > 1) {
-                    print_newline(true /* ignore_repeated */, false /* reset_statement_flags */);
-                }
+                print_newline(true /* ignore_repeated */, false /* reset_statement_flags */);
             }
 
             print_token();
@@ -2844,7 +2839,7 @@ function run_beautifier_tests(test_obj)
     bt("for(var a=1,b=2)", "for (var a = 1, b = 2)");
     bt("for(var a=1,b=2,c=3)", "for (var a = 1, b = 2, c = 3)");
     bt("for(var a=1,b=2,c=3;d<3;d++)", "for (var a = 1, b = 2, c = 3; d < 3; d++)");
-    bt("function x(){(a||b).c()}", "function x() {\n    (a || b).c()\n}");
+    bt("function x(){(a||b).c()}", "function x() {\n    (a || b)\n        .c()\n}");
     bt("function x(){return - 1}", "function x() {\n    return -1\n}");
     bt("function x(){return ! a}", "function x() {\n    return !a\n}");
 
@@ -3178,6 +3173,8 @@ function run_beautifier_tests(test_obj)
     bt('foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat)');
     bt('foo.bar().baz().cucumber(fat); foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat);\nfoo.bar()\n    .baz()\n    .cucumber(fat)');
     bt('foo.bar().baz().cucumber(fat)\n foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat)\nfoo.bar()\n    .baz()\n    .cucumber(fat)');
+    bt('this.something = foo.bar().baz().cucumber(fat)', 'this.something = foo.bar()\n    .baz()\n    .cucumber(fat)');
+    bt('this.something.xxx = foo.moo.bar()');
 
     Urlencoded.run_tests(sanitytest);
 
