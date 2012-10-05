@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // (c) Infocatcher 2011-2012
-// version 0.2.2pre2 - 2012-09-19
+// version 0.2.2pre3 - 2012-10-05
 // Based on scripts from http://jsbeautifier.org/ [2012-10-05 00:03:51 UTC]
 
 //===================
@@ -25,6 +25,7 @@
 //              ="end-expand"     - end braces on own line
 //              ="expand-strict"  - braces always on own line (not recommended)
 //   -keepArrayIndentation=true   - keep array indentation
+//   -breakChainedMethods=false   - break lines on chained methods
 //   -jsLintHappy=true            - use "function ()" instead of "function()"
 //   -spaceBeforeConditional=true - space before conditional: "if(x)" / "if (x)"
 //   -indentScripts="keep"        - HTML <style>, <script> formatting: keep indent level of the tag
@@ -87,6 +88,7 @@ var indentSize             = getArg("indentSize", 1);
 var preserveNewlines       = getArg("preserveNewlines", true);
 var braceStyle             = getArg("braceStyle", "end-expand");
 var keepArrayIndentation   = getArg("keepArrayIndentation", true);
+var breakChainedMethods    = getArg("breakChainedMethods", false);
 var jsLintHappy            = getArg("jsLintHappy", false);
 var spaceBeforeConditional = getArg("spaceBeforeConditional", false);
 var indentScripts          = getArg("indentScripts", "normal");
@@ -131,6 +133,7 @@ function beautify(source, syntax) { // Based on beautify function
 		preserve_newlines:        preserveNewlines,
 		brace_style:              braceStyle,
 		keep_array_indentation:   keepArrayIndentation,
+		break_chained_methods:    breakChainedMethods,
 		jslint_happy:             jsLintHappy,
 		space_before_conditional: spaceBeforeConditional,
 		indent_scripts:           indentScripts,
