@@ -1721,14 +1721,14 @@ var asyncUpdater = {
 	maxErrors: 4,
 	queue: [],
 	requests: {},
-	activeRequests: 0,
 	init: function(onProgress, onComplete, total) {
 		this.onProgress = onProgress;
 		this.onComplete = onComplete;
 		this.total = total || 0;
-		this.processed = this.success = this.errors = this.abortedErrors = this.parseErrors = 0;
+		this.activeRequests = this.processed = this.success = this.errors = this.abortedErrors = this.parseErrors = 0;
 		this.aborted = this.stopped = false;
 		this.details = [];
+		this.queue.length = 0;
 	},
 	abort: function() {
 		this.aborted = true;
@@ -1762,8 +1762,10 @@ var asyncUpdater = {
 				}
 			}
 			var cnt = --_this.activeRequests;
-			if(_this.errors > _this.maxErrors) //~ todo: (_this.errors + _this.abortedErrors) ?
+			if(_this.errors > _this.maxErrors) { //~ todo: (_this.errors + _this.abortedErrors) ?
 				_this.stopped = true;
+				_this.queue.length = 0;
+			}
 			if(!_this.stopped && !_this.aborted)
 				while(cnt++ < _this.maxActiveRequests && _this.queue.length > 0)
 					_this.nextRequest();
@@ -3135,7 +3137,7 @@ function converterDialog(modal) {
 		);
 	}
 	function cancelUpdate() {
-		if(!asyncUpdater.activeRequests)
+		if(!asyncUpdater.activeRequests || asyncUpdater.aborted)
 			return false;
 		if(
 			AkelPad.MessageBox(
