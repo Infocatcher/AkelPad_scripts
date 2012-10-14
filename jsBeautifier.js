@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2012
 // version 0.2.2pre3 - 2012-10-05
-// Based on scripts from http://jsbeautifier.org/ [2012-10-05 00:03:51 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2012-10-11 22:21:34 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -341,7 +341,6 @@ function js_beautify(js_source_text, options) {
         opt_jslint_happy = options.jslint_happy === 'undefined' ? false : options.jslint_happy,
         opt_keep_array_indentation = typeof options.keep_array_indentation === 'undefined' ? false : options.keep_array_indentation,
         opt_space_before_conditional = typeof options.space_before_conditional === 'undefined' ? true : options.space_before_conditional,
-        opt_indent_case = typeof options.indent_case === 'undefined' ? false : options.indent_case,
         opt_unescape_strings = typeof options.unescape_strings === 'undefined' ? false : options.unescape_strings;
 
     just_added_newline = false;
@@ -423,9 +422,6 @@ function js_beautify(js_source_text, options) {
         if (flags.var_line && flags.var_line_reindented) {
             output.push(indent_string); // skip space-stuffing, if indenting with a tab
         }
-        if (flags.case_body) {
-            output.push(indent_string);
-        }
     }
 
 
@@ -484,7 +480,7 @@ function js_beautify(js_source_text, options) {
             case_body: false, // the indented case-action block
             eat_next_space: false,
             indentation_baseline: -1,
-            indentation_level: (flags ? flags.indentation_level + (flags.case_body ? 1 : 0) + ((flags.var_line && flags.var_line_reindented) ? 1 : 0) : 0),
+            indentation_level: (flags ? flags.indentation_level + ((flags.var_line && flags.var_line_reindented) ? 1 : 0) : 0),
             ternary_depth: 0
         };
     }
@@ -1230,23 +1226,16 @@ function js_beautify(js_source_text, options) {
             }
 
             if (token_text === 'case' || (token_text === 'default' && flags.in_case_statement)) {
-                if (last_text === ':' || flags.case_body) {
+                print_newline();
+                if (flags.case_body) {
                     // switch cases following one another
+                    flags.indentation_level--;
+                    flags.case_body = false;
                     remove_indent();
-                } else {
-                    // case statement starts in the same line where switch
-                    if (!opt_indent_case) {
-                        flags.indentation_level--;
-                    }
-                    print_newline();
-                    if (!opt_indent_case) {
-                        flags.indentation_level++;
-                    }
                 }
                 print_token();
                 flags.in_case = true;
                 flags.in_case_statement = true;
-                flags.case_body = false;
                 break;
             }
 
@@ -1441,10 +1430,9 @@ function js_beautify(js_source_text, options) {
             }
 
             if (token_text === ':' && flags.in_case) {
-                if (opt_indent_case) {
-                    flags.case_body = true;
-                }
-                print_token(); // colon really asks for separate treatment
+                flags.case_body = true;
+                indent();
+                print_token();
                 print_newline();
                 flags.in_case = false;
                 break;
@@ -2797,8 +2785,8 @@ function run_beautifier_tests(test_obj)
     bt('(xx)()'); // magic function call
     bt('a[1]()'); // another magic function call
     bt('if(a){b();}else if(c) foo();', "if (a) {\n    b();\n} else if (c) foo();");
-    bt('switch(x) {case 0: case 1: a(); break; default: break}', "switch (x) {\ncase 0:\ncase 1:\n    a();\n    break;\ndefault:\n    break\n}");
-    bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\ncase -1:\n    break;\ncase !y:\n    break;\n}');
+    bt('switch(x) {case 0: case 1: a(); break; default: break}', "switch (x) {\n    case 0:\n    case 1:\n        a();\n        break;\n    default:\n        break\n}");
+    bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\n    case -1:\n        break;\n    case !y:\n        break;\n}');
     bt('a !== b');
     bt('if (a) b(); else c();', "if (a) b();\nelse c();");
     bt("// comment\n(function something() {})"); // typical greasemonkey start
@@ -3136,9 +3124,9 @@ function run_beautifier_tests(test_obj)
     bt('<!-- dont crash');
     bt('for () /abc/.test()');
     bt('if (k) /aaa/m.test(v) && l();');
-    bt('switch (true) {\ncase /swf/i.test(foo):\n    bar();\n}');
+    bt('switch (true) {\n    case /swf/i.test(foo):\n        bar();\n}');
     bt('createdAt = {\n    type: Date,\n    default: Date.now\n}');
-    bt('switch (createdAt) {\ncase a:\n    Date,\ndefault:\n    Date.now\n}');
+    bt('switch (createdAt) {\n    case a:\n        Date,\n    default:\n        Date.now\n}');
     opts.space_before_conditional = false;
     bt('if(a) b()');
 
