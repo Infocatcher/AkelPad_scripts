@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2012
 // version 0.2.2pre3 - 2012-10-05
-// Based on scripts from http://jsbeautifier.org/ [2012-10-11 22:21:34 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2012-10-16 07:19:47 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1851,7 +1851,7 @@ function style_html(html_source, options) {
 
     this.Utils = { //Uilities made available to the various functions
       whitespace: "\n\r\t ".split(''),
-      single_token: 'br,input,link,meta,!doctype,basefont,base,area,hr,wbr,param,img,isindex,?xml,embed'.split(','), //all the single tags for HTML
+      single_token: 'br,input,link,meta,!doctype,basefont,base,area,hr,wbr,param,img,isindex,?xml,embed,?php,?,?='.split(','), //all the single tags for HTML
       extra_liners: 'head,body,/html'.split(','), //for tags that need a line of whitespace before them
       in_array: function (what, arr) {
         for (var i=0; i<arr.length; i++) {
