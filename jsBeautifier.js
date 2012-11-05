@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2012
 // version 0.2.2pre3 - 2012-10-05
-// Based on scripts from http://jsbeautifier.org/ [2012-10-16 07:19:47 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2012-11-05 06:41:10 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -479,7 +479,6 @@ function js_beautify(js_source_text, options) {
             in_case: false, // we're on the exact line with "case 0:"
             case_body: false, // the indented case-action block
             eat_next_space: false,
-            indentation_baseline: -1,
             indentation_level: (flags ? flags.indentation_level + ((flags.var_line && flags.var_line_reindented) ? 1 : 0) : 0),
             ternary_depth: 0
         };
@@ -558,19 +557,6 @@ function js_beautify(js_source_text, options) {
 
         if (keep_whitespace) {
 
-            //
-            // slight mess to allow nice preservation of array indentation and reindent that correctly
-            // first time when we get to the arrays:
-            // var a = [
-            // ....'something'
-            // we make note of whitespace_count = 4 into flags.indentation_baseline
-            // so we know that 4 whitespaces in original source match indent_level of reindented source
-            //
-            // and afterwards, when we get to
-            //    'something,
-            // .......'something else'
-            // we know that this should be indented to indent_level + (7 - indentation_baseline) spaces
-            //
             var whitespace_count = 0;
 
             while (in_array(c, whitespace)) {
@@ -598,18 +584,10 @@ function js_beautify(js_source_text, options) {
                 parser_pos += 1;
 
             }
-            if (flags.indentation_baseline === -1) {
-                flags.indentation_baseline = whitespace_count;
-            }
 
             if (just_added_newline) {
-                for (i = 0; i < flags.indentation_level + 1; i += 1) {
-                    output.push(indent_string);
-                }
-                if (flags.indentation_baseline !== -1) {
-                    for (i = 0; i < whitespace_count - flags.indentation_baseline; i++) {
-                        output.push(' ');
-                    }
+                for (i = 0; i < whitespace_count; i++) {
+                    output.push(' ');
                 }
             }
 
@@ -1353,6 +1331,11 @@ function js_beautify(js_source_text, options) {
                 print_newline();
             } else if (last_type === 'TK_WORD') {
                 print_single_space();
+            } else {
+                if (opt_preserve_newlines && wanted_newline) {
+                    print_newline();
+                    output.push(indent_string);
+                }
             }
             print_token();
             break;
@@ -2695,7 +2678,7 @@ function bt(input, expectation)
     // }
 
     if (opts.indent_size === 4 && input) {
-        wrapped_input = '{\n' + input + '\nfoo=bar;}';
+        wrapped_input = '{\n' + input.replace(/^(.+)$/mg, '    $1') + '\n    foo = bar;\n}';
         wrapped_expectation = '{\n' + expectation.replace(/^(.+)$/mg, '    $1') + '\n    foo = bar;\n}';
         test_fragment(wrapped_input, wrapped_expectation);
     }
@@ -3026,12 +3009,14 @@ function run_beautifier_tests(test_obj)
 
 
     opts.keep_array_indentation = true;
+    bt("a = ['a', 'b', 'c',\n    'd', 'e', 'f']");
+    bt("a = ['a', 'b', 'c',\n    'd', 'e', 'f',\n        'g', 'h', 'i']");
+    bt("a = ['a', 'b', 'c',\n        'd', 'e', 'f',\n            'g', 'h', 'i']");
 
-    test_fragment('var a = [\n// comment:\n{\n foo:bar\n}\n];', 'var a = [\n    // comment:\n{\n    foo: bar\n}\n];');
 
     bt('var x = [{}\n]', 'var x = [{}\n]');
     bt('var x = [{foo:bar}\n]', 'var x = [{\n    foo: bar\n}\n]');
-    bt("a = ['something',\n'completely',\n'different'];\nif (x);", "a = ['something',\n    'completely',\n    'different'];\nif (x);");
+    bt("a = ['something',\n'completely',\n'different'];\nif (x);");
     bt("a = ['a','b','c']", "a = ['a', 'b', 'c']");
     bt("a = ['a',   'b','c']", "a = ['a', 'b', 'c']");
 
@@ -3133,6 +3118,8 @@ function run_beautifier_tests(test_obj)
     opts.preserve_newlines = true;
     bt('var a = 42; // foo\n\nvar b;');
     bt('var a = 42; // foo\n\n\nvar b;');
+    bt("var a = 'foo' +\n    'bar';");
+    bt("var a = \"foo\" +\n    \"bar\";");
 
     opts.unescape_strings = false;
     bt('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"', '"\\x22\\x27", \'\\x22\\x27\', "\\x5c", \'\\x5c\', "\\xff and \\xzz", "unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"');
@@ -3163,7 +3150,6 @@ function run_beautifier_tests(test_obj)
     bt('if(foo) // comment\n(bar());');
     bt('if(foo) // comment\n(bar());');
     bt('if(foo) // comment\n/asdf/;');
-
 
     opts.break_chained_methods = true;
     bt('foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat)');
