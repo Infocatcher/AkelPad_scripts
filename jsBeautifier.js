@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2012
 // version 0.2.2 - 2012-11-05
-// Based on scripts from http://jsbeautifier.org/ [2012-11-06 00:09:40 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2012-11-06 14:59:30 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1817,7 +1817,8 @@ function style_html(html_source, options) {
       indent_size,
       indent_character,
       max_char,
-      brace_style;
+      brace_style,
+      unformatted;
 
   options = options || {};
   indent_size = options.indent_size || 4;
