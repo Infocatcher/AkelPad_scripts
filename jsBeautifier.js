@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2012
 // version 0.2.2 - 2012-11-05
-// Based on scripts from http://jsbeautifier.org/ [2012-11-05 06:41:10 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2012-11-06 00:09:40 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1726,13 +1726,20 @@ function css_beautify(source_text, options) {
             print.newLine();
             output.push(eatComment(), "\n", indentString);
         } else if (ch == '(') { // may be a url
-            output.push(ch);
-            eatWhitespace();
-            if (lookBack("url", -1) && next()) {
+            if (lookBack("url", -1)) {
+              output.push(ch);
+              eatWhitespace();
+              if (next()) {
                 if (ch != ')' && ch != '"' && ch != '\'')
                     output.push(eatString(')'));
                 else
                     pos--;
+              }
+            } else {
+              if (isAfterSpace)
+                  print.singleSpace();
+              output.push(ch);
+              eatWhitespace();
             }
         } else if (ch == ')') {
             output.push(ch);
