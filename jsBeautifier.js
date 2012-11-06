@@ -3409,8 +3409,6 @@ function convertSource(file, text) {
 			'results = _localize("All %S tests passed.").replace("%S", n_succeeded);'
 		);
 	}
-	else if(file == "beautify-html.js") // See https://github.com/einars/js-beautify/pull/146
-		return text.replace("this.unformatted", "unformatted");
 	return text;
 }
 function selfUpdate() {
