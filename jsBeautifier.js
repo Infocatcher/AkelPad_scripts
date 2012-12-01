@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2012
 // version 0.2.2 - 2012-11-05
-// Based on scripts from http://jsbeautifier.org/ [2012-11-23 04:58:43 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2012-12-01 13:15:01 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1332,7 +1332,7 @@ function js_beautify(js_source_text, options) {
             } else if (last_type === 'TK_WORD') {
                 print_single_space();
             } else {
-                if (opt_preserve_newlines && wanted_newline) {
+                if (opt_preserve_newlines && wanted_newline && flags.mode !== 'OBJECT') {
                     print_newline();
                     output.push(indent_string);
                 }
@@ -3007,6 +3007,7 @@ function run_beautifier_tests(test_obj)
     opts.indent_char = ' ';
 
     opts.preserve_newlines = false;
+
     bt('var\na=dont_preserve_newlines;', 'var a = dont_preserve_newlines;');
 
     // make sure the blank line between function definitions stays
@@ -3018,7 +3019,6 @@ function run_beautifier_tests(test_obj)
     bt('function foo() {\n    return 1;\n}\n\n\nfunction foo() {\n    return 1;\n}',
        'function foo() {\n    return 1;\n}\n\nfunction foo() {\n    return 1;\n}'
       );
-
 
     opts.preserve_newlines = true;
     bt('var\na=do_preserve_newlines;', 'var\na = do_preserve_newlines;');
@@ -3175,6 +3175,13 @@ function run_beautifier_tests(test_obj)
     bt('foo.bar().baz().cucumber(fat)\n foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat)\nfoo.bar()\n    .baz()\n    .cucumber(fat)');
     bt('this.something = foo.bar().baz().cucumber(fat)', 'this.something = foo.bar()\n    .baz()\n    .cucumber(fat)');
     bt('this.something.xxx = foo.moo.bar()');
+
+    opts.preserve_newlines = false;
+    bt('var a = {\n"a":1,\n"b":2}', "var a = {\n    \"a\": 1,\n    \"b\": 2\n}");
+    bt("var a = {\n'a':1,\n'b':2}", "var a = {\n    'a': 1,\n    'b': 2\n}");
+    opts.preserve_newlines = true;
+    bt('var a = {\n"a":1,\n"b":2}', "var a = {\n    \"a\": 1,\n    \"b\": 2\n}");
+    bt("var a = {\n'a':1,\n'b':2}", "var a = {\n    'a': 1,\n    'b': 2\n}");
 
     Urlencoded.run_tests(sanitytest);
 
