@@ -1,11 +1,11 @@
-// (c) Infocatcher 2008-2009
-// version 0.1.1 - 2009-03-26
+// (c) Infocatcher 2008-2009, 2012
+// version 0.1.2 - 2012-12-03
 
 // Insert current date
 
 //== User settings:
 var dateTemplate = "<fullYear>-<month>-<date>";
-// You can use <day>, <date>, <month>, <monthName>, <year>, <fullYear>, <hours>, <minutes>, <seconds>
+// You can use <day>, <date>, <month>, <monthName>, <year>, <fullYear>, <hours>, <minutes>, <seconds>, <timezone>
 // Days of week:
 var daysOfWeek = "sunday,monday,tuesday,wednesday,thursday,friday,saturday";
 var monthNames = "jan,feb,mar,apr,may,jun,jul,avg,sep,oct,nov,dec";
@@ -20,7 +20,7 @@ var monthNames = "jan,feb,mar,apr,may,jun,jul,avg,sep,oct,nov,dec";
 
 var argsCount = WScript.Arguments.length;
 var args = {};
-for(var i = 0; i < argsCount; i++) // read arguments
+for(var i = 0; i < argsCount; ++i) // read arguments
 	if(/^\/([a-z]+)=(.+)$/i.test(WScript.Arguments(i)))
 		args[RegExp.$1] = RegExp.$2;
 
@@ -36,6 +36,12 @@ function convertArg(s) {
 function addZero(n) {
 	return n > 9 ? n : "0" + n;
 }
+function getTimezone(tzo) {
+	var m = Math.abs(tzo);
+	var h = Math.floor(m/60);
+	m = Math.floor(m - h*60);
+	return (tzo > 0 ? "-" : "+") + addZero(h) + addZero(m);
+}
 function getFormattedDate(template, days, months) {
 	var d = new Date();
 	var y = d.getFullYear().toString();
@@ -49,7 +55,8 @@ function getFormattedDate(template, days, months) {
 		.replace(/<year>/g, y.substring(2, y.length))
 		.replace(/<hours?>/g, addZero(d.getHours()))
 		.replace(/<minutes>|<min>/g, addZero(d.getMinutes()))
-		.replace(/<seconds>|<sec>/g, addZero(d.getSeconds()));
+		.replace(/<seconds>|<sec>/g, addZero(d.getSeconds()))
+		.replace(/<timezone>/g, getTimezone(d.getTimezoneOffset()));
 }
 
 //var AkelPad = new ActiveXObject("AkelPad.document");
