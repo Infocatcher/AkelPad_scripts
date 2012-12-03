@@ -1,8 +1,8 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=12600#12600
 // http://infocatcher.ucoz.net/js/akelpad_scripts/unixTime.js
 
-// (c) Infocatcher 2011
-// version 0.1.2 - 2011-05-14
+// (c) Infocatcher 2011-2012
+// version 0.1.3 - 2012-12-03
 
 var TU_AUTO = 0;
 var TU_S    = 1;
@@ -50,7 +50,7 @@ var dates = [
 	date.toLocaleString(),
 	date[tf("getFullYear")]() + "-" + padLeft(date[tf("getMonth")]() + 1) + "-" + padLeft(date[tf("getDate")]()) + " "
 		+ padLeft(date[tf("getHours")]()) + ":" + padLeft(date[tf("getMinutes")]()) + ":" + padLeft(date[tf("getSeconds")]())
-		+ " UTC" + (treatAsUTC ? "" : (tzo <= 0 ? "+" : "") + -tzo/60),
+		+ " UTC" + (treatAsUTC ? "" : getTimezone(tzo)),
 	date.toUTCString(),
 	date.toString(),
 	ms,
@@ -67,6 +67,12 @@ function padLeft(n) {
 	return l < cnt
 		? new Array(cnt - n.length + 1).join(chr) + n
 		: n;
+}
+function getTimezone(tzo) {
+	var m = Math.abs(tzo);
+	var h = Math.floor(m/60);
+	m = Math.floor(m - h*60);
+	return (tzo > 0 ? "-" : "+") + padLeft(h) + padLeft(m);
 }
 function getArg(argName, defaultVal) {
 	var args = {};
