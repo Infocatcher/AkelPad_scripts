@@ -1,4 +1,6 @@
-﻿// (c) Infocatcher 2008, 2011-2012
+﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11240#11240
+
+// (c) Infocatcher 2008, 2011-2012
 // version 0.1.2 - 2012-12-11
 
 var map = {
