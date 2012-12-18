@@ -599,7 +599,7 @@ function _localize(s) {
 			ru: "Килобит (кбит)"
 		},
 		"Megabit (Mbit)": {
-			ru: "Магабит (Мбит)"
+			ru: "Мегабит (Мбит)"
 		},
 		"Gigabit (Gbit)": {
 			ru: "Гигабит (Гбит)"
