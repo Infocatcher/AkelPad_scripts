@@ -1020,19 +1020,19 @@ function _localize(s) {
 			ru: "Киловатт-час (кВт·ч, kW·h)"
 		},
 		"Electronvolt (eV)": {
-			ru: "Электронвольт (Эв, eV)"
+			ru: "Электронвольт (эВ, eV)"
 		},
 		"Kiloelectronvolt (keV)": {
-			ru: "Килоэлектронвольт (кЭв, keV)"
+			ru: "Килоэлектронвольт (кэВ, keV)"
 		},
 		"Megaelectronvolt (MeV)": {
-			ru: "Мегаэлектронвольт (МЭв, MeV)"
+			ru: "Мегаэлектронвольт (МэВ, MeV)"
 		},
 		"Gigaelectronvolt (GeV)": {
-			ru: "Гигаэлектронвольт (ГЭв, GeV)"
+			ru: "Гигаэлектронвольт (ГэВ, GeV)"
 		},
 		"Teraelectronvolt (TeV)": {
-			ru: "Тераэлектронвольт (ТЭв, TeV)"
+			ru: "Тераэлектронвольт (ТэВ, TeV)"
 		},
 
 		"&Power": {
