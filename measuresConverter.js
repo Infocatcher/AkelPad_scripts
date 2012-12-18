@@ -137,7 +137,7 @@ var measures = {
 		"Gram (g)":       1e-3,
 		"Kilogram (kg)": 1,
 		"Tonne": 1e3,
-		"Atomic mass unit": 1.660538782838383e-27,
+		"Atomic mass unit (u, Da)": 1.660538782838383e-27,
 		"Carat (ct)": 200e-6,
 		"Grain": 64.79891e-6,
 		"Ounce (oz)": 0.45359237/16,
@@ -154,15 +154,15 @@ var measures = {
 		"Kilometer (km)":  1e+3,
 		"Angstrom (Å)":    1e-10,
 		"Astronomical unit (a.u.)": 149597871464,
-		"Light-year":   9460730472580820,
+		"Light-year (ly)":   9460730472580820,
 		"Light-day":    9460730472580820/365.25, // Julian year!
 		"Light-hour":   9460730472580820/365.25/24,
 		"Light-minute": 9460730472580820/365.25/24/60,
 		"Light-second": 9460730472580820/365.25/24/60/60,
-		"Parsec": 3.08567782e+16,
-		"Inch": 0.0254,
-		"Foot": 0.0254*12,
-		"Yard": 0.0254*12*3,
+		"Parsec (pc)": 3.08567782e+16,
+		"Inch (in)": 0.0254,
+		"Foot (ft)": 0.0254*12,
+		"Yard (yd)": 0.0254*12*3,
 		"Mile": 1.609344e+3, // 0.0254*12*3*1760
 		"Nautical mile": 1852,
 		"Cable": 1852/10
@@ -177,10 +177,10 @@ var measures = {
 		"Square meter (m²)": 1,
 		"Square kilometer (km²)":  Math.pow(1e+3, 2),
 		"Are": 1e2,
-		"Hectare": 1e4,
-		"Square inch": Math.pow(0.0254, 2),
-		"Square foot": Math.pow(0.0254*12, 2),
-		"Square yard": Math.pow(0.0254*12*3, 2),
+		"Hectare (ha)": 1e4,
+		"Square inch (in²)": Math.pow(0.0254, 2),
+		"Square foot (ft²)": Math.pow(0.0254*12, 2),
+		"Square yard (yd²)": Math.pow(0.0254*12*3, 2),
 		"Square mile": Math.pow(0.0254*12*3*1760, 2), // 1609.344
 		"Square nautical mile": Math.pow(1852, 2),
 		"Acre": Math.pow(0.0254*12*3, 2)*4840
@@ -196,9 +196,9 @@ var measures = {
 		"Cubic kilometer (km³)":  Math.pow(1e+3, 3),
 		"Litre (l)":              Math.pow(1e-1, 3),
 		"Millilitre (ml)":        Math.pow(1e-1, 3)/1e3,
-		"Cubic inch": Math.pow(0.0254, 3),
-		"Cubic foot": Math.pow(0.0254*12, 3),
-		"Cubic yard": Math.pow(0.0254*12*3, 3),
+		"Cubic inch (in³)": Math.pow(0.0254, 3),
+		"Cubic foot (ft³)": Math.pow(0.0254*12, 3),
+		"Cubic yard (yd³)": Math.pow(0.0254*12*3, 3),
 		"Cubic mile": Math.pow(0.0254*12*3*1760, 3), // Math.pow(1609.344, 2)
 		"Cubic nautical mile": Math.pow(1852, 3),
 		"Gallon (USA)": Math.pow(1e-1, 3)*3.785411784,
@@ -689,7 +689,7 @@ function _localize(s) {
 		"Tonne": {
 			ru: "Тонна"
 		},
-		"Atomic mass unit": {
+		"Atomic mass unit (u, Da)": {
 			ru: "Атомная единица массы (а. е. м.)"
 		},
 		"Carat (ct)": {
@@ -738,8 +738,8 @@ function _localize(s) {
 		"Astronomical unit (a.u.)": {
 			ru: "Астрономическая единица (а.е.)"
 		},
-		"Light-year": {
-			ru: "Световой год"
+		"Light-year (ly)": {
+			ru: "Световой год (св.г.)"
 		},
 		"Light-day": {
 			ru: "Световой день"
@@ -753,16 +753,16 @@ function _localize(s) {
 		"Light-second": {
 			ru: "Световая секунда"
 		},
-		"Parsec": {
-			ru: "Парсек"
+		"Parsec (pc)": {
+			ru: "Парсек (пк)"
 		},
-		"Inch": {
+		"Inch (in)": {
 			ru: "Дюйм"
 		},
-		"Foot": {
+		"Foot (ft)": {
 			ru: "Фут"
 		},
-		"Yard": {
+		"Yard (yd)": {
 			ru: "Ярд"
 		},
 		"Mile": {
@@ -805,16 +805,16 @@ function _localize(s) {
 		"Are": {
 			ru: "Ар"
 		},
-		"Hectare": {
-			ru: "Гектар"
+		"Hectare (ha)": {
+			ru: "Гектар (га)"
 		},
-		"Square inch": {
+		"Square inch (in²)": {
 			ru: "Квадратный дюйм"
 		},
-		"Square foot": {
+		"Square foot (ft²)": {
 			ru: "Квадратный фут"
 		},
-		"Square yard": {
+		"Square yard (yd²)": {
 			ru: "Квадратный ярд"
 		},
 		"Square mile": {
@@ -860,13 +860,13 @@ function _localize(s) {
 		"Millilitre (ml)": {
 			ru: "Миллилитр (мл)"
 		},
-		"Cubic inch": {
+		"Cubic inch (in³)": {
 			ru: "Кубический дюйм"
 		},
-		"Cubic foot": {
+		"Cubic foot (ft³)": {
 			ru: "Кубический фут"
 		},
-		"Cubic yard": {
+		"Cubic yard (yd³)": {
 			ru: "Кубический ярд"
 		},
 		"Cubic mile": {
