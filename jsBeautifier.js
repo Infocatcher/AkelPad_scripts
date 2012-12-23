@@ -3473,9 +3473,6 @@ function convertSource(file, text) {
 		.replace(/[ \t]+([\n\r]|$)/g, "$1");
 	if(file == "beautify.js")
 		text = text.replace(".substr(-esc2)", ".slice(-esc2)");
-	else if(file == "beautify-html.js")
-		// Temporary workaround for https://github.com/einars/js-beautify/commit/f4310223df65b0f706bf2b7c3bce02e3ecf67b8d#L0R259
-		text = text.replace(" is.tag_type = 'STYLE';", " this.tag_type = 'STYLE';");
 	else if(file == "tests/sanitytest.js") {
 		text = text.replace(
 			"results = 'All ' + n_succeeded + ' tests passed.';",
