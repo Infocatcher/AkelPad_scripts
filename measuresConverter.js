@@ -1622,8 +1622,16 @@ var currencyRatios = {}; // code => ratio
 var maxRequestErrors = 3;
 var requestErrors = 0;
 function getCurrencyRatio(code) {
-	if(currencyRatios[code] && new Date().getTime() - currencyRatios[code].timestamp < offlineExpire)
+	if(
+		currencyRatios[code]
+		&& (
+			dialog // Don't use synchronous updater during dialog creation!
+			|| new Date().getTime() - currencyRatios[code].timestamp < offlineExpire
+		)
+	)
 		return currencyRatios[code].ratio;
+	if(dialog)
+		return NaN;
 	var url = getRequestURL(code);
 	try {
 		var request = new ActiveXObject("Microsoft.XMLHTTP");
@@ -1816,17 +1824,18 @@ var asyncUpdater = {
 function updateCurrencyDataAsync(force, onProgress, onComplete, maskInclude) {
 	var codes = [];
 	var currencies = measures["&Currency"];
+	var now = new Date().getTime();
 	for(var currency in currencies) {
 		var code = currencies[currency];
 		if(typeof code != "string")
 			continue;
+		if(maskInclude && !maskInclude[currency])
+			continue;
 		if(
 			!force
 			&& currencyRatios[code]
-			&& new Date().getTime() - currencyRatios[code].timestamp < offlineExpire
+			&& now - currencyRatios[code].timestamp < offlineExpire
 		)
-			continue;
-		if(maskInclude && !maskInclude[currency])
 			continue;
 		codes[codes.length] = code;
 	}
@@ -2455,7 +2464,7 @@ function converterDialog(modal) {
 				if(updateOnStartup) try {
 					new ActiveXObject("htmlfile").parentWindow.setTimeout(function() {
 						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
-					}, 0);
+					}, 1000);
 				}
 				catch(e) {
 					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
@@ -3004,6 +3013,7 @@ function converterDialog(modal) {
 		}
 		else if(windowText(hWndResult) != res) {
 			setEditText(hWndResult, res);
+			updateCommand(false, true);
 		}
 	}
 	function navigate(hWnds, idcs, selected, down, disabled) {
