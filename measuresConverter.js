@@ -3013,7 +3013,8 @@ function converterDialog(modal) {
 		}
 		else if(windowText(hWndResult) != res) {
 			setEditText(hWndResult, res);
-			updateCommand(false, true);
+			if(typeof from == "string" || typeof to == "string")
+				updateCommand(false, true);
 		}
 	}
 	function navigate(hWnds, idcs, selected, down, disabled) {
@@ -3067,7 +3068,7 @@ function converterDialog(modal) {
 			var maskInclude = {};
 			maskInclude[curItem] = maskInclude[curItem2] = true;
 		}
-		update(force || onlyCurrent, onlyCurrent ? 1 : 2, maskInclude);
+		update(force, onlyCurrent ? 1 : 2, maskInclude);
 	}
 	function update(force, report, maskInclude) {
 		//if(!enabled(hWndUpdate))
