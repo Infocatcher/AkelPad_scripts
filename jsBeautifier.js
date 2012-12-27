@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2012
 // version 0.2.2 - 2012-11-05
-// Based on scripts from http://jsbeautifier.org/ [2012-12-23 10:40:50 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2012-12-27 10:57:07 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1327,15 +1327,15 @@ function js_beautify(js_source_text, options) {
 
             if (last_type === 'TK_END_EXPR' && in_array(flags.previous_mode, ['(COND-EXPRESSION)', '(FOR-EXPRESSION)'])) {
                 print_single_space();
-            } else if (last_type === 'TK_COMMENT' || last_type === 'TK_STRING' || last_type === 'TK_START_BLOCK' || last_type === 'TK_END_BLOCK' || last_type === 'TK_SEMICOLON') {
-                print_newline();
             } else if (last_type === 'TK_WORD') {
                 print_single_space();
-            } else {
+            } else if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
                 if (opt_preserve_newlines && wanted_newline && flags.mode !== 'OBJECT') {
                     print_newline();
                     output.push(indent_string);
                 }
+            } else {
+                print_newline();
             }
             print_token();
             break;
@@ -3222,6 +3222,8 @@ function run_beautifier_tests(test_obj)
     bt('if(foo) // comment\n(bar());');
     bt('if(foo) // comment\n(bar());');
     bt('if(foo) // comment\n/asdf/;');
+
+    bt('/* foo */\n"x"');
 
     opts.break_chained_methods = true;
     bt('foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat)');
