@@ -1502,6 +1502,9 @@ function _localize(s) {
 		"Update": {
 			ru: "Обновить"
 		},
+		"Update…": {
+			ru: "Обновление…"
+		},
 		"%S/%T": {
 			ru: "%S/%T"
 		},
@@ -1821,7 +1824,7 @@ var asyncUpdater = {
 		};
 	}
 };
-function updateCurrencyDataAsync(force, onProgress, onComplete, maskInclude) {
+function updateCurrencyDataAsync(force, onStart, onProgress, onComplete, maskInclude) {
 	var codes = [];
 	var currencies = measures["&Currency"];
 	var now = new Date().getTime();
@@ -1844,6 +1847,7 @@ function updateCurrencyDataAsync(force, onProgress, onComplete, maskInclude) {
 		onComplete && onComplete();
 		return;
 	}
+	onStart && onStart();
 	asyncUpdater.init(onProgress, onComplete, total);
 	for(var i = 0; i < total; ++i)
 		asyncUpdater.addRequest(codes[i]);
@@ -3080,11 +3084,14 @@ function converterDialog(modal) {
 		//var btnFocused = hWndUpdate == oSys.Call("user32::GetFocus");
 		//btnFocused && AkelPad.SendMessage(hWndDialog, 7 /*WM_SETFOCUS*/, 0, 0);
 		//enabled(hWndUpdate, false);
-		var btnLabel = update._btnLabel
-			|| (update._btnLabel = windowText(hWndUpdate));
 		var startTime = new Date().getTime();
 		updateCurrencyDataAsync(
 			force,
+			function onStart() {
+				if(!update._btnLabel)
+					update._btnLabel = windowText(hWndUpdate);
+				windowText(hWndUpdate, _localize("Update…"));
+			},
 			function onProgress(state, code) {
 				onCodeUpdated(code);
 				var errors = state.errors + state.parseErrors;
@@ -3098,8 +3105,8 @@ function converterDialog(modal) {
 			},
 			function onComplete(state, code) {
 				onCodeUpdated(code);
-				//enabled(hWndUpdate, true);
-				windowText(hWndUpdate, btnLabel);
+				if(update._btnLabel)
+					windowText(hWndUpdate, update._btnLabel);
 				if(
 					!report
 					|| (
