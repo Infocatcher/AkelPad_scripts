@@ -2468,7 +2468,7 @@ function converterDialog(modal) {
 				if(updateOnStartup) try {
 					new ActiveXObject("htmlfile").parentWindow.setTimeout(function() {
 						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
-					}, 1000);
+					}, 500);
 				}
 				catch(e) {
 					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
@@ -3074,16 +3074,22 @@ function converterDialog(modal) {
 		}
 		update(force, onlyCurrent ? 1 : 2, maskInclude);
 	}
+	var pendingUpdate;
+	function doPendingUpdate() {
+		var pu = pendingUpdate;
+		if(pu) {
+			pendingUpdate = null;
+			pu.func.apply(this, pu.args);
+		}
+	}
 	function update(force, report, maskInclude) {
-		//if(!enabled(hWndUpdate))
-		//	return;
-		if(asyncUpdater.activeRequests)
+		if(asyncUpdater.activeRequests) {
+			if(!pendingUpdate)
+				pendingUpdate = { func: update, args: arguments };
 			return;
+		}
 		if(report == undefined)
 			report = 2;
-		//var btnFocused = hWndUpdate == oSys.Call("user32::GetFocus");
-		//btnFocused && AkelPad.SendMessage(hWndDialog, 7 /*WM_SETFOCUS*/, 0, 0);
-		//enabled(hWndUpdate, false);
 		var startTime = new Date().getTime();
 		updateCurrencyDataAsync(
 			force,
@@ -3113,8 +3119,10 @@ function converterDialog(modal) {
 						report == 1
 						&& (!state || !state.errors && !state.parseErrors && !state.abortedErrors)
 					)
-				)
+				) {
+					doPendingUpdate();
 					return;
+				}
 				var title = dialogTitle;
 				var icon = 0 /*MB_OK*/;
 				if(state) {
@@ -3145,11 +3153,11 @@ function converterDialog(modal) {
 							: 64 /*MB_ICONINFORMATION*/;
 				}
 				else {
-					//btnFocused && oSys.Call("user32::SetFocus", hWndUpdate);
 					var msg = _localize("No update needed!");
 					icon |= 64 /*MB_ICONINFORMATION*/;
 				}
 				AkelPad.MessageBox(hWndDialog, msg, title, icon);
+				doPendingUpdate();
 			},
 			maskInclude
 		);
