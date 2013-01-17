@@ -2613,6 +2613,8 @@ function converterDialog(modal) {
 				for(var type in hWndTypes) {
 					var id = IDCTypes[type];
 					if(id == idc) {
+						if(curType == type)
+							break msgLoop;
 						if(curType && curItem && curItem2)
 							selectedItems[curType] = [curItem, curItem2];
 						//curType = type;
