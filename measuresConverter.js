@@ -2048,6 +2048,17 @@ function converterDialog(modal) {
 	var hWndGroupSortMeasures, hWndSortMeasures;
 	var hWndGroupCurrency, hWndGroupSortCurrency, hWndSortByName, hWndSortByCode, hWndUpdate;
 
+	var windowsVersion;
+	var dwVersion = oSys.Call("kernel32::GetVersion");
+	if(dwVersion) {
+		dwVersion &= 0x0ffff; // LOWORD()
+		windowsVersion = Number(
+			(dwVersion & 0xff) // LOBYTE()
+			+ "."
+			+ (dwVersion >> 8 & 0xff) // HIBYTE()
+		);
+	}
+
 	var typeX = 12;
 	var typeY = 8;
 	var typeW = 144;
@@ -2901,7 +2912,8 @@ function converterDialog(modal) {
 				oSys.Call("user32::InvalidateRect", hWndDialog, lpRect, true);
 			}
 
-			if(typeChanged) { // Only for Windows XP? Not needed on Windows 7
+			if(typeChanged && (!windowsVersion || windowsVersion < 6.1)) {
+				// Only for Windows XP? Not needed on Windows 7
 				AkelPad.MemCopy(lpRect,      scale.x(typeX + 8),     3 /*DT_DWORD*/);
 				AkelPad.MemCopy(lpRect + 4,  scale.y(typeY + 12),    3 /*DT_DWORD*/);
 				AkelPad.MemCopy(lpRect + 8,  scale.x(typeW - 16),    3 /*DT_DWORD*/);
