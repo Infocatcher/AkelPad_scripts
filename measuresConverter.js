@@ -1,8 +1,9 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=12107#12107
 // http://infocatcher.ucoz.net/js/akelpad_scripts/measuresConverter.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/measuresConverter.js
 
-// (c) Infocatcher 2011-2012
-// version 0.2.5 - 2012-12-29
+// (c) Infocatcher 2011-2013
+// version 0.2.5.1 - 2013-01-17
 
 //===================
 // Convert measures (internal) and currency (used data from exchange-rates.org and Google API, but with caching)
