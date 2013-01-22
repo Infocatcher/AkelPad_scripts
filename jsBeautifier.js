@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2012
 // version 0.2.2 - 2012-11-05
-// Based on scripts from http://jsbeautifier.org/ [2013-01-15 07:29:47 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-01-21 16:55:13 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -524,6 +524,70 @@ function js_beautify(js_source_text, options) {
         return false;
     }
 
+    function unescape_string(s) {
+        var esc = false,
+            out = '',
+            pos = 0,
+            s_hex = '',
+            escaped = 0,
+            c;
+
+        while (esc || pos < s.length) {
+
+            c = s.charAt(pos);
+            pos++;
+
+            if (esc) {
+                esc = false;
+                if (c === 'x') {
+                    // simple hex-escape \x24
+                    s_hex = s.substr(pos, 2);
+                    pos += 2;
+                } else if (c === 'u') {
+                    // unicode-escape, \u2134
+                    s_hex = s.substr(pos, 4);
+                    pos += 4;
+                } else {
+                    // some common escape, e.g \n
+                    out += '\\' + c;
+                    continue;
+                }
+                if ( ! s_hex.match(/^[0123456789abcdefABCDEF]+$/)) {
+                    // some weird escaping, bail out,
+                    // leaving whole string intact
+                    return s;
+                }
+
+                escaped = parseInt(s_hex, 16);
+
+                if (escaped >= 0x00 && escaped < 0x20) {
+                    // leave 0x00...0x1f escaped
+                    if (c === 'x') {
+                        out += '\\x' + s_hex;
+                    } else {
+                        out += '\\u' + s_hex;
+                    }
+                    continue;
+                } else if (escaped == 0x22 || escaped === 0x27 || escaped == 0x5c) {
+                    // single-quote, apostrophe, backslash - escape these
+                    out += '\\' + String.fromCharCode(escaped);
+                } else if (c === 'x' && escaped > 0x7e && escaped <= 0xff) {
+                    // we bail out on \x7f..\xff,
+                    // leaving whole string escaped,
+                    // as it's probably completely binary
+                    return s;
+                } else {
+                    out += String.fromCharCode(escaped);
+                }
+            } else if (c == '\\') {
+                esc = true;
+            } else {
+                out += c;
+            }
+        }
+        return out;
+    }
+
     function look_up(exclude) {
         var local_pos = parser_pos;
         var c = input.charAt(local_pos);
@@ -725,9 +789,8 @@ function js_beautify(js_source_text, options) {
                 (last_text === ')' && in_array(flags.previous_mode, ['(COND-EXPRESSION)', '(FOR-EXPRESSION)'])) ||
                 (last_type === 'TK_COMMA' || last_type === 'TK_COMMENT' || last_type === 'TK_START_EXPR' || last_type === 'TK_START_BLOCK' || last_type === 'TK_END_BLOCK' || last_type === 'TK_OPERATOR' || last_type === 'TK_EQUALS' || last_type === 'TK_EOF' || last_type === 'TK_SEMICOLON')))) { // regexp
             var sep = c;
-            var esc = false;
-            var esc1 = 0;
-            var esc2 = 0;
+            var esc = false,
+                has_char_escapes = false;
             resulting_string = c;
 
             if (parser_pos < input_length) {
@@ -762,46 +825,26 @@ function js_beautify(js_source_text, options) {
                     //
                     while (esc || input.charAt(parser_pos) !== sep) {
                         resulting_string += input.charAt(parser_pos);
-                        if (esc1 && esc1 >= esc2) {
-                            esc1 = parseInt(resulting_string.slice(-esc2), 16);
-                            if (esc1 && esc1 >= 0x20 && esc1 <= 0x7e) {
-                                esc1 = String.fromCharCode(esc1);
-                                resulting_string = resulting_string.substr(0, resulting_string.length - esc2 - 2) + (((esc1 === sep) || (esc1 === '\\')) ? '\\' : '') + esc1;
+                        if (esc) {
+                            if (input.charAt(parser_pos) === 'x' || input.charAt(parser_pos) === 'u') {
+                                has_char_escapes = true;
                             }
-                            esc1 = 0;
-                        }
-                        if (esc1) {
-                            esc1++;
-                        } else if (!esc) {
-                            esc = input.charAt(parser_pos) === '\\';
-                        } else {
                             esc = false;
-                            if (opt_unescape_strings) {
-                                if (input.charAt(parser_pos) === 'x') {
-                                    esc1++;
-                                    esc2 = 2;
-                                } else if (input.charAt(parser_pos) === 'u') {
-                                    esc1++;
-                                    esc2 = 4;
-                                }
-                            }
+                        } else {
+                            esc = input.charAt(parser_pos) === '\\';
                         }
                         parser_pos += 1;
-                        if (parser_pos >= input_length) {
-                            // incomplete string/rexp when end-of-file reached.
-                            // bail out with what had been received so far.
-                            return [resulting_string, 'TK_STRING'];
-                        }
                     }
+
                 }
-
-
-
             }
 
             parser_pos += 1;
-
             resulting_string += sep;
+
+            if (has_char_escapes && opt_unescape_strings) {
+                resulting_string = unescape_string(resulting_string);
+            }
 
             if (sep === '/') {
                 // regexps may have modifiers /regexp/MOD , so fetch those, too
@@ -2346,6 +2389,12 @@ function style_html(html_source, options) {
   }
   return multi_parser.output.join('');
 }
+
+// Add support for CommonJS. Just put this file somewhere on your require.paths
+// and you will be able to `var html_beautify = require("beautify").html_beautify`.
+if (typeof exports !== "undefined") {
+    exports.html_beautify = style_html;
+}
 //== beautify-html.js end
 
 
@@ -3194,9 +3243,16 @@ function run_beautifier_tests(test_obj)
     bt("var a = \"foo\" +\n    \"bar\";");
 
     opts.unescape_strings = false;
-    bt('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"', '"\\x22\\x27", \'\\x22\\x27\', "\\x5c", \'\\x5c\', "\\xff and \\xzz", "unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"');
+    test_fragment('"\\x22\\x27", \'\\x22\\x27\', "\\x5c", \'\\x5c\', "\\xff and \\xzz", "unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"');
     opts.unescape_strings = true;
-    bt('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"', '"\\"\'", \'"\\\'\', "\\\\", \'\\\\\', "\\xff and \\xzz", "unicode \\u0000 \\" \' \\\\ \\uffff \\uzzzz"');
+    test_fragment('"\\x20\\x40\\x4a"', '" @J"');
+    test_fragment('"\\xff\\x40\\x4a"');
+    test_fragment('"\\u0072\\u016B\\u0137\\u012B\\u0074\\u0069\\u0073"', '"rūķītis"');
+    test_fragment('"Google Chrome est\\u00E1 actualizado."', '"Google Chrome está actualizado."');
+    /*
+    bt('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"',
+       '"\\"\'", \'"\\\'\', "\\\\", \'\\\\\', "\\xff and \\xzz", "unicode \\u0000 \\" \' \\\\ \\uffff \\uzzzz"');
+    */
     opts.unescape_strings = false;
     bt('foo = {\n    x: y, // #44\n    w: z // #44\n}');
 
