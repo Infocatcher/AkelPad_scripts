@@ -31,6 +31,7 @@
 //   -indentScripts="keep"        - HTML <style>, <script> formatting: keep indent level of the tag
 //                 ="normal"      - add one indent level
 //                 ="separate"    - separate indentation
+//   -unescapeStrings=true        - unescape printable \xNN characters in strings ("example" vs "\x65\x78\x61\x6d\x70\x6c\x65")
 //   -maxChar=70                  - maximum amount of characters per line (only for HTML)
 //   -unformattedTags=["a"]       - list of tags, that shouldn't be reformatted (only for HTML)
 //   -detectPackers=true          - detect packers
@@ -92,6 +93,7 @@ var breakChainedMethods    = getArg("breakChainedMethods", false);
 var jsLintHappy            = getArg("jsLintHappy", false);
 var spaceBeforeConditional = getArg("spaceBeforeConditional", false);
 var indentScripts          = getArg("indentScripts", "normal");
+var unescapeStrings        = getArg("unescapeStrings"); // Will use jsBeautifier defaults
 var maxChar                = getArg("maxChar", 70);
 var unformattedTags        = getArg("unformattedTags"); // Will use jsBeautifier defaults
 var detectPackers          = getArg("detectPackers", true);
@@ -137,6 +139,7 @@ function beautify(source, syntax) { // Based on beautify function
 		jslint_happy:             jsLintHappy,
 		space_before_conditional: spaceBeforeConditional,
 		indent_scripts:           indentScripts,
+		unescape_strings:         unescapeStrings,
 		// for style_html():
 		max_char:                 maxChar,
 		unformatted:              unformattedTags
