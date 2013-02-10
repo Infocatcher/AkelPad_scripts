@@ -618,44 +618,7 @@ Sha256.toHexStr = function(n) {
 }
 
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-/*  Utf8 class: encode / decode between multi-byte Unicode characters and UTF-8 multiple          */
-/*              single-byte character encoding (c) Chris Veness 2002-2010                         */
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-
-var Utf8 = {};  // Utf8 namespace
-
-/**
- * Encode multi-byte Unicode string into utf-8 multiple single-byte characters
- * (BMP / basic multilingual plane only)
- *
- * Chars in range U+0080 - U+07FF are encoded in 2 chars, U+0800 - U+FFFF in 3 chars
- *
- * @param {String} strUni Unicode string to be encoded as UTF-8
- * @returns {String} encoded string
- */
-Utf8.encode = function(strUni) {
-  // use regular expressions & String.replace callback function for better efficiency
-  // than procedural approaches
-  var strUtf = strUni.replace(
-      /[\u0080-\u07ff]/g,  // U+0080 - U+07FF => 2 bytes 110yyyyy, 10zzzzzz
-      function(c) {
-        var cc = c.charCodeAt(0);
-        return String.fromCharCode(0xc0 | cc>>6, 0x80 | cc&0x3f); }
-    );
-  strUtf = strUtf.replace(
-      /[\u0800-\uffff]/g,  // U+0800 - U+FFFF => 3 bytes 1110xxxx, 10yyyyyy, 10zzzzzz
-      function(c) {
-        var cc = c.charCodeAt(0);
-        return String.fromCharCode(0xe0 | cc>>12, 0x80 | cc>>6&0x3F, 0x80 | cc&0x3f); }
-    );
-  return strUtf;
-}
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-
-
-function SHA512(str, variant) {
+function SHA(str, variant) {
 	// http://www.farfarfar.com/scripts/encrypt/
 	//str_sha(val, "SHA-224")
 	//str_sha(val, "SHA-384")
@@ -947,7 +910,7 @@ function SHA512(str, variant) {
 
 	function coreSHA1(message, messageLength)
 	{
-		var W = new Array();
+		var W = [];
 		var a, b, c, d, e;
 		var K = K_1;
 		var T;
@@ -1002,7 +965,7 @@ function SHA512(str, variant) {
 
 	function coreSHA2(message, messageLength, variant)
 	{
-		var W = new Array();
+		var W = [];
 		var a, b, c, d, e, f, g, h;
 		var T1, T2;
 		var H;
@@ -1181,7 +1144,7 @@ function SHA512(str, variant) {
 	 */
 	function str2binb(str)
 	{
-		var bin = Array();
+		var bin = [];
 		var mask = (1 << charSize) - 1;
 		var length = str.length * charSize;;
 
@@ -1303,7 +1266,7 @@ var hashes = {
 		prettyName: "SHA-224",
 		speed: 40.08,
 		get: function(str) {
-			return SHA512(str, "SHA-224");
+			return SHA(str, "SHA-224");
 		}
 	},
 	sha256: {
@@ -1317,14 +1280,14 @@ var hashes = {
 		prettyName: "SHA-384",
 		speed: 9.66,
 		get: function(str) {
-			return SHA512(str, "SHA-384");
+			return SHA(str, "SHA-384");
 		}
 	},
 	sha512: {
 		prettyName: "SHA-512",
 		speed: 9.21,
 		get: function(str) {
-			return SHA512(str, "SHA-512");
+			return SHA(str, "SHA-512");
 		}
 	}
 };
