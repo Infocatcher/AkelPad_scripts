@@ -1,8 +1,8 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11095#11095
 // http://infocatcher.ucoz.net/js/akelpad_scripts/converter.js
 
-// (c) Infocatcher 2010-2011
-// version 0.2.2 - 2011-11-16
+// (c) Infocatcher 2010-2012
+// version 0.2.3 - 2012-09-28
 
 //===================
 // Hotkeys:
@@ -98,6 +98,12 @@
 //   Call("Scripts::Main", 1, "converter.js", `-mode=2 -type="Charset" -codePage=1251 -dialog=false -saveOptions=0`)
 //   Call("Scripts::Main", 1, "converter.js", `-mode=2 -type="Recode" -codePageFrom=20866 -codePageTo=1251 -dialog=false -saveOptions=0`)
 //===================
+
+// Wrapper for AkelPad.Include()
+if(!convertersArgs)
+	var convertersArgs = {};
+(function() {
+var overrideArgs = convertersArgs;
 
 function _localize(s) {
 	var strings = {
@@ -1120,7 +1126,7 @@ var converters = {
 	}
 };
 
-if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())) {
+if(hMainWnd && !AkelPad.IsInclude()) {
 	if(!converters[type]) { // Invalid argument or pref
 		AkelPad.MessageBox(
 			hMainWnd,
@@ -1704,7 +1710,7 @@ function converterDialog(modal) {
 					0x50010003,    //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					324,           //x
 					183,           //y
-					180,           //nWidth
+					72,            //nWidth
 					16,            //nHeight
 					hWnd,          //hWndParent
 					IDC_TO_BASE64, //ID
@@ -2559,9 +2565,11 @@ function setRedraw(hWnd, bRedraw) {
 
 function getArg(argName, defaultVal) {
 	var args = {};
-	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
+	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; ++i)
 		if(/^[-\/](\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
 			args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
+	for(var p in overrideArgs)
+		args[p.toLowerCase()] = overrideArgs[p];
 	getArg = function(argName, defaultVal) {
 		argName = argName.toLowerCase();
 		return typeof args[argName] == "undefined" // argName in args
@@ -2860,3 +2868,23 @@ function convertToUnicode(str, cp) {
 
 	return ret;
 }
+
+if(AkelPad.IsInclude()) {
+	// this.foo = ... doesn't work:
+	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#18304
+	// But declarations without "var" becomes global
+	var _exports = {
+		converters: converters,
+		convertFromUnicode: convertFromUnicode,
+		convertToUnicode: convertToUnicode,
+		trimBase64String: trimBase64String,
+		isBase64: isBase64
+	};
+	var _f = [];
+	for(var _p in _exports)
+		_f[_f.length] = "if(typeof " + _p + " == 'undefined') " + _p + " = e." + _p + ";";
+	// Go to the global scope
+	new Function("e", _f.join("\n"))(_exports);
+}
+
+})();
