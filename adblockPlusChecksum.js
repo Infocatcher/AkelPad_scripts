@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18306#18306
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18306#18306
 // http://infocatcher.ucoz.net/js/akelpad_scripts/adblockPlusChecksum.js
 
 // (c) Infocatcher 2012
@@ -40,10 +40,10 @@ if(
 function _localize(s) {
 	var strings = {
 		"This is not a Adblock Plus subscription!": {
-			ru: "Это не подписка для Adblock Plus!"
+			ru: "Р­С‚Рѕ РЅРµ РїРѕРґРїРёСЃРєР° РґР»СЏ Adblock Plus!"
 		},
 		"Checksum already added!": {
-			ru: "Контрольная сумма уже добавлена!"
+			ru: "РљРѕРЅС‚СЂРѕР»СЊРЅР°СЏ СЃСѓРјРјР° СѓР¶Рµ РґРѕР±Р°РІР»РµРЅР°!"
 		}
 	};
 	var lng;
