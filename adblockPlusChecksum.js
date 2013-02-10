@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/adblockPlusChecksum.js
 
 // (c) Infocatcher 2012
-// version 0.1.0 - 2012-06-04
+// version 0.1.1 - 2012-06-09
 
 // Adds checksum to Adblock Plus subscription
 // http://adblockplus.org/en/faq_internal#checksum
@@ -14,18 +14,30 @@
 
 var hMainWnd = AkelPad.GetMainWnd();
 var hWndEdit = AkelPad.GetEditWnd();
+var oSys = AkelPad.SystemFunction();
+
+var hashesArgs = {
+	codePage: 65001 // UTF-8 for MD5
+};
+var convertersArgs = {
+	codePageBase64: 28591 // ISO-8859-1 for base64
+};
+
 if(
 	hMainWnd
 	&& hWndEdit
 	&& AkelPad.Include("..\\getHash.js")
 	&& AkelPad.Include("..\\converter.js")
 ) {
-	codePage = 65001; // UTF-8 for MD5
-	codePageBase64 = 28591; // ISO-8859-1 for base64
-	addChecksum();
+	if(typeof hashes == "undefined")
+		AkelPad.MessageBox(hMainWnd, "Required getHash.js v.0.2.3 and higher", WScript.ScriptName, 16 /*MB_ICONERROR*/);
+	else if(typeof converters == "undefined")
+		AkelPad.MessageBox(hMainWnd, "Required converter.js v.0.2.3 and higher", WScript.ScriptName, 16 /*MB_ICONERROR*/);
+	else
+		addChecksum();
 }
 
-function __localize(s) {
+function _localize(s) {
 	var strings = {
 		"This is not a Adblock Plus subscription!": {
 			ru: "Это не подписка для Adblock Plus!"
@@ -39,10 +51,10 @@ function __localize(s) {
 		case 0x19: lng = "ru"; break;
 		default:   lng = "en";
 	}
-	__localize = function(s) {
+	_localize = function(s) {
 		return strings[s] && strings[s][lng] || s;
 	};
-	return __localize(s);
+	return _localize(s);
 }
 
 function addChecksum() {
@@ -57,7 +69,7 @@ function addChecksum() {
 	if(!/^\[Adblock(\s*Plus\s*([\d\.]+)?)?\]\n/i.test(text)) {
 		AkelPad.MessageBox(
 			hMainWnd,
-			__localize("This is not a Adblock Plus subscription!"),
+			_localize("This is not a Adblock Plus subscription!"),
 			WScript.ScriptName,
 			48 /*MB_ICONEXCLAMATION*/
 		);
@@ -74,7 +86,7 @@ function addChecksum() {
 	if(oldChecksum && newChecksum == oldChecksum) {
 		AkelPad.MessageBox(
 			hMainWnd,
-			__localize("Checksum already added!"),
+			_localize("Checksum already added!"),
 			WScript.ScriptName,
 			64 /*MB_ICONINFORMATION*/
 		);
@@ -94,7 +106,7 @@ function generateChecksum(str) {
 
 	// Perl: md5_base64($data)
 	// PHP: preg_replace('/=+$/', '', base64_encode(pack('H*',md5($data))));
-	var hash = md5(str);
+	var hash = hashes.md5(str);
 	var pached = pack(hash);
 	var base64 = converters.base64.encode(pached);
 	return base64.replace(/=+$/, "");
