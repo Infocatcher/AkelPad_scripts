@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/getHash.js
 
 // (c) Infocatcher 2010-2012
-// version 0.2.2 - 2012-01-03
+// version 0.2.3 - 2012-09-12
 
 //===================
 // Based on following scripts:
@@ -43,6 +43,12 @@
 //   Call("Scripts::Main", 1, "getHash.js", `-type="SHA1" -dialog=false -onlySelected=true`)
 //   Call("Scripts::Main", 1, "getHash.js", `-dialog=true -saveOptions=0 -savePosition=false`)
 //===================
+
+// Wrapper for AkelPad.Include()
+if(!hashesArgs)
+	var hashesArgs = {};
+(function() {
+var overrideArgs = hashesArgs;
 
 function _localize(s) {
 	var strings = {
@@ -2058,7 +2064,7 @@ function getHashDialog(modal) {
 	AkelPad.WindowUnregisterClass(dialogClass);
 }
 
-if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())) {
+if(hMainWnd && !AkelPad.IsInclude()) {
 	if(!hashes[type]) { // Invalid argument or pref
 		AkelPad.MessageBox(
 			hMainWnd,
@@ -2130,6 +2136,8 @@ function getArg(argName, defaultVal) {
 	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
 		if(/^[-\/](\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
 			args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
+	for(var p in overrideArgs)
+		args[p.toLowerCase()] = overrideArgs[p];
 	getArg = function(argName, defaultVal) {
 		argName = argName.toLowerCase();
 		return typeof args[argName] == "undefined" // argName in args
@@ -2317,3 +2325,20 @@ function convertFromUnicode(str, cp) {
 
 	return ret;
 }
+
+if(AkelPad.IsInclude()) {
+	// this.foo = ... doesn't work:
+	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#18304
+	// But declarations without "var" becomes global
+	var _exports = {
+		hashes: hashes,
+		convertFromUnicode: convertFromUnicode
+	};
+	var _f = [];
+	for(var _p in _exports)
+		_f[_f.length] = "if(typeof " + _p + " == 'undefined') " + _p + " = e." + _p + ";";
+	// Go to the global scope
+	new Function("e", _f.join("\n"))(_exports);
+}
+
+})();
