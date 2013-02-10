@@ -1328,6 +1328,13 @@ var hashes = {
 		}
 	}
 };
+for(var hash in hashes) { // allow use hashes.sha256(string)
+	var hashObj = hashes[hash];
+	var get = hashObj.get;
+	for(var p in hashObj)
+		get[p] = hashObj[p];
+	hashes[hash] = get;
+}
 
 function getHash(hWnd, callback) {
 	if(saveOptions == 1) {
