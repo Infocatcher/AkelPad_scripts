@@ -1,8 +1,8 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11096#11096
 // http://infocatcher.ucoz.net/js/akelpad_scripts/getHash.js
 
-// (c) Infocatcher 2010-2012
-// version 0.2.3 - 2012-09-12
+// (c) Infocatcher 2010-2013
+// version 0.2.4 - 2013-02-08
 
 //===================
 // Based on following scripts:
@@ -29,7 +29,9 @@
 //   -type="MD5"            - hash function ("CRC32", "MD5", "SHA1", "SHA224", "SHA256", "SHA384" or "SHA512")
 //   -codePage=65001        - code page for hash calculation, -1 - use current code page
 //   -autoCalc=true         - auto calculate
-//   -dialog=false          - copy without dialog
+//   -action=0              - show dialog
+//          =1              - copy without dialog
+//          =2              - write into Log::Output without dialog
 //   -onlySelected=true     - use only selected text
 //   -upperCase=false       - convert output to upper case
 //   -warningTime=4000      - show warning for slow calculations
@@ -40,8 +42,8 @@
 
 // Usage:
 //   Call("Scripts::Main", 1, "getHash.js")
-//   Call("Scripts::Main", 1, "getHash.js", `-type="SHA1" -dialog=false -onlySelected=true`)
-//   Call("Scripts::Main", 1, "getHash.js", `-dialog=true -saveOptions=0 -savePosition=false`)
+//   Call("Scripts::Main", 1, "getHash.js", `-type="SHA1" -action=1 -onlySelected=true`)
+//   Call("Scripts::Main", 1, "getHash.js", `-action=0 -saveOptions=0 -savePosition=false`)
 //===================
 
 // Wrapper for AkelPad.Include()
@@ -112,6 +114,10 @@ function _localize(s) {
 	return _localize(s);
 }
 
+var ACT_DIALOG = 0;
+var ACT_COPY   = 1;
+var ACT_LOG    = 2;
+
 var DEFAULT_HASH = "md5";
 
 var CP_NOT_CONVERT = -2;
@@ -126,12 +132,18 @@ if(saveOptions || savePosition)
 
 var codePage     = getArg("codePage", -1);
 var autoCalc     = getArg("autoCalc", false);
-var showDialog   = getArg("dialog", true);
+var action       = getArg("action", ACT_DIALOG);
 var onlySelected = getArg("onlySelected", false);
 var warningTime  = getArg("warningTime", 4000);
 
 var type         = getArgOrPref("type", prefs && prefs.STRING, DEFAULT_HASH).toLowerCase();
 var upperCase    = getArgOrPref("upperCase", prefs && prefs.DWORD, false);
+
+if(getArg("action") == undefined) {
+	var showDialog = getArg("dialog"); // Deprecated
+	if(showDialog != undefined)
+		action = !+showDialog;
+}
 
 prefs && prefs.end();
 
@@ -2074,14 +2086,21 @@ if(hMainWnd && !AkelPad.IsInclude()) {
 			16 /*MB_ICONERROR*/
 		);
 		type = DEFAULT_HASH;
-		showDialog = true;
+		action = ACT_DIALOG;
 	}
-	if(showDialog)
+	if(action == ACT_DIALOG)
 		getHashDialog();
 	else {
 		var callback = { value: null };
 		var hash = getHash(null, callback);
-		hash && AkelPad.SetClipboardText(hash);
+		if(hash) {
+			if(action == ACT_COPY)
+				AkelPad.SetClipboardText(hash);
+			else { //if(action == ACT_LOG)
+				var out = type.toUpperCase() + ": " + hash + "\n";
+				AkelPad.Call("Log::Output", 5, out, out.length, 1 /*APPEND*/);
+			}
+		}
 		callback.value && callback.value();
 	}
 }
