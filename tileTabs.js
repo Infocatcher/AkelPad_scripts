@@ -1,8 +1,8 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=17271#17271
 // http://infocatcher.ucoz.net/js/akelpad_scripts/tileTabs.js
 
-// (c) Infocatcher 2012
-// version 0.1.1 - 2012-03-18
+// (c) Infocatcher 2012-2013
+// version 0.1.2pre - 2013-02-18
 
 // Tile current tab with next selected:
 // select first tab, call script and then select second tab.
@@ -45,22 +45,42 @@ if(
 	var hMdiClient = AkelPad.SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 12 /*MI_WNDMDICLIENT*/, 0);
 	var lpFrame = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
 	var lpFrame2;
-	if(hMdiClient && lpFrame && AkelPad.WindowSubClass(hMainWnd, mainCallback, 0x416 /*AKDN_FRAME_ACTIVATE*/)) {
+
+	if(hMdiClient && lpFrame) {
 		var statusbar = new Statusbar();
 		statusbar.save();
-		statusbar.set(_localize("Select tab!"));
+		var statusMsg = _localize("Select tab!");
+		statusbar.set(statusMsg);
 
+		var showDelay = 600;
+		var hideDelay = 150;
+		try {
+			var window = new ActiveXObject("htmlfile").parentWindow;
+			var shown = true;
+			var timer = window.setTimeout(function blink() {
+				statusbar.set(shown ? "" : statusMsg);
+				timer = window.setTimeout(blink, (shown = !shown) ? showDelay : hideDelay);
+			}, showDelay);
+		}
+		catch(e) {
+		}
+	}
+
+	if(hMdiClient && lpFrame && AkelPad.WindowSubClass(hMainWnd, mainCallback, 0x416 /*AKDN_FRAME_ACTIVATE*/)) {
 		var tileHorizontal = WScript.Arguments.length && WScript.Arguments(0) == "h";
 
 		AkelPad.WindowGetMessage(); // Message loop
 		AkelPad.WindowUnsubClass(hMainWnd);
 
+		timer && window.clearTimeout(timer);
 		statusbar.restore();
 		if(lpFrame2)
 			tileTabs(lpFrame, lpFrame2, tileHorizontal);
 		//AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame);
 	}
 	else {
+		timer && window.clearTimeout(timer);
+		statusbar && statusbar.restore();
 		AkelPad.MessageBox(hMainWnd, _localize("No tabs!"), WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
 	}
 }
