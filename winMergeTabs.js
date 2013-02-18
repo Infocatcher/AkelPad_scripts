@@ -1,5 +1,6 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=
-// http://infocatcher.ucoz.net/js/akelpad_scripts/winMergeCompareCurrent.js
+﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p= //~ todo
+// http://infocatcher.ucoz.net/js/akelpad_scripts/winMergeTabs.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/winMergeTabs.js
 
 // (c) Infocatcher 2013
 // version 0.1.0pre - 2013-02-18
