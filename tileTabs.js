@@ -44,6 +44,7 @@ if(
 ) {
 	var hMdiClient = AkelPad.SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 12 /*MI_WNDMDICLIENT*/, 0);
 	var lpFrame = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
+	var lpFrame2;
 	if(hMdiClient && lpFrame && AkelPad.WindowSubClass(hMainWnd, mainCallback, 0x416 /*AKDN_FRAME_ACTIVATE*/)) {
 		var statusbar = new Statusbar();
 		statusbar.save();
@@ -54,6 +55,9 @@ if(
 		AkelPad.WindowGetMessage(); // Message loop
 		AkelPad.WindowUnsubClass(hMainWnd);
 
+		statusbar.restore();
+		if(lpFrame2)
+			tileTabs(lpFrame, lpFrame2, tileHorizontal);
 		//AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame);
 	}
 	else {
@@ -66,16 +70,12 @@ else {
 function mainCallback(hWnd, uMsg, wParam, lParam) {
 	if(uMsg != 0x416 /*AKDN_FRAME_ACTIVATE*/)
 		return;
-	var lpFrame2 = lParam;
-	if(lpFrame2 == lpFrame)
-		return;
-	oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
-	tileTabs(lpFrame, lpFrame2, tileHorizontal);
+	lpFrame2 = lParam;
+	if(lpFrame2 != lpFrame)
+		oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
 }
 
 function tileTabs(lpFrame, lpFrame2, tileHorizontal) {
-	statusbar.restore();
-
 	var lpRect = AkelPad.MemAlloc(16 /*sizeof(RECT)*/);
 	if(!lpRect)
 		return;
