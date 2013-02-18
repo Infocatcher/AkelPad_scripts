@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=
 // http://infocatcher.ucoz.net/js/akelpad_scripts/winMergeCompareCurrent.js
 
 // (c) Infocatcher 2013
@@ -15,13 +15,13 @@
 function _localize(s) {
 	var strings = {
 		"No tabs!": {
-			ru: "Отсутствуют вкладки!"
+			ru: "РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РІРєР»Р°РґРєРё!"
 		},
 		"MDI or PMDI window mode required!": {
-			ru: "Требуется оконный режим MDI или PMDI!"
+			ru: "РўСЂРµР±СѓРµС‚СЃСЏ РѕРєРѕРЅРЅС‹Р№ СЂРµР¶РёРј MDI РёР»Рё PMDI!"
 		},
 		"Select tab!": {
-			ru: "Выберите вкладку!"
+			ru: "Р’С‹Р±РµСЂРёС‚Рµ РІРєР»Р°РґРєСѓ!"
 		}
 	};
 	var lng;
