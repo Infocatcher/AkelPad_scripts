@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/winMergeTabs.js
 
 // (c) Infocatcher 2013
-// version 0.1.0pre3 - 2013-02-19
+// version 0.1.0pre4 - 2013-02-19
 
 // Compare contents of current and next selected tabs using WinMerge (http://winmerge.org/)
 
@@ -210,7 +210,7 @@ function getTempFile(hWndEdit, file) {
 	if(!fso.FolderExists(tmpDir))
 		fso.CreateFolder(tmpDir);
 	var i = -1;
-	do tmp = tmpDir + "\\" + fileName + (++i || "") + fileExt;
+	do tmp = tmpDir + "\\" + fileName + (++i ? "-" + i : "") + fileExt;
 	while(fso.FileExists(tmp));
 	var out = new String(tmp);
 	out.isTemp = true;
