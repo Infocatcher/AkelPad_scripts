@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/tileTabs.js
 
 // (c) Infocatcher 2012-2013
-// version 0.1.2pre - 2013-02-18
+// version 0.1.2pre2 - 2013-02-19
 
 // Tile current tab with next selected:
 // select first tab, call script and then select second tab.
@@ -107,6 +107,10 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal) {
 	var hWndMdi  = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame);
 	var hWndMdi2 = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame2);
 
+	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi2, 0);
+	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi, 0);
+	AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame2);
+
 	var w = rcClient.right - rcClient.left;
 	var h = rcClient.bottom - rcClient.top;
 
@@ -122,8 +126,6 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal) {
 	}
 }
 function moveMdiWindow(hWndMdi, x, y, w, h) {
-	if(oSys.Call("user32::GetWindowLong" + _TCHAR, hWndMdi, -16 /*GWL_STYLE*/) & 0x001000000 /*WS_MAXIMIZE*/)
-		AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi, 0);
 	oSys.Call("user32::MoveWindow", hWndMdi, x, y, w, h, true /*bRepaint*/);
 }
 function parseRect(lpRect) {
