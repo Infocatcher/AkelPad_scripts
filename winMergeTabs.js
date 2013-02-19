@@ -8,10 +8,11 @@
 // Compare contents of current and next selected tabs using WinMerge (http://winmerge.org/)
 
 // Arguments:
-//   -path="%ProgramFiles%\\WinMege\\WinMerge.exe"       - path to WinMerge executable
-//   -save=true                                          - true  - save file before compare
-//                                                         false - use temporary files for unsaved files
-//   -temp="%AkelDir%\\AkelFiles\\Plugs\\Scripts\\temp"  - path to temporary directory
+//   -path="%ProgramFiles%\WinMege\WinMerge.exe"     - path to WinMerge executable
+//                                                     (or many paths: "path1|path2|path3")
+//   -save=true                                      - true  - save file before compare
+//                                                     false - use temporary files for unsaved files
+//   -temp="%AkelDir%\AkelFiles\Plugs\Scripts\temp"  - path to temporary directory
 
 function _localize(s) {
 	var strings = {
@@ -39,12 +40,12 @@ function _localize(s) {
 	return _localize(s);
 }
 
-var path = AkelPad.GetArgValue("path", "");
+var paths = AkelPad.GetArgValue("path", "");
 var save = AkelPad.GetArgValue("save", false);
 var tempDir = AkelPad.GetArgValue("temp", "%temp%");
 
-var winMergePaths = path
-	? [path]
+var winMergePaths = paths
+	? paths.split("|")
 	: [
 		"<HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\WinMergeU.exe\\>",
 		"<HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\WinMerge.exe\\>",
