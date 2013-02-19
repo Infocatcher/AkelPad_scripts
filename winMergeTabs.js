@@ -21,6 +21,9 @@ function _localize(s) {
 		"MDI or PMDI window mode required!": {
 			ru: "Требуется оконный режим MDI или PMDI!"
 		},
+		"WinMerge not found!": {
+			ru: "Не удалось найти WinMerge!"
+		},
 		"Select tab!": {
 			ru: "Выберите вкладку!"
 		}
@@ -112,7 +115,12 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 function compareTabs(lpFrame, lpFrame2) {
 	var winMerge = getWinMerge();
 	if(!winMerge) {
-		AkelPad.MessageBox(hMainWnd, _localize("WinMerge not found!"), WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
+		AkelPad.MessageBox(
+			hMainWnd,
+			_localize("WinMerge not found!") + "\n\n" + getWinMergePaths(),
+			WScript.ScriptName,
+			48 /*MB_ICONEXCLAMATION*/
+		);
 		return;
 	}
 
@@ -167,6 +175,17 @@ function getWinMerge() {
 			return path;
 	}
 	return "";
+}
+function getWinMergePaths() {
+	var out = [];
+	for(var i = 0, l = winMergePaths.length; i < l; ++i) {
+		var rawPath = winMergePaths[i];
+		var path = expandVariables(rawPath);
+		out[out.length] = path == rawPath
+			? path
+			: rawPath + " => " + path
+	}
+	return out.join("\n");
 }
 function getTempFile(hWndEdit, file) {
 	var tmp = file && /[^\/\\]+$/.test(file) && RegExp.lastMatch;
