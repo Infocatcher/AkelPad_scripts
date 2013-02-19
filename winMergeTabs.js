@@ -10,7 +10,7 @@
 // Arguments:
 //   -path="%ProgramFiles%\WinMege\WinMerge.exe"  - path to WinMerge executable
 //                                                  (or many paths: "path1|path2|path3")
-//   -save=true                                   - true  - save file before compare
+//   -save=true                                   - true  - save (already saved, but modified) file before compare
 //                                                  false - use temporary files for unsaved files
 //   -temp="%AkelScripts%\temp"                   - path to temporary directory
 
@@ -154,7 +154,7 @@ function getFile(lpFrame) {
 	var file = origFile;
 	if(!origFile || AkelPad.SendMessage(hWndEdit, 3086 /*AEM_GETMODIFY*/, 0, 0)) {
 		if(origFile && save)
-			AkelPad.SaveFile(hWndEdit, origFile);
+			AkelPad.Command(4105); // IDM_FILE_SAVE
 		else {
 			var tempFile = file = getTempFile(hWndEdit, origFile);
 			var codePage = AkelPad.GetEditCodePage(hWndEdit);
