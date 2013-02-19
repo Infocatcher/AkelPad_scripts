@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/winMergeTabs.js
 
 // (c) Infocatcher 2013
-// version 0.1.0pre2 - 2013-02-19
+// version 0.1.0pre3 - 2013-02-19
 
 // Compare contents of current and next selected tabs using WinMerge (http://winmerge.org/)
 
@@ -88,6 +88,7 @@ if(
 	}
 
 	if(lpFrame && AkelPad.WindowSubClass(hMainWnd, mainCallback, 0x416 /*AKDN_FRAME_ACTIVATE*/)) {
+		AkelPad.ScriptNoMutex(5 /*ULT_UNLOCKSCRIPTSQUEUE|ULT_LOCKMULTICOPY*/); // Allow other scripts running
 		AkelPad.WindowGetMessage(); // Message loop
 		AkelPad.WindowUnsubClass(hMainWnd);
 
