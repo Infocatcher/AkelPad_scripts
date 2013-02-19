@@ -137,14 +137,19 @@ function compareTabs(lpFrame, lpFrame2) {
 
 	var cmdLine = '"' + winMerge + '" "' + file + '" "' + file2 + '"';
 	var wm = wsh.Exec(cmdLine);
-	if(file.isTemp || file2.isTemp) for(;;) {
-		WScript.Sleep(1000);
-		if(wm.Status != 0) {
-			if(file.isTemp)
-				fso.DeleteFile(file);
-			if(file2.isTemp)
-				fso.DeleteFile(file2);
-			break;
+	if(file.isTemp || file2.isTemp) {
+		// If WinMerge are already opened, new process will be immediately closed,
+		// so don't delete files too early
+		WScript.Sleep(4000);
+		for(;;) {
+			if(wm.Status != 0) {
+				if(file.isTemp)
+					fso.DeleteFile(file);
+				if(file2.isTemp)
+					fso.DeleteFile(file2);
+				break;
+			}
+			WScript.Sleep(1500);
 		}
 	}
 }
