@@ -191,16 +191,22 @@ function getWinMergePaths() {
 	return out.join("\n");
 }
 function getTempFile(hWndEdit, file) {
+	var fileName, fileExt;
 	var tmp = file && /[^\/\\]+$/.test(file) && RegExp.lastMatch;
-	if(!tmp)
-		tmp = "akelpad-temp" + getCurrentExtension();
+	if(tmp) {
+		fileExt = /\.[^.]+$/.test(tmp) && RegExp.lastMatch || "";
+		fileName = tmp.slice(0, -fileExt.length);
+	}
+	else {
+		fileExt = getCurrentExtension();
+		fileName = "akelpad-temp";
+	}
 	var tmpDir = expandVariables(tempDir);
 	if(!fso.FolderExists(tmpDir))
 		fso.CreateFolder(tmpDir);
-	tmp = tmpDir + "\\" + tmp;
-	var i = 0;
-	while(fso.FileExists(tmp))
-		tmp = tmp.replace(/(\.[^.]+)?$/, ++i + "$1");
+	var i = -1;
+	do tmp = tmpDir + "\\" + fileName + (++i || "") + fileExt;
+	while(fso.FileExists(tmp));
 	var out = new String(tmp);
 	out.isTemp = true;
 	return out;
