@@ -92,6 +92,7 @@ if(
 		AkelPad.WindowGetMessage(); // Message loop
 		AkelPad.WindowUnsubClass(hMainWnd);
 
+		AkelPad.ScriptNoMutex(8 /*ULT_UNLOCKMULTICOPY*/);
 		timer && window.clearTimeout(timer);
 		statusbar.restore();
 		if(lpFrame2)
