@@ -8,11 +8,11 @@
 // Compare contents of current and next selected tabs using WinMerge (http://winmerge.org/)
 
 // Arguments:
-//   -path="%ProgramFiles%\WinMege\WinMerge.exe"     - path to WinMerge executable
-//                                                     (or many paths: "path1|path2|path3")
-//   -save=true                                      - true  - save file before compare
-//                                                     false - use temporary files for unsaved files
-//   -temp="%AkelDir%\AkelFiles\Plugs\Scripts\temp"  - path to temporary directory
+//   -path="%ProgramFiles%\WinMege\WinMerge.exe"  - path to WinMerge executable
+//                                                  (or many paths: "path1|path2|path3")
+//   -save=true                                   - true  - save file before compare
+//                                                  false - use temporary files for unsaved files
+//   -temp="%AkelScripts%\temp"                   - path to temporary directory
 
 function _localize(s) {
 	var strings = {
@@ -229,7 +229,11 @@ function expandVariables(s) {
 	return expandEnvironmentVariables(expandRegistryVariables(s));
 }
 function expandEnvironmentVariables(s) {
-	return wsh.ExpandEnvironmentStrings(s.replace(/^%AkelDir%/, AkelPad.GetAkelDir()));
+	if(s.substr(0, 9) == "%AkelDir%")
+		s = AkelPad.GetAkelDir() + s.substr(9);
+	if(s.substr(0, 13) == "%AkelScripts%")
+		s = AkelPad.GetAkelDir(5 /*ADTYPE_SCRIPTS*/) + s.substr(13);
+	return wsh.ExpandEnvironmentStrings(s);
 }
 function expandRegistryVariables(s) { // <HKCU\Software\Foo\installPath>\foo.exe
 	return s.replace(/<(.+?)>/g, function(s, path) {
