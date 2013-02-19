@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/winMergeTabs.js
 
 // (c) Infocatcher 2013
-// version 0.1.0pre - 2013-02-18
+// version 0.1.0pre2 - 2013-02-19
 
 // Compare contents of current and next selected tabs using WinMerge (http://winmerge.org/)
 
@@ -62,8 +62,6 @@ if(
 ) {
 	var lpFrame = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
 	var lpFrame2;
-	var hWndEditInitial = AkelPad.GetEditWnd();
-	var extInitial = getCurrentExtension(); // We can't (?) use GetEditDoc() for inactive document
 
 	if(lpFrame) {
 		var statusbar = new Statusbar();
@@ -118,11 +116,13 @@ function compareTabs(lpFrame, lpFrame2) {
 		return;
 	}
 
-	var hWndEdit  = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 2 /*FI_WNDEDIT*/, lpFrame);
-	var hWndEdit2 = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 2 /*FI_WNDEDIT*/, lpFrame2);
+	setRedraw(hMainWnd, false);
 
-	var file  = getFile(lpFrame, hWndEdit);
-	var file2 = getFile(lpFrame2, hWndEdit2);
+	var file  = getFile(lpFrame);
+	var file2 = getFile(lpFrame2);
+
+	AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame2);
+	setRedraw(hMainWnd, true);
 
 	var cmdLine = '"' + winMerge + '" "' + file + '" "' + file2 + '"';
 	var wm = wsh.Exec(cmdLine);
@@ -137,36 +137,26 @@ function compareTabs(lpFrame, lpFrame2) {
 		}
 	}
 }
-function getFile(lpFrame, hWndEdit) {
-	var file = AkelPad.GetEditFile(hWndEdit);
-	if(!file || AkelPad.SendMessage(hWndEdit, 3086 /*AEM_GETMODIFY*/, 0, 0)) {
-		if(file && save) {
-			AkelPad.SaveFile(hWndEdit, file);
-			return file;
+function getFile(lpFrame) {
+	AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame);
+	var hWndEdit = AkelPad.GetEditWnd();
+	var origFile = AkelPad.GetEditFile(hWndEdit);
+	var file = origFile;
+	if(!origFile || AkelPad.SendMessage(hWndEdit, 3086 /*AEM_GETMODIFY*/, 0, 0)) {
+		if(origFile && save)
+			AkelPad.SaveFile(hWndEdit, origFile);
+		else {
+			var tempFile = file = getTempFile(hWndEdit, origFile);
+			var codePage = AkelPad.GetEditCodePage(hWndEdit);
+			var hasBOM = AkelPad.GetEditBOM(hWndEdit);
+			var text = AkelPad.GetTextRange(0, -1);
+
+			AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+			AkelPad.SetSel(0, -1);
+			AkelPad.ReplaceSel(text);
+			AkelPad.SaveFile(AkelPad.GetEditWnd(), tempFile, codePage, hasBOM);
+			AkelPad.Command(4318 /*IDM_WINDOW_FRAMECLOSE*/);
 		}
-		var codePage = AkelPad.GetEditCodePage(hWndEdit);
-		var hasBOM = AkelPad.GetEditBOM(hWndEdit);
-		var tempFile = getTempFile(hWndEdit, file);
-
-		var lpFrameCurr = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
-		setRedraw(hMainWnd, false);
-
-		//var hWndEditOrig = AkelPad.GetEditWnd();
-		//AkelPad.SetEditWnd(hWndEdit);
-		AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame);
-		var text = AkelPad.GetTextRange(0, -1);
-		//AkelPad.SetEditWnd(hWndEditOrig);
-
-		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
-		AkelPad.SetSel(0, -1);
-		AkelPad.ReplaceSel(text);
-		AkelPad.SaveFile(AkelPad.GetEditWnd(), tempFile, codePage, hasBOM);
-		AkelPad.Command(4318 /*IDM_WINDOW_FRAMECLOSE*/);
-
-		AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrameCurr);
-		setRedraw(hMainWnd, true);
-
-		return tempFile;
 	}
 	return file;
 }
@@ -180,12 +170,8 @@ function getWinMerge() {
 }
 function getTempFile(hWndEdit, file) {
 	var tmp = file && /[^\/\\]+$/.test(file) && RegExp.lastMatch;
-	if(!tmp) {
-		var ext = hWndEdit == hWndEditInitial
-			? extInitial
-			: getCurrentExtension();
-		tmp = "akelpad-temp" + ext;
-	}
+	if(!tmp)
+		tmp = "akelpad-temp" + getCurrentExtension();
 	var tmpDir = expandVariables(tempDir);
 	if(!fso.FolderExists(tmpDir))
 		fso.CreateFolder(tmpDir);
