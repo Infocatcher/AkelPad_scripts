@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/tileTabs.js
 
 // (c) Infocatcher 2012-2013
-// version 0.1.2pre2 - 2013-02-19
+// version 0.1.2pre3 - 2013-02-20
 
 // Tile current tab with next selected:
 // select first tab, call script and then select second tab.
@@ -66,7 +66,15 @@ if(
 		}
 	}
 
-	if(hMdiClient && lpFrame && AkelPad.WindowSubClass(hMainWnd, mainCallback, 0x416 /*AKDN_FRAME_ACTIVATE*/)) {
+	if(
+		hMdiClient && lpFrame
+		&& AkelPad.WindowSubClass(
+			hMainWnd,
+			mainCallback,
+			0x416 /*AKDN_FRAME_ACTIVATE*/,
+			0x418 /*AKDN_FRAME_DESTROY*/
+		)
+	) {
 		var tileHorizontal = WScript.Arguments.length && WScript.Arguments(0) == "h";
 
 		AkelPad.ScriptNoMutex(5 /*ULT_UNLOCKSCRIPTSQUEUE|ULT_LOCKMULTICOPY*/); // Allow other scripts running
@@ -89,11 +97,15 @@ else {
 	AkelPad.MessageBox(hMainWnd, _localize("MDI window mode required!"), WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
 }
 function mainCallback(hWnd, uMsg, wParam, lParam) {
-	if(uMsg != 0x416 /*AKDN_FRAME_ACTIVATE*/)
-		return;
-	lpFrame2 = lParam;
-	if(lpFrame2 != lpFrame)
-		oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
+	if(uMsg == 0x416 /*AKDN_FRAME_ACTIVATE*/) {
+		lpFrame2 = lParam;
+		if(lpFrame2 != lpFrame)
+			oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
+	}
+	else if(uMsg == 0x418 /*AKDN_FRAME_DESTROY*/) {
+		if(lParam == lpFrame)
+			oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
+	}
 }
 
 function tileTabs(lpFrame, lpFrame2, tileHorizontal) {
