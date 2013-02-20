@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/winMergeTabs.js
 
 // (c) Infocatcher 2013
-// version 0.1.0pre5 - 2013-02-20
+// version 0.1.0pre6 - 2013-02-20
 
 // Compare contents of current and next selected tabs using WinMerge (http://winmerge.org/)
 
@@ -90,7 +90,15 @@ if(
 		}
 	}
 
-	if(lpFrame && AkelPad.WindowSubClass(hMainWnd, mainCallback, 0x416 /*AKDN_FRAME_ACTIVATE*/)) {
+	if(
+		lpFrame
+		&& AkelPad.WindowSubClass(
+			hMainWnd,
+			mainCallback,
+			0x416 /*AKDN_FRAME_ACTIVATE*/,
+			0x418 /*AKDN_FRAME_DESTROY*/
+		)
+	) {
 		AkelPad.ScriptNoMutex(5 /*ULT_UNLOCKSCRIPTSQUEUE|ULT_LOCKMULTICOPY*/); // Allow other scripts running
 		AkelPad.WindowGetMessage(); // Message loop
 		AkelPad.WindowUnsubClass(hMainWnd);
@@ -111,11 +119,15 @@ else {
 	AkelPad.MessageBox(hMainWnd, _localize("MDI or PMDI window mode required!"), WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
 }
 function mainCallback(hWnd, uMsg, wParam, lParam) {
-	if(uMsg != 0x416 /*AKDN_FRAME_ACTIVATE*/)
-		return;
-	lpFrame2 = lParam;
-	if(lpFrame2 != lpFrame)
-		oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
+	if(uMsg == 0x416 /*AKDN_FRAME_ACTIVATE*/) {
+		lpFrame2 = lParam;
+		if(lpFrame2 != lpFrame)
+			oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
+	}
+	else if(uMsg == 0x418 /*AKDN_FRAME_DESTROY*/) {
+		if(lParam == lpFrame)
+			oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
+	}
 }
 
 function compareTabs(lpFrame, lpFrame2) {
