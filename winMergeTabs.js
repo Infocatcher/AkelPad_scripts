@@ -10,6 +10,8 @@
 // Arguments:
 //   -path="%ProgramFiles%\WinMege\WinMerge.exe"  - path to WinMerge executable
 //                                                  (or many paths: "path1|path2|path3")
+//   -cmd="<exe> /S=C <f1> <f2>"                  - set custom command line for any other compare tool
+//                                                  (an example for Total Commander)
 //   -save=true                                   - true  - save (already saved, but modified) file before compare
 //                                                  false - use temporary files for unsaved files
 //   -temp="%AkelScripts%\temp"                   - path to temporary directory
@@ -41,6 +43,7 @@ function _localize(s) {
 }
 
 var paths = AkelPad.GetArgValue("path", "");
+var cmdLineTemplate = AkelPad.GetArgValue("cmd", "<exe> <f1> <f2>");
 var save = AkelPad.GetArgValue("save", false);
 var tempDir = AkelPad.GetArgValue("temp", "%temp%");
 
@@ -135,7 +138,10 @@ function compareTabs(lpFrame, lpFrame2) {
 	AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame2);
 	setRedraw(hMainWnd, true);
 
-	var cmdLine = '"' + winMerge + '" "' + file + '" "' + file2 + '"';
+	var cmdLine = cmdLineTemplate
+		.replace("<exe>", '"' + winMerge + '"')
+		.replace("<f1>", '"' + file + '"')
+		.replace("<f2>", '"' + file2 + '"');
 	var wm = wsh.Exec(cmdLine);
 	if(file.isTemp || file2.isTemp) {
 		// If WinMerge are already opened, new process will be immediately closed,
