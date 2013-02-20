@@ -156,6 +156,7 @@ function Statusbar() {
 			AkelPad.MemFree(lpTextBuffer);
 			return ret;
 		}
+		return undefined;
 	}
 	this.get = function() {
 		return buffer(function(lpTextBuffer) {
@@ -174,7 +175,7 @@ function Statusbar() {
 		_origStatus = this.get();
 	};
 	this.restore = function() {
-		if(_origStatus && this.get() == _customStatus)
+		if(_origStatus != undefined && this.get() == _customStatus)
 			this.set(_origStatus);
 	};
 }
