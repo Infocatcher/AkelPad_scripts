@@ -13,8 +13,12 @@
 //   -cmd="<exe> /S=C <f1> <f2>"                  - set custom command line for any other compare tool
 //                                                  (an example for Total Commander)
 //   -save=true                                   - true  - save (already saved, but modified) file before compare
-//                                                  false - use temporary files for unsaved files
+//                                                  false - use temporary files for modified files
 //   -temp="%AkelScripts%\temp"                   - path to temporary directory
+
+// Usage:
+//   Call("Scripts::Main", 1, "winMergeTabs.js")
+//   Call("Scripts::Main", 1, "winMergeTabs.js", '-path="%COMMANDER_PATH%\TOTALCMD.EXE" -cmd="<exe> /S=C <f1> <f2>"')
 
 function _localize(s) {
 	var strings = {
