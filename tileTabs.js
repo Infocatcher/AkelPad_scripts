@@ -2,15 +2,17 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/tileTabs.js
 
 // (c) Infocatcher 2012-2013
-// version 0.1.2pre3 - 2013-02-20
+// version 0.1.2pre4 - 2013-02-21
 
 // Tile current tab with next selected:
 // select first tab, call script and then select second tab.
 // Required MDI window mode!
 
 // Usage:
-//   Call("Scripts::Main", 1, "tileTabs.js")       - tile vertical
-//   Call("Scripts::Main", 1, "tileTabs.js", "h")  - tile horizontal
+//   Call("Scripts::Main", 1, "tileTabs.js")         - tile vertical
+//   Call("Scripts::Main", 1, "tileTabs.js", "o")    - tile vertical and preserve tabs order
+//   Call("Scripts::Main", 1, "tileTabs.js", "h")    - tile horizontal
+//   Call("Scripts::Main", 1, "tileTabs.js", "h o")  - tile horizontal and preserve tabs order
 
 function _localize(s) {
 	var strings = {
@@ -75,16 +77,22 @@ if(
 			0x418 /*AKDN_FRAME_DESTROY*/
 		)
 	) {
-		var tileHorizontal = WScript.Arguments.length && WScript.Arguments(0) == "h";
-
 		AkelPad.ScriptNoMutex(5 /*ULT_UNLOCKSCRIPTSQUEUE|ULT_LOCKMULTICOPY*/); // Allow other scripts running
 		AkelPad.WindowGetMessage(); // Message loop
 		AkelPad.WindowUnsubClass(hMainWnd);
 
 		timer && window.clearTimeout(timer);
 		statusbar.restore();
-		if(lpFrame2)
-			tileTabs(lpFrame, lpFrame2, tileHorizontal);
+		if(lpFrame2) {
+			var tileHorizontal, useTabsOrder;
+			for(var i = 0, l = WScript.Arguments.length; i < l; ++i) {
+				switch(WScript.Arguments(i)) {
+					case "h": tileHorizontal = true; break;
+					case "o": useTabsOrder = true;
+				}
+			}
+			tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder);
+		}
 		//AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame);
 	}
 	else {
@@ -108,7 +116,7 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 	}
 }
 
-function tileTabs(lpFrame, lpFrame2, tileHorizontal) {
+function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 	var lpRect = AkelPad.MemAlloc(16 /*sizeof(RECT)*/);
 	if(!lpRect)
 		return;
@@ -125,6 +133,16 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal) {
 
 	var w = rcClient.right - rcClient.left;
 	var h = rcClient.bottom - rcClient.top;
+
+	if(useTabsOrder) {
+		var pos  = AkelPad.SendMessage(hMainWnd, 1294 /*AKD_FRAMEINDEX*/, 0, lpFrame);
+		var pos2 = AkelPad.SendMessage(hMainWnd, 1294 /*AKD_FRAMEINDEX*/, 0, lpFrame2);
+		if(pos2 < pos) {
+			var tmp = hWndMdi;
+			hWndMdi = hWndMdi2;
+			hWndMdi2 = tmp;
+		}
+	}
 
 	if(tileHorizontal) {
 		h /= 2;
