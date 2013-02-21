@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/winMergeTabs.js
 
 // (c) Infocatcher 2013
-// version 0.1.0pre6 - 2013-02-20
+// version 0.1.0pre7 - 2013-02-21
 
 // Compare contents of current and next selected tabs using WinMerge (http://winmerge.org/)
 
@@ -15,6 +15,7 @@
 //   -save=true                                   - true  - save (already saved, but modified) file before compare
 //                                                  false - use temporary files for modified files
 //   -temp="%AkelScripts%\temp"                   - path to temporary directory
+//   -useTabsOrder=true                           - always compare left tab with right tab
 
 // Usage:
 //   Call("Scripts::Main", 1, "winMergeTabs.js")
@@ -50,6 +51,7 @@ var paths = AkelPad.GetArgValue("path", "");
 var cmdLineTemplate = AkelPad.GetArgValue("cmd", "<exe> <f1> <f2>");
 var save = AkelPad.GetArgValue("save", false);
 var tempDir = AkelPad.GetArgValue("temp", "%temp%");
+var useTabsOrder = AkelPad.GetArgValue("useTabsOrder", false);
 
 var winMergePaths = paths
 	? paths.split("|")
@@ -155,6 +157,16 @@ function compareTabs(lpFrame, lpFrame2) {
 	setRedraw(hMainWnd, true);
 	// Force redraw current edit window
 	oSys.Call("user32::InvalidateRect", AkelPad.GetEditWnd(), 0, true);
+
+	if(useTabsOrder) {
+		var pos  = AkelPad.SendMessage(hMainWnd, 1294 /*AKD_FRAMEINDEX*/, 0, lpFrame);
+		var pos2 = AkelPad.SendMessage(hMainWnd, 1294 /*AKD_FRAMEINDEX*/, 0, lpFrame2);
+		if(pos2 < pos) {
+			var tmp = file;
+			file = file2;
+			file2 = tmp;
+		}
+	}
 
 	var cmdLine = cmdLineTemplate
 		.replace("<exe>", '"' + winMerge + '"')
