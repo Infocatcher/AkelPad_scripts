@@ -106,9 +106,10 @@ else {
 }
 function mainCallback(hWnd, uMsg, wParam, lParam) {
 	if(uMsg == 0x416 /*AKDN_FRAME_ACTIVATE*/) {
-		lpFrame2 = lParam;
-		if(lpFrame2 != lpFrame)
+		if(lParam != lpFrame) {
+			lpFrame2 = lParam;
 			oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
+		}
 	}
 	else if(uMsg == 0x418 /*AKDN_FRAME_DESTROY*/) {
 		if(lParam == lpFrame)
