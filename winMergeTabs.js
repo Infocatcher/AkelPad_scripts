@@ -1,11 +1,12 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p= //~ todo
+﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=21354#21354
 // http://infocatcher.ucoz.net/js/akelpad_scripts/winMergeTabs.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/winMergeTabs.js
 
 // (c) Infocatcher 2013
-// version 0.1.0pre7 - 2013-02-21
+// version 0.1.0 - 2013-02-24
 
-// Compare contents of current and next selected tabs using WinMerge (http://winmerge.org/)
+// Compare contents of current and next selected tab using WinMerge (http://winmerge.org/)
+// or any other compare tool
 
 // Arguments:
 //   -path="%ProgramFiles%\WinMege\WinMerge.exe"  - path to WinMerge executable
