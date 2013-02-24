@@ -1,8 +1,9 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=9927#9927
 // http://infocatcher.ucoz.net/js/akelpad_scripts/openFileIn.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/openFileIn.js
 
-// (c) Infocatcher 2010-2012
-// version 0.2.0pre3 - 2012-09-07
+// (c) Infocatcher 2010-2013
+// version 0.2.0 - 2013-02-25
 
 //===================
 // Open file in other application
