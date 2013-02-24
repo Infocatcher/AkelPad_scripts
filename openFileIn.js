@@ -35,8 +35,8 @@ var appsData = {
 	//			"c:\\path\\to\\app.exe",
 	//			"%EnvVar%\\another\\path\\to\\app.exe",
 	//			"<HKCU\\path\\from\\registry>app.exe",
-	//			"?x64?...\\app64.exe", - check only on x64 system
-	//			"?x86?...\\app32.exe"  - check only on x86 system
+	//			"?x64?...\\app64.exe", // Check only on x64 system
+	//			"?x86?...\\app32.exe"  // Check only on x86 system
 	//		],
 	//		args: "-file:%f -line:%l",
 	//		isBrowser: true
