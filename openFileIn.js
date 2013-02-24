@@ -123,6 +123,8 @@ var appsData = {
 	},
 	"Google Chrome": {
 		paths: [
+			"<HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe\\>",
+			"<HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe\\>",
 			"%LocalAppData%\\Google\\Chrome\\Application\\chrome.exe",
 			"%UserProfile%\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe",
 			"%UserProfile%\\Local Settings\\Application Data\\Bromium\\Application\\chrome.exe",
@@ -212,6 +214,7 @@ function getPath(paths) {
 			path = path.substr(5);
 		}
 		var path = expandVariables(paths[i]);
+		//WScript.Echo(paths[i] + "\n=>\n" + path);
 		if(fso.FileExists(path))
 			return path;
 	}
