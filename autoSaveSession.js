@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/autoSaveSession.js
 
 // (c) Infocatcher 2012-2013
-// version 0.2.0pre - 2013-02-27
+// version 0.2.0pre2 - 2013-02-27
 
 // Automatically saves current session after selection or scroll changes
 // Required Sessions plugin!
@@ -14,6 +14,10 @@
 // or
 //   /Call("Scripts::Main", 1, "autoSaveSession.js", '-startupDelay=2000 -minDelay=12000 -session="OnExit"')
 // to "CmdLineBegin" option
+
+var isMDI = AkelPad.IsMDI();
+if(!isMDI) // We silently ignore SDI mode to allow use the same settings in any mode!
+	WScript.Quit();
 
 var startupDelay = AkelPad.GetArgValue("startupDelay", 1500);
 WScript.Sleep(startupDelay);
@@ -37,7 +41,7 @@ if(hMainWnd) {
 		)
 	) {
 		if(
-			AkelPad.IsMDI() != 1 /*WMD_MDI*/
+			isMDI != 1 /*WMD_MDI*/
 			|| AkelPad.WindowSubClass(
 				3 /*WSC_FRAMEPROC*/,
 				mainCallback,
