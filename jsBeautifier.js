@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.3 - 2013-02-02
-// Based on scripts from http://jsbeautifier.org/ [2013-02-13 20:03:38 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-02-25 13:29:09 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -2621,7 +2621,7 @@ var P_A_C_K_E_R = {
     unpack: function (str) {
         var chunks = P_A_C_K_E_R.get_chunks(str);
         for(var i = 0; i < chunks.length; i++) {
-            str = str.replace(chunks[i], P_A_C_K_E_R.unpack_chunk(chunks[i]))
+            str = str.split(chunks[i]).join( P_A_C_K_E_R.unpack_chunk(chunks[i]) );
         }
         return str;
     },
