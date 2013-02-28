@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/autoSaveSession.js
 
 // (c) Infocatcher 2012-2013
-// version 0.2.0pre2 - 2013-02-27
+// version 0.2.0pre3 - 2013-02-28
 
 // Automatically saves current session after selection or scroll changes
 // Required Sessions plugin!
@@ -98,7 +98,13 @@ function saveSession() {
 function setTimeout(f, d) {
 	var window = new ActiveXObject("htmlfile").parentWindow;
 	setTimeout = function(f, d) {
-		return window.setTimeout(f, d);
+		try {
+			return window.setTimeout(f, d);
+		}
+		catch(e) {
+		}
+		f();
+		return 0;
 	};
 	return setTimeout(f, d);
 }
