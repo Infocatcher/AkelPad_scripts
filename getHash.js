@@ -130,7 +130,7 @@ var savePosition = getArg("savePosition", true);
 if(saveOptions || savePosition)
 	var prefs = new Prefs();
 
-var codePage     = getArg("codePage", -1);
+var codePage     = getArg("codePage", CP_CURRENT);
 var autoCalc     = getArg("autoCalc", false);
 var action       = getArg("action", ACT_DIALOG);
 var onlySelected = getArg("onlySelected", false);
