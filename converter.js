@@ -26,7 +26,9 @@
 //   ©    <=> &copy;  (and some other entities, see arguments)
 //   char <=> &#code; (see arguments)
 
-// Convert JavaScript escape sequences like "\u00a9" or "\xa9" ((c) symbol)
+// Convert JavaScript escape sequences
+//   \u00a9 <=> ©
+//   \xa9   <=> ©
 
 // Escape/unescape special RegExp symbols:
 //   http://example.com/ <=> http:\/\/example\.com\/
@@ -37,7 +39,10 @@
 //   "ab"cd'ef" <=> "ab\"cd'ef"
 
 // Encode/decode Uniform Resource Identifiers (URIs) with
-//   encodeURI/decodeURI or encodeURIComponent/decodeURIComponent
+// encodeURI()/decodeURI()
+//   https://ru.wikipedia.org/wiki/%D0%A2%D0%B5%D1%81%D1%82 <=> https://ru.wikipedia.org/wiki/Тест
+// or encodeURIComponent()/decodeURIComponent()
+//   https%3A%2F%2Fru.wikipedia.org%2Fwiki%2F%D0%A2%D0%B5%D1%81%D1%82 <=> https://ru.wikipedia.org/wiki/Тест
 
 // Hexadecimal escape/unescape
 //   JavaScript's escape()/unescape()
@@ -45,6 +50,7 @@
 
 // Base64 encode/decode
 // based on code from http://www.farfarfar.com/scripts/encrypt/
+//   Test, проверка <=> VGVzdCwg0L/RgNC+0LLQtdGA0LrQsA== (used UTF-8 code page)
 
 // Convert charset
 // -type="Charset"
