@@ -17,6 +17,7 @@
 //   Delete                   - Delete selection
 //   Ctrl+A                   - Select all
 //   Ctrl+S                   - Save file
+//   F1                       - "Help" (just open this file)
 
 // Encode/decode HTML entities:
 //   &    <=> &amp;
@@ -2075,6 +2076,8 @@ function converterDialog(modal) {
 				}
 				else if(ctrl && wParam == 83 /*S*/) // Ctrl+S
 					AkelPad.Command(4105); // IDM_FILE_SAVE
+				else if(wParam == 112 /*VK_F1*/) // F1
+					showHelp();
 
 				//else if(wParam != 16 /*VK_SHIFT*/ && wParam != 17 /*VK_CONTROL*/ && wParam != 18 /*VK_MENU*/)
 				//	AkelPad.MessageBox(hWnd, wParam, dialogTitle, 0 /*MB_OK*/);
@@ -2569,6 +2572,15 @@ function savePrefs() {
 		toBase64:              toBase64
 	});
 	prefs.end();
+}
+function showHelp() {
+	var res = AkelPad.OpenFile(WScript.ScriptFullName);
+	if(
+		res == 0 /*EOD_SUCCESS*/
+		|| res == -13 /*EOD_WINDOW_EXIST*/
+	) {
+		AkelPad.TextFind(AkelPad.GetEditWnd(), "// Hotkeys:", 0x200001 /*FRF_DOWN|FRF_BEGINNING*/);
+	}
 }
 
 function getAllText() {
