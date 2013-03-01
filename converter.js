@@ -60,6 +60,7 @@
 //   -dialog=false                           - don't show dialog
 //   -onlySelected=true                      - use only selected text
 //   -warningTime=4000                       - show warning for slow calculations
+//   -test=true                              - display convert speed
 //   -saveOptions=0                          - don't store options
 //   -saveOptions=1                          - (default) save options after converting
 //   -saveOptions=2                          - save options on exit
@@ -246,6 +247,8 @@ if(saveOptions || savePosition || saveSize)
 var forceShowDialog       = getArg("dialog", true);
 var onlySelected          = getArg("onlySelected", false);
 var warningTime           = getArg("warningTime", 4000);
+
+var speedTest             = getArg("test", false);
 
 var type                  = getArgOrPref("type",                  prefs && prefs.STRING, "html").toLowerCase();
 var mode                  = getArgOrPref("mode",                  prefs && prefs.DWORD, MODE_AUTO);
@@ -1210,7 +1213,8 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 	var res;
 	if(auto && actionObj)
 		actionObj.value = firstAction;
-	//var t = new Date().getTime();
+	if(speedTest)
+		var t = new Date().getTime();
 	if(useFirstAction || auto) {
 		try {
 			res = converter[firstAction](text);
@@ -1248,7 +1252,15 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 			return false;
 		}
 	}
-	//WScript.Echo(text.length/(new Date().getTime() - t));
+
+	if(speedTest) {
+		AkelPad.MessageBox(
+			hWnd || hMainWnd,
+			"Speed: " + text.length/(new Date().getTime() - t),
+			dialogTitle + " :: " + converter.prettyName,
+			64 /*MB_ICONINFORMATION*/
+		);
+	}
 
 	if(res == text || res == null) {
 		AkelPad.MessageBox(
