@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/autoSaveSession.js
 
 // (c) Infocatcher 2012-2013
-// version 0.2.0pre3 - 2013-02-28
+// version 0.2.0pre4 - 2013-03-04
 
 // Automatically saves current session after selection or scroll changes
 // Required Sessions plugin!
@@ -91,6 +91,10 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 	timer = setTimeout(saveSession, minDelay);
 }
 function saveSession() {
+	if(!oSys.Call("user32::IsWindowEnabled", hMainWnd)) {
+		timer = setTimeout(saveSession, minDelay);
+		return;
+	}
 	timer = 0;
 	AkelPad.Call("Sessions::Main", 2, sessionName);
 	//oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, "Save: " + new Date().toLocaleString());
@@ -103,6 +107,7 @@ function setTimeout(f, d) {
 		}
 		catch(e) {
 		}
+		//oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, "setTimeout() failed! " + new Date().toLocaleString());
 		f();
 		return 0;
 	};
