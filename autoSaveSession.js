@@ -108,8 +108,8 @@ function setTimeout(f, d) {
 		catch(e) {
 		}
 		//oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, "setTimeout() failed! " + new Date().toLocaleString());
-		f();
-		return 0;
+		window = new ActiveXObject("htmlfile").parentWindow;
+		return window.setTimeout(f, d);
 	};
 	return setTimeout(f, d);
 }
