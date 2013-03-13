@@ -464,7 +464,7 @@ function js_beautify(js_source_text, options) {
             output.push("\n");
         }
 
-        if (opt_keep_array_indentation && is_array(flags.mode) && flags.whitespace_before.length) {
+        if (opt_keep_array_indentation && is_array(flags.mode) && flags.whitespace_before && flags.whitespace_before.length) {
             output.push(flags.whitespace_before.join('') + '');
         } else {
             if (preindent_string) {
@@ -3791,7 +3791,8 @@ function convertSource(file, text) {
 	if(file == "beautify.js") {
 		text = text
 			.replace(".substr(-esc2)", ".slice(-esc2)")
-			.replace("token_text[token_text.length - 1]", "token_text.charAt(token_text.length - 1)");
+			.replace("token_text[token_text.length - 1]", "token_text.charAt(token_text.length - 1)")
+			.replace("&& flags.whitespace_before.length", "&& flags.whitespace_before && flags.whitespace_before.length");
 	}
 	else if(file == "tests/sanitytest.js") {
 		text = text.replace(
