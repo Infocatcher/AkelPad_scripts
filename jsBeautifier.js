@@ -452,7 +452,7 @@ function Beautifier(js_source_text, options) {
             'TK_INLINE_COMMENT': handle_inline_comment,
             'TK_COMMENT': handle_comment,
             'TK_DOT': handle_dot,
-            'TK_UNKNOWN': handle_unknown,
+            'TK_UNKNOWN': handle_unknown
         };
 
         while (true) {
@@ -3858,7 +3858,8 @@ function convertSource(file, text) {
 		text = text
 			.replace(".substr(-esc2)", ".slice(-esc2)")
 			.replace("token_text[token_text.length - 1]", "token_text.charAt(token_text.length - 1)")
-			.replace("&& flags.whitespace_before.length", "&& flags.whitespace_before && flags.whitespace_before.length");
+			.replace("&& flags.whitespace_before.length", "&& flags.whitespace_before && flags.whitespace_before.length")
+			.replace(/('TK_UNKNOWN': handle_unknown),(\s*\};)/, "$1$2");
 	}
 	else if(file == "tests/sanitytest.js") {
 		text = text.replace(
