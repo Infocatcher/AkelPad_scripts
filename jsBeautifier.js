@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.3 - 2013-02-02
-// Based on scripts from http://jsbeautifier.org/ [2013-03-16 07:10:37 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-03-17 01:11:39 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1056,7 +1056,6 @@ function Beautifier(js_source_text, options) {
         }
 
         if (token_text === '[') {
-
             if (last_type === 'TK_WORD' || last_text === ')') {
                 // this is array index specifier, break immediately
                 // a[x], fn()[x]
@@ -1069,36 +1068,19 @@ function Beautifier(js_source_text, options) {
             }
 
             if (flags.mode === '[EXPRESSION]' || flags.mode === '[INDENTED-EXPRESSION]') {
-                if (last_last_text === ']' && last_text === ',') {
+                if ((last_text === '[') ||
+                        (last_last_text === ']' && last_text === ',')) {
                     // ], [ goes to new line
-                    if (flags.mode === '[EXPRESSION]') {
-                        flags.mode = '[INDENTED-EXPRESSION]';
-                        if (!opt_keep_array_indentation) {
+                    if (!opt_keep_array_indentation) {
+                         print_newline();
+                        if (flags.mode === '[EXPRESSION]') {
+                            flags.mode = '[INDENTED-EXPRESSION]';
                             indent();
                         }
                     }
-                    set_mode('[EXPRESSION]');
-                    if (!opt_keep_array_indentation) {
-                        print_newline();
-                    }
-                } else if (last_text === '[') {
-                    if (flags.mode === '[EXPRESSION]') {
-                        flags.mode = '[INDENTED-EXPRESSION]';
-                        if (!opt_keep_array_indentation) {
-                            indent();
-                        }
-                    }
-                    set_mode('[EXPRESSION]');
-
-                    if (!opt_keep_array_indentation) {
-                        print_newline();
-                    }
-                } else {
-                    set_mode('[EXPRESSION]');
                 }
-            } else {
-                set_mode('[EXPRESSION]');
             }
+            set_mode('[EXPRESSION]');
 
         } else {
             if (last_text === 'for') {
@@ -1144,19 +1126,11 @@ function Beautifier(js_source_text, options) {
     }
 
     function handle_end_expr() {
-        if (token_text === ']') {
-            if (!opt_keep_array_indentation) {
-                if (flags.mode === '[INDENTED-EXPRESSION]') {
-                    if (last_text === ']') {
-                        restore_mode();
-                        print_newline();
-                        print_token();
-                        return;
-                    }
-                }
-            }
-        }
         restore_mode();
+        if (token_text === ']' && !opt_keep_array_indentation &&
+                flags.previous_mode === '[INDENTED-EXPRESSION]' && last_text === ']') {
+            print_newline();
+        }
         print_token();
 
         // do {} while () // no statement required after
@@ -1211,6 +1185,10 @@ function Beautifier(js_source_text, options) {
     }
 
     function handle_end_block() {
+        // statements inside blocks must all be closed when the parent block closes
+        while (flags.mode === 'STATEMENT') {
+            restore_mode();
+        }
         restore_mode();
         if (opt_brace_style === "expand" || opt_brace_style === "expand-strict") {
             if (last_text !== '{') {
@@ -2969,6 +2947,10 @@ function run_beautifier_tests(test_obj)
     bt("a = 1;\n // comment", "a = 1;\n// comment");
     bt('a = [-1, -1, -1]');
 
+    // The exact formatting these should have is open for discussion, but they currently aren't right
+    //bt('a = [ // comment\n    -1,\n    -1,\n    -1]');
+    //bt('var a = [ // comment\n    -1,\n    -1,\n    -1]');
+
     bt('o = [{a:b},{c:d}]', 'o = [{\n    a: b\n}, {\n    c: d\n}]');
 
     bt("if (a) {\n    do();\n}"); // was: extra space appended
@@ -3541,6 +3523,11 @@ function run_beautifier_tests(test_obj)
        '        this[p] = options[p];',
        'if (options) for (var p in options) this[p] = options[p];');
 
+    bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
+        'function f(a, b) {\n    if (a) b()\n}\nfunction g(a, b) {\n    if (!a) b()\n}');
+    bt('function f(a,b) {if(a) b()}\n\n\n\nfunction g(a,b) {if(!a) b()}',
+        'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
+
     bt("if\n(a)\nb();", "if (a) b();");
     bt('var a =\nfoo', 'var a = foo');
     bt('var a = {\n"a":1,\n"b":2}', "var a = {\n    \"a\": 1,\n    \"b\": 2\n}");
@@ -3570,6 +3557,12 @@ function run_beautifier_tests(test_obj)
     bt('if (options)\n' +
        '    for (var p in options)\n' +
        '        this[p] = options[p];');
+
+    bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
+        'function f(a, b) {\n    if (a) b()\n}\nfunction g(a, b) {\n    if (!a) b()\n}');
+    bt('function f(a,b) {if(a) b()}\n\n\n\nfunction g(a,b) {if(!a) b()}',
+        'function f(a, b) {\n    if (a) b()\n}\n\n\n\nfunction g(a, b) {\n    if (!a) b()\n}');
+
 
     bt("if\n(a)\nb();", "if (a)\n    b();");
     bt('var a =\nfoo', 'var a =\n    foo');
