@@ -3,13 +3,13 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/winMergeTabs.js
 
 // (c) Infocatcher 2013
-// version 0.1.0 - 2013-02-24
+// version 0.1.0.1 - 2013-03-23
 
 // Compare contents of current and next selected tab using WinMerge (http://winmerge.org/)
 // or any other compare tool
 
 // Arguments:
-//   -path="%ProgramFiles%\WinMege\WinMerge.exe"  - path to WinMerge executable
+//   -path="%ProgramFiles%\WinMerge\WinMerge.exe" - path to WinMerge executable
 //                                                  (or many paths: "path1|path2|path3")
 //   -cmd="<exe> /S=C <f1> <f2>"                  - set custom command line for any other compare tool
 //                                                  (an example for Total Commander)
@@ -59,7 +59,7 @@ var winMergePaths = paths
 	: [
 		"<HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\WinMergeU.exe\\>",
 		"<HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\WinMerge.exe\\>",
-		"%ProgramFiles%\\WinMege\\WinMergeU.exe",
+		"%ProgramFiles%\\WinMerge\\WinMergeU.exe",
 		"%ProgramFiles (x86)%\\WinMerge\\WinMergeU.exe",
 		"%AkelDir%\\..\\WinMergePortable\\WinMergePortable.exe",
 		"%COMMANDER_PATH%\\..\\WinMergePortable\\WinMergePortable.exe"
