@@ -3846,8 +3846,21 @@ var hMainWnd = AkelPad.GetMainWnd();
 var hWndEdit = AkelPad.GetEditWnd();
 var oSys = AkelPad.SystemFunction();
 
-for(var p in exports) // See http://akelpad.sourceforge.net/forum/viewtopic.php?p=19660#19660
-	eval(p + ' = exports["' + p + '"];');
+for(var p in exports) {
+	// See http://akelpad.sourceforge.net/forum/viewtopic.php?p=19660#19660
+	var _orig = eval("typeof " + p + ' == "undefined" ? undefined : ' + p + ";");
+	var _new = exports[p];
+	if(_new === _orig)
+		continue;
+	if(_orig !== undefined && _new !== undefined) {
+		AkelPad.MessageBox(
+			hMainWnd,
+			'Warning, "' + p + '" variable will be overridden!',
+			WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/
+		);
+	}
+	eval(p + " = _new;");
+}
 
 if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())) {
 	if(update)
