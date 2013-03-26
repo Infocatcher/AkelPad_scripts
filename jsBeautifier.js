@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.3 - 2013-02-02
-// Based on scripts from http://jsbeautifier.org/ [2013-03-24 22:53:03 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-03-26 14:43:54 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1259,8 +1259,9 @@ function detectXMLType(str) {
             if (start_of_statement()) {
                 // The conditional starts the statement if appropriate.
             } else if (wanted_newline && !is_expression(flags.mode) &&
-                last_type !== 'TK_OPERATOR' && last_type !== 'TK_EQUALS' && (
-                opt.preserve_newlines || flags.last_text !== 'var')) {
+                (last_type !== 'TK_OPERATOR' || (flags.last_text === '--' || flags.last_text === '++')) &&
+                last_type !== 'TK_EQUALS' &&
+                (opt.preserve_newlines || flags.last_text !== 'var')) {
 
                 print_newline();
             }
@@ -1550,6 +1551,12 @@ function detectXMLType(str) {
                 return;
             }
 
+            // http://www.ecma-international.org/ecma-262/5.1/#sec-7.9.1
+            // if there is a newline between -- or ++ and anything else we should preserve it.
+            if (wanted_newline && (token_text === '--' || token_text === '++')) {
+                print_newline();
+            }
+
             if (in_array(token_text, ['--', '++', '!']) || (in_array(token_text, ['-', '+']) && (in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) || in_array (flags.last_text, line_starters) || flags.last_text === ','))) {
                 // unary operators (and binary +/- pretending to be unary) special cases
 
@@ -1561,6 +1568,7 @@ function detectXMLType(str) {
                     //        ^^^
                     space_before = true;
                 }
+
                 if (last_type === 'TK_WORD' && in_array (flags.last_text, line_starters)) {
                     space_before = true;
                 }
@@ -3121,6 +3129,14 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('{foo();++bar;}', '{\n    foo();\n    ++bar;\n}');
         bt('{--bar;}', '{\n    --bar;\n}');
         bt('{++bar;}', '{\n    ++bar;\n}');
+
+        // Handling of newlines around unary ++ and -- operators
+        bt('{foo\n++bar;}', '{\n    foo\n    ++bar;\n}');
+        bt('{foo++\nbar;}', '{\n    foo++\n    bar;\n}');
+
+        // This is invalid, but harder to guard against. Issue #203.
+        bt('{foo\n++\nbar;}', '{\n    foo\n    ++\n    bar;\n}');
+
 
         // regexps
         bt('a(/abc\\/\\/def/);b()', "a(/abc\\/\\/def/);\nb()");
