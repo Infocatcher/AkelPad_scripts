@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.3 - 2013-02-02
-// Based on scripts from http://jsbeautifier.org/ [2013-03-26 14:43:54 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-03-30 09:35:31 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -260,6 +260,30 @@ function detectXMLType(str) {
 /*jshint curly:true, eqeqeq:true, laxbreak:true, noempty:false */
 /*
 
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2013 Einar Lielmanis and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
  JS Beautifier
 ---------------
 
@@ -269,8 +293,8 @@ function detectXMLType(str) {
 
   Originally converted to javascript by Vital, <vital76@gmail.com>
   "End braces on own line" added by Chris J. Shull, <chrisjshull@gmail.com>
+  Parsing improvements for brace-less statements by Liam Newman <bitwiseman@gmail.com>
 
-  You are free to use this in any way you want, in case you find this useful or working for you.
 
   Usage:
     js_beautify(js_source_text);
@@ -683,7 +707,6 @@ function detectXMLType(str) {
 
         function restore_mode() {
             if (flag_store.length > 0) {
-                var mode = flags.mode;
                 previous_flags = flags;
                 flags = flag_store.pop();
             }
@@ -1392,6 +1415,11 @@ function detectXMLType(str) {
                     print_newline();
                 } else {
                     trim_output(true);
+                    // If we trimmed and there's something other than a close block before us
+                    // put a newline back in.  Handles '} // comment' scenario.
+                    if (output[output.length - 1] !== '}') {
+                        print_newline();
+                    }
                     output_space_before_token = true;
                 }
             } else if (prefix === 'NEWLINE') {
@@ -1700,6 +1728,31 @@ function detectXMLType(str) {
 /*jshint curly:true, eqeqeq:true, laxbreak:true, noempty:false */
 /*
 
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2013 Einar Lielmanis and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+
  CSS Beautifier
 ---------------
 
@@ -1707,9 +1760,6 @@ function detectXMLType(str) {
 
     Based on code initially developed by: Einar Lielmanis, <elfz@laacz.lv>
         http://jsbeautifier.org/
-
-
-    You are free to use this in any way you want, in case you find this useful or working for you.
 
     Usage:
         css_beautify(source_text);
@@ -1925,6 +1975,31 @@ if (typeof exports !== 'undefined') {
 /*jshint curly:true, eqeqeq:true, laxbreak:true, noempty:false */
 /*
 
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2013 Einar Lielmanis and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+
  Style HTML
 ---------------
 
@@ -1932,9 +2007,6 @@ if (typeof exports !== 'undefined') {
 
   Based on code initially developed by: Einar Lielmanis, <elfz@laacz.lv>
     http://jsbeautifier.org/
-
-
-  You are free to use this in any way you want, in case you find this useful or working for you.
 
   Usage:
     style_html(html_source);
@@ -2351,7 +2423,14 @@ function style_html(html_source, options) {
         //at this point we have an  tag; is its first child something we want to remain
         //unformatted?
         var next_tag = this.get_tag(true /* peek. */);
-        if (next_tag && this.Utils.in_array(next_tag, unformatted)){
+
+        // tets next_tag to see if it is just html tag (no external content)
+        var tag = (next_tag || "").match(/^\s*<\s*\/?([a-z]*)\s*[^>]*>\s*$/);
+
+        // if next_tag comes back but is not an isolated tag, then
+        // let's treat the 'a' tag as having content
+        // and respect the unformatted option
+        if (!tag || this.Utils.in_array(tag, unformatted)){
             return true;
         } else {
             return false;
@@ -3288,6 +3367,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
 
         opts.brace_style = 'expand';
 
+        bt('//case 1\nif (a == 1)\n{}\n//case 2\nelse if (a == 2)\n{}');
         bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}', 'if (a)\n{\n    b;\n}\nelse\n{\n    c;\n}');
         test_fragment('if (foo) {', 'if (foo)\n{');
         test_fragment('foo {', 'foo\n{');
@@ -3311,6 +3391,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
 
         opts.brace_style = 'collapse';
 
+        bt('//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
         bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}', 'if (a) {\n    b;\n} else {\n    c;\n}');
         test_fragment('if (foo) {', 'if (foo) {');
         test_fragment('foo {', 'foo {');
@@ -3328,6 +3409,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
 
         opts.brace_style = "end-expand";
 
+        bt('//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
         bt('if(1){2}else{3}', "if (1) {\n    2\n}\nelse {\n    3\n}");
         bt('try{a();}catch(b){c();}finally{d();}', "try {\n    a();\n}\ncatch (b) {\n    c();\n}\nfinally {\n    d();\n}");
         bt('if(a){b();}else if(c) foo();', "if (a) {\n    b();\n}\nelse if (c) foo();");
