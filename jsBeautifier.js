@@ -154,7 +154,7 @@ function beautify(source, syntax) { // Based on beautify function
 	if(looks_like_html(source)) {
 		if(syntax)
 			syntax.value = detectXMLType(source);
-		res = style_html(source, opts);
+		res = html_beautify(source, opts);
 	}
 	else {
 		if(syntax)
