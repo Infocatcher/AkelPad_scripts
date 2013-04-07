@@ -4071,6 +4071,10 @@ function selfUpdate() {
 		var url = baseUrl + file;
 		request.open("GET", url + noCache, false);
 		request.send(null);
+		if(request.status != 200) {
+			errors[errors.length] = "Can't download file: " + url + ", status: " + request.status;
+			continue;
+		}
 		//WScript.Echo(request.getResponseHeader("Last-Modified"));
 		var text = request.responseText
 			.replace(/^\s+|\s+$/g, "");
