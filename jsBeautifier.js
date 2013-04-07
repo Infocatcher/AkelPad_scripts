@@ -122,7 +122,7 @@ var indentChar = indentSize == 1
 //   Solution: string.replace(regexp, someString).split(someString)
 // 3) "abcde".substr(-1) doesn't work - use "abcde".slice(-1) instead
 
-var exports = {}; // We use CommonJS-like syntax to import things from beautify.js
+var window = {}; // Fake window object to import things from beautify.js
 
 //== index.html
 // When update this section, replace all document.getElementById() calls with above options
@@ -3940,10 +3940,10 @@ var hMainWnd = AkelPad.GetMainWnd();
 var hWndEdit = AkelPad.GetEditWnd();
 var oSys = AkelPad.SystemFunction();
 
-for(var p in exports) {
+for(var p in window) {
 	// See http://akelpad.sourceforge.net/forum/viewtopic.php?p=19660#19660
 	var _orig = eval("typeof " + p + ' == "undefined" ? undefined : ' + p + ";");
-	var _new = exports[p];
+	var _new = window[p];
 	if(_new === _orig)
 		continue;
 	if(_orig !== undefined && _new !== undefined) {
