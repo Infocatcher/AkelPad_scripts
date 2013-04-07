@@ -4120,7 +4120,8 @@ function selfUpdate() {
 		onComplete();
 
 	function onComplete() {
-		var selfCode = AkelPad.ReadFile(WScript.ScriptFullName, 0, 65001, 1);
+		var selfCode = AkelPad.ReadFile(WScript.ScriptFullName, 0, 65001, 1)
+			.replace(/\r\n?|\n\r?/g, "\r\n");
 		var selfCodeOld = selfCode;
 		for(var file in data) {
 			var start = "\r\n//== " + file + "\r\n";
