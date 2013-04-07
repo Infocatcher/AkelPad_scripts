@@ -256,7 +256,7 @@ function detectXMLType(str) {
 //== index.html end
 
 
-//== beautify.js
+//== js/lib/beautify.js
 /*jshint curly:true, eqeqeq:true, laxbreak:true, noempty:false */
 /*
 
@@ -1721,10 +1721,10 @@ function detectXMLType(str) {
     }
 
 }());
-//== beautify.js end
+//== js/lib/beautify.js end
 
 
-//== beautify-css.js
+//== js/lib/beautify-css.js
 /*jshint curly:true, eqeqeq:true, laxbreak:true, noempty:false */
 /*
 
@@ -1968,10 +1968,10 @@ function css_beautify(source_text, options) {
 if (typeof exports !== 'undefined') {
     exports.css_beautify = css_beautify;
 }
-//== beautify-css.js end
+//== js/lib/beautify-css.js end
 
 
-//== beautify-html.js
+//== js/lib/beautify-html.js
 /*jshint curly:true, eqeqeq:true, laxbreak:true, noempty:false */
 /*
 
@@ -2591,10 +2591,10 @@ function style_html(html_source, options) {
 if (typeof exports !== 'undefined') {
     exports.html_beautify = style_html;
 }
-//== beautify-html.js end
+//== js/lib/beautify-html.js end
 
 
-//== unpackers/javascriptobfuscator_unpacker.js
+//== js/lib/unpackers/javascriptobfuscator_unpacker.js
 //
 // simple unpacker/deobfuscator for scripts messed up with javascriptobfuscator.com
 // written by Einar Lielmanis <einar@jsbeautifier.org>
@@ -2698,10 +2698,10 @@ var JavascriptObfuscator = {
 
 
 };
-//== unpackers/javascriptobfuscator_unpacker.js end
+//== js/lib/unpackers/javascriptobfuscator_unpacker.js end
 
 
-//== unpackers/myobfuscate_unpacker.js
+//== js/lib/unpackers/myobfuscate_unpacker.js
 //
 // simple unpacker/deobfuscator for scripts messed up with myobfuscate.com
 // You really don't want to obfuscate your scripts there: they're tracking
@@ -2783,10 +2783,10 @@ var MyObfuscate = {
 
 
 };
-//== unpackers/myobfuscate_unpacker.js end
+//== js/lib/unpackers/myobfuscate_unpacker.js end
 
 
-//== unpackers/p_a_c_k_e_r_unpacker.js
+//== js/lib/unpackers/p_a_c_k_e_r_unpacker.js
 //
 // Unpacker for Dean Edward's p.a.c.k.e.r, a part of javascript beautifier
 // written by Einar Lielmanis <einar@jsbeautifier.org>
@@ -2857,10 +2857,10 @@ var P_A_C_K_E_R = {
 
 
 };
-//== unpackers/p_a_c_k_e_r_unpacker.js end
+//== js/lib/unpackers/p_a_c_k_e_r_unpacker.js end
 
 
-//== unpackers/urlencode_unpacker.js
+//== js/lib/unpackers/urlencode_unpacker.js
 /*global unescape */
 /*jshint curly: false, scripturl: true */
 //
@@ -2934,10 +2934,10 @@ var Urlencoded = {
 if (isNode) {
     module.exports = Urlencoded;
 }
-//== unpackers/urlencode_unpacker.js end
+//== js/lib/unpackers/urlencode_unpacker.js end
 
 
-//== tests/beautify-tests.js
+//== js/test/beautify-tests.js
 /*global js_beautify: true */
 /*jshint */
 
@@ -3793,10 +3793,10 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
 if (typeof exports !== "undefined") {
     exports.run_beautifier_tests = run_beautifier_tests;
 }
-//== tests/beautify-tests.js end
+//== js/test/beautify-tests.js end
 
 
-//== tests/sanitytest.js
+//== js/test/sanitytest.js
 //
 // simple testing interface
 // written by Einar Lielmanis, einar@jsbeautifier.org
@@ -3932,7 +3932,7 @@ function SanityTest (func, name_of_test) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SanityTest;
 }
-//== tests/sanitytest.js end
+//== js/test/sanitytest.js end
 
 
 //== AkelPad integration
@@ -4033,14 +4033,14 @@ function convertSource(file, text) {
 	text = text
 		.replace(/\r\n?|\n\r?/g, "\r\n")
 		.replace(/[ \t]+([\n\r]|$)/g, "$1");
-	if(file == "beautify.js") {
+	if(file == "js/lib/beautify.js") {
 		text = text
 			.replace(".substr(-esc2)", ".slice(-esc2)")
 			.replace("token_text[token_text.length - 1]", "token_text.charAt(token_text.length - 1)")
 			.replace("&& flags.whitespace_before.length", "&& flags.whitespace_before && flags.whitespace_before.length")
 			.replace(/('TK_UNKNOWN': handle_unknown),(\s*\};)/, "$1$2");
 	}
-	else if(file == "tests/sanitytest.js") {
+	else if(file == "js/test/sanitytest.js") {
 		text = text.replace(
 			"results = 'All ' + n_succeeded + ' tests passed.';",
 			'results = _localize("All %S tests passed.").replace("%S", n_succeeded);'
@@ -4051,15 +4051,15 @@ function convertSource(file, text) {
 function selfUpdate() {
 	var baseUrl = "https://raw.github.com/einars/js-beautify/master/";
 	var data = {
-		"beautify.js": "",
-		"beautify-css.js": "",
-		"beautify-html.js": "",
-		"unpackers/javascriptobfuscator_unpacker.js": "",
-		"unpackers/myobfuscate_unpacker.js": "",
-		"unpackers/p_a_c_k_e_r_unpacker.js": "",
-		"unpackers/urlencode_unpacker.js": "",
-		"tests/beautify-tests.js": "",
-		"tests/sanitytest.js": ""
+		"js/lib/beautify.js": "",
+		"js/lib/beautify-css.js": "",
+		"js/lib/beautify-html.js": "",
+		"js/lib/unpackers/javascriptobfuscator_unpacker.js": "",
+		"js/lib/unpackers/myobfuscate_unpacker.js": "",
+		"js/lib/unpackers/p_a_c_k_e_r_unpacker.js": "",
+		"js/lib/unpackers/urlencode_unpacker.js": "",
+		"js/test/beautify-tests.js": "",
+		"js/test/sanitytest.js": ""
 	};
 
 	var startTime = new Date().getTime();
