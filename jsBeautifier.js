@@ -37,7 +37,8 @@
 //   -unformattedTags=["a"]       - list of tags, that shouldn't be reformatted (only for HTML)
 //   -detectPackers=true          - detect packers
 //   -css=true                    - force beautify CSS (just automatically wrap code into <style>...</style>)
-//   -update                      - update source from https://github.com/einars/js-beautify/
+//   -update=1                    - update source from https://github.com/einars/js-beautify/
+//          =2                    - update source from https://github.com/einars/js-beautify/tree/gh-pages
 //   -forceNoCache                - prevent caching during update
 //   -test                        - force run the tests
 
@@ -101,7 +102,7 @@ var unformattedTags        = getArg("unformattedTags"); // Will use jsBeautifier
 var detectPackers          = getArg("detectPackers", true);
 var beautifyCSS            = getArg("css", false);
 var test                   = getArg("test", false);
-var update                 = getArg("update", false);
+var update                 = getArg("update", 0);
 var forceNoCache           = getArg("forceNoCache", true);
 
 // Deprecated arguments:
@@ -4080,7 +4081,9 @@ function convertSource(file, text) {
 	return text;
 }
 function selfUpdate() {
-	var baseUrl = "https://raw.github.com/einars/js-beautify/master/";
+	var baseUrl = update == 2
+		? "https://raw.github.com/einars/js-beautify/gh-pages/"
+		: "https://raw.github.com/einars/js-beautify/master/";
 	var data = {
 		"js/lib/beautify.js": "",
 		"js/lib/beautify-css.js": "",
