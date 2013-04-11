@@ -161,12 +161,12 @@ var commentsExcludes = { // Now used only in delLineComments()
 
 		// Try remove simple regular expressions like /x*/ and /\/*x/
 		// We search for invalid divisions:
-		// x = /./;            -> =
-		// if(/a/.test(b))     -> (
-		// x = [/a/, /b/]      -> [ ,
-		// x = a && /b/test(c) -> & |
-		// x = a ? /b/ : /c/   -> ? :
-		// x = !/a/.test(b)    -> !
+		// x = /./;             -> =
+		// if(/a/.test(b))      -> (
+		// x = [/a/, /b/]       -> [ ,
+		// x = a && /b/.test(c) -> & |
+		// x = a ? /b/ : /c/    -> ? :
+		// x = !/a/.test(b)     -> !
 		return str.replace(
 			/([=(\[,&|?:!]\s*((\/\/[^\n\r]*[\n\r]+|\/\*[\s\S]*?\*\/)\s*)*)\/([^*+?\\\/\n\r]|\\[^\n\r])(\\\/|[^\/\n\r])*\//g,
 			// special chars   line comments       block comments         regexp begin                         regexp end
@@ -774,7 +774,7 @@ Comments.prototype = {
 		var lines = block.split("\r");
 		var linesCnt = lines.length;
 		var spacePrefix = "";
-		var spacePrefixLen;
+		var spacePrefixLen = 0;
 
 		//var hasLineCmmPattern = new RegExp("(^|\\r\\n|\\n|\\r)([\\t ]*)" + this.escapeRegExp(cmmLine));
 		//var atStart = hasLineCmmPattern.test(this.exclude(block))
@@ -809,13 +809,13 @@ Comments.prototype = {
 							: line.substr(0, spacePrefixLen) != spacePrefix
 					) {
 						spacePrefix = "";
+						spacePrefixLen = 0;
 						break;
 					}
 				}
 			}
 		}
 
-		spacePrefixLen = spacePrefix.length;
 		var cmmAdd = cmmLine + (/ $/.test(cmmLine) ? "" : this.space);
 
 		for(var i = 0; i < linesCnt; i++)
