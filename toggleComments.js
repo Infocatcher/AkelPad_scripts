@@ -90,7 +90,9 @@ var commentsSets = {
 	highlight: [ null, null, [";"] ],
 	coder: [ null, null, [";"] ],
 	sql: [ ["/*"], ["*/"], ["--"] ],
-	htaccess: [ null, null, ["#"] ]
+	htaccess: [ null, null, ["#"] ],
+	//ahk: [ ["\r/*"], ["\r*/"], [";"] ]
+	ahk: [ null, null, [";"] ]
 };
 var commentsRegions = {
 	// Example:
