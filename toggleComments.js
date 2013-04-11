@@ -22,6 +22,7 @@
 //   -blockCommentsEntireLines=-1  - only if end EOL selected
 //                            =0   - only if entire lines selected (with or without end EOL)
 //                            =1   - always
+//   -preserveSelection=true       - preserve selection / caret position
 //   -searchRegions=true           - allow search regions like <?php ... ?>
 //   -checkSyntax=0                - don't check any syntax constructions, fast, but may works incorrect
 //               =1                - check simple syntax constructions
@@ -241,6 +242,7 @@ var lineCommentsAtStart      = getArg("lineCommentsAtStart", false);
 var checkBlockComments       = getArg("checkBlockComments", 2);
 var blockCommentsEntireLines = getArg("blockCommentsEntireLines", 1);
 var searchRegions            = getArg("searchRegions", true);
+var preserveSelection        = getArg("preserveSelection", true);
 var checkSyntax              = getArg("checkSyntax", 2);
 var saveLastExt              = getArg("saveLastExt", 1);
 
@@ -411,13 +413,37 @@ Comments.prototype = {
 				//var sp = this.removeSpaces ? "[\\t ]?" : "";
 				var sp = this.removeSpaces ? " ?" : "";
 				var cmmLinePattern = this.escapeRegExp(cmmLine) + this.fixCmmLineRegExp(cmmLine);
-				linePart = linePart.replace(new RegExp("^" + cmmLinePattern + sp), "");
+				var linePartNew = linePart.replace(new RegExp("^" + cmmLinePattern + sp), "");
+
+				var selAfterStart, selAfterEnd;
+				if(this.preserveSelection) {
+					selAfterStart = this.selStart;
+					selAfterEnd = this.selEnd;
+					var diff = linePart.length - linePartNew.length;
+					var cmmPos = lineStart + cmmLineIndx;
+					if(this.selStart >= cmmPos) {
+						if(this.selStart >= cmmPos + diff)
+							selAfterStart -= diff;
+						else
+							selAfterStart = cmmPos;
+					}
+					if(this.selEnd >= cmmPos) {
+						if(this.selEnd >= cmmPos + diff)
+							selAfterEnd -= diff;
+						else
+							selAfterEnd = cmmPos;
+					}
+				}
+				else {
+					selAfterStart = lineStart + cmmLineIndx;
+					selAfterEnd = lineStart + cmmLineIndx + linePartNew.length;
+				}
 				return {
-					str: linePart,
+					str: linePartNew,
 					selBefore: [lineStart + cmmLineIndx, lineEnd],
-					selAfter: [lineStart + cmmLineIndx, lineStart + cmmLineIndx + linePart.length]
+					selAfter: [selAfterStart, selAfterEnd]
 				};
-				//line = line.substring(0, cmmLineIndx) + linePart.replace(cmmLinePattern, "");
+				//line = line.substring(0, cmmLineIndx) + linePartNew.replace(cmmLinePattern, "");
 				//AkelPad.SetSel(lineStart, lineEnd);
 				//AkelPad.ReplaceSel(line);
 				//AkelPad.SetSel(lineStart + cmmLineIndx, lineStart + line.length);
@@ -735,18 +761,27 @@ Comments.prototype = {
 		//AkelPad.SetSel(startPos, linePos[1]);
 		//AkelPad.ReplaceSel(ins);
 
-		var startAdd = 0;
-		var posAdd = 0;
-		if(!endText)
-			startAdd = cmm.length;
-		else
-			posAdd = ins.length;
+		var selAfterStart, selAfterEnd;
+		if(this.preserveSelection) {
+			selAfterStart = endText ? this.selStart + cmm.length : linePos[1] + cmm.length;
+			selAfterEnd = endText ? this.selEnd + cmm.length : linePos[1] + cmm.length;
+		}
+		else {
+			var startAdd = 0, posAdd = 0;
+			if(!endText)
+				startAdd = cmm.length;
+			else
+				posAdd = ins.length;
+			selAfterStart = startPos + startAdd;
+			selAfterEnd = startPos + startAdd + posAdd;
+		}
+
 		//AkelPad.SetSel(startPos, startPos + posAdd);
 		//return [startPos, startPos + posAdd];
 		return {
 			str: ins,
 			selBefore: [startPos, linePos[1]],
-			selAfter: [startPos + startAdd, startPos + startAdd + posAdd]
+			selAfter: [selAfterStart, selAfterEnd]
 		};
 	},
 	addLinesComments: function() {
@@ -1053,7 +1088,8 @@ function parseContent(method) {
 		checkBlockCmms:       checkBlockComments,
 		blockCmmsEntireLines: blockCommentsEntireLines,
 		pLineCmm:             preferLineComments,
-		lineCmmAtStart:       lineCommentsAtStart
+		lineCmmAtStart:       lineCommentsAtStart,
+		preserveSelection:    preserveSelection
 	});
 	var insData = comments.toggleComments(method);
 	if(!insData)
