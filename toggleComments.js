@@ -919,9 +919,11 @@ Comments.prototype = {
 		var block = this.fullText.substring(startLinePos[0], endLinePos[1]);
 		if(!this.checkBlockComments(block, cmmBlockStart, cmmBlockEnd, true))
 			return null;
-		block = sp + cmmBlockStart + "\n"
+		block = (/\n|\r/.test(cmmBlockStart) ? "" : sp)
+			+ cmmBlockStart.replace(/^\s+|\s+$/g, "") + "\n"
 			+ block
-			+ "\n" + sp + cmmBlockEnd;
+			+ "\n" + (/\n|\r/.test(cmmBlockEnd) ? "" : sp)
+			+ cmmBlockEnd.replace(/^\s+|\s+$/g, "");
 		//AkelPad.ReplaceSel(block);
 		//AkelPad.SetSel(startLinePos[0], startLinePos[0] + block.length);
 		//return [startLinePos[0], startLinePos[0] + block.length];
