@@ -23,7 +23,6 @@
 //   -braceStyle="collapse"       - braces with control statement
 //              ="expand"         - braces on own line
 //              ="end-expand"     - end braces on own line
-//              ="expand-strict"  - braces always on own line (not recommended)
 //   -keepArrayIndentation=true   - keep array indentation
 //   -breakChainedMethods=false   - break lines on chained methods
 //   -jsLintHappy=true            - use "function ()" instead of "function()"
