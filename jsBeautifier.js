@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.3 - 2013-02-02
-// Based on scripts from http://jsbeautifier.org/ [2013-04-07 03:27:29 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-04-28 07:09:33 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -313,17 +313,8 @@ function detectXMLType(str) {
             ---------------------------------
              function ()      function()
 
-    brace_style (default "collapse") - "collapse" | "expand" | "end-expand" | "expand-strict"
+    brace_style (default "collapse") - "collapse" | "expand" | "end-expand"
             put braces on the same line as control statements (default), or put braces on own line (Allman / ANSI style), or just put end braces on own line.
-
-            expand-strict: put brace on own line even in such cases:
-
-                var a =
-                {
-                    a: 5,
-                    b: 6
-                }
-            This mode may break your scripts - e.g "return { a: 1 }" will be broken into two lines, so beware.
 
     space_before_conditional (default true) - should the space before conditional statement be added, "if(true)" vs "if (true)",
 
@@ -356,8 +347,9 @@ function detectXMLType(str) {
         var flags, previous_flags, flag_store;
         var whitespace, wordchar, punct, parser_pos, line_starters, digits;
         var prefix;
-        var wanted_newline, n_newlines, output_wrapped, output_space_before_token, whitespace_before_token;
-        var input_length;
+        var input_wanted_newline;
+        var output_wrapped, output_space_before_token;
+        var input_length, n_newlines, whitespace_before_token;
         var handlers, MODE, opt;
         var preindent_string = '';
 
@@ -434,11 +426,18 @@ function detectXMLType(str) {
         }
         opt.brace_style = options.brace_style ? options.brace_style : (opt.brace_style ? opt.brace_style : "collapse");
 
+        // graceful handling of deprecated option
+        if (opt.brace_style === "expand-strict") {
+            opt.brace_style = "expand";
+        }
+
+
         opt.indent_size = options.indent_size ? parseInt(options.indent_size, 10) : 4;
         opt.indent_char = options.indent_char ? options.indent_char : ' ';
         opt.preserve_newlines = (options.preserve_newlines === undefined) ? true : options.preserve_newlines;
         opt.break_chained_methods = (options.break_chained_methods === undefined) ? false : options.break_chained_methods;
         opt.max_preserve_newlines = (options.max_preserve_newlines === undefined) ? 0 : parseInt(options.max_preserve_newlines, 10);
+        opt.space_in_paren = (options.space_in_paren === undefined) ? false : options.space_in_paren;
         opt.jslint_happy = (options.jslint_happy === undefined) ? false : options.jslint_happy;
         opt.keep_array_indentation = (options.keep_array_indentation === undefined) ? false : options.keep_array_indentation;
         opt.space_before_conditional= (options.space_before_conditional === undefined) ? true : options.space_before_conditional;
@@ -502,7 +501,7 @@ function detectXMLType(str) {
                         print_newline(true);
                     }
                 } else {
-                    wanted_newline = n_newlines > 0;
+                    input_wanted_newline = n_newlines > 0;
                     if (opt.max_preserve_newlines && n_newlines > opt.max_preserve_newlines) {
                         n_newlines = opt.max_preserve_newlines;
                     }
@@ -601,10 +600,10 @@ function detectXMLType(str) {
                     }
                 }
             }
-            if (((opt.preserve_newlines && wanted_newline) || force_linewrap) && !just_added_newline()) {
+            if (((opt.preserve_newlines && input_wanted_newline) || force_linewrap) && !just_added_newline()) {
                 print_newline(false, true);
                 output_wrapped = true;
-                wanted_newline = false;
+                input_wanted_newline = false;
             }
         }
 
@@ -703,7 +702,7 @@ function detectXMLType(str) {
         }
 
         function is_expression(mode) {
-            return in_array(mode, [MODE.ArrayLiteral, MODE.Expression, MODE.ForInitializer, MODE.Conditional]);
+            return in_array(mode, [MODE.Expression, MODE.ForInitializer, MODE.Conditional]);
         }
 
         function restore_mode() {
@@ -836,7 +835,7 @@ function detectXMLType(str) {
                 return ['', 'TK_EOF'];
             }
 
-            wanted_newline = false;
+            input_wanted_newline = false;
             whitespace_before_token = [];
 
             var c = input.charAt(parser_pos);
@@ -952,13 +951,18 @@ function detectXMLType(str) {
 
             }
 
+
             if (c === "'" || c === '"' || // string
-            (c === '/' &&
-                ((last_type === 'TK_WORD' && is_special_word (flags.last_text)) ||
-                (last_type === 'TK_END_EXPR' && in_array(previous_flags.mode, [MODE.Conditional, MODE.ForInitializer])) ||
-                (in_array(last_type, ['TK_COMMENT', 'TK_START_EXPR', 'TK_START_BLOCK',
-                    'TK_END_BLOCK', 'TK_OPERATOR', 'TK_EQUALS', 'TK_EOF', 'TK_SEMICOLON', 'TK_COMMA'
-            ]))))) { // regexp
+                (
+                    (c === '/') || // regexp
+                    (options.e4x && c ==="<" && input.slice(parser_pos - 1).match(/^<[a-zA-Z:0-9]+\s*([a-zA-Z:0-9]+="[^"]*"\s*)*\/?\s*>/)) // xml
+                ) && ( // regex and xml can only appear in specific locations during parsing
+                    (last_type === 'TK_WORD' && is_special_word (flags.last_text)) ||
+                    (last_type === 'TK_END_EXPR' && in_array(previous_flags.mode, [MODE.Conditional, MODE.ForInitializer])) ||
+                    (in_array(last_type, ['TK_COMMENT', 'TK_START_EXPR', 'TK_START_BLOCK',
+                    'TK_END_BLOCK', 'TK_OPERATOR', 'TK_EQUALS', 'TK_EOF', 'TK_SEMICOLON', 'TK_COMMA']))
+                )) {
+
                 var sep = c,
                     esc = false,
                     has_char_escapes = false;
@@ -968,7 +972,7 @@ function detectXMLType(str) {
                 if (parser_pos < input_length) {
                     if (sep === '/') {
                         //
-                        // handle regexp separately...
+                        // handle regexp
                         //
                         var in_char_class = false;
                         while (esc || in_char_class || input.charAt(parser_pos) !== sep) {
@@ -990,10 +994,39 @@ function detectXMLType(str) {
                                 return [resulting_string, 'TK_STRING'];
                             }
                         }
-
+                    } else if (options.e4x && sep === '<') {
+                        //
+                        // handle e4x xml literals
+                        //
+                        var xmlRegExp = /<(\/?)([a-zA-Z:0-9]+)\s*([a-zA-Z:0-9]+="[^"]*"\s*)*(\/?)\s*>/g;
+                        var xmlStr = input.slice(parser_pos - 1);
+                        var match = xmlRegExp.exec(xmlStr);
+                        if (match && match.index === 0) {
+                            var rootTag = match[2];
+                            var depth = 0;
+                            while (match) {
+                                var isEndTag = !! match[1];
+                                var tagName = match[2];
+                                var isSingletonTag = !! match[match.length - 1];
+                                if (tagName === rootTag && !isSingletonTag) {
+                                    if (isEndTag) {
+                                        --depth;
+                                    } else {
+                                        ++depth;
+                                    }
+                                }
+                                if (depth <= 0) {
+                                    break;
+                                }
+                                match = xmlRegExp.exec(xmlStr);
+                            }
+                            var xmlLength = match ? match.index + match[0].length : xmlStr.length;
+                            parser_pos += xmlLength - 1;
+                            return [xmlStr.slice(0, xmlLength), "TK_STRING"];
+                        }
                     } else {
                         //
-                        // and handle string also separately
+                        // handle string
                         //
                         while (esc || input.charAt(parser_pos) !== sep) {
                             resulting_string += input.charAt(parser_pos);
@@ -1129,13 +1162,17 @@ function detectXMLType(str) {
                     }
                     set_mode(MODE.Expression);
                     print_token();
+                    if (opt.space_in_paren) {
+                        output_space_before_token = true;
+                    }
                     return;
                 }
 
                 if (is_array(flags.mode)) {
-                    if ( (flags.last_text === '[') ||
-                        (last_last_text === ']' && flags.last_text === ',')) {
+                    if (flags.last_text === '[' ||
+                        (flags.last_text === ',' && (last_last_text === ']' || last_last_text === '}'))) {
                         // ], [ goes to new line
+                        // }, [ goes to new line
                         if (!opt.keep_array_indentation) {
                             print_newline();
                         }
@@ -1155,7 +1192,7 @@ function detectXMLType(str) {
             if  (flags.last_text === ';' || last_type === 'TK_START_BLOCK') {
                 print_newline();
             } else if (last_type === 'TK_END_EXPR' || last_type === 'TK_START_EXPR' || last_type === 'TK_END_BLOCK' || flags.last_text === '.') {
-                if (wanted_newline) {
+                if (input_wanted_newline) {
                     print_newline();
                 }
                 // do nothing on (( and )( and ][ and ]( and .(
@@ -1183,6 +1220,9 @@ function detectXMLType(str) {
                 }
             }
             print_token();
+            if (opt.space_in_paren) {
+                    output_space_before_token = true;
+            }
             if (token_text === '[') {
                 set_mode(MODE.ArrayLiteral);
                 indent();
@@ -1200,6 +1240,9 @@ function detectXMLType(str) {
                 print_newline();
             }
             restore_mode();
+            if (opt.space_in_paren) {
+                    output_space_before_token = true;
+            }
             print_token();
 
             // do {} while () // no statement required after
@@ -1215,19 +1258,17 @@ function detectXMLType(str) {
             set_mode(MODE.BlockStatement);
 
             var empty_braces = is_next('}');
+            var empty_anonymous_function = empty_braces && flags.last_word === 'function' &&
+                last_type === 'TK_END_EXPR';
 
-            if (opt.brace_style === "expand-strict") {
-                if (!empty_braces) {
-                    print_newline();
-                }
-            } else if (opt.brace_style === "expand") {
-                if (last_type !== 'TK_OPERATOR') {
-                    if (last_type === 'TK_EQUALS' ||
-                        (is_special_word (flags.last_text) && flags.last_text !== 'else')) {
+            if (opt.brace_style === "expand") {
+                if (last_type !== 'TK_OPERATOR' &&
+                    (empty_anonymous_function ||
+                        last_type === 'TK_EQUALS' ||
+                        (is_special_word (flags.last_text) && flags.last_text !== 'else'))) {
                         output_space_before_token = true;
-                    } else {
-                        print_newline();
-                    }
+                } else {
+                    print_newline();
                 }
             } else { // collapse
                 if (last_type !== 'TK_OPERATOR' && last_type !== 'TK_START_EXPR') {
@@ -1258,13 +1299,15 @@ function detectXMLType(str) {
                 restore_mode();
             }
             restore_mode();
-            if (opt.brace_style === "expand" || opt.brace_style === "expand-strict") {
-                if  (last_type !== 'TK_START_BLOCK') {
+            var empty_braces = last_type === 'TK_START_BLOCK';
+
+            if (opt.brace_style === "expand") {
+                if  (!empty_braces) {
                     print_newline();
                 }
             } else {
                 // skip {}
-                if (last_type !== 'TK_START_BLOCK') {
+                if (!empty_braces) {
                     if (is_array(flags.mode) && opt.keep_array_indentation) {
                         // we REALLY need a newline here, but newliner would skip that
                         opt.keep_array_indentation = false;
@@ -1282,7 +1325,7 @@ function detectXMLType(str) {
         function handle_word() {
             if (start_of_statement()) {
                 // The conditional starts the statement if appropriate.
-            } else if (wanted_newline && !is_expression(flags.mode) &&
+            } else if (input_wanted_newline && !is_expression(flags.mode) &&
                 (last_type !== 'TK_OPERATOR' || (flags.last_text === '--' || flags.last_text === '++')) &&
                 last_type !== 'TK_EQUALS' &&
                 (opt.preserve_newlines || flags.last_text !== 'var')) {
@@ -1322,9 +1365,10 @@ function detectXMLType(str) {
                 if (flags.var_line && last_type !== 'TK_EQUALS') {
                     flags.var_line_reindented = true;
                 }
-                if ((just_added_newline() || flags.last_text === ';') && flags.last_text !== '{' && last_type !== 'TK_BLOCK_COMMENT' && last_type !== 'TK_COMMENT') {
+                if ((just_added_newline() || flags.last_text === ';') && flags.last_text !== '{' &&
+                    !is_array(flags.mode)) {
                     // make sure there is a nice clean space of at least one blank line
-                    // before a new function definition
+                    // before a new function definition, except in arrays
                     n_newlines = just_added_newline() ? n_newlines : 0;
                     if (!opt.preserve_newlines) {
                         n_newlines = 1;
@@ -1356,7 +1400,7 @@ function detectXMLType(str) {
 
             if (token_text === 'case' || (token_text === 'default' && flags.in_case_statement)) {
                 print_newline();
-                if (flags.case_body) {
+                if (flags.case_body || opt.jslint_happy) {
                     // switch cases following one another
                     flags.indentation_level--;
                     flags.case_body = false;
@@ -1373,7 +1417,7 @@ function detectXMLType(str) {
                 if (!in_array(token_text, ['else', 'catch', 'finally'])) {
                     prefix = 'NEWLINE';
                 } else {
-                    if (opt.brace_style === "expand" || opt.brace_style === "end-expand" || opt.brace_style === "expand-strict") {
+                    if (opt.brace_style === "expand" || opt.brace_style === "end-expand") {
                         prefix = 'NEWLINE';
                     } else {
                         prefix = 'SPACE';
@@ -1412,7 +1456,7 @@ function detectXMLType(str) {
             }
 
             if (in_array(token_text, ['else', 'catch', 'finally'])) {
-                if (last_type !== 'TK_END_BLOCK' || opt.brace_style === "expand" || opt.brace_style === "end-expand" || opt.brace_style === "expand-strict") {
+                if (last_type !== 'TK_END_BLOCK' || opt.brace_style === "expand" || opt.brace_style === "end-expand") {
                     print_newline();
                 } else {
                     trim_output(true);
@@ -1582,7 +1626,7 @@ function detectXMLType(str) {
 
             // http://www.ecma-international.org/ecma-262/5.1/#sec-7.9.1
             // if there is a newline between -- or ++ and anything else we should preserve it.
-            if (wanted_newline && (token_text === '--' || token_text === '++')) {
+            if (input_wanted_newline && (token_text === '--' || token_text === '++')) {
                 print_newline();
             }
 
@@ -1674,10 +1718,9 @@ function detectXMLType(str) {
         }
 
         function handle_comment() {
-            if (wanted_newline) {
+            if (input_wanted_newline) {
                 print_newline(false, true);
-            }
-            if  (flags.last_text === ',' && !wanted_newline) {
+            } else {
                 trim_output(true);
             }
 
@@ -2839,40 +2882,49 @@ var P_A_C_K_E_R = {
     },
 
     get_chunks: function(str) {
-        var chunks = str.match(/eval\(\(?function\(.*?,0,\{\}\)\)/g);
+        var chunks = str.match(/eval\(\(?function\(.*?,0,\{\}\)\)($|\n)/g);
         return chunks ? chunks : [];
     },
 
     unpack: function (str) {
-        var chunks = P_A_C_K_E_R.get_chunks(str);
+        var chunks = P_A_C_K_E_R.get_chunks(str),
+            chunk;
         for(var i = 0; i < chunks.length; i++) {
-            str = str.split(chunks[i]).join( P_A_C_K_E_R.unpack_chunk(chunks[i]) );
+            chunk = chunks[i].replace(/\n$/, '');
+            str = str.split(chunk).join( P_A_C_K_E_R.unpack_chunk(chunk) );
         }
         return str;
     },
 
     unpack_chunk: function (str) {
         var unpacked_source = '';
+        var __eval = eval;
         if (P_A_C_K_E_R.detect(str)) {
             try {
-                eval('unpacked_source = ' + str.substring(4) + ';');
+                eval = function (s) { unpacked_source += s; return unpacked_source; };
+                __eval(str);
                 if (typeof unpacked_source == 'string' && unpacked_source) {
                     str = unpacked_source;
                 }
-            } catch (error) {
+            } catch (e) {
                 // well, it failed. we'll just return the original, instead of crashing on user.
             }
         }
+        eval = __eval;
         return str;
     },
 
     run_tests: function (sanity_test) {
         var t = sanity_test || new SanityTest(),
-            pk1 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'var||a'.split('|'),0,{}))",
-            unpk1 = 'var a=1',
-            pk2 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'foo||b'.split('|'),0,{}))",
-            unpk2 = 'foo b=1',
-            pk_broken =  "eval(function(p,a,c,k,e,r){BORKBORK;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'var||a'.split('|'),0,{}))";
+
+        pk1 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'var||a'.split('|'),0,{}))",
+        unpk1 = 'var a=1',
+        pk2 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'foo||b'.split('|'),0,{}))",
+        unpk2 = 'foo b=1',
+        pk_broken =  "eval(function(p,a,c,k,e,r){BORKBORK;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'var||a'.split('|'),0,{}))";
+        pk3 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1{}))',3,3,'var||a'.split('|'),0,{}))",
+        unpk3 = 'var a=1{}))',
+
         t.test_function(P_A_C_K_E_R.detect, "P_A_C_K_E_R.detect");
         t.expect('', false);
         t.expect('var a = b', false);
@@ -2880,9 +2932,10 @@ var P_A_C_K_E_R = {
         t.expect(pk_broken, pk_broken);
         t.expect(pk1, unpk1);
         t.expect(pk2, unpk2);
+        t.expect(pk3, unpk3);
 
         var filler = '\nfiller\n';
-        t.expect(filler + pk1 + pk_broken + filler + pk2 + filler, filler + unpk1 + pk_broken + filler + unpk2 + filler);
+        t.expect(filler + pk1 + "\n" + pk_broken + filler + pk2 + filler, filler + unpk1 + "\n" + pk_broken + filler + unpk2 + filler);
 
         return t;
     }
@@ -3257,6 +3310,14 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('a(/[a/b]/);b()', "a(/[a/b]/);\nb()");
 
         bt('a=[[1,2],[4,5],[7,8]]', "a = [\n    [1, 2],\n    [4, 5],\n    [7, 8]\n]");
+        bt('a=[[1,2],[4,5],function(){},[7,8]]',
+            "a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    [7, 8]\n]");
+        bt('a=[[1,2],[4,5],function(){},function(){},[7,8]]',
+            "a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    function() {},\n    [7, 8]\n]");
+        bt('a=[[1,2],[4,5],function(){},[7,8]]',
+            "a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    [7, 8]\n]");
+        bt('a=[b,c,function(){},function(){},d]',
+            "a = [b, c,\n    function() {},\n    function() {},\n    d\n]");
         bt('a=[a[1],b[4],c[d[7]]]', "a = [a[1], b[4], c[d[7]]]");
         bt('[1,2,[3,4,[5,6],7],8]', "[1, 2, [3, 4, [5, 6], 7], 8]");
 
@@ -3312,11 +3373,19 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('a=typeof(x)', 'a = typeof (x)');
         bt('x();\n\nfunction(){}', 'x();\n\nfunction () {}');
         bt('function () {\n    var a, b, c, d, e = [],\n        f;\n}');
+        bt('switch(x) {case 0: case 1: a(); break; default: break}',
+            "switch (x) {\ncase 0:\ncase 1:\n    a();\n    break;\ndefault:\n    break\n}");
+        bt('switch(x){case -1:break;case !y:break;}',
+            'switch (x) {\ncase -1:\n    break;\ncase !y:\n    break;\n}');
         test_fragment("// comment 1\n(function()", "// comment 1\n(function ()"); // typical greasemonkey start
         bt('var o1=$.extend(a);function(){alert(x);}', 'var o1 = $.extend(a);\n\nfunction () {\n    alert(x);\n}');
 
         opts.jslint_happy = false;
 
+        bt('switch(x) {case 0: case 1: a(); break; default: break}',
+            "switch (x) {\n    case 0:\n    case 1:\n        a();\n        break;\n    default:\n        break\n}");
+        bt('switch(x){case -1:break;case !y:break;}',
+            'switch (x) {\n    case -1:\n        break;\n    case !y:\n        break;\n}');
         test_fragment("// comment 2\n(function()", "// comment 2\n(function()"); // typical greasemonkey start
         bt("var a2, b2, c2, d2 = 0, c = function() {}, d = '';", "var a2, b2, c2, d2 = 0,\n    c = function() {}, d = '';");
         bt("var a2, b2, c2, d2 = 0, c = function() {},\nd = '';", "var a2, b2, c2, d2 = 0,\n    c = function() {},\n    d = '';");
@@ -3400,59 +3469,114 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         opts.brace_style = 'expand';
 
         bt('//case 1\nif (a == 1)\n{}\n//case 2\nelse if (a == 2)\n{}');
+        bt('if(1){2}else{3}', "if (1)\n{\n    2\n}\nelse\n{\n    3\n}");
+        bt('try{a();}catch(b){c();}catch(d){}finally{e();}',
+            "try\n{\n    a();\n}\ncatch (b)\n{\n    c();\n}\ncatch (d)\n{}\nfinally\n{\n    e();\n}");
+        bt('if(a){b();}else if(c) foo();',
+            "if (a)\n{\n    b();\n}\nelse if (c) foo();");
+        bt("if (a) {\n// comment\n}else{\n// comment\n}",
+            "if (a)\n{\n    // comment\n}\nelse\n{\n    // comment\n}"); // if/else statement with empty body
+        bt('if (x) {y} else { if (x) {y}}',
+            'if (x)\n{\n    y\n}\nelse\n{\n    if (x)\n    {\n        y\n    }\n}');
+        bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}',
+            'if (a)\n{\n    b;\n}\nelse\n{\n    c;\n}');
+        test_fragment('    /*\n* xx\n*/\n// xx\nif (foo) {\n    bar();\n}',
+                      '    /*\n     * xx\n     */\n    // xx\n    if (foo)\n    {\n        bar();\n    }');
+        bt('if (foo)\n{}\nelse /regex/.test();');
+        bt('if (foo) /regex/.test();');
         bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}', 'if (a)\n{\n    b;\n}\nelse\n{\n    c;\n}');
         test_fragment('if (foo) {', 'if (foo)\n{');
         test_fragment('foo {', 'foo\n{');
-        test_fragment('return {', 'return {'); // return needs the brace. maybe something else as well: feel free to report.
+        test_fragment('return {', 'return {'); // return needs the brace.
         test_fragment('return /* inline */ {', 'return /* inline */ {');
         // test_fragment('return\n{', 'return\n{'); // can't support this?, but that's an improbable and extreme case anyway.
         test_fragment('return;\n{', 'return;\n{');
         bt("throw {}");
         bt("throw {\n    foo;\n}");
-
-        bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}', 'if (a)\n{\n    b;\n}\nelse\n{\n    c;\n}');
         bt('var foo = {}');
-        bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}', 'if (a)\n{\n    b;\n}\nelse\n{\n    c;\n}');
-        test_fragment('if (foo) {', 'if (foo)\n{');
-        test_fragment('foo {', 'foo\n{');
-        test_fragment('return {', 'return {'); // return needs the brace. maybe something else as well: feel free to report.
-        test_fragment('return /* inline */ {', 'return /* inline */ {');
-        // test_fragment('return\n{', 'return\n{'); // can't support this?, but that's an improbable and extreme case anyway.
-        test_fragment('return;\n{', 'return;\n{');
+        bt('if (foo) bar();\nelse break');
+        bt('function x() {\n    foo();\n}zzz', 'function x()\n{\n    foo();\n}\nzzz');
+        bt('a: do {} while (); xxx', 'a: do {} while ();\nxxx');
+        bt('var a = new function();');
+        bt('var a = new function() {};');
+        bt('var a = new function a()\n    {};');
+        test_fragment('new function');
 
 
         opts.brace_style = 'collapse';
 
         bt('//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
+        bt('if(1){2}else{3}', "if (1) {\n    2\n} else {\n    3\n}");
+        bt('try{a();}catch(b){c();}catch(d){}finally{e();}',
+             "try {\n    a();\n} catch (b) {\n    c();\n} catch (d) {} finally {\n    e();\n}");
+        bt('if(a){b();}else if(c) foo();',
+            "if (a) {\n    b();\n} else if (c) foo();");
+        bt("if (a) {\n// comment\n}else{\n// comment\n}",
+            "if (a) {\n    // comment\n} else {\n    // comment\n}"); // if/else statement with empty body
+        bt('if (x) {y} else { if (x) {y}}',
+            'if (x) {\n    y\n} else {\n    if (x) {\n        y\n    }\n}');
+        bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}',
+            'if (a) {\n    b;\n} else {\n    c;\n}');
+        test_fragment('    /*\n* xx\n*/\n// xx\nif (foo) {\n    bar();\n}',
+                      '    /*\n     * xx\n     */\n    // xx\n    if (foo) {\n        bar();\n    }');
+        bt('if (foo) {} else /regex/.test();');
+        bt('if (foo) /regex/.test();');
         bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}', 'if (a) {\n    b;\n} else {\n    c;\n}');
         test_fragment('if (foo) {', 'if (foo) {');
         test_fragment('foo {', 'foo {');
-        test_fragment('return {', 'return {'); // return needs the brace. maybe something else as well: feel free to report.
+        test_fragment('return {', 'return {'); // return needs the brace.
         test_fragment('return /* inline */ {', 'return /* inline */ {');
         // test_fragment('return\n{', 'return\n{'); // can't support this?, but that's an improbable and extreme case anyway.
         test_fragment('return;\n{', 'return; {');
-
+        bt("throw {}");
+        bt("throw {\n    foo;\n}");
+        bt('var foo = {}');
         bt('if (foo) bar();\nelse break');
         bt('function x() {\n    foo();\n}zzz', 'function x() {\n    foo();\n}\nzzz');
         bt('a: do {} while (); xxx', 'a: do {} while ();\nxxx');
-
         bt('var a = new function();');
+        bt('var a = new function() {};');
+        bt('var a = new function a() {};');
         test_fragment('new function');
 
         opts.brace_style = "end-expand";
 
         bt('//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
         bt('if(1){2}else{3}', "if (1) {\n    2\n}\nelse {\n    3\n}");
-        bt('try{a();}catch(b){c();}finally{d();}', "try {\n    a();\n}\ncatch (b) {\n    c();\n}\nfinally {\n    d();\n}");
-        bt('if(a){b();}else if(c) foo();', "if (a) {\n    b();\n}\nelse if (c) foo();");
-        bt("if (a) {\n// comment\n}else{\n// comment\n}", "if (a) {\n    // comment\n}\nelse {\n    // comment\n}"); // if/else statement with empty body
-        bt('if (x) {y} else { if (x) {y}}', 'if (x) {\n    y\n}\nelse {\n    if (x) {\n        y\n    }\n}');
-        bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}', 'if (a) {\n    b;\n}\nelse {\n    c;\n}');
-
-        test_fragment('    /*\n* xx\n*/\n// xx\nif (foo) {\n    bar();\n}', '    /*\n     * xx\n     */\n    // xx\n    if (foo) {\n        bar();\n    }');
-
+        bt('try{a();}catch(b){c();}catch(d){}finally{e();}',
+            "try {\n    a();\n}\ncatch (b) {\n    c();\n}\ncatch (d) {}\nfinally {\n    e();\n}");
+        bt('if(a){b();}else if(c) foo();',
+            "if (a) {\n    b();\n}\nelse if (c) foo();");
+        bt("if (a) {\n// comment\n}else{\n// comment\n}",
+            "if (a) {\n    // comment\n}\nelse {\n    // comment\n}"); // if/else statement with empty body
+        bt('if (x) {y} else { if (x) {y}}',
+            'if (x) {\n    y\n}\nelse {\n    if (x) {\n        y\n    }\n}');
+        bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}',
+            'if (a) {\n    b;\n}\nelse {\n    c;\n}');
+        test_fragment('    /*\n* xx\n*/\n// xx\nif (foo) {\n    bar();\n}',
+                      '    /*\n     * xx\n     */\n    // xx\n    if (foo) {\n        bar();\n    }');
         bt('if (foo) {}\nelse /regex/.test();');
         bt('if (foo) /regex/.test();');
+        bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}', 'if (a) {\n    b;\n}\nelse {\n    c;\n}');
+        test_fragment('if (foo) {', 'if (foo) {');
+        test_fragment('foo {', 'foo {');
+        test_fragment('return {', 'return {'); // return needs the brace.
+        test_fragment('return /* inline */ {', 'return /* inline */ {');
+        // test_fragment('return\n{', 'return\n{'); // can't support this?, but that's an improbable and extreme case anyway.
+        test_fragment('return;\n{', 'return; {');
+        bt("throw {}");
+        bt("throw {\n    foo;\n}");
+        bt('var foo = {}');
+        bt('if (foo) bar();\nelse break');
+        bt('function x() {\n    foo();\n}zzz', 'function x() {\n    foo();\n}\nzzz');
+        bt('a: do {} while (); xxx', 'a: do {} while ();\nxxx');
+        bt('var a = new function();');
+        bt('var a = new function() {};');
+        bt('var a = new function a() {};');
+        test_fragment('new function');
+
+        opts.brace_style = 'collapse';
+
 
         bt('a = <?= external() ?> ;'); // not the most perfect thing in the world, but you're the weirdo beaufifying php mix-ins with javascript beautifier
         bt('a = <%= external() %> ;');
@@ -3505,7 +3629,6 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
            '"\\"\'", \'"\\\'\', "\\\\", \'\\\\\', "\\xff and \\xzz", "unicode \\u0000 \\" \' \\\\ \\uffff \\uzzzz"');
         */
         opts.unescape_strings = false;
-        bt('foo = {\n    x: y, // #44\n    w: z // #44\n}');
 
         bt('return function();');
         bt('var a = function();');
@@ -3718,6 +3841,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('if (foo) // comment\n    (bar());');
         bt('if (foo) // comment\n    (bar());');
         bt('if (foo) // comment\n    /asdf/;');
+        bt('foo = {\n    x: y, // #44\n    w: z // #44\n}');
+        bt('switch (x) {\n    case "a":\n        // comment on newline\n        break;\n    case "b": // comment on same line\n        break;\n}');
 
         // these aren't ready yet.
         //bt('if (foo) // comment\n    bar() /*i*/ + baz() /*j\n*/ + asdf();');
@@ -3768,6 +3893,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('if (foo) // comment\n    (bar());');
         bt('if (foo) // comment\n    (bar());');
         bt('if (foo) // comment\n    /asdf/;');
+        bt('foo = {\n    x: y, // #44\n    w: z // #44\n}');
+        bt('switch (x) {\n    case "a":\n        // comment on newline\n        break;\n    case "b": // comment on same line\n        break;\n}');
 
         // these aren't ready yet.
         // bt('if (foo) // comment\n    bar() /*i*/ + baz() /*j\n*/ + asdf();');
@@ -3813,6 +3940,50 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         opts.max_preserve_newlines = 8;
         bt('a = 1;\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nb = 2;',
             'a = 1;\n\n\n\n\n\n\n\nb = 2;');
+
+        // Test the option to have spaces within parens
+        opts.space_in_paren = false;
+        bt('if(p) foo(a,b)', 'if (p) foo(a, b)');
+        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
+           'try {\n    while (true) {\n        willThrow()\n    }\n} catch (result) switch (result) {\n    case 1:\n        ++result\n}');
+        bt('((e/((a+(b)*c)-d))^2)*5;', '((e / ((a + (b) * c) - d)) ^ 2) * 5;');
+        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
+            'function f(a, b) {\n    if (a) b()\n}\nfunction g(a, b) {\n    if (!a) b()\n}');
+        bt('a=[];',
+            'a = [];');
+        bt('a=[b,c,d];',
+            'a = [b, c, d];');
+        bt('a= f[b];',
+            'a = f[b];');
+        opts.space_in_paren = true
+        bt('if(p) foo(a,b)', 'if ( p ) foo( a, b )');
+        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
+           'try {\n    while ( true ) {\n        willThrow( )\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
+        bt('((e/((a+(b)*c)-d))^2)*5;', '( ( e / ( ( a + ( b ) * c ) - d ) ) ^ 2 ) * 5;');
+        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
+            'function f( a, b ) {\n    if ( a ) b( )\n}\nfunction g( a, b ) {\n    if ( !a ) b( )\n}');
+        bt('a=[ ];',
+            'a = [ ];');
+        bt('a=[b,c,d];',
+            'a = [ b, c, d ];');
+        bt('a= f[b];',
+            'a = f[ b ];');
+        opts.space_in_paren = false;
+
+        // Test that e4x literals passed through when e4x-option is enabled
+        bt('xml=<a b="c"><d/><e>\n foo</e>x</a>;', 'xml = < a b = "c" > < d / > < e >\n    foo < /e>x</a > ;');
+        opts.e4x = true;
+        bt('xml=<a b="c"><d/><e>\n foo</e>x</a>;', 'xml = <a b="c"><d/><e>\n foo</e>x</a>;');
+        // Handles messed up tags, as long as it isn't the same name
+        // as the root tag. Also handles tags of same name as root tag
+        // as long as nesting matches.
+        bt('xml=<a x="jn"><c></b></f><a><d jnj="jnn"><f></a ></nj></a>;',
+         'xml = <a x="jn"><c></b></f><a><d jnj="jnn"><f></a ></nj></a>;');
+        // If xml is not terminated, the remainder of the file is treated
+        // as part of the xml-literal (passed through unaltered)
+        test_fragment('xml=<a></b>\nc<b;', 'xml = <a></b>\nc<b;');
+        opts.e4x = false;
+
 
         Urlencoded.run_tests(sanitytest);
 
