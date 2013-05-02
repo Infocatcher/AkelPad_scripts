@@ -201,8 +201,15 @@ function getFile(lpFrame) {
 			AkelPad.Command(4105); // IDM_FILE_SAVE
 		else {
 			var tempFile = file = getTempFile(hWndEdit, origFile);
-			var codePage = AkelPad.GetEditCodePage(hWndEdit);
-			var hasBOM = AkelPad.GetEditBOM(hWndEdit);
+			if(origFile) {
+				var codePage = AkelPad.GetEditCodePage(hWndEdit);
+				var hasBOM = AkelPad.GetEditBOM(hWndEdit);
+			}
+			else {
+				// Will use UTF-8 with BOM to correctly save all (most?) new documents
+				var codePage = 65001;
+				var hasBOM = 1;
+			}
 			var text = AkelPad.GetTextRange(0, -1);
 
 			AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
