@@ -19,7 +19,8 @@
 //             =3                 - always set
 //   -indentSize=1                - indent with a tab character
 //              =4                - indent with 4 spaces
-//   -preserveNewlines=true       - preserve empty lines
+//   -preserveNewlines=true       - whether existing line breaks should be preserved
+//   -maxPreserveNewlines=2       - maximum number of line breaks to be preserved in one chunk
 //   -braceStyle="collapse"       - braces with control statement
 //              ="expand"         - braces on own line
 //              ="end-expand"     - end braces on own line
@@ -88,6 +89,7 @@ var restoreCaretPos        = getArg("restoreCaretPos", true);
 var setSyntaxMode          = getArg("setSyntax", 2);
 var indentSize             = getArg("indentSize", 1);
 var preserveNewlines       = getArg("preserveNewlines", true);
+var maxPreserveNewlines    = getArg("maxPreserveNewlines", 2);
 var braceStyle             = getArg("braceStyle", "end-expand");
 var keepArrayIndentation   = getArg("keepArrayIndentation", true);
 var breakChainedMethods    = getArg("breakChainedMethods", false);
@@ -137,6 +139,7 @@ function beautify(source, syntax) { // Based on beautify function
 		indent_size:              indentSize,
 		indent_char:              indentChar,
 		preserve_newlines:        preserveNewlines,
+		max_preserve_newlines:    maxPreserveNewlines,
 		brace_style:              braceStyle,
 		keep_array_indentation:   keepArrayIndentation,
 		break_chained_methods:    breakChainedMethods,
