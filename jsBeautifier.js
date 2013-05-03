@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.3 - 2013-02-02
-// Based on scripts from http://jsbeautifier.org/ [2013-04-28 07:09:33 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-05-02 20:02:42 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -442,6 +442,8 @@ function detectXMLType(str) {
         opt.space_before_conditional= (options.space_before_conditional === undefined) ? true : options.space_before_conditional;
         opt.unescape_strings = (options.unescape_strings === undefined) ? false : options.unescape_strings;
         opt.wrap_line_length = (options.wrap_line_length === undefined) ? 0 : parseInt(options.wrap_line_length, 10);
+        opt.e4x = (options.e4x === undefined) ? false : options.e4x;
+
 
         //----------------------------------
         indent_string = '';
@@ -954,7 +956,7 @@ function detectXMLType(str) {
             if (c === "'" || c === '"' || // string
                 (
                     (c === '/') || // regexp
-                    (options.e4x && c ==="<" && input.slice(parser_pos - 1).match(/^<[a-zA-Z:0-9]+\s*([a-zA-Z:0-9]+="[^"]*"\s*)*\/?\s*>/)) // xml
+                    (opt.e4x && c ==="<" && input.slice(parser_pos - 1).match(/^<[a-zA-Z:0-9]+\s*([a-zA-Z:0-9]+="[^"]*"\s*)*\/?\s*>/)) // xml
                 ) && ( // regex and xml can only appear in specific locations during parsing
                     (last_type === 'TK_WORD' && is_special_word (flags.last_text)) ||
                     (last_type === 'TK_END_EXPR' && in_array(previous_flags.mode, [MODE.Conditional, MODE.ForInitializer])) ||
@@ -993,7 +995,7 @@ function detectXMLType(str) {
                                 return [resulting_string, 'TK_STRING'];
                             }
                         }
-                    } else if (options.e4x && sep === '<') {
+                    } else if (opt.e4x && sep === '<') {
                         //
                         // handle e4x xml literals
                         //
@@ -1761,6 +1763,9 @@ function detectXMLType(str) {
     } else if (typeof window !== "undefined") {
         // If we're running a web page and don't have either of the above, add our one global
         window.js_beautify = js_beautify;
+    } else if (typeof global !== "undefined") {
+        // If we don't even have window, try global.
+        global.js_beautify = js_beautify;
     }
 
 }());
@@ -2021,6 +2026,9 @@ function detectXMLType(str) {
     } else if (typeof window !== "undefined") {
         // If we're running a web page and don't have either of the above, add our one global
         window.css_beautify = css_beautify;
+    } else if (typeof global !== "undefined") {
+        // If we don't even have window, try global.
+        global.css_beautify = css_beautify;
     }
 
 }());
@@ -2662,8 +2670,14 @@ function detectXMLType(str) {
         // If we're running a web page and don't have either of the above, add our one global
         window.html_beautify = function(html_source, options) {
             return style_html(html_source, options, window.js_beautify, window.css_beautify);
-        };;
+        };
+    } else if (typeof global !== "undefined") {
+        // If we don't even have window, try global.
+        global.html_beautify = function(html_source, options) {
+            return style_html(html_source, options, global.js_beautify, global.css_beautify);
+        };
     }
+
 }());
 //== js/lib/beautify-html.js end
 
