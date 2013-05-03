@@ -33,6 +33,7 @@
 //                 ="separate"    - separate indentation
 //   -unescapeStrings=true        - unescape printable \xNN characters in strings ("example" vs "\x65\x78\x61\x6d\x70\x6c\x65")
 //   -wrapLineLength=70           - lines should wrap at next opportunity after this number of characters
+//   -e4x=true                    - handle E4X XML literals
 //   -maxChar=70                  - maximum amount of characters per line (only for HTML)
 //   -unformattedTags=["a"]       - list of tags, that shouldn't be reformatted (only for HTML)
 //   -detectPackers=true          - detect packers
@@ -98,6 +99,7 @@ var spaceBeforeConditional = getArg("spaceBeforeConditional", false);
 var indentScripts          = getArg("indentScripts", "normal");
 var unescapeStrings        = getArg("unescapeStrings"); // Will use jsBeautifier defaults
 var wrapLineLength         = getArg("wrapLineLength");
+var e4x                    = getArg("e4x");
 var maxChar                = getArg("maxChar"); // Will use jsBeautifier defaults
 var unformattedTags        = getArg("unformattedTags"); // Will use jsBeautifier defaults
 var detectPackers          = getArg("detectPackers", true);
@@ -148,6 +150,7 @@ function beautify(source, syntax) { // Based on beautify function
 		indent_scripts:           indentScripts,
 		unescape_strings:         unescapeStrings,
 		wrap_line_length:         wrapLineLength,
+		e4x:                      e4x,
 		// for style_html():
 		max_char:                 maxChar,
 		unformatted:              unformattedTags
