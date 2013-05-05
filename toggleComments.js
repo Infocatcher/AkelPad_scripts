@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/toggleComments.js
 
 // (c) Infocatcher 2008-2013
-// version 0.4.4pre - 2013-04-11
+// version 0.4.4pre - 2013-05-05
 
 //===================
 // Adds/removes comments
@@ -93,8 +93,10 @@ var commentsSets = {
 	coder: [ null, null, [";"] ],
 	sql: [ ["/*"], ["*/"], ["--"] ],
 	htaccess: [ null, null, ["#"] ],
-	//ahk: [ ["\r/*"], ["\r*/"], [";"] ]
-	ahk: [ null, null, [";"] ]
+	//ahk: [ ["\r/*"], ["\r*/"], [";"] ],
+	ahk: [ null, null, [";"] ],
+	py: [ null, null, ["#"] ],
+	pyw: "py"
 };
 var commentsRegions = {
 	// Example:
