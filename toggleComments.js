@@ -1,5 +1,6 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9924#9924
 // http://infocatcher.ucoz.net/js/akelpad_scripts/toggleComments.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/toggleComments.js
 
 // (c) Infocatcher 2008-2013
 // version 0.4.4pre - 2013-04-11
