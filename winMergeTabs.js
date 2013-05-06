@@ -35,6 +35,12 @@ function _localize(s) {
 		},
 		"Select tab!": {
 			ru: "Выберите вкладку!"
+		},
+		"Not found file from first tab:\n": {
+			ru: "Не найден файл из первой вкладки:\n"
+		},
+		"Not found file from second tab:\n": {
+			ru: "Не найден файл из второй вкладки:\n"
 		}
 	};
 	var lng;
@@ -160,6 +166,27 @@ function compareTabs(lpFrame, lpFrame2) {
 	// Force redraw current edit window
 	oSys.Call("user32::InvalidateRect", AkelPad.GetEditWnd(), 0, true);
 
+	var noFile  = !fso.FileExists(file);
+	var noFile2 = !fso.FileExists(file2);
+	if(noFile || noFile2) {
+		var errs = [];
+		if(noFile)
+			errs[errs.length] = _localize("Not found file from first tab:\n") + file;
+		if(noFile2)
+			errs[errs.length] = _localize("Not found file from second tab:\n") + file2;
+		AkelPad.MessageBox(
+			hMainWnd,
+			errs.join("\n\n"),
+			WScript.ScriptName,
+			48 /*MB_ICONEXCLAMATION*/
+		);
+		if(!noFile && file.isTemp)
+			fso.DeleteFile(file);
+		if(!noFile2 && file2.isTemp)
+			fso.DeleteFile(file2);
+		return;
+	}
+
 	if(useTabsOrder) {
 		var pos  = AkelPad.SendMessage(hMainWnd, 1294 /*AKD_FRAMEINDEX*/, 0, lpFrame);
 		var pos2 = AkelPad.SendMessage(hMainWnd, 1294 /*AKD_FRAMEINDEX*/, 0, lpFrame2);
@@ -215,7 +242,9 @@ function getFile(lpFrame) {
 			AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
 			AkelPad.SetSel(0, -1);
 			AkelPad.ReplaceSel(text);
-			AkelPad.SaveFile(AkelPad.GetEditWnd(), tempFile, codePage, hasBOM);
+			var err = AkelPad.SaveFile(AkelPad.GetEditWnd(), tempFile, codePage, hasBOM);
+			if(err) // Allow silently close tab
+				AkelPad.SendMessage(AkelPad.GetEditWnd(), 3087 /*AEM_SETMODIFY*/, 0, 0);
 			AkelPad.Command(4318 /*IDM_WINDOW_FRAMECLOSE*/);
 		}
 	}
