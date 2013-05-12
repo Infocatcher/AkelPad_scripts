@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/winMergeTabs.js
 
 // (c) Infocatcher 2013
-// version 0.1.0.1 - 2013-03-23
+// version 0.1.1 - 2013-05-06
 
 // Compare contents of current and next selected tab using WinMerge (http://winmerge.org/)
 // or any other compare tool
