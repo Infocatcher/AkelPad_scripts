@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.4 - 2013-05-03
-// Based on scripts from http://jsbeautifier.org/ [2013-05-02 20:02:42 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-05-09 21:34:15 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -351,7 +351,7 @@ function detectXMLType(str) {
         var input, output, token_text, token_type, last_type, last_last_text, indent_string;
         var flags, previous_flags, flag_store;
         var whitespace, wordchar, punct, parser_pos, line_starters, digits;
-        var prefix;
+        var prefix, dot_after_newline;
         var input_wanted_newline;
         var output_wrapped, output_space_before_token;
         var input_length, n_newlines, whitespace_before_token;
@@ -573,6 +573,10 @@ function detectXMLType(str) {
 
         function just_added_newline() {
             return output.length && output[output.length - 1] === "\n";
+        }
+
+        function just_added_blankline() {
+            return just_added_newline() && output.length - 1 > 0 && output[output.length - 2] === "\n";
         }
 
         function _last_index_of(arr, find) {
@@ -1234,6 +1238,10 @@ function detectXMLType(str) {
                 set_mode(MODE.ArrayLiteral);
                 indent();
             }
+            if(dot_after_newline) {
+              dot_after_newline = false;
+              indent();
+            }
         }
 
         function handle_end_expr() {
@@ -1356,6 +1364,10 @@ function detectXMLType(str) {
                 }
             }
 
+            if(dot_after_newline && is_special_word(token_text)) {
+              dot_after_newline = false;
+            }
+
             // if may be followed by else, or not
             // Bare/inline ifs are tricky
             // Need to unwind the modes correctly: if (a) if (b) c(); else d(); else e();
@@ -1372,16 +1384,15 @@ function detectXMLType(str) {
                 if (flags.var_line && last_type !== 'TK_EQUALS') {
                     flags.var_line_reindented = true;
                 }
-                if ((just_added_newline() || flags.last_text === ';') && flags.last_text !== '{' &&
-                    !is_array(flags.mode)) {
+                if ((just_added_newline() || flags.last_text === ';' || flags.last_text === '}') &&
+                    flags.last_text !== '{' && !is_array(flags.mode)) {
                     // make sure there is a nice clean space of at least one blank line
                     // before a new function definition, except in arrays
-                    n_newlines = just_added_newline() ? n_newlines : 0;
-                    if (!opt.preserve_newlines) {
-                        n_newlines = 1;
+                    if(!just_added_newline()) {
+                        print_newline(true);
                     }
 
-                    for (var i = 0; i < 2 - n_newlines; i++) {
+                    if(!just_added_blankline()) {
                         print_newline(true);
                     }
                 }
@@ -1745,7 +1756,12 @@ function detectXMLType(str) {
                 allow_wrap_or_preserved_newline (flags.last_text === ')' && opt.break_chained_methods);
             }
 
+            if (just_added_newline()) {
+                dot_after_newline = true;
+            }
+
             print_token();
+
         }
 
         function handle_unknown() {
@@ -3072,6 +3088,11 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
     {
         expected = expected || input;
         sanitytest.expect(input, expected);
+        // if the expected is different from input, run it again
+        // expected output should be unchanged when run twice.
+        if (expected != input) {
+            sanitytest.expect(expected, expected);
+        }
     }
 
 
@@ -3658,7 +3679,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         test_fragment('function f(a: a, b: b)'); // actionscript
 
         bt('{\n    foo // something\n    ,\n    bar // something\n    baz\n}');
-        bt('function a(a) {} function b(b) {} function c(c) {}', 'function a(a) {}\nfunction b(b) {}\nfunction c(c) {}');
+        bt('function a(a) {} function b(b) {} function c(c) {}', 'function a(a) {}\n\nfunction b(b) {}\n\nfunction c(c) {}');
         bt('foo(a, function() {})');
 
         bt('foo(a, /regex/)');
@@ -3881,7 +3902,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
             'function f(a, b, c, d, e) {}');
 
         bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
-            'function f(a, b) {\n    if (a) b()\n}\nfunction g(a, b) {\n    if (!a) b()\n}');
+            'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
         bt('function f(a,b) {if(a) b()}\n\n\n\nfunction g(a,b) {if(!a) b()}',
             'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
 
@@ -3931,7 +3952,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
             'function f(a, b, c,\n    d, e) {}');
 
         bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
-            'function f(a, b) {\n    if (a) b()\n}\nfunction g(a, b) {\n    if (!a) b()\n}');
+            'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
         bt('function f(a,b) {if(a) b()}\n\n\n\nfunction g(a,b) {if(!a) b()}',
             'function f(a, b) {\n    if (a) b()\n}\n\n\n\nfunction g(a, b) {\n    if (!a) b()\n}');
         // This is not valid syntax, but still want to behave reasonably and not side-effect
@@ -3967,7 +3988,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
            'try {\n    while (true) {\n        willThrow()\n    }\n} catch (result) switch (result) {\n    case 1:\n        ++result\n}');
         bt('((e/((a+(b)*c)-d))^2)*5;', '((e / ((a + (b) * c) - d)) ^ 2) * 5;');
         bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
-            'function f(a, b) {\n    if (a) b()\n}\nfunction g(a, b) {\n    if (!a) b()\n}');
+            'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
         bt('a=[];',
             'a = [];');
         bt('a=[b,c,d];',
@@ -3980,7 +4001,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
            'try {\n    while ( true ) {\n        willThrow( )\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
         bt('((e/((a+(b)*c)-d))^2)*5;', '( ( e / ( ( a + ( b ) * c ) - d ) ) ^ 2 ) * 5;');
         bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
-            'function f( a, b ) {\n    if ( a ) b( )\n}\nfunction g( a, b ) {\n    if ( !a ) b( )\n}');
+            'function f( a, b ) {\n    if ( a ) b( )\n}\n\nfunction g( a, b ) {\n    if ( !a ) b( )\n}');
         bt('a=[ ];',
             'a = [ ];');
         bt('a=[b,c,d];',
@@ -4002,6 +4023,28 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         // as part of the xml-literal (passed through unaltered)
         test_fragment('xml=<a></b>\nc<b;', 'xml = <a></b>\nc<b;');
         opts.e4x = false;
+
+        // START tests for issue 241
+        bt('obj\n' +
+           '    .last({\n' +
+           '        foo: 1,\n' +
+           '        bar: 2\n' +
+           '    });\n' +
+           'var test = 1;');
+
+        bt('obj\n' +
+           '    .last(function() {\n' +
+           '        var test;\n' +
+           '    });\n' +
+           'var test = 1;');
+
+        bt('obj.first()\n' +
+           '    .second()\n' +
+           '    .last(function(err, response) {\n' +
+           '        console.log(err);\n' +
+           '    });');
+
+        // END tests for issue 241
 
 
         Urlencoded.run_tests(sanitytest);
