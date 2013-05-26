@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.4 - 2013-05-03
-// Based on scripts from http://jsbeautifier.org/ [2013-05-25 04:50:51 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-05-26 04:19:23 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -506,7 +506,7 @@ function detectXMLType(str) {
 
                 if (keep_whitespace) {
                     for (i = 0; i < n_newlines; i += 1) {
-                        print_newline(true);
+                        print_newline(i > 0);
                     }
                 } else {
                     if (opt.max_preserve_newlines && n_newlines > opt.max_preserve_newlines) {
@@ -1718,9 +1718,7 @@ function detectXMLType(str) {
             }
 
             // for comments of more than one line, make sure there's a new line after
-            if (lines.length > 1 && !is_next('\n')) {
-                print_newline(false, true);
-            }
+            print_newline(false, true);
         }
 
         function handle_inline_comment() {
@@ -3560,11 +3558,28 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         test_fragment('new function');
         bt("foo({\n    'a': 1\n},\n10);",
             "foo(\n    {\n        'a': 1\n    },\n    10);");
+        bt( "test( /*Argument 1*/ {\n" +
+            "    'Value1': '1'\n" +
+            "}, /*Argument 2\n" +
+            " */ {\n" +
+            "    'Value2': '2'\n" +
+            "});",
+            // expected
+            "test( /*Argument 1*/\n" +
+            "    {\n" +
+            "        'Value1': '1'\n" +
+            "    },\n" +
+            "    /*Argument 2\n" +
+            "     */\n" +
+            "    {\n" +
+            "        'Value2': '2'\n" +
+            "    });");
         bt( "test(\n" +
             "/*Argument 1*/ {\n" +
             "    'Value1': '1'\n" +
             "},\n" +
-            "/*Argument 2*/ {\n" +
+            "/*Argument 2\n" +
+            " */ {\n" +
             "    'Value2': '2'\n" +
             "});",
             // expected
@@ -3573,7 +3588,26 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
             "    {\n" +
             "        'Value1': '1'\n" +
             "    },\n" +
-            "    /*Argument 2*/\n" +
+            "    /*Argument 2\n" +
+            "     */\n" +
+            "    {\n" +
+            "        'Value2': '2'\n" +
+            "    });");
+        bt( "test( /*Argument 1*/\n" +
+            "{\n" +
+            "    'Value1': '1'\n" +
+            "}, /*Argument 2\n" +
+            " */\n" +
+            "{\n" +
+            "    'Value2': '2'\n" +
+            "});",
+            // expected
+            "test( /*Argument 1*/\n" +
+            "    {\n" +
+            "        'Value1': '1'\n" +
+            "    },\n" +
+            "    /*Argument 2\n" +
+            "     */\n" +
             "    {\n" +
             "        'Value2': '2'\n" +
             "    });");
@@ -3615,19 +3649,55 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         test_fragment('new function');
         bt("foo({\n    'a': 1\n},\n10);",
             "foo({\n        'a': 1\n    },\n    10);");
+        bt( "test( /*Argument 1*/ {\n" +
+            "    'Value1': '1'\n" +
+            "}, /*Argument 2\n" +
+            " */ {\n" +
+            "    'Value2': '2'\n" +
+            "});",
+            // expected
+            "test( /*Argument 1*/ {\n" +
+            "        'Value1': '1'\n" +
+            "    },\n" +
+            "    /*Argument 2\n" +
+            "     */\n" +
+            "    {\n" +
+            "        'Value2': '2'\n" +
+            "    });");
         bt( "test(\n" +
             "/*Argument 1*/ {\n" +
             "    'Value1': '1'\n" +
             "},\n" +
-            "/*Argument 2*/ {\n" +
+            "/*Argument 2\n" +
+            " */ {\n" +
             "    'Value2': '2'\n" +
             "});",
             // expected
             "test(\n" +
-            "    /*Argument 1*/ {\n" +
+            "    /*Argument 1*/\n" +
+            "    {\n" +
             "        'Value1': '1'\n" +
             "    },\n" +
-            "    /*Argument 2*/ {\n" +
+            "    /*Argument 2\n" +
+            "     */\n" +
+            "    {\n" +
+            "        'Value2': '2'\n" +
+            "    });");
+        bt( "test( /*Argument 1*/\n" +
+            "{\n" +
+            "    'Value1': '1'\n" +
+            "}, /*Argument 2\n" +
+            " */\n" +
+            "{\n" +
+            "    'Value2': '2'\n" +
+            "});",
+            // expected
+            "test( /*Argument 1*/ {\n" +
+            "        'Value1': '1'\n" +
+            "    },\n" +
+            "    /*Argument 2\n" +
+            "     */\n" +
+            "    {\n" +
             "        'Value2': '2'\n" +
             "    });");
 
@@ -3668,19 +3738,55 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         test_fragment('new function');
         bt("foo({\n    'a': 1\n},\n10);",
             "foo({\n        'a': 1\n    },\n    10);");
+        bt( "test( /*Argument 1*/ {\n" +
+            "    'Value1': '1'\n" +
+            "}, /*Argument 2\n" +
+            " */ {\n" +
+            "    'Value2': '2'\n" +
+            "});",
+            // expected
+            "test( /*Argument 1*/ {\n" +
+            "        'Value1': '1'\n" +
+            "    },\n" +
+            "    /*Argument 2\n" +
+            "     */\n" +
+            "    {\n" +
+            "        'Value2': '2'\n" +
+            "    });");
         bt( "test(\n" +
             "/*Argument 1*/ {\n" +
             "    'Value1': '1'\n" +
             "},\n" +
-            "/*Argument 2*/ {\n" +
+            "/*Argument 2\n" +
+            " */ {\n" +
             "    'Value2': '2'\n" +
             "});",
             // expected
             "test(\n" +
-            "    /*Argument 1*/ {\n" +
+            "    /*Argument 1*/\n" +
+            "    {\n" +
             "        'Value1': '1'\n" +
             "    },\n" +
-            "    /*Argument 2*/ {\n" +
+            "    /*Argument 2\n" +
+            "     */\n" +
+            "    {\n" +
+            "        'Value2': '2'\n" +
+            "    });");
+        bt( "test( /*Argument 1*/\n" +
+            "{\n" +
+            "    'Value1': '1'\n" +
+            "}, /*Argument 2\n" +
+            " */\n" +
+            "{\n" +
+            "    'Value2': '2'\n" +
+            "});",
+            // expected
+            "test( /*Argument 1*/ {\n" +
+            "        'Value1': '1'\n" +
+            "    },\n" +
+            "    /*Argument 2\n" +
+            "     */\n" +
+            "    {\n" +
             "        'Value2': '2'\n" +
             "    });");
 
