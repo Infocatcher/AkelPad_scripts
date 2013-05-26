@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.4 - 2013-05-03
-// Based on scripts from http://jsbeautifier.org/ [2013-05-09 21:34:15 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-05-25 04:50:51 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -351,7 +351,7 @@ function detectXMLType(str) {
         var input, output, token_text, token_type, last_type, last_last_text, indent_string;
         var flags, previous_flags, flag_store;
         var whitespace, wordchar, punct, parser_pos, line_starters, digits;
-        var prefix, dot_after_newline;
+        var prefix;
         var input_wanted_newline;
         var output_wrapped, output_space_before_token;
         var input_length, n_newlines, whitespace_before_token;
@@ -502,13 +502,13 @@ function detectXMLType(str) {
                 }
 
                 keep_whitespace = opt.keep_array_indentation && is_array(flags.mode);
+                input_wanted_newline = n_newlines > 0;
 
                 if (keep_whitespace) {
                     for (i = 0; i < n_newlines; i += 1) {
                         print_newline(true);
                     }
                 } else {
-                    input_wanted_newline = n_newlines > 0;
                     if (opt.max_preserve_newlines && n_newlines > opt.max_preserve_newlines) {
                         n_newlines = opt.max_preserve_newlines;
                     }
@@ -613,8 +613,11 @@ function detectXMLType(str) {
             }
             if (((opt.preserve_newlines && input_wanted_newline) || force_linewrap) && !just_added_newline()) {
                 print_newline(false, true);
-                output_wrapped = true;
-                input_wanted_newline = false;
+
+                // Expressions and array literals already indent their contents.
+                if(! (is_array(flags.mode) || is_expression(flags.mode))) {
+                    output_wrapped = true;
+                }
             }
         }
 
@@ -646,8 +649,10 @@ function detectXMLType(str) {
 
         function print_token_line_indentation() {
             if (just_added_newline()) {
-                if (opt.keep_array_indentation && is_array(flags.mode) && whitespace_before_token.length) {
-                    output.push(whitespace_before_token.join('') + '');
+                if (opt.keep_array_indentation && is_array(flags.mode) && input_wanted_newline) {
+                    for (var i = 0; i < whitespace_before_token.length; i += 1) {
+                        output.push(whitespace_before_token[i]);
+                    }
                 } else {
                     if (preindent_string) {
                         output.push(preindent_string);
@@ -1230,18 +1235,17 @@ function detectXMLType(str) {
                     }
                 }
             }
+            if (token_text === '[') {
+                set_mode(MODE.ArrayLiteral);
+            }
+
             print_token();
             if (opt.space_in_paren) {
                     output_space_before_token = true;
             }
-            if (token_text === '[') {
-                set_mode(MODE.ArrayLiteral);
-                indent();
-            }
-            if(dot_after_newline) {
-              dot_after_newline = false;
-              indent();
-            }
+
+            // In all cases, if we newline while inside an expression it should be indented.
+            indent();
         }
 
         function handle_end_expr() {
@@ -1254,11 +1258,16 @@ function detectXMLType(str) {
             if (token_text === ']' && is_array(flags.mode) && flags.multiline_array && !opt.keep_array_indentation) {
                 print_newline();
             }
-            restore_mode();
             if (opt.space_in_paren) {
                     output_space_before_token = true;
             }
-            print_token();
+            if (token_text === ']' && opt.keep_array_indentation) {
+                print_token();
+                restore_mode();
+            } else {
+                restore_mode();
+                print_token();
+            }
 
             // do {} while () // no statement required after
             if (flags.do_while && previous_flags.mode === MODE.Conditional) {
@@ -1362,10 +1371,6 @@ function detectXMLType(str) {
                     print_newline();
                     flags.do_block = false;
                 }
-            }
-
-            if(dot_after_newline && is_special_word(token_text)) {
-              dot_after_newline = false;
             }
 
             // if may be followed by else, or not
@@ -1689,42 +1694,31 @@ function detectXMLType(str) {
         function handle_block_comment() {
             var lines = split_newlines(token_text);
             var j; // iterator for this case
+            var javadoc = false;
 
-            if (all_lines_start_with(lines.slice(1), '*')) {
-                // javadoc: reformat and reindent
-                print_newline(false, true);
-                print_token(lines[0]);
-                for (j = 1; j < lines.length; j++) {
-                    print_newline(false, true);
-                    print_token(' ' + trim(lines[j]));
+            // block comment starts with a new line
+            print_newline(false, true);
+            if (lines.length > 1) {
+                if (all_lines_start_with(lines.slice(1), '*')) {
+                    javadoc = true;
                 }
-
-            } else {
-
-                // simple block comment: leave intact
-                if (lines.length > 1) {
-                    // multiline comment block starts with a new line
-                    print_newline(false, true);
-                } else {
-                    // single-line /* comment */ stays where it is
-                    if (last_type === 'TK_END_BLOCK') {
-                        print_newline(false, true);
-                    } else {
-                        output_space_before_token = true;
-                    }
-
-                }
-
-                print_token(lines[0]);
-                output.push("\n");
-                for (j = 1; j < lines.length; j++) {
-                    output.push(lines[j]);
-                    output.push("\n");
-                }
-
             }
 
-            if (!is_next('\n')) {
+            // first line always indented
+            print_token(lines[0]);
+            for (j = 1; j < lines.length; j++) {
+                print_newline(false, true);
+                if (javadoc) {
+                    // javadoc: reformat and re-indent
+                    print_token(' ' + trim(lines[j]));
+                } else {
+                    // normal comments output raw
+                    output.push(lines[j]);
+                }
+            }
+
+            // for comments of more than one line, make sure there's a new line after
+            if (lines.length > 1 && !is_next('\n')) {
                 print_newline(false, true);
             }
         }
@@ -1756,12 +1750,7 @@ function detectXMLType(str) {
                 allow_wrap_or_preserved_newline (flags.last_text === ')' && opt.break_chained_methods);
             }
 
-            if (just_added_newline()) {
-                dot_after_newline = true;
-            }
-
             print_token();
-
         }
 
         function handle_unknown() {
@@ -3176,8 +3165,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('a=0xff+4', 'a = 0xff + 4');
         bt('a = [1, 2, 3, 4]');
         bt('F*(g/=f)*g+b', 'F * (g /= f) * g + b');
-        bt('a.b({c:d})', "a.b({\n    c: d\n})");
-        bt('a.b\n(\n{\nc:\nd\n}\n)', "a.b({\n    c: d\n})");
+        bt('a.b({c:d})', "a.b({\n        c: d\n    })");
+        bt('a.b\n(\n{\nc:\nd\n}\n)', "a.b({\n        c: d\n    })");
         bt('a=!b', 'a = !b');
         bt('a?b:c', 'a ? b : c');
         bt('a?1:2', 'a ? 1 : 2');
@@ -3482,21 +3471,49 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('if (foo) //  comment\n{\n    bar();\n}');
 
 
+        opts.keep_array_indentation = false;
+        bt("a = ['a', 'b', 'c',\n   'd', 'e', 'f']",
+            "a = ['a', 'b', 'c',\n    'd', 'e', 'f'\n]");
+        bt("a = ['a', 'b', 'c',\n   'd', 'e', 'f',\n        'g', 'h', 'i']",
+            "a = ['a', 'b', 'c',\n    'd', 'e', 'f',\n    'g', 'h', 'i'\n]");
+        bt("a = ['a', 'b', 'c',\n       'd', 'e', 'f',\n            'g', 'h', 'i']",
+            "a = ['a', 'b', 'c',\n    'd', 'e', 'f',\n    'g', 'h', 'i'\n]");
+        bt('var x = [{}\n]', 'var x = [{}]');
+        bt('var x = [{foo:bar}\n]', 'var x = [{\n        foo: bar\n    }\n]');
+        bt("a = ['something',\n    'completely',\n    'different'];\nif (x);",
+            "a = ['something',\n    'completely',\n    'different'\n];\nif (x);");
+        bt("a = ['a','b','c']", "a = ['a', 'b', 'c']");
+        bt("a = ['a',   'b','c']", "a = ['a', 'b', 'c']");
+        bt("x = [{'a':0}]",
+            "x = [{\n        'a': 0\n    }\n]");
+        // this is not great, but is accurate
+        bt('{a([[a1]], {b;});}',
+            '{\n    a([\n            [a1]\n        ], {\n            b;\n        });\n}');
+        bt("a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
+            "a();\n[\n    ['sdfsdfsd'],\n    ['sdfsdfsdf']\n].toString();");
+        bt("function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}",
+            "function() {\n    Foo([\n            ['sdfsdfsd'],\n            ['sdfsdfsdf']\n        ]);\n}");
+
         opts.keep_array_indentation = true;
-        bt("a = ['a', 'b', 'c',\n    'd', 'e', 'f']");
-        bt("a = ['a', 'b', 'c',\n    'd', 'e', 'f',\n        'g', 'h', 'i']");
-        bt("a = ['a', 'b', 'c',\n        'd', 'e', 'f',\n            'g', 'h', 'i']");
-
-
+        bt("a = ['a', 'b', 'c',\n   'd', 'e', 'f']");
+        bt("a = ['a', 'b', 'c',\n   'd', 'e', 'f',\n        'g', 'h', 'i']");
+        bt("a = ['a', 'b', 'c',\n       'd', 'e', 'f',\n            'g', 'h', 'i']");
         bt('var x = [{}\n]', 'var x = [{}\n]');
         bt('var x = [{foo:bar}\n]', 'var x = [{\n        foo: bar\n    }\n]');
         bt("a = ['something',\n    'completely',\n    'different'];\nif (x);");
         bt("a = ['a','b','c']", "a = ['a', 'b', 'c']");
         bt("a = ['a',   'b','c']", "a = ['a', 'b', 'c']");
+        bt("x = [{'a':0}]",
+            "x = [{\n        'a': 0\n    }]");
+        bt('{a([[a1]], {b;});}',
+            '{\n    a([[a1]], {\n            b;\n        });\n}');
+        bt("a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
+            "a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();");
+        bt("function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}",
+            "function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}");
 
-        bt("x = [{'a':0}]", "x = [{\n        'a': 0\n    }]");
+        opts.keep_array_indentation = false;
 
-        bt('{a([[a1]], {b;});}', '{\n    a([[a1]], {\n        b;\n    });\n}');
 
         bt('a = //comment\n/regex/;');
 
@@ -3541,7 +3558,25 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('var a = new function() {};');
         bt('var a = new function a()\n    {};');
         test_fragment('new function');
-
+        bt("foo({\n    'a': 1\n},\n10);",
+            "foo(\n    {\n        'a': 1\n    },\n    10);");
+        bt( "test(\n" +
+            "/*Argument 1*/ {\n" +
+            "    'Value1': '1'\n" +
+            "},\n" +
+            "/*Argument 2*/ {\n" +
+            "    'Value2': '2'\n" +
+            "});",
+            // expected
+            "test(\n" +
+            "    /*Argument 1*/\n" +
+            "    {\n" +
+            "        'Value1': '1'\n" +
+            "    },\n" +
+            "    /*Argument 2*/\n" +
+            "    {\n" +
+            "        'Value2': '2'\n" +
+            "    });");
 
         opts.brace_style = 'collapse';
 
@@ -3578,6 +3613,23 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('var a = new function() {};');
         bt('var a = new function a() {};');
         test_fragment('new function');
+        bt("foo({\n    'a': 1\n},\n10);",
+            "foo({\n        'a': 1\n    },\n    10);");
+        bt( "test(\n" +
+            "/*Argument 1*/ {\n" +
+            "    'Value1': '1'\n" +
+            "},\n" +
+            "/*Argument 2*/ {\n" +
+            "    'Value2': '2'\n" +
+            "});",
+            // expected
+            "test(\n" +
+            "    /*Argument 1*/ {\n" +
+            "        'Value1': '1'\n" +
+            "    },\n" +
+            "    /*Argument 2*/ {\n" +
+            "        'Value2': '2'\n" +
+            "    });");
 
         opts.brace_style = "end-expand";
 
@@ -3614,6 +3666,23 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('var a = new function() {};');
         bt('var a = new function a() {};');
         test_fragment('new function');
+        bt("foo({\n    'a': 1\n},\n10);",
+            "foo({\n        'a': 1\n    },\n    10);");
+        bt( "test(\n" +
+            "/*Argument 1*/ {\n" +
+            "    'Value1': '1'\n" +
+            "},\n" +
+            "/*Argument 2*/ {\n" +
+            "    'Value2': '2'\n" +
+            "});",
+            // expected
+            "test(\n" +
+            "    /*Argument 1*/ {\n" +
+            "        'Value1': '1'\n" +
+            "    },\n" +
+            "    /*Argument 2*/ {\n" +
+            "        'Value2': '2'\n" +
+            "    });");
 
         opts.brace_style = 'collapse';
 
@@ -3755,7 +3824,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
                       /* expected */
                       'foo.bar().baz().cucumber((fat &&\n' +
-                      '    "sassy") || (leans && mean));\n' +
+                      '        "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
@@ -3831,7 +3900,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
                       /* expected */
                       'foo.bar().baz().cucumber((fat &&\n' +
-                      '    "sassy") || (leans && mean));\n' +
+                      '        "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
@@ -3908,9 +3977,9 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
 
         // This is not valid syntax, but still want to behave reasonably and not side-effect
         bt('(if(a) b())(if(a) b())',
-            '(\nif (a) b())(\nif (a) b())');
+            '(\n    if (a) b())(\n    if (a) b())');
         bt('(if(a) b())\n\n\n(if(a) b())',
-            '(\nif (a) b())\n(\nif (a) b())');
+            '(\n    if (a) b())\n(\n    if (a) b())');
 
 
 
@@ -3957,9 +4026,9 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
             'function f(a, b) {\n    if (a) b()\n}\n\n\n\nfunction g(a, b) {\n    if (!a) b()\n}');
         // This is not valid syntax, but still want to behave reasonably and not side-effect
         bt('(if(a) b())(if(a) b())',
-            '(\nif (a) b())(\nif (a) b())');
+            '(\n    if (a) b())(\n    if (a) b())');
         bt('(if(a) b())\n\n\n(if(a) b())',
-            '(\nif (a) b())\n\n\n(\nif (a) b())');
+            '(\n    if (a) b())\n\n\n(\n    if (a) b())');
 
 
         bt("if\n(a)\nb();", "if (a)\n    b();");
@@ -3971,7 +4040,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('var a = /*i*/\nb;', 'var a = /*i*/\n    b;');
         bt('{\n\n\n"x"\n}', '{\n\n\n    "x"\n}');
         bt('if(a &&\nb\n||\nc\n||d\n&&\ne) e = f', 'if (a &&\n    b ||\n    c || d &&\n    e) e = f');
-        bt('if(a &&\n(b\n||\nc\n||d)\n&&\ne) e = f', 'if (a &&\n    (b ||\n    c || d) &&\n    e) e = f');
+        bt('if(a &&\n(b\n||\nc\n||d)\n&&\ne) e = f', 'if (a &&\n    (b ||\n        c || d) &&\n    e) e = f');
         test_fragment('\n\n"x"', '"x"');
 
         // this beavior differs between js and python, defaults to unlimited in js, 10 in python
