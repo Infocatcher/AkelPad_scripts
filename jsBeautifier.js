@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.4 - 2013-05-03
-// Based on scripts from http://jsbeautifier.org/ [2013-05-26 04:19:23 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-05-27 04:10:28 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -700,6 +700,10 @@ function detectXMLType(str) {
 
         function indent() {
             flags.indentation_level += 1;
+        }
+
+        function deindent() {
+            flags.indentation_level -= 1;
         }
 
         function set_mode(mode) {
@@ -1425,7 +1429,7 @@ function detectXMLType(str) {
                 print_newline();
                 if (flags.case_body || opt.jslint_happy) {
                     // switch cases following one another
-                    flags.indentation_level--;
+                    deindent();
                     flags.case_body = false;
                 }
                 print_token();
@@ -3558,6 +3562,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         test_fragment('new function');
         bt("foo({\n    'a': 1\n},\n10);",
             "foo(\n    {\n        'a': 1\n    },\n    10);");
+        bt('(["foo","bar"]).each(function(i) {return i;});',
+            '(["foo", "bar"]).each(function(i)\n    {\n        return i;\n    });');
         bt( "test( /*Argument 1*/ {\n" +
             "    'Value1': '1'\n" +
             "}, /*Argument 2\n" +
@@ -3649,6 +3655,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         test_fragment('new function');
         bt("foo({\n    'a': 1\n},\n10);",
             "foo({\n        'a': 1\n    },\n    10);");
+        bt('(["foo","bar"]).each(function(i) {return i;});',
+            '(["foo", "bar"]).each(function(i) {\n        return i;\n    });');
         bt( "test( /*Argument 1*/ {\n" +
             "    'Value1': '1'\n" +
             "}, /*Argument 2\n" +
@@ -3738,6 +3746,9 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         test_fragment('new function');
         bt("foo({\n    'a': 1\n},\n10);",
             "foo({\n        'a': 1\n    },\n    10);");
+        bt('(["foo","bar"]).each(function(i) {return i;});',
+            '(["foo", "bar"]).each(function(i) {\n        return i;\n    });');
+
         bt( "test( /*Argument 1*/ {\n" +
             "    'Value1': '1'\n" +
             "}, /*Argument 2\n" +
