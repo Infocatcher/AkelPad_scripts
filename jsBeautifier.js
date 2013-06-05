@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.4 - 2013-05-03
-// Based on scripts from http://jsbeautifier.org/ [2013-05-27 04:10:28 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-06-03 21:09:36 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -353,6 +353,7 @@ function detectXMLType(str) {
         var whitespace, wordchar, punct, parser_pos, line_starters, digits;
         var prefix;
         var input_wanted_newline;
+        var line_indent_level;
         var output_wrapped, output_space_before_token;
         var input_length, n_newlines, whitespace_before_token;
         var handlers, MODE, opt;
@@ -398,8 +399,10 @@ function detectXMLType(str) {
         };
 
         function create_flags(flags_base, mode) {
-            return {
+            var next_indent_level =  (flags_base ? flags_base.indentation_level + ((flags_base.var_line && flags_base.var_line_reindented) ? 1 : 0) : 0);
+            var next_flags = {
                 mode: mode,
+                parent: flags_base,
                 last_text: flags_base ? flags_base.last_text : '', // last token text
                 last_word: flags_base ? flags_base.last_word : '', // last 'TK_WORD' passed
                 var_line: false,
@@ -413,9 +416,10 @@ function detectXMLType(str) {
                 in_case_statement: false, // switch(..){ INSIDE HERE }
                 in_case: false, // we're on the exact line with "case 0:"
                 case_body: false, // the indented case-action block
-                indentation_level: (flags_base ? flags_base.indentation_level + ((flags_base.var_line && flags_base.var_line_reindented) ? 1 : 0) : 0),
+                indentation_level: next_indent_level,
                 ternary_depth: 0
-            };
+            }
+            return next_flags;
         }
 
         // Some interpreters have unexpected results with foo = baz || bar;
@@ -468,6 +472,7 @@ function detectXMLType(str) {
 
         last_type = 'TK_START_BLOCK'; // last token type
         last_last_text = ''; // pre-last token text
+        line_indent_level = 0;
         output = [];
         output_wrapped = false;
         output_space_before_token = false;
@@ -627,7 +632,7 @@ function detectXMLType(str) {
 
             if (!preserve_statement_flags) {
                 if  (flags.last_text !== ';') {
-                    while (flags.mode === MODE.Statement && !flags.if_block) {
+                    while (flags.mode === MODE.Statement && !flags.if_block && !flags.do_block) {
                         restore_mode();
                     }
                 }
@@ -658,22 +663,17 @@ function detectXMLType(str) {
                         output.push(preindent_string);
                     }
 
-                    print_indent_string(flags.indentation_level);
-                    print_indent_string(flags.var_line && flags.var_line_reindented);
-                    print_indent_string(output_wrapped);
+                    print_indent_string(flags.indentation_level +
+                        (flags.var_line && flags.var_line_reindented ? 1 : 0) +
+                        (output_wrapped ? 1 : 0));
                 }
             }
         }
 
         function print_indent_string(level) {
-            if (level === undefined) {
-                level = 1;
-            } else if (typeof level !== 'number') {
-                level = level ? 1 : 0;
-            }
-
             // Never indent your first output indent at the start of the file
             if (flags.last_text !== '') {
+                line_indent_level = level;
                 for (var i = 0; i < level; i += 1) {
                     output.push(indent_string);
                 }
@@ -703,7 +703,9 @@ function detectXMLType(str) {
         }
 
         function deindent() {
-            flags.indentation_level -= 1;
+            if (flags.indentation_level > 0 &&
+                ((!flags.parent) || flags.indentation_level > flags.parent.indentation_level))
+                flags.indentation_level -= 1;
         }
 
         function set_mode(mode) {
@@ -737,10 +739,20 @@ function detectXMLType(str) {
              (flags.last_text === 'do' ||
                  (flags.last_text === 'else' && token_text !== 'if') ||
                 (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)))) {
-                allow_wrap_or_preserved_newline();
+                // Issue #276:
+                // If starting a new statement with [if, for, while, do], push to a new line.
+                // if (a) if (b) if(c) d(); else e(); else f();
+                allow_wrap_or_preserved_newline(
+                    in_array(token_text, ['do', 'for', 'if', 'while']));
+
                 set_mode(MODE.Statement);
-                indent();
-                output_wrapped = false;
+                // Issue #275:
+                // If starting on a newline, all of a statement should be indented.
+                // if not, use line wrapping logic for indent.
+                if(just_added_newline()) {
+                    indent();
+                    output_wrapped = false;
+                }
                 return true;
             }
             return false;
@@ -1420,6 +1432,15 @@ function detectXMLType(str) {
                     print_newline();
                 }
 
+                if (is_expression(flags.mode)) {
+                    // Issue #274
+                    // (function inside expression that is not nested.
+                    if(!(is_expression(flags.parent.mode) || is_array(flags.parent.mode)) &&
+                        line_indent_level < flags.indentation_level) {
+                        deindent();
+                    }
+                }
+
                 print_token();
                 flags.last_word = token_text;
                 return;
@@ -1539,7 +1560,12 @@ function detectXMLType(str) {
         }
 
         function handle_semicolon() {
-            while (flags.mode === MODE.Statement && !flags.if_block) {
+            if (start_of_statement()) {
+                // The conditional starts the statement if appropriate.
+                // Semicolon can be the start (and end) of a statement
+                output_space_before_token = false;
+            }
+            while (flags.mode === MODE.Statement && !flags.if_block && !flags.do_block) {
                 restore_mode();
             }
             print_token();
@@ -3563,7 +3589,9 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt("foo({\n    'a': 1\n},\n10);",
             "foo(\n    {\n        'a': 1\n    },\n    10);");
         bt('(["foo","bar"]).each(function(i) {return i;});',
-            '(["foo", "bar"]).each(function(i)\n    {\n        return i;\n    });');
+            '(["foo", "bar"]).each(function(i)\n{\n    return i;\n});');
+        bt('(function(i) {return i;})();',
+            '(function(i)\n{\n    return i;\n})();');
         bt( "test( /*Argument 1*/ {\n" +
             "    'Value1': '1'\n" +
             "}, /*Argument 2\n" +
@@ -3656,7 +3684,9 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt("foo({\n    'a': 1\n},\n10);",
             "foo({\n        'a': 1\n    },\n    10);");
         bt('(["foo","bar"]).each(function(i) {return i;});',
-            '(["foo", "bar"]).each(function(i) {\n        return i;\n    });');
+            '(["foo", "bar"]).each(function(i) {\n    return i;\n});');
+        bt('(function(i) {return i;})();',
+            '(function(i) {\n    return i;\n})();');
         bt( "test( /*Argument 1*/ {\n" +
             "    'Value1': '1'\n" +
             "}, /*Argument 2\n" +
@@ -3747,8 +3777,9 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt("foo({\n    'a': 1\n},\n10);",
             "foo({\n        'a': 1\n    },\n    10);");
         bt('(["foo","bar"]).each(function(i) {return i;});',
-            '(["foo", "bar"]).each(function(i) {\n        return i;\n    });');
-
+            '(["foo", "bar"]).each(function(i) {\n    return i;\n});');
+        bt('(function(i) {return i;})();',
+            '(function(i) {\n    return i;\n})();');
         bt( "test( /*Argument 1*/ {\n" +
             "    'Value1': '1'\n" +
             "}, /*Argument 2\n" +
@@ -3993,7 +4024,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
-                      '        .okay();');
+                      '    .okay();');
 
         opts.wrap_line_length = 70;
         //.............---------1---------2---------3---------4---------5---------6---------7
@@ -4006,7 +4037,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
-                      '        .okay();');
+                      '    .okay();');
 
 
         opts.wrap_line_length = 40;
@@ -4022,7 +4053,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
                       '    inside_an_if_block) that_is_\n' +
-                      '        .okay();');
+                      '    .okay();');
 
         opts.wrap_line_length = 41;
         // NOTE: wrap is only best effort - line continues until next wrap point is found.
@@ -4038,7 +4069,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
                       '    inside_an_if_block) that_is_\n' +
-                      '        .okay();');
+                      '    .okay();');
 
         opts.wrap_line_length = 45;
         // NOTE: wrap is only best effort - line continues until next wrap point is found.
@@ -4057,7 +4088,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
                       '        .but_this_can\n' +
                       '    if (wraps_can_occur &&\n' +
                       '        inside_an_if_block) that_is_\n' +
-                      '            .okay();\n' +
+                      '        .okay();\n' +
                       '}');
 
         opts.wrap_line_length = 0;
@@ -4072,17 +4103,35 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
 
         // these aren't ready yet.
         //bt('if (foo) // comment\n    bar() /*i*/ + baz() /*j\n*/ + asdf();');
+        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\na();',
+            'if (foo)\n    if (bar)\n        if (baz) whee();\na();');
+        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\nelse\na();',
+            'if (foo)\n    if (bar)\n        if (baz) whee();\n        else a();');
+        bt('if (foo)\nbar();\nelse\ncar();',
+            'if (foo) bar();\nelse car();');
 
-        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\na();', 'if (foo) if (bar) if (baz) whee();\na();');
-        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\nelse\na();', 'if (foo) if (bar) if (baz) whee();\n        else a();');
-        bt('if (foo)\nbar();\nelse\ncar();', 'if (foo) bar();\nelse car();');
-
-        bt('if (foo) if (bar) if (baz) whee();\na();');
-        bt('if (foo) a()\nif (bar) if (baz) whee();\na();');
+        bt('if (foo) if (bar) if (baz);\na();',
+            'if (foo)\n    if (bar)\n        if (baz);\na();');
+        bt('if (foo) if (bar) if (baz) whee();\na();',
+            'if (foo)\n    if (bar)\n        if (baz) whee();\na();');
+        bt('if (foo) a()\nif (bar) if (baz) whee();\na();',
+            'if (foo) a()\nif (bar)\n    if (baz) whee();\na();');
+        bt('if (foo);\nif (bar) if (baz) whee();\na();',
+            'if (foo);\nif (bar)\n    if (baz) whee();\na();');
         bt('if (options)\n' +
            '    for (var p in options)\n' +
            '        this[p] = options[p];',
-           'if (options) for (var p in options) this[p] = options[p];');
+           'if (options)\n'+
+           '    for (var p in options) this[p] = options[p];');
+        bt('if (options) for (var p in options) this[p] = options[p];',
+           'if (options)\n    for (var p in options) this[p] = options[p];');
+
+        bt('if (options) do q(); while (b());',
+           'if (options)\n    do q(); while (b());');
+        bt('if (options) while (b()) q();',
+           'if (options)\n    while (b()) q();');
+        bt('if (options) do while (b()) q(); while (a());',
+           'if (options)\n    do\n        while (b()) q(); while (a());');
 
         bt('function f(a, b, c,\nd, e) {}',
             'function f(a, b, c, d, e) {}');
@@ -4124,15 +4173,35 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
 
         // these aren't ready yet.
         // bt('if (foo) // comment\n    bar() /*i*/ + baz() /*j\n*/ + asdf();');
-        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\na();', 'if (foo)\n    if (bar)\n        if (baz)\n            whee();\na();');
-        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\nelse\na();', 'if (foo)\n    if (bar)\n        if (baz)\n            whee();\n        else\n            a();');
-        bt('if (foo) bar();\nelse\ncar();', 'if (foo) bar();\nelse\n    car();');
+        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\na();',
+            'if (foo)\n    if (bar)\n        if (baz)\n            whee();\na();');
+        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\nelse\na();',
+            'if (foo)\n    if (bar)\n        if (baz)\n            whee();\n        else\n            a();');
+        bt('if (foo) bar();\nelse\ncar();',
+            'if (foo) bar();\nelse\n    car();');
 
-        bt('if (foo) if (bar) if (baz) whee();\na();');
-        bt('if (foo) a()\nif (bar) if (baz) whee();\na();');
+        bt('if (foo) if (bar) if (baz);\na();',
+            'if (foo)\n    if (bar)\n        if (baz);\na();');
+        bt('if (foo) if (bar) if (baz) whee();\na();',
+            'if (foo)\n    if (bar)\n        if (baz) whee();\na();');
+        bt('if (foo) a()\nif (bar) if (baz) whee();\na();',
+            'if (foo) a()\nif (bar)\n    if (baz) whee();\na();');
+        bt('if (foo);\nif (bar) if (baz) whee();\na();',
+            'if (foo);\nif (bar)\n    if (baz) whee();\na();');
         bt('if (options)\n' +
            '    for (var p in options)\n' +
            '        this[p] = options[p];');
+        bt('if (options) for (var p in options) this[p] = options[p];',
+           'if (options)\n    for (var p in options) this[p] = options[p];');
+
+        bt('if (options) do q(); while (b());',
+           'if (options)\n    do q(); while (b());');
+        bt('if (options) do; while (b());',
+           'if (options)\n    do; while (b());');
+        bt('if (options) while (b()) q();',
+           'if (options)\n    while (b()) q();');
+        bt('if (options) do while (b()) q(); while (a());',
+           'if (options)\n    do\n        while (b()) q(); while (a());');
 
         bt('function f(a, b, c,\nd, e) {}',
             'function f(a, b, c,\n    d, e) {}');
@@ -4219,7 +4288,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
            'var test = 1;');
 
         bt('obj\n' +
-           '    .last(function() {\n' +
+           '    .last(a, function() {\n' +
            '        var test;\n' +
            '    });\n' +
            'var test = 1;');
@@ -4232,6 +4301,27 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
 
         // END tests for issue 241
 
+
+        // START tests for issue 268 and 275
+        bt('obj.last(a,\n' +
+           '    function() {\n' +
+           '        var test;\n' +
+           '    });\n' +
+           'var test = 1;',
+           'obj.last(a, function() {\n' +
+           '    var test;\n' +
+           '});\n' +
+           'var test = 1;');
+
+        bt('(function() {if (!window.FOO) window.FOO || (window.FOO = function() {var b = {bar: "zort"};});})();',
+           '(function() {\n' +
+           '    if (!window.FOO) window.FOO || (window.FOO = function() {\n' +
+           '        var b = {\n' +
+           '            bar: "zort"\n' +
+           '        };\n' +
+           '    });\n' +
+           '})();');
+        // END tests for issue 268 and 275
 
         Urlencoded.run_tests(sanitytest);
 
