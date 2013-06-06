@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.4 - 2013-05-03
-// Based on scripts from http://jsbeautifier.org/ [2013-06-03 21:09:36 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-06-06 14:54:21 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -987,7 +987,7 @@ function detectXMLType(str) {
             if (c === "'" || c === '"' || // string
                 (
                     (c === '/') || // regexp
-                    (opt.e4x && c ==="<" && input.slice(parser_pos - 1).match(/^<[a-zA-Z:0-9]+\s*([a-zA-Z:0-9]+="[^"]*"\s*)*\/?\s*>/)) // xml
+                    (opt.e4x && c ==="<" && input.slice(parser_pos - 1).match(/^<([a-zA-Z:0-9]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([a-zA-Z:0-9]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*\/?\s*>/)) // xml
                 ) && ( // regex and xml can only appear in specific locations during parsing
                     (last_type === 'TK_WORD' && is_special_word (flags.last_text)) ||
                     (last_type === 'TK_END_EXPR' && in_array(previous_flags.mode, [MODE.Conditional, MODE.ForInitializer])) ||
@@ -1030,7 +1030,7 @@ function detectXMLType(str) {
                         //
                         // handle e4x xml literals
                         //
-                        var xmlRegExp = /<(\/?)([a-zA-Z:0-9]+)\s*([a-zA-Z:0-9]+="[^"]*"\s*)*(\/?)\s*>/g;
+                        var xmlRegExp = /<(\/?)([a-zA-Z:0-9]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([a-zA-Z:0-9]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*(\/?)\s*>/g;
                         var xmlStr = input.slice(parser_pos - 1);
                         var match = xmlRegExp.exec(xmlStr);
                         if (match && match.index === 0) {
@@ -1039,7 +1039,7 @@ function detectXMLType(str) {
                             while (match) {
                                 var isEndTag = !! match[1];
                                 var tagName = match[2];
-                                var isSingletonTag = !! match[match.length - 1];
+                                var isSingletonTag = (!! match[match.length - 1]) || (tagName.slice(0, 8) === "![CDATA[");
                                 if (tagName === rootTag && !isSingletonTag) {
                                     if (isEndTag) {
                                         --depth;
@@ -2376,28 +2376,26 @@ function detectXMLType(str) {
             }
             this.tag_type = 'SINGLE';
           }
-          else if (tag_check.charAt(0) === '!') { //peek for <!-- comment
-            if (tag_check.indexOf('[if') !== -1) { //peek for <!--[if conditional comment
-              if (tag_complete.indexOf('!IE') !== -1) { //this type needs a closing --> so...
-                comment = this.get_unformatted('-->', tag_complete); //...delegate to get_unformatted
-                content.push(comment);
-              }
-              if ( ! peek) {
-                this.tag_type = 'START';
-              }
+          else if (tag_check.charAt(0) === '!' ) { //peek for <! comment
+            // We treat all of these as unformatted, we just look for the appropriate close tag
+            if (tag_check.indexOf('![if') === 0) { //peek for <![if conditional comment
+              comment = this.get_unformatted('![endif]>', tag_complete);
+              content.push(comment);
+              this.tag_type = 'SINGLE';
             }
-            else if (tag_check.indexOf('[endif') !== -1) {//peek for <!--[endif end conditional comment
-              this.tag_type = 'END';
-              this.unindent();
-            }
-            else if (tag_check.indexOf('[cdata[') !== -1) { //if it's a <[cdata[ comment...
-              comment = this.get_unformatted(']]>', tag_complete); //...delegate to get_unformatted function
+            else if (tag_check.indexOf('![cdata[') === 0) { //if it's a <[cdata[ comment...
+              comment = this.get_unformatted(']]>', tag_complete);
               content.push(comment);
               if ( ! peek) {
                 this.tag_type = 'SINGLE'; //<![CDATA[ comments are treated like single tags
               }
             }
-            else {
+            else if (tag_check.indexOf('![') === 0) { // some other ![ comment...
+              comment = this.get_unformatted(']>', tag_complete);
+              content.push(comment);
+              this.tag_type = 'SINGLE';
+            }
+            else { // even if this isn't a <!-- comment, treat it like one...
               comment = this.get_unformatted('-->', tag_complete);
               content.push(comment);
               this.tag_type = 'SINGLE';
@@ -4269,6 +4267,17 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('xml=<a b="c"><d/><e>\n foo</e>x</a>;', 'xml = < a b = "c" > < d / > < e >\n    foo < /e>x</a > ;');
         opts.e4x = true;
         bt('xml=<a b="c"><d/><e>\n foo</e>x</a>;', 'xml = <a b="c"><d/><e>\n foo</e>x</a>;');
+        bt('<a b=\'This is a quoted "c".\'/>', '<a b=\'This is a quoted "c".\'/>');
+        bt('<a b="This is a quoted \'c\'."/>', '<a b="This is a quoted \'c\'."/>');
+        bt('<a b="A quote \' inside string."/>', '<a b="A quote \' inside string."/>');
+        bt('<a b=\'A quote " inside string.\'/>', '<a b=\'A quote " inside string.\'/>');
+        bt('<a b=\'Some """ quotes ""  inside string.\'/>', '<a b=\'Some """ quotes ""  inside string.\'/>');
+        // Handles inline expressions
+        bt('xml=<{a} b="c"><d/><e v={z}>\n foo</e>x</{a}>;', 'xml = <{a} b="c"><d/><e v={z}>\n foo</e>x</{a}>;');
+        // Handles CDATA
+        bt('xml=<![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;', 'xml = <![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;');
+        bt('xml=<![CDATA[]]>;', 'xml = <![CDATA[]]>;');
+        bt('xml=<a b="c"><![CDATA[d/></a></{}]]></a>;', 'xml = <a b="c"><![CDATA[d/></a></{}]]></a>;');
         // Handles messed up tags, as long as it isn't the same name
         // as the root tag. Also handles tags of same name as root tag
         // as long as nesting matches.
