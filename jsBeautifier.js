@@ -553,7 +553,7 @@ function detectXMLType(str) {
         }
 
         function trim(s) {
-            return s.replace(/^\s\s*|\s\s*$/, '');
+            return s.replace(/^\s\s*|\s\s*$/g, '');
         }
 
         // we could use just string.split, but
@@ -2763,7 +2763,7 @@ function detectXMLType(str) {
                        .replace(/\s*$/, '');
               }
               if (text) {
-                multi_parser.print_token_raw(indentation + text.trim());
+                multi_parser.print_token_raw(indentation + text.replace(/^\s\s*|\s\s*$/g, ''));
                 multi_parser.print_newline(false, multi_parser.output);
               }
             }
@@ -4680,7 +4680,11 @@ function convertSource(file, text) {
 			.replace(".substr(-esc2)", ".slice(-esc2)")
 			.replace("token_text[token_text.length - 1]", "token_text.charAt(token_text.length - 1)")
 			.replace("&& flags.whitespace_before.length", "&& flags.whitespace_before && flags.whitespace_before.length")
-			.replace(/('TK_UNKNOWN': handle_unknown),(\s*\};)/, "$1$2");
+			.replace(/('TK_UNKNOWN': handle_unknown),(\s*\};)/, "$1$2")
+			.replace(".replace(/^\\s\\s*|\\s\\s*$/, '')", ".replace(/^\\s\\s*|\\s\\s*$/g, '')");
+	}
+	else if(file == "js/lib/beautify-html.js") {
+		text = text.replace(/\.trim\(\)/g, ".replace(/^\\s\\s*|\\s\\s*$/g, '')");
 	}
 	else if(file == "js/test/sanitytest.js") {
 		text = text.replace(
