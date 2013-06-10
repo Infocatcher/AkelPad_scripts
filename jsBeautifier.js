@@ -2723,7 +2723,7 @@ function detectXMLType(str) {
             multi_parser.print_token(multi_parser.token_text);
             if (multi_parser.indent_content) {
                 multi_parser.indent();
-                this.indent_content = false;
+                multi_parser.indent_content = false;
             }
             multi_parser.current_mode = 'CONTENT';
             break;
@@ -4720,6 +4720,9 @@ function convertSource(file, text) {
 			.replace("token_text[token_text.length - 1]", "token_text.charAt(token_text.length - 1)")
 			.replace("&& flags.whitespace_before.length", "&& flags.whitespace_before && flags.whitespace_before.length")
 			.replace(/('TK_UNKNOWN': handle_unknown),(\s*\};)/, "$1$2");
+	}
+	else if(file == "js/lib/beautify-html.js") {
+		text = text.replace(/(multi_parser\.indent\(\);\s+)this(\.indent_content = false;)/, "$1multi_parser$2");
 	}
 	else if(file == "js/test/sanitytest.js") {
 		text = text.replace(
