@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.4 - 2013-05-03
-// Based on scripts from http://jsbeautifier.org/ [2013-06-07 21:31:46 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-06-09 22:04:35 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1792,9 +1792,17 @@ function detectXMLType(str) {
 
     if (typeof define === "function") {
         // Add support for require.js
-        define(function(require, exports, module) {
-            exports.js_beautify = js_beautify;
-        });
+        if(typeof define.amd === "undefined") {
+            define(function(require, exports, module) {
+                exports.js_beautify = js_beautify;
+            });
+        } else {
+            // if is AMD ( https://github.com/amdjs/amdjs-api/wiki/AMD#defineamd-property- )
+            define([], function() {
+                return js_beautify;
+            });
+        }
+
     } else if (typeof exports !== "undefined") {
         // Add support for CommonJS. Just put this file somewhere on your require.paths
         // and you will be able to `var js_beautify = require("beautify").js_beautify`.
@@ -2147,6 +2155,10 @@ function detectXMLType(str) {
         return s.replace(/^\s+|\s+$/g, '');
     }
 
+    function ltrim(s) {
+        return s.replace(/^\s+/g, '');
+    }
+
     function style_html(html_source, options, js_beautify, css_beautify) {
     //Wrapper function to invoke all the necessary constructors and deal with the output.
 
@@ -2187,6 +2199,7 @@ function detectXMLType(str) {
         this.tag_type = '';
         this.token_text = this.last_token = this.last_text = this.token_type = '';
         this.newlines = 0;
+        this.indent_content = false;
 
         this.Utils = { //Uilities made available to the various functions
           whitespace: "\n\r\t ".split(''),
@@ -2424,16 +2437,24 @@ function detectXMLType(str) {
             // for comments content is already correct.
             if (! peek) {
               this.tag_type = 'SINGLE';
+              this.traverse_whitespace();
             }
           }
           else if ( ! peek) {
             if (tag_check.charAt(0) === '/') { //this tag is a double tag so check for tag-ending
               this.retrieve_tag(tag_check.substring(1)); //remove it and all ancestors
               this.tag_type = 'END';
+              this.traverse_whitespace();
             }
             else { //otherwise it's a start-tag
               this.record_tag(tag_check); //push it on the tag stack
+              if(tag_check.toLowerCase() !== 'html') {
+                  this.indent_content = true;
+              }
               this.tag_type = 'START';
+
+              // Allow preserving of newlines after a start tag
+              this.traverse_whitespace();
             }
             if (this.Utils.in_array(tag_check, this.Utils.extra_liners)) { //check if this double needs an extra line
               this.print_newline(false, this.output);
@@ -2494,7 +2515,6 @@ function detectXMLType(str) {
               this.pos++;
             }
 
-            this.traverse_whitespace();
             return comment;
         };
 
@@ -2647,6 +2667,7 @@ function detectXMLType(str) {
             if (text || text !== '') {
               if (this.output.length && this.output[this.output.length-1] === '\n') {
                 this.print_indentation(this.output);
+                text = ltrim(text);
               }
             }
             this.print_token_raw(text);
@@ -2700,7 +2721,10 @@ function detectXMLType(str) {
           case 'TK_TAG_START':
             multi_parser.print_newline(false, multi_parser.output);
             multi_parser.print_token(multi_parser.token_text);
-            multi_parser.indent();
+            if (multi_parser.indent_content) {
+                multi_parser.indent();
+                this.indent_content = false;
+            }
             multi_parser.current_mode = 'CONTENT';
             break;
           case 'TK_TAG_STYLE':
@@ -3486,8 +3510,11 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('return\nfunc', 'return\nfunc');
         bt('catch(e)', 'catch (e)');
 
-        bt('var a=1,b={foo:2,bar:3},{baz:4,wham:5},c=4;', 'var a = 1,\n    b = {\n        foo: 2,\n        bar: 3\n    }, {\n        baz: 4,\n        wham: 5\n    }, c = 4;');
-        bt('var a=1,b={foo:2,bar:3},{baz:4,wham:5},\nc=4;', 'var a = 1,\n    b = {\n        foo: 2,\n        bar: 3\n    }, {\n        baz: 4,\n        wham: 5\n    },\n    c = 4;');
+        bt('var a=1,b={foo:2,bar:3},{baz:4,wham:5},c=4;',
+            'var a = 1,\n    b = {\n        foo: 2,\n        bar: 3\n    }, {\n        baz: 4,\n        wham: 5\n    }, c = 4;');
+        bt('var a=1,b={foo:2,bar:3},{baz:4,wham:5},\nc=4;',
+            'var a = 1,\n    b = {\n        foo: 2,\n        bar: 3\n    }, {\n        baz: 4,\n        wham: 5\n    },\n    c = 4;');
+
 
         // inline comment
         bt('function x(/*int*/ start, /*string*/ foo)', 'function x( /*int*/ start, /*string*/ foo)');
@@ -4429,6 +4456,13 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
            '})();');
         // END tests for issue 268 and 275
 
+
+        // This is what I think these should look like related #256
+        // we don't have the ability yet
+//         bt('var a=1,b={bang:2},c=3;',
+//             'var a = 1,\n    b = {\n        bang: 2\n    },\n     c = 3;');
+//         bt('var a={bing:1},b=2,c=3;',
+//             'var a = {\n        bing: 1\n    },\n    b = 2,\n    c = 3;');
         Urlencoded.run_tests(sanitytest);
 
         return sanitytest;
