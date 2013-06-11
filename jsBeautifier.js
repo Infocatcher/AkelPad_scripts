@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.4 - 2013-05-03
-// Based on scripts from http://jsbeautifier.org/ [2013-06-09 22:04:35 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-06-10 23:48:11 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -353,7 +353,6 @@ function detectXMLType(str) {
         var whitespace, wordchar, punct, parser_pos, line_starters, digits;
         var prefix;
         var input_wanted_newline;
-        var line_indent_level;
         var output_wrapped, output_space_before_token;
         var input_length, n_newlines, whitespace_before_token;
         var handlers, MODE, opt;
@@ -399,7 +398,16 @@ function detectXMLType(str) {
         };
 
         function create_flags(flags_base, mode) {
-            var next_indent_level =  (flags_base ? flags_base.indentation_level + ((flags_base.var_line && flags_base.var_line_reindented) ? 1 : 0) : 0);
+            var next_indent_level = 0;
+            if (flags_base) {
+                next_indent_level = flags_base.indentation_level;
+                next_indent_level += (flags_base.var_line && flags_base.var_line_reindented) ? 1 : 0;
+                if (!just_added_newline() &&
+                    flags_base.line_indent_level > next_indent_level) {
+                    next_indent_level = flags_base.line_indent_level;
+                }
+            }
+
             var next_flags = {
                 mode: mode,
                 parent: flags_base,
@@ -409,7 +417,7 @@ function detectXMLType(str) {
                 var_line_tainted: false,
                 var_line_reindented: false,
                 in_html_comment: false,
-                multiline_array: false,
+                multiline_frame: false,
                 if_block: false,
                 do_block: false,
                 do_while: false,
@@ -417,6 +425,8 @@ function detectXMLType(str) {
                 in_case: false, // we're on the exact line with "case 0:"
                 case_body: false, // the indented case-action block
                 indentation_level: next_indent_level,
+                line_indent_level: flags_base ? flags_base.line_indent_level : next_indent_level,
+                start_index: output.length,
                 ternary_depth: 0
             }
             return next_flags;
@@ -472,7 +482,6 @@ function detectXMLType(str) {
 
         last_type = 'TK_START_BLOCK'; // last token type
         last_last_text = ''; // pre-last token text
-        line_indent_level = 0;
         output = [];
         output_wrapped = false;
         output_space_before_token = false;
@@ -638,10 +647,7 @@ function detectXMLType(str) {
                 }
             }
 
-            if (flags.mode === MODE.ArrayLiteral) {
-                flags.multiline_array = true;
-            }
-
+            flags.multiline_frame = true;
 
             if (!output.length) {
                 return; // no newline on start of file
@@ -655,6 +661,8 @@ function detectXMLType(str) {
         function print_token_line_indentation() {
             if (just_added_newline()) {
                 if (opt.keep_array_indentation && is_array(flags.mode) && input_wanted_newline) {
+                    // prevent removing of this whitespace as redundant
+                    output.push('');
                     for (var i = 0; i < whitespace_before_token.length; i += 1) {
                         output.push(whitespace_before_token[i]);
                     }
@@ -673,7 +681,7 @@ function detectXMLType(str) {
         function print_indent_string(level) {
             // Never indent your first output indent at the start of the file
             if (flags.last_text !== '') {
-                line_indent_level = level;
+                flags.line_indent_level = level;
                 for (var i = 0; i < level; i += 1) {
                     output.push(indent_string);
                 }
@@ -706,6 +714,44 @@ function detectXMLType(str) {
             if (flags.indentation_level > 0 &&
                 ((!flags.parent) || flags.indentation_level > flags.parent.indentation_level))
                 flags.indentation_level -= 1;
+        }
+
+        function remove_redundant_indentation(frame) {
+            // This implementation is effective but has some issues:
+            //     - less than great performance due to array splicing
+            //     - can cause line wrap to happen too soon due to indent removal
+            //           after wrap points are calculated
+            // These issues are minor compared to ugly indentation.
+
+            if(frame.multiline_frame) return;
+
+            // remove one indent from each line inside this section
+            var index = frame.start_index;
+            while (index < output.length) {
+
+                if (output[index] != '\n') {
+                    index++;
+                    continue;
+                }
+
+                // skip consecutive newlines
+                while (index < output.length &&
+                    output[index] == '\n') {
+                    index++;
+                }
+
+                // skip the preindent string if present
+                if (index < output.length &&
+                    preindent_string && output[index] == preindent_string) {
+                    index++;
+                }
+
+                // remove one indent, if present
+                if (index < output.length &&
+                    output[index] === indent_string) {
+                    output.splice(index, 1);
+                }
+            }
         }
 
         function set_mode(mode) {
@@ -1184,6 +1230,7 @@ function detectXMLType(str) {
                 // The conditional starts the statement if appropriate.
             }
 
+            var next_mode = MODE.Expression;
             if (token_text === '[') {
 
                 if (last_type === 'TK_WORD' || flags.last_text === ')') {
@@ -1192,14 +1239,17 @@ function detectXMLType(str) {
                     if (in_array (flags.last_text, line_starters)) {
                         output_space_before_token = true;
                     }
-                    set_mode(MODE.Expression);
+                    set_mode(next_mode);
                     print_token();
+                    flags.start_index = output.length
+                    indent();
                     if (opt.space_in_paren) {
                         output_space_before_token = true;
                     }
                     return;
                 }
 
+                next_mode = MODE.ArrayLiteral;
                 if (is_array(flags.mode)) {
                     if (flags.last_text === '[' ||
                         (flags.last_text === ',' && (last_last_text === ']' || last_last_text === '}'))) {
@@ -1213,20 +1263,20 @@ function detectXMLType(str) {
 
             } else {
                 if  (flags.last_text === 'for') {
-                    set_mode(MODE.ForInitializer);
+                    next_mode = MODE.ForInitializer;
                 } else if (in_array (flags.last_text, ['if', 'while'])) {
-                    set_mode(MODE.Conditional);
+                    next_mode = MODE.Conditional;
                 } else {
-                    set_mode(MODE.Expression);
+                    // next_mode = MODE.Expression;
                 }
             }
 
             if  (flags.last_text === ';' || last_type === 'TK_START_BLOCK') {
                 print_newline();
             } else if (last_type === 'TK_END_EXPR' || last_type === 'TK_START_EXPR' || last_type === 'TK_END_BLOCK' || flags.last_text === '.') {
-                if (input_wanted_newline) {
-                    print_newline();
-                }
+                // TODO: Consider whether forcing this is required.  Review failing tests when removed.
+                allow_wrap_or_preserved_newline(input_wanted_newline);
+                output_wrapped = false;
                 // do nothing on (( and )( and ][ and ]( and .(
             } else if (last_type !== 'TK_WORD' && last_type !== 'TK_OPERATOR') {
                 output_space_before_token = true;
@@ -1251,13 +1301,12 @@ function detectXMLType(str) {
                     }
                 }
             }
-            if (token_text === '[') {
-                set_mode(MODE.ArrayLiteral);
-            }
 
+            set_mode(next_mode);
             print_token();
+            flags.start_index = output.length
             if (opt.space_in_paren) {
-                    output_space_before_token = true;
+                output_space_before_token = true;
             }
 
             // In all cases, if we newline while inside an expression it should be indented.
@@ -1271,11 +1320,15 @@ function detectXMLType(str) {
                 restore_mode();
             }
 
-            if (token_text === ']' && is_array(flags.mode) && flags.multiline_array && !opt.keep_array_indentation) {
+            if (token_text === ']' && is_array(flags.mode) && flags.multiline_frame && !opt.keep_array_indentation) {
                 print_newline();
             }
+
+            if (flags.multiline_frame) {
+                allow_wrap_or_preserved_newline();
+            }
             if (opt.space_in_paren) {
-                    output_space_before_token = true;
+                output_space_before_token = true;
             }
             if (token_text === ']' && opt.keep_array_indentation) {
                 print_token();
@@ -1284,6 +1337,7 @@ function detectXMLType(str) {
                 restore_mode();
                 print_token();
             }
+            remove_redundant_indentation(previous_flags);
 
             // do {} while () // no statement required after
             if (flags.do_while && previous_flags.mode === MODE.Conditional) {
@@ -1338,7 +1392,6 @@ function detectXMLType(str) {
             while (flags.mode === MODE.Statement) {
                 restore_mode();
             }
-            restore_mode();
             var empty_braces = last_type === 'TK_START_BLOCK';
 
             if (opt.brace_style === "expand") {
@@ -1359,6 +1412,7 @@ function detectXMLType(str) {
                     }
                 }
             }
+            restore_mode();
             print_token();
         }
 
@@ -1401,6 +1455,19 @@ function detectXMLType(str) {
                 }
             }
 
+            if (token_text === 'case' || (token_text === 'default' && flags.in_case_statement)) {
+                print_newline();
+                if (flags.case_body || opt.jslint_happy) {
+                    // switch cases following one another
+                    deindent();
+                    flags.case_body = false;
+                }
+                print_token();
+                flags.in_case = true;
+                flags.in_case_statement = true;
+                return;
+            }
+
             if (token_text === 'function') {
                 if (flags.var_line && last_type !== 'TK_EQUALS') {
                     flags.var_line_reindented = true;
@@ -1409,11 +1476,8 @@ function detectXMLType(str) {
                     flags.last_text !== '{' && !is_array(flags.mode)) {
                     // make sure there is a nice clean space of at least one blank line
                     // before a new function definition, except in arrays
-                    if(!just_added_newline()) {
-                        print_newline(true);
-                    }
-
                     if(!just_added_blankline()) {
+                        print_newline();
                         print_newline(true);
                     }
                 }
@@ -1431,31 +1495,17 @@ function detectXMLType(str) {
                 } else {
                     print_newline();
                 }
-
-                if (is_expression(flags.mode)) {
-                    // Issue #274
-                    // (function inside expression that is not nested.
-                    if(!(is_expression(flags.parent.mode) || is_array(flags.parent.mode)) &&
-                        line_indent_level < flags.indentation_level) {
-                        deindent();
-                    }
-                }
-
-                print_token();
-                flags.last_word = token_text;
-                return;
             }
 
-            if (token_text === 'case' || (token_text === 'default' && flags.in_case_statement)) {
-                print_newline();
-                if (flags.case_body || opt.jslint_happy) {
-                    // switch cases following one another
-                    deindent();
-                    flags.case_body = false;
+            if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
+                if (flags.mode !== MODE.ObjectLiteral) {
+                    allow_wrap_or_preserved_newline();
                 }
+            }
+
+            if (token_text === 'function') {
                 print_token();
-                flags.in_case = true;
-                flags.in_case_statement = true;
+                flags.last_word = token_text;
                 return;
             }
 
@@ -1495,12 +1545,6 @@ function detectXMLType(str) {
                     prefix = 'NEWLINE';
                 }
 
-            }
-
-            if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
-                if (flags.mode !== MODE.ObjectLiteral) {
-                    allow_wrap_or_preserved_newline();
-                }
             }
 
             if (in_array(token_text, ['else', 'catch', 'finally'])) {
@@ -3312,8 +3356,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('a=0xff+4', 'a = 0xff + 4');
         bt('a = [1, 2, 3, 4]');
         bt('F*(g/=f)*g+b', 'F * (g /= f) * g + b');
-        bt('a.b({c:d})', "a.b({\n        c: d\n    })");
-        bt('a.b\n(\n{\nc:\nd\n}\n)', "a.b({\n        c: d\n    })");
+        bt('a.b({c:d})', "a.b({\n    c: d\n})");
+        bt('a.b\n(\n{\nc:\nd\n}\n)', "a.b({\n    c: d\n})");
         bt('a=!b', 'a = !b');
         bt('a?b:c', 'a ? b : c');
         bt('a?1:2', 'a ? 1 : 2');
@@ -3379,7 +3423,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('a = [ // comment\n    -1, // comment\n    -1, -1\n]');
         bt('var a = [ // comment\n    -1, // comment\n    -1, -1\n]');
 
-        bt('o = [{a:b},{c:d}]', 'o = [{\n        a: b\n    }, {\n        c: d\n    }\n]');
+        bt('o = [{a:b},{c:d}]', 'o = [{\n    a: b\n}, {\n    c: d\n}]');
 
         bt("if (a) {\n    do();\n}"); // was: extra space appended
 
@@ -3433,7 +3477,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         test_fragment('/incomplete-regex');
 
         test_fragment('{a:1},{a:2}', '{\n    a: 1\n}, {\n    a: 2\n}');
-        test_fragment('var ary=[{a:1}, {a:2}];', 'var ary = [{\n        a: 1\n    }, {\n        a: 2\n    }\n];');
+        test_fragment('var ary=[{a:1}, {a:2}];', 'var ary = [{\n    a: 1\n}, {\n    a: 2\n}];');
 
         test_fragment('{a:#1', '{\n    a: #1'); // incomplete
         test_fragment('{a:#', '{\n    a: #'); // incomplete
@@ -3629,20 +3673,20 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt("a = ['a', 'b', 'c',\n       'd', 'e', 'f',\n            'g', 'h', 'i']",
             "a = ['a', 'b', 'c',\n    'd', 'e', 'f',\n    'g', 'h', 'i'\n]");
         bt('var x = [{}\n]', 'var x = [{}]');
-        bt('var x = [{foo:bar}\n]', 'var x = [{\n        foo: bar\n    }\n]');
+        bt('var x = [{foo:bar}\n]', 'var x = [{\n    foo: bar\n}]');
         bt("a = ['something',\n    'completely',\n    'different'];\nif (x);",
             "a = ['something',\n    'completely',\n    'different'\n];\nif (x);");
         bt("a = ['a','b','c']", "a = ['a', 'b', 'c']");
+
         bt("a = ['a',   'b','c']", "a = ['a', 'b', 'c']");
         bt("x = [{'a':0}]",
-            "x = [{\n        'a': 0\n    }\n]");
-        // this is not great, but is accurate
+            "x = [{\n    'a': 0\n}]");
         bt('{a([[a1]], {b;});}',
-            '{\n    a([\n            [a1]\n        ], {\n            b;\n        });\n}');
+            '{\n    a([\n        [a1]\n    ], {\n        b;\n    });\n}');
         bt("a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
             "a();\n[\n    ['sdfsdfsd'],\n    ['sdfsdfsdf']\n].toString();");
         bt("function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}",
-            "function() {\n    Foo([\n            ['sdfsdfsd'],\n            ['sdfsdfsdf']\n        ]);\n}");
+            "function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}");
 
         opts.keep_array_indentation = true;
         bt("a = ['a', 'b', 'c',\n   'd', 'e', 'f']");
@@ -3654,9 +3698,9 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt("a = ['a','b','c']", "a = ['a', 'b', 'c']");
         bt("a = ['a',   'b','c']", "a = ['a', 'b', 'c']");
         bt("x = [{'a':0}]",
-            "x = [{\n        'a': 0\n    }]");
+            "x = [{\n    'a': 0\n}]");
         bt('{a([[a1]], {b;});}',
-            '{\n    a([[a1]], {\n            b;\n        });\n}');
+            '{\n    a([[a1]], {\n        b;\n    });\n}');
         bt("a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
             "a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();");
         bt("function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}",
@@ -3995,6 +4039,12 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('var a = 42; // foo\n\n\nvar b;');
         bt("var a = 'foo' +\n    'bar';");
         bt("var a = \"foo\" +\n    \"bar\";");
+        bt('this.oa = new OAuth(\n' +
+           '    _requestToken,\n' +
+           '    _accessToken,\n' +
+           '    consumer_key\n' +
+           ');');
+
 
         opts.unescape_strings = false;
         test_fragment('"\\x22\\x27", \'\\x22\\x27\', "\\x5c", \'\\x5c\', "\\xff and \\xzz", "unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"');
@@ -4094,7 +4144,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
                       /* expected */
                       'foo.bar().baz().cucumber((fat &&\n' +
-                      '        "sassy") || (leans && mean));\n' +
+                      '    "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
@@ -4170,7 +4220,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
                       /* expected */
                       'foo.bar().baz().cucumber((fat &&\n' +
-                      '        "sassy") || (leans && mean));\n' +
+                      '    "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
@@ -4220,6 +4270,12 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('if (foo) // comment\n    (bar());');
         bt('if (foo) // comment\n    (bar());');
         bt('if (foo) // comment\n    /asdf/;');
+        bt('this.oa = new OAuth(\n' +
+           '    _requestToken,\n' +
+           '    _accessToken,\n' +
+           '    consumer_key\n' +
+           ');',
+           'this.oa = new OAuth(_requestToken, _accessToken, consumer_key);');
         bt('foo = {\n    x: y, // #44\n    w: z // #44\n}');
         bt('switch (x) {\n    case "a":\n        // comment on newline\n        break;\n    case "b": // comment on same line\n        break;\n}');
 
@@ -4436,14 +4492,14 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
 
 
         // START tests for issue 268 and 275
+        bt('obj.last(a, function() {\n' +
+           '    var test;\n' +
+           '});\n' +
+           'var test = 1;');
         bt('obj.last(a,\n' +
            '    function() {\n' +
            '        var test;\n' +
            '    });\n' +
-           'var test = 1;',
-           'obj.last(a, function() {\n' +
-           '    var test;\n' +
-           '});\n' +
            'var test = 1;');
 
         bt('(function() {if (!window.FOO) window.FOO || (window.FOO = function() {var b = {bar: "zort"};});})();',
@@ -4456,6 +4512,40 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
            '})();');
         // END tests for issue 268 and 275
 
+        // START tests for issue 281
+        bt('define(["dojo/_base/declare", "my/Employee", "dijit/form/Button",\n' +
+           '    "dojo/_base/lang", "dojo/Deferred"\n' +
+           '], function(declare, Employee, Button, lang, Deferred) {\n' +
+           '    return declare(Employee, {\n' +
+           '        constructor: function() {\n' +
+           '            new Button({\n' +
+           '                onClick: lang.hitch(this, function() {\n' +
+           '                    new Deferred().then(lang.hitch(this, function() {\n' +
+           '                        this.salary * 0.25;\n' +
+           '                    }));\n' +
+           '                })\n' +
+           '            });\n' +
+           '        }\n' +
+           '    });\n' +
+           '});');
+
+        bt('define(["dojo/_base/declare", "my/Employee", "dijit/form/Button",\n' +
+           '        "dojo/_base/lang", "dojo/Deferred"\n' +
+           '    ],\n' +
+           '    function(declare, Employee, Button, lang, Deferred) {\n' +
+           '        return declare(Employee, {\n' +
+           '            constructor: function() {\n' +
+           '                new Button({\n' +
+           '                    onClick: lang.hitch(this, function() {\n' +
+           '                        new Deferred().then(lang.hitch(this, function() {\n' +
+           '                            this.salary * 0.25;\n' +
+           '                        }));\n' +
+           '                    })\n' +
+           '                });\n' +
+           '            }\n' +
+           '        });\n' +
+           '    });');
+        // END tests for issue 281
 
         // This is what I think these should look like related #256
         // we don't have the ability yet
