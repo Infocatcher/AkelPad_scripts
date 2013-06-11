@@ -4811,9 +4811,6 @@ function convertSource(file, text) {
 			.replace("&& flags.whitespace_before.length", "&& flags.whitespace_before && flags.whitespace_before.length")
 			.replace(/('TK_UNKNOWN': handle_unknown),(\s*\};)/, "$1$2");
 	}
-	else if(file == "js/lib/beautify-html.js") {
-		text = text.replace(/(multi_parser\.indent\(\);\s+)this(\.indent_content = false;)/, "$1multi_parser$2");
-	}
 	else if(file == "js/test/sanitytest.js") {
 		text = text.replace(
 			"results = 'All ' + n_succeeded + ' tests passed.';",
