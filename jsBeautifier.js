@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.4 - 2013-05-03
-// Based on scripts from http://jsbeautifier.org/ [2013-06-10 23:48:11 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-06-14 16:28:06 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -348,7 +348,8 @@ function detectXMLType(str) {
 
     function Beautifier(js_source_text, options) {
         "use strict";
-        var input, output, token_text, token_type, last_type, last_last_text, indent_string;
+        var input, output_lines;
+        var token_text, token_type, last_type, last_last_text, indent_string;
         var flags, previous_flags, flag_store;
         var whitespace, wordchar, punct, parser_pos, line_starters, digits;
         var prefix;
@@ -426,10 +427,18 @@ function detectXMLType(str) {
                 case_body: false, // the indented case-action block
                 indentation_level: next_indent_level,
                 line_indent_level: flags_base ? flags_base.line_indent_level : next_indent_level,
-                start_index: output.length,
+                start_line_index: output_lines.length,
                 ternary_depth: 0
             }
             return next_flags;
+        }
+
+        // Using object instead of string to allow for later expansion of info about each line
+
+        function create_output_line() {
+            return {
+                text: []
+            };
         }
 
         // Some interpreters have unexpected results with foo = baz || bar;
@@ -459,7 +468,7 @@ function detectXMLType(str) {
         opt.space_in_paren = (options.space_in_paren === undefined) ? false : options.space_in_paren;
         opt.jslint_happy = (options.jslint_happy === undefined) ? false : options.jslint_happy;
         opt.keep_array_indentation = (options.keep_array_indentation === undefined) ? false : options.keep_array_indentation;
-        opt.space_before_conditional= (options.space_before_conditional === undefined) ? true : options.space_before_conditional;
+        opt.space_before_conditional = (options.space_before_conditional === undefined) ? true : options.space_before_conditional;
         opt.unescape_strings = (options.unescape_strings === undefined) ? false : options.unescape_strings;
         opt.wrap_line_length = (options.wrap_line_length === undefined) ? 0 : parseInt(options.wrap_line_length, 10);
         opt.e4x = (options.e4x === undefined) ? false : options.e4x;
@@ -482,7 +491,7 @@ function detectXMLType(str) {
 
         last_type = 'TK_START_BLOCK'; // last token type
         last_last_text = ''; // pre-last token text
-        output = [];
+        output_lines = [create_output_line()];
         output_wrapped = false;
         output_space_before_token = false;
         whitespace_before_token = [];
@@ -502,7 +511,7 @@ function detectXMLType(str) {
 
         parser_pos = 0;
 
-        this.beautify = function () {
+        this.beautify = function() {
             /*jshint onevar:true */
             var t, i, keep_whitespace, sweet_code;
 
@@ -550,14 +559,35 @@ function detectXMLType(str) {
                 }
             }
 
-            sweet_code = preindent_string + output.join('').replace(/[\r\n ]+$/, '');
+
+            sweet_code = output_lines[0].text.join('');
+            for (var line_index = 1; line_index < output_lines.length; line_index++) {
+                sweet_code += '\n' + output_lines[line_index].text.join('');
+            }
+            sweet_code = sweet_code.replace(/[\r\n ]+$/, '');
             return sweet_code;
         };
 
         function trim_output(eat_newlines) {
             eat_newlines = (eat_newlines === undefined) ? false : eat_newlines;
-            while (output.length && (output[output.length - 1] === ' ' || output[output.length - 1] === indent_string || output[output.length - 1] === preindent_string || (eat_newlines && (output[output.length - 1] === '\n' || output[output.length - 1] === '\r')))) {
-                output.pop();
+
+            if (output_lines.length) {
+                trim_output_line(output_lines[output_lines.length - 1], eat_newlines);
+
+                while (eat_newlines && output_lines.length > 1 &&
+                    output_lines[output_lines.length - 1].text.length === 0) {
+                    output_lines.pop();
+                    trim_output_line(output_lines[output_lines.length - 1], eat_newlines);
+                }
+            }
+        }
+
+        function trim_output_line(line) {
+            while (line.text.length &&
+                (line.text[line.text.length - 1] === ' ' ||
+                    line.text[line.text.length - 1] === indent_string ||
+                    line.text[line.text.length - 1] === preindent_string)) {
+                line.text.pop();
             }
         }
 
@@ -586,39 +616,30 @@ function detectXMLType(str) {
         }
 
         function just_added_newline() {
-            return output.length && output[output.length - 1] === "\n";
+            var line = output_lines[output_lines.length - 1];
+            return line.text.length === 0;
         }
 
         function just_added_blankline() {
-            return just_added_newline() && output.length - 1 > 0 && output[output.length - 2] === "\n";
-        }
-
-        function _last_index_of(arr, find) {
-            var i = arr.length - 1;
-            if (i < 0) {
-                i += arr.length;
-            }
-            if (i > arr.length - 1) {
-                i = arr.length - 1;
-            }
-            for (i++; i-- > 0;) {
-                if (i in arr && arr[i] === find) {
-                    return i;
+            if (just_added_newline()) {
+                if (output_lines.length === 1) {
+                    return true; // start of the file and newline = blank
                 }
+
+                var line = output_lines[output_lines.length - 2];
+                return line.text.length === 0;
             }
-            return -1;
+            return false;
         }
 
         function allow_wrap_or_preserved_newline(force_linewrap) {
             force_linewrap = (force_linewrap === undefined) ? false : force_linewrap;
             if (opt.wrap_line_length && !force_linewrap) {
-                var current_line = '';
+                var line = output_lines[output_lines.length - 1];
                 var proposed_line_length = 0;
-                var start_line = _last_index_of(output, '\n') + 1;
                 // never wrap the first token of a line.
-                if (start_line < output.length) {
-                    current_line = output.slice(start_line).join('');
-                    proposed_line_length = current_line.length + token_text.length +
+                if (line.text.length > 0) {
+                    proposed_line_length = line.text.join('').length + token_text.length +
                         (output_space_before_token ? 1 : 0);
                     if (proposed_line_length >= opt.wrap_line_length) {
                         force_linewrap = true;
@@ -629,7 +650,7 @@ function detectXMLType(str) {
                 print_newline(false, true);
 
                 // Expressions and array literals already indent their contents.
-                if(! (is_array(flags.mode) || is_expression(flags.mode))) {
+                if (!(is_array(flags.mode) || is_expression(flags.mode))) {
                     output_wrapped = true;
                 }
             }
@@ -640,35 +661,35 @@ function detectXMLType(str) {
             output_space_before_token = false;
 
             if (!preserve_statement_flags) {
-                if  (flags.last_text !== ';') {
+                if (flags.last_text !== ';') {
                     while (flags.mode === MODE.Statement && !flags.if_block && !flags.do_block) {
                         restore_mode();
                     }
                 }
             }
 
-            flags.multiline_frame = true;
-
-            if (!output.length) {
+            if (output_lines.length === 1 && just_added_newline()) {
                 return; // no newline on start of file
             }
 
             if (force_newline || !just_added_newline()) {
-                output.push("\n");
+                flags.multiline_frame = true;
+                output_lines.push(create_output_line());
             }
         }
 
         function print_token_line_indentation() {
             if (just_added_newline()) {
+                var line = output_lines[output_lines.length - 1];
                 if (opt.keep_array_indentation && is_array(flags.mode) && input_wanted_newline) {
                     // prevent removing of this whitespace as redundant
-                    output.push('');
+                    line.text.push('');
                     for (var i = 0; i < whitespace_before_token.length; i += 1) {
-                        output.push(whitespace_before_token[i]);
+                        line.text.push(whitespace_before_token[i]);
                     }
                 } else {
                     if (preindent_string) {
-                        output.push(preindent_string);
+                        line.text.push(preindent_string);
                     }
 
                     print_indent_string(flags.indentation_level +
@@ -680,19 +701,22 @@ function detectXMLType(str) {
 
         function print_indent_string(level) {
             // Never indent your first output indent at the start of the file
-            if (flags.last_text !== '') {
+            if (output_lines.length > 1) {
+                var line = output_lines[output_lines.length - 1];
+
                 flags.line_indent_level = level;
                 for (var i = 0; i < level; i += 1) {
-                    output.push(indent_string);
+                    line.text.push(indent_string);
                 }
             }
         }
 
         function print_token_space_before() {
-            if (output_space_before_token && output.length) {
-                var last_output = output[output.length - 1];
-                if (!just_added_newline() && last_output !== ' ' && last_output !== indent_string) { // prevent occassional duplicate space
-                    output.push(' ');
+            var line = output_lines[output_lines.length - 1];
+            if (output_space_before_token && line.text.length) {
+                var last_output = line.text[line.text.length - 1];
+                if (last_output !== ' ' && last_output !== indent_string) { // prevent occassional duplicate space
+                    line.text.push(' ');
                 }
             }
         }
@@ -703,7 +727,7 @@ function detectXMLType(str) {
             output_wrapped = false;
             print_token_space_before();
             output_space_before_token = false;
-            output.push(printable_token);
+            output_lines[output_lines.length - 1].text.push(printable_token);
         }
 
         function indent() {
@@ -723,33 +747,32 @@ function detectXMLType(str) {
             //           after wrap points are calculated
             // These issues are minor compared to ugly indentation.
 
-            if(frame.multiline_frame) return;
+            if (frame.multiline_frame) return;
 
             // remove one indent from each line inside this section
-            var index = frame.start_index;
-            while (index < output.length) {
+            var index = frame.start_line_index;
+            var splice_index = 0;
+            var line;
 
-                if (output[index] != '\n') {
-                    index++;
+            while (index < output_lines.length) {
+                line = output_lines[index];
+                index++;
+
+                // skip empty lines
+                if (line.text.length === 0) {
                     continue;
                 }
 
-                // skip consecutive newlines
-                while (index < output.length &&
-                    output[index] == '\n') {
-                    index++;
-                }
-
                 // skip the preindent string if present
-                if (index < output.length &&
-                    preindent_string && output[index] == preindent_string) {
-                    index++;
+                if (preindent_string && line.text[0] === preindent_string) {
+                    splice_index = 1;
+                } else {
+                    splice_index = 0;
                 }
 
                 // remove one indent, if present
-                if (index < output.length &&
-                    output[index] === indent_string) {
-                    output.splice(index, 1);
+                if (line.text[splice_index] === indent_string) {
+                    line.text.splice(splice_index, 1);
                 }
             }
         }
@@ -782,9 +805,9 @@ function detectXMLType(str) {
 
         function start_of_statement() {
             if (
-             (flags.last_text === 'do' ||
-                 (flags.last_text === 'else' && token_text !== 'if') ||
-                (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)))) {
+                (flags.last_text === 'do' ||
+                    (flags.last_text === 'else' && token_text !== 'if') ||
+                    (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)))) {
                 // Issue #276:
                 // If starting a new statement with [if, for, while, do], push to a new line.
                 // if (a) if (b) if(c) d(); else e(); else f();
@@ -795,7 +818,7 @@ function detectXMLType(str) {
                 // Issue #275:
                 // If starting on a newline, all of a statement should be indented.
                 // if not, use line wrapping logic for indent.
-                if(just_added_newline()) {
+                if (just_added_newline()) {
                     indent();
                     output_wrapped = false;
                 }
@@ -1033,12 +1056,13 @@ function detectXMLType(str) {
             if (c === "'" || c === '"' || // string
                 (
                     (c === '/') || // regexp
-                    (opt.e4x && c ==="<" && input.slice(parser_pos - 1).match(/^<([a-zA-Z:0-9]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([a-zA-Z:0-9]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*\/?\s*>/)) // xml
+                    (opt.e4x && c === "<" && input.slice(parser_pos - 1).match(/^<([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([-a-zA-Z:0-9_.]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*\/?\s*>/)) // xml
                 ) && ( // regex and xml can only appear in specific locations during parsing
-                    (last_type === 'TK_WORD' && is_special_word (flags.last_text)) ||
+                    (last_type === 'TK_WORD' && is_special_word(flags.last_text)) ||
                     (last_type === 'TK_END_EXPR' && in_array(previous_flags.mode, [MODE.Conditional, MODE.ForInitializer])) ||
                     (in_array(last_type, ['TK_COMMENT', 'TK_START_EXPR', 'TK_START_BLOCK',
-                    'TK_END_BLOCK', 'TK_OPERATOR', 'TK_EQUALS', 'TK_EOF', 'TK_SEMICOLON', 'TK_COMMA']))
+                        'TK_END_BLOCK', 'TK_OPERATOR', 'TK_EQUALS', 'TK_EOF', 'TK_SEMICOLON', 'TK_COMMA'
+                    ]))
                 )) {
 
                 var sep = c,
@@ -1076,7 +1100,7 @@ function detectXMLType(str) {
                         //
                         // handle e4x xml literals
                         //
-                        var xmlRegExp = /<(\/?)([a-zA-Z:0-9]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([a-zA-Z:0-9]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*(\/?)\s*>/g;
+                        var xmlRegExp = /<(\/?)([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([-a-zA-Z:0-9_.]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*(\/?)\s*>/g;
                         var xmlStr = input.slice(parser_pos - 1);
                         var match = xmlRegExp.exec(xmlStr);
                         if (match && match.index === 0) {
@@ -1085,7 +1109,7 @@ function detectXMLType(str) {
                             while (match) {
                                 var isEndTag = !! match[1];
                                 var tagName = match[2];
-                                var isSingletonTag = (!! match[match.length - 1]) || (tagName.slice(0, 8) === "![CDATA[");
+                                var isSingletonTag = ( !! match[match.length - 1]) || (tagName.slice(0, 8) === "![CDATA[");
                                 if (tagName === rootTag && !isSingletonTag) {
                                     if (isEndTag) {
                                         --depth;
@@ -1147,7 +1171,8 @@ function detectXMLType(str) {
             if (c === '#') {
 
 
-                if (output.length === 0 && input.charAt(parser_pos) === '!') {
+                if (output_lines.length === 1 && output_lines[0].text.length === 0 &&
+                    input.charAt(parser_pos) === '!') {
                     // shebang
                     resulting_string = c;
                     while (parser_pos < input_length && c !== '\n') {
@@ -1236,12 +1261,11 @@ function detectXMLType(str) {
                 if (last_type === 'TK_WORD' || flags.last_text === ')') {
                     // this is array index specifier, break immediately
                     // a[x], fn()[x]
-                    if (in_array (flags.last_text, line_starters)) {
+                    if (in_array(flags.last_text, line_starters)) {
                         output_space_before_token = true;
                     }
                     set_mode(next_mode);
                     print_token();
-                    flags.start_index = output.length
                     indent();
                     if (opt.space_in_paren) {
                         output_space_before_token = true;
@@ -1262,16 +1286,16 @@ function detectXMLType(str) {
                 }
 
             } else {
-                if  (flags.last_text === 'for') {
+                if (flags.last_text === 'for') {
                     next_mode = MODE.ForInitializer;
-                } else if (in_array (flags.last_text, ['if', 'while'])) {
+                } else if (in_array(flags.last_text, ['if', 'while'])) {
                     next_mode = MODE.Conditional;
                 } else {
                     // next_mode = MODE.Expression;
                 }
             }
 
-            if  (flags.last_text === ';' || last_type === 'TK_START_BLOCK') {
+            if (flags.last_text === ';' || last_type === 'TK_START_BLOCK') {
                 print_newline();
             } else if (last_type === 'TK_END_EXPR' || last_type === 'TK_START_EXPR' || last_type === 'TK_END_BLOCK' || flags.last_text === '.') {
                 // TODO: Consider whether forcing this is required.  Review failing tests when removed.
@@ -1285,7 +1309,7 @@ function detectXMLType(str) {
                 if (opt.jslint_happy) {
                     output_space_before_token = true;
                 }
-            } else if (in_array (flags.last_text, line_starters) || flags.last_text === 'catch') {
+            } else if (in_array(flags.last_text, line_starters) || flags.last_text === 'catch') {
                 if (opt.space_before_conditional) {
                     output_space_before_token = true;
                 }
@@ -1304,7 +1328,6 @@ function detectXMLType(str) {
 
             set_mode(next_mode);
             print_token();
-            flags.start_index = output.length
             if (opt.space_in_paren) {
                 output_space_before_token = true;
             }
@@ -1359,8 +1382,8 @@ function detectXMLType(str) {
                 if (last_type !== 'TK_OPERATOR' &&
                     (empty_anonymous_function ||
                         last_type === 'TK_EQUALS' ||
-                        (is_special_word (flags.last_text) && flags.last_text !== 'else'))) {
-                        output_space_before_token = true;
+                        (is_special_word(flags.last_text) && flags.last_text !== 'else'))) {
+                    output_space_before_token = true;
                 } else {
                     print_newline();
                 }
@@ -1395,7 +1418,7 @@ function detectXMLType(str) {
             var empty_braces = last_type === 'TK_START_BLOCK';
 
             if (opt.brace_style === "expand") {
-                if  (!empty_braces) {
+                if (!empty_braces) {
                     print_newline();
                 }
             } else {
@@ -1476,13 +1499,13 @@ function detectXMLType(str) {
                     flags.last_text !== '{' && !is_array(flags.mode)) {
                     // make sure there is a nice clean space of at least one blank line
                     // before a new function definition, except in arrays
-                    if(!just_added_blankline()) {
+                    if (!just_added_blankline()) {
                         print_newline();
                         print_newline(true);
                     }
                 }
                 if (last_type === 'TK_WORD') {
-                    if  (flags.last_text === 'get' || flags.last_text === 'set' || flags.last_text === 'new' || flags.last_text === 'return') {
+                    if (flags.last_text === 'get' || flags.last_text === 'set' || flags.last_text === 'new' || flags.last_text === 'return') {
                         output_space_before_token = true;
                     } else {
                         print_newline();
@@ -1539,7 +1562,7 @@ function detectXMLType(str) {
             }
 
             if (in_array(token_text, line_starters) && flags.last_text !== ')') {
-                if  (flags.last_text === 'else') {
+                if (flags.last_text === 'else') {
                     prefix = 'SPACE';
                 } else {
                     prefix = 'NEWLINE';
@@ -1552,15 +1575,16 @@ function detectXMLType(str) {
                     print_newline();
                 } else {
                     trim_output(true);
+                    var line = output_lines[output_lines.length - 1];
                     // If we trimmed and there's something other than a close block before us
                     // put a newline back in.  Handles '} // comment' scenario.
-                    if (output[output.length - 1] !== '}') {
+                    if (line.text[line.text.length - 1] !== '}') {
                         print_newline();
                     }
                     output_space_before_token = true;
                 }
             } else if (prefix === 'NEWLINE') {
-                if (is_special_word (flags.last_text)) {
+                if (is_special_word(flags.last_text)) {
                     // no newline between 'return nnn'
                     output_space_before_token = true;
                 } else if (last_type !== 'TK_END_EXPR') {
@@ -1693,7 +1717,7 @@ function detectXMLType(str) {
         function handle_operator() {
             var space_before = true;
             var space_after = true;
-            if (is_special_word (flags.last_text)) {
+            if (is_special_word(flags.last_text)) {
                 // "return" had a special handling in TK_WORD. Now we need to return the favor
                 output_space_before_token = true;
                 print_token();
@@ -1727,23 +1751,23 @@ function detectXMLType(str) {
                 print_newline();
             }
 
-            if (in_array(token_text, ['--', '++', '!']) || (in_array(token_text, ['-', '+']) && (in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) || in_array (flags.last_text, line_starters) || flags.last_text === ','))) {
+            if (in_array(token_text, ['--', '++', '!']) || (in_array(token_text, ['-', '+']) && (in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) || in_array(flags.last_text, line_starters) || flags.last_text === ','))) {
                 // unary operators (and binary +/- pretending to be unary) special cases
 
                 space_before = false;
                 space_after = false;
 
-                if  (flags.last_text === ';' && is_expression(flags.mode)) {
+                if (flags.last_text === ';' && is_expression(flags.mode)) {
                     // for (;; ++i)
                     //        ^^^
                     space_before = true;
                 }
 
-                if (last_type === 'TK_WORD' && in_array (flags.last_text, line_starters)) {
+                if (last_type === 'TK_WORD' && in_array(flags.last_text, line_starters)) {
                     space_before = true;
                 }
 
-                if ((flags.mode === MODE.BlockStatement || flags.mode === MODE.Statement) &&  (flags.last_text === '{' || flags.last_text === ';')) {
+                if ((flags.mode === MODE.BlockStatement || flags.mode === MODE.Statement) && (flags.last_text === '{' || flags.last_text === ';')) {
                     // { foo; --i }
                     // foo(); --bar;
                     print_newline();
@@ -1787,7 +1811,7 @@ function detectXMLType(str) {
                     print_token(' ' + trim(lines[j]));
                 } else {
                     // normal comments output raw
-                    output.push(lines[j]);
+                    output_lines[output_lines.length - 1].text.push(lines[j]);
                 }
             }
 
@@ -1814,12 +1838,12 @@ function detectXMLType(str) {
         }
 
         function handle_dot() {
-            if (is_special_word (flags.last_text)) {
+            if (is_special_word(flags.last_text)) {
                 output_space_before_token = true;
             } else {
                 // allow preserved newlines before dots in general
                 // force newlines on dots after close paren when break_chained - for bar().baz()
-                allow_wrap_or_preserved_newline (flags.last_text === ')' && opt.break_chained_methods);
+                allow_wrap_or_preserved_newline(flags.last_text === ')' && opt.break_chained_methods);
             }
 
             print_token();
@@ -1827,6 +1851,7 @@ function detectXMLType(str) {
 
         function handle_unknown() {
             print_token();
+
             if (token_text.charAt(token_text.length - 1) === '\n') {
                 print_newline();
             }
@@ -1836,7 +1861,7 @@ function detectXMLType(str) {
 
     if (typeof define === "function") {
         // Add support for require.js
-        if(typeof define.amd === "undefined") {
+        if (typeof define.amd === "undefined") {
             define(function(require, exports, module) {
                 exports.js_beautify = js_beautify;
             });
@@ -1935,18 +1960,22 @@ function detectXMLType(str) {
         var whiteRe = /^\s+$/;
         var wordRe = /[\w$\-_]/;
 
-        var pos = -1, ch;
+        var pos = -1,
+            ch;
+
         function next() {
             ch = source_text.charAt(++pos);
             return ch;
         }
+
         function peek() {
-            return source_text.charAt(pos+1);
+            return source_text.charAt(pos + 1);
         }
+
         function eatString(comma) {
             var start = pos;
-            while(next()){
-                if (ch === "\\"){
+            while (next()) {
+                if (ch === "\\") {
                     next();
                     next();
                 } else if (ch === comma) {
@@ -1968,8 +1997,7 @@ function detectXMLType(str) {
 
         function skipWhitespace() {
             var start = pos;
-            do{
-            }while (whiteRe.test(next()));
+            do {} while (whiteRe.test(next()));
             return pos !== start + 1;
         }
 
@@ -1978,7 +2006,7 @@ function detectXMLType(str) {
             next();
             while (next()) {
                 if (ch === "*" && peek() === "/") {
-                    pos ++;
+                    pos++;
                     break;
                 }
             }
@@ -1988,17 +2016,19 @@ function detectXMLType(str) {
 
 
         function lookBack(str) {
-            return source_text.substring(pos-str.length, pos).toLowerCase() === str;
+            return source_text.substring(pos - str.length, pos).toLowerCase() === str;
         }
 
         // printer
         var indentString = source_text.match(/^[\r\n]*[\t ]*/)[0];
         var singleIndent = Array(indentSize + 1).join(indentCharacter);
         var indentLevel = 0;
+
         function indent() {
             indentLevel++;
             indentString += singleIndent;
         }
+
         function outdent() {
             indentLevel--;
             indentString = indentString.slice(0, -indentSize);
@@ -2041,7 +2071,7 @@ function detectXMLType(str) {
         }
         /*_____________________--------------------_____________________*/
 
-        while(true) {
+        while (true) {
             var isAfterSpace = skipWhitespace();
 
             if (!ch) {
@@ -2064,21 +2094,21 @@ function detectXMLType(str) {
                 output.push(eatComment(), "\n", indentString);
             } else if (ch === '(') { // may be a url
                 if (lookBack("url")) {
-                  output.push(ch);
-                  eatWhitespace();
-                  if (next()) {
-                    if (ch !== ')' && ch !== '"' && ch !== '\'') {
-                        output.push(eatString(')'));
-                    } else {
-                        pos--;
+                    output.push(ch);
+                    eatWhitespace();
+                    if (next()) {
+                        if (ch !== ')' && ch !== '"' && ch !== '\'') {
+                            output.push(eatString(')'));
+                        } else {
+                            pos--;
+                        }
                     }
-                  }
                 } else {
-                  if (isAfterSpace) {
-                      print.singleSpace();
-                  }
-                  output.push(ch);
-                  eatWhitespace();
+                    if (isAfterSpace) {
+                        print.singleSpace();
+                    }
+                    output.push(ch);
+                    eatWhitespace();
                 }
             } else if (ch === ')') {
                 output.push(ch);
@@ -2088,7 +2118,7 @@ function detectXMLType(str) {
                 print.singleSpace();
             } else if (ch === ']') {
                 output.push(ch);
-            }  else if (ch === '[' || ch === '=') { // no whitespace before or after
+            } else if (ch === '[' || ch === '=') { // no whitespace before or after
                 eatWhitespace();
                 output.push(ch);
             } else {
@@ -2204,655 +2234,639 @@ function detectXMLType(str) {
     }
 
     function style_html(html_source, options, js_beautify, css_beautify) {
-    //Wrapper function to invoke all the necessary constructors and deal with the output.
+        //Wrapper function to invoke all the necessary constructors and deal with the output.
 
-      var multi_parser,
-          indent_size,
-          indent_character,
-          wrap_line_length,
-          brace_style,
-          unformatted,
-          preserve_newlines,
-          max_preserve_newlines;
+        var multi_parser,
+            indent_size,
+            indent_character,
+            wrap_line_length,
+            brace_style,
+            unformatted,
+            preserve_newlines,
+            max_preserve_newlines;
 
-      options = options || {};
+        options = options || {};
 
-      // backwards compatibility to 1.3.4
-      if(options.wrap_line_length == undefined && options.max_char != undefined) {
-        options.wrap_line_length = options.max_char;
-      }
-
-      indent_size = parseInt(options.indent_size || 4);
-      indent_character = options.indent_char || ' ';
-      brace_style = options.brace_style || 'collapse';
-      wrap_line_length = options.wrap_line_length === 0 ? 32786 : parseInt(options.wrap_line_length || 250);
-      unformatted = options.unformatted || ['a', 'span', 'bdo', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym', 'q', 'sub', 'sup', 'tt', 'i', 'b', 'big', 'small', 'u', 's', 'strike', 'font', 'ins', 'del', 'pre', 'address', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
-      preserve_newlines = options.preserve_newlines || true;
-      max_preserve_newlines = preserve_newlines ? parseInt(options.max_preserve_newlines || 32786) : 0;
-
-      function Parser() {
-
-        this.pos = 0; //Parser position
-        this.token = '';
-        this.current_mode = 'CONTENT'; //reflects the current Parser mode: TAG/CONTENT
-        this.tags = { //An object to hold tags, their position, and their parent-tags, initiated with default values
-          parent: 'parent1',
-          parentcount: 1,
-          parent1: ''
-        };
-        this.tag_type = '';
-        this.token_text = this.last_token = this.last_text = this.token_type = '';
-        this.newlines = 0;
-        this.indent_content = false;
-
-        this.Utils = { //Uilities made available to the various functions
-          whitespace: "\n\r\t ".split(''),
-          single_token: 'br,input,link,meta,!doctype,basefont,base,area,hr,wbr,param,img,isindex,?xml,embed,?php,?,?='.split(','), //all the single tags for HTML
-          extra_liners: 'head,body,/html'.split(','), //for tags that need a line of whitespace before them
-          in_array: function (what, arr) {
-            for (var i=0; i<arr.length; i++) {
-              if (what === arr[i]) {
-                return true;
-              }
-            }
-            return false;
-          }
-        };
-
-        this.traverse_whitespace = function() {
-          var input_char = '';
-
-          input_char = this.input.charAt(this.pos);
-          if (this.Utils.in_array(input_char, this.Utils.whitespace)) {
-            this.newlines = 0;
-            while (this.Utils.in_array(input_char, this.Utils.whitespace)) {
-              if(preserve_newlines && input_char === '\n' && this.newlines <= max_preserve_newlines) {
-                this.newlines += 1;
-              }
-
-              this.pos++;
-              input_char = this.input.charAt(this.pos);
-            }
-            return true;
-          }
-          return false;
+        // backwards compatibility to 1.3.4
+        if (options.wrap_line_length == undefined && options.max_char != undefined) {
+            options.wrap_line_length = options.max_char;
         }
 
-        this.get_content = function () { //function to capture regular content between tags
+        indent_size = parseInt(options.indent_size || 4);
+        indent_character = options.indent_char || ' ';
+        brace_style = options.brace_style || 'collapse';
+        wrap_line_length = options.wrap_line_length === 0 ? 32786 : parseInt(options.wrap_line_length || 250);
+        unformatted = options.unformatted || ['a', 'span', 'bdo', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym', 'q', 'sub', 'sup', 'tt', 'i', 'b', 'big', 'small', 'u', 's', 'strike', 'font', 'ins', 'del', 'pre', 'address', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+        preserve_newlines = options.preserve_newlines || true;
+        max_preserve_newlines = preserve_newlines ? parseInt(options.max_preserve_newlines || 32786) : 0;
 
-          var input_char = '',
-              content = [],
-              space = false; //if a space is needed
+        function Parser() {
 
-          while (this.input.charAt(this.pos) !== '<') {
-            if (this.pos >= this.input.length) {
-              return content.length?content.join(''):['', 'TK_EOF'];
-            }
+            this.pos = 0; //Parser position
+            this.token = '';
+            this.current_mode = 'CONTENT'; //reflects the current Parser mode: TAG/CONTENT
+            this.tags = { //An object to hold tags, their position, and their parent-tags, initiated with default values
+                parent: 'parent1',
+                parentcount: 1,
+                parent1: ''
+            };
+            this.tag_type = '';
+            this.token_text = this.last_token = this.last_text = this.token_type = '';
+            this.newlines = 0;
+            this.indent_content = false;
 
-            if (this.traverse_whitespace()) {
-              if (content.length) {
-                space = true;
-              }
-              continue; //don't want to insert unnecessary space
-            }
-
-            input_char = this.input.charAt(this.pos);
-            this.pos++;
-
-            if (space) {
-              if (this.line_char_count >= this.wrap_line_length) { //insert a line when the wrap_line_length is reached
-                this.print_newline(false, content);
-                this.print_indentation(content);
-              }
-              else {
-                this.line_char_count++;
-                content.push(' ');
-              }
-              space = false;
-            }
-            this.line_char_count++;
-            content.push(input_char); //letter at-a-time (or string) inserted to an array
-          }
-          return content.length?content.join(''):'';
-        };
-
-        this.get_contents_to = function (name) { //get the full content of a script or style to pass to js_beautify
-          if (this.pos === this.input.length) {
-            return ['', 'TK_EOF'];
-          }
-          var input_char = '';
-          var content = '';
-          var reg_match = new RegExp('</' + name + '\\s*>', 'igm');
-          reg_match.lastIndex = this.pos;
-          var reg_array = reg_match.exec(this.input);
-          var end_script = reg_array?reg_array.index:this.input.length; //absolute end of script
-          if(this.pos < end_script) { //get everything in between the script tags
-            content = this.input.substring(this.pos, end_script);
-            this.pos = end_script;
-          }
-          return content;
-        };
-
-        this.record_tag = function (tag){ //function to record a tag and its parent in this.tags Object
-          if (this.tags[tag + 'count']) { //check for the existence of this tag type
-            this.tags[tag + 'count']++;
-            this.tags[tag + this.tags[tag + 'count']] = this.indent_level; //and record the present indent level
-          }
-          else { //otherwise initialize this tag type
-            this.tags[tag + 'count'] = 1;
-            this.tags[tag + this.tags[tag + 'count']] = this.indent_level; //and record the present indent level
-          }
-          this.tags[tag + this.tags[tag + 'count'] + 'parent'] = this.tags.parent; //set the parent (i.e. in the case of a div this.tags.div1parent)
-          this.tags.parent = tag + this.tags[tag + 'count']; //and make this the current parent (i.e. in the case of a div 'div1')
-        };
-
-        this.retrieve_tag = function (tag) { //function to retrieve the opening tag to the corresponding closer
-          if (this.tags[tag + 'count']) { //if the openener is not in the Object we ignore it
-            var temp_parent = this.tags.parent; //check to see if it's a closable tag.
-            while (temp_parent) { //till we reach '' (the initial value);
-              if (tag + this.tags[tag + 'count'] === temp_parent) { //if this is it use it
-                break;
-              }
-              temp_parent = this.tags[temp_parent + 'parent']; //otherwise keep on climbing up the DOM Tree
-            }
-            if (temp_parent) { //if we caught something
-              this.indent_level = this.tags[tag + this.tags[tag + 'count']]; //set the indent_level accordingly
-              this.tags.parent = this.tags[temp_parent + 'parent']; //and set the current parent
-            }
-            delete this.tags[tag + this.tags[tag + 'count'] + 'parent']; //delete the closed tags parent reference...
-            delete this.tags[tag + this.tags[tag + 'count']]; //...and the tag itself
-            if (this.tags[tag + 'count'] === 1) {
-              delete this.tags[tag + 'count'];
-            }
-            else {
-              this.tags[tag + 'count']--;
-            }
-          }
-        };
-
-        this.get_tag = function (peek) { //function to get a full tag and parse its type
-          var input_char = '',
-              content = [],
-              comment = '',
-              space = false,
-              tag_start, tag_end,
-              orig_pos = this.pos,
-              orig_line_char_count = this.line_char_count;
-
-          peek = peek !== undefined ? peek : false;
-
-          do {
-            if (this.pos >= this.input.length) {
-              if (peek) {
-                this.pos = orig_pos;
-                this.line_char_count = orig_line_char_count;
-              }
-              return content.length?content.join(''):['', 'TK_EOF'];
-            }
-
-            input_char = this.input.charAt(this.pos);
-            this.pos++;
-
-            if (this.Utils.in_array(input_char, this.Utils.whitespace)) { //don't want to insert unnecessary space
-              space = true;
-              continue;
-            }
-
-            if (input_char === "'" || input_char === '"') {
-              input_char += this.get_unformatted(input_char);
-              space = true;
-
-            }
-
-            if (input_char === '=') { //no space before =
-              space = false;
-            }
-
-            if (content.length && content[content.length-1] !== '=' && input_char !== '>' && space) {
-                //no space after = or before >
-              if (this.line_char_count >= this.wrap_line_length) {
-                this.print_newline(false, content);
-                this.print_indentation(content);
-              }
-              else {
-                content.push(' ');
-                this.line_char_count++;
-              }
-              space = false;
-            }
-
-            if (input_char === '<' && !tag_start) {
-              tag_start = this.pos - 1;
-            }
-
-            this.line_char_count++;
-            content.push(input_char); //inserts character at-a-time (or string)
-
-            if (content[1] && content[1] === '!') { //if we're in a comment, do something special
-              // We treat all comments as literals, even more than preformatted tags
-              // we just look for the appropriate close tag
-              content = [this.get_comment(tag_start)];
-              break;
-            }
-
-          } while (input_char !== '>');
-
-          var tag_complete = content.join('');
-          var tag_index;
-          if (tag_complete.indexOf(' ') !== -1) { //if there's whitespace, thats where the tag name ends
-            tag_index = tag_complete.indexOf(' ');
-          }
-          else { //otherwise go with the tag ending
-            tag_index = tag_complete.indexOf('>');
-          }
-          var tag_check = tag_complete.substring(1, tag_index).toLowerCase();
-          if (tag_complete.charAt(tag_complete.length-2) === '/' ||
-            this.Utils.in_array(tag_check, this.Utils.single_token)) { //if this tag name is a single tag type (either in the list or has a closing /)
-            if ( ! peek) {
-              this.tag_type = 'SINGLE';
-            }
-          }
-          else if (tag_check === 'script') { //for later script handling
-            if ( ! peek) {
-              this.record_tag(tag_check);
-              this.tag_type = 'SCRIPT';
-            }
-          }
-          else if (tag_check === 'style') { //for future style handling (for now it justs uses get_content)
-            if ( ! peek) {
-              this.record_tag(tag_check);
-              this.tag_type = 'STYLE';
-            }
-          }
-          else if (this.is_unformatted(tag_check, unformatted)) { // do not reformat the "unformatted" tags
-            comment = this.get_unformatted('</'+tag_check+'>', tag_complete); //...delegate to get_unformatted function
-            content.push(comment);
-            // Preserve collapsed whitespace either before or after this tag.
-            if (tag_start > 0 && this.Utils.in_array(this.input.charAt(tag_start - 1), this.Utils.whitespace)){
-                content.splice(0, 0, this.input.charAt(tag_start - 1));
-            }
-            tag_end = this.pos - 1;
-            if (this.Utils.in_array(this.input.charAt(tag_end + 1), this.Utils.whitespace)){
-                content.push(this.input.charAt(tag_end + 1));
-            }
-            this.tag_type = 'SINGLE';
-          }
-          else if (tag_check.charAt(0) === '!' ) { //peek for <! comment
-            // for comments content is already correct.
-            if (! peek) {
-              this.tag_type = 'SINGLE';
-              this.traverse_whitespace();
-            }
-          }
-          else if ( ! peek) {
-            if (tag_check.charAt(0) === '/') { //this tag is a double tag so check for tag-ending
-              this.retrieve_tag(tag_check.substring(1)); //remove it and all ancestors
-              this.tag_type = 'END';
-              this.traverse_whitespace();
-            }
-            else { //otherwise it's a start-tag
-              this.record_tag(tag_check); //push it on the tag stack
-              if(tag_check.toLowerCase() !== 'html') {
-                  this.indent_content = true;
-              }
-              this.tag_type = 'START';
-
-              // Allow preserving of newlines after a start tag
-              this.traverse_whitespace();
-            }
-            if (this.Utils.in_array(tag_check, this.Utils.extra_liners)) { //check if this double needs an extra line
-              this.print_newline(false, this.output);
-              if(this.output.length && this.output[this.output.length - 2] !== '\n') {
-                this.print_newline(true, this.output);
-              }
-            }
-          }
-
-          if (peek) {
-            this.pos = orig_pos;
-            this.line_char_count = orig_line_char_count;
-          }
-
-          return content.join(''); //returns fully formatted tag
-        };
-
-        this.get_comment = function (start_pos) { //function to return comment content in its entirety
-            // this is will have very poor perf, but will work for now.
-            var comment = '',
-                delimiter = '>',
-                matched = false;
-
-            this.pos = start_pos;
-            input_char = this.input.charAt(this.pos);
-            this.pos++;
-
-            while(this.pos <= this.input.length) {
-              comment += input_char;
-
-              // only need to check for the delimiter if the last chars match
-              if(comment[comment.length - 1] === delimiter[delimiter.length - 1] &&
-                  comment.indexOf(delimiter) !== -1) {
-                break;
-              }
-
-              // only need to search for custom delimiter for the first few characters
-              if (!matched && comment.length < 10) {
-                if (comment.indexOf('<![if') === 0) { //peek for <![if conditional comment
-                  delimiter = '<![endif]>';
-                  matched = true;
+            this.Utils = { //Uilities made available to the various functions
+                whitespace: "\n\r\t ".split(''),
+                single_token: 'br,input,link,meta,!doctype,basefont,base,area,hr,wbr,param,img,isindex,?xml,embed,?php,?,?='.split(','), //all the single tags for HTML
+                extra_liners: 'head,body,/html'.split(','), //for tags that need a line of whitespace before them
+                in_array: function(what, arr) {
+                    for (var i = 0; i < arr.length; i++) {
+                        if (what === arr[i]) {
+                            return true;
+                        }
+                    }
+                    return false;
                 }
-                else if (comment.indexOf('<![cdata[') === 0) { //if it's a <[cdata[ comment...
-                  delimiter = ']]>';
-                  matched = true;
-                }
-                else if (comment.indexOf('<![') === 0) { // some other ![ comment? ...
-                  delimiter = ']>';
-                  matched = true;
-                }
-                else if (comment.indexOf('<!--') === 0) { // <!-- comment ...
-                  delimiter = '-->';
-                  matched = true;
-                }
-              }
+            };
 
-              input_char = this.input.charAt(this.pos);
-              this.pos++;
+            this.traverse_whitespace = function() {
+                var input_char = '';
+
+                input_char = this.input.charAt(this.pos);
+                if (this.Utils.in_array(input_char, this.Utils.whitespace)) {
+                    this.newlines = 0;
+                    while (this.Utils.in_array(input_char, this.Utils.whitespace)) {
+                        if (preserve_newlines && input_char === '\n' && this.newlines <= max_preserve_newlines) {
+                            this.newlines += 1;
+                        }
+
+                        this.pos++;
+                        input_char = this.input.charAt(this.pos);
+                    }
+                    return true;
+                }
+                return false;
             }
 
-            return comment;
-        };
+            this.get_content = function() { //function to capture regular content between tags
 
-        this.get_unformatted = function (delimiter, orig_tag) { //function to return unformatted content in its entirety
+                var input_char = '',
+                    content = [],
+                    space = false; //if a space is needed
 
-          if (orig_tag && orig_tag.toLowerCase().indexOf(delimiter) !== -1) {
-            return '';
-          }
-          var input_char = '';
-          var content = '';
-          var space = true;
-          do {
+                while (this.input.charAt(this.pos) !== '<') {
+                    if (this.pos >= this.input.length) {
+                        return content.length ? content.join('') : ['', 'TK_EOF'];
+                    }
 
-            if (this.pos >= this.input.length) {
-              return content;
-            }
+                    if (this.traverse_whitespace()) {
+                        if (content.length) {
+                            space = true;
+                        }
+                        continue; //don't want to insert unnecessary space
+                    }
 
-            input_char = this.input.charAt(this.pos);
-            this.pos++;
+                    input_char = this.input.charAt(this.pos);
+                    this.pos++;
 
-            if (this.Utils.in_array(input_char, this.Utils.whitespace)) {
-              if (!space) {
-                this.line_char_count--;
-                continue;
-              }
-              if (input_char === '\n' || input_char === '\r') {
-                content += '\n';
-                /*  Don't change tab indention for unformatted blocks.  If using code for html editing, this will greatly affect <pre> tags if they are specified in the 'unformatted array'
+                    if (space) {
+                        if (this.line_char_count >= this.wrap_line_length) { //insert a line when the wrap_line_length is reached
+                            this.print_newline(false, content);
+                            this.print_indentation(content);
+                        } else {
+                            this.line_char_count++;
+                            content.push(' ');
+                        }
+                        space = false;
+                    }
+                    this.line_char_count++;
+                    content.push(input_char); //letter at-a-time (or string) inserted to an array
+                }
+                return content.length ? content.join('') : '';
+            };
+
+            this.get_contents_to = function(name) { //get the full content of a script or style to pass to js_beautify
+                if (this.pos === this.input.length) {
+                    return ['', 'TK_EOF'];
+                }
+                var input_char = '';
+                var content = '';
+                var reg_match = new RegExp('</' + name + '\\s*>', 'igm');
+                reg_match.lastIndex = this.pos;
+                var reg_array = reg_match.exec(this.input);
+                var end_script = reg_array ? reg_array.index : this.input.length; //absolute end of script
+                if (this.pos < end_script) { //get everything in between the script tags
+                    content = this.input.substring(this.pos, end_script);
+                    this.pos = end_script;
+                }
+                return content;
+            };
+
+            this.record_tag = function(tag) { //function to record a tag and its parent in this.tags Object
+                if (this.tags[tag + 'count']) { //check for the existence of this tag type
+                    this.tags[tag + 'count']++;
+                    this.tags[tag + this.tags[tag + 'count']] = this.indent_level; //and record the present indent level
+                } else { //otherwise initialize this tag type
+                    this.tags[tag + 'count'] = 1;
+                    this.tags[tag + this.tags[tag + 'count']] = this.indent_level; //and record the present indent level
+                }
+                this.tags[tag + this.tags[tag + 'count'] + 'parent'] = this.tags.parent; //set the parent (i.e. in the case of a div this.tags.div1parent)
+                this.tags.parent = tag + this.tags[tag + 'count']; //and make this the current parent (i.e. in the case of a div 'div1')
+            };
+
+            this.retrieve_tag = function(tag) { //function to retrieve the opening tag to the corresponding closer
+                if (this.tags[tag + 'count']) { //if the openener is not in the Object we ignore it
+                    var temp_parent = this.tags.parent; //check to see if it's a closable tag.
+                    while (temp_parent) { //till we reach '' (the initial value);
+                        if (tag + this.tags[tag + 'count'] === temp_parent) { //if this is it use it
+                            break;
+                        }
+                        temp_parent = this.tags[temp_parent + 'parent']; //otherwise keep on climbing up the DOM Tree
+                    }
+                    if (temp_parent) { //if we caught something
+                        this.indent_level = this.tags[tag + this.tags[tag + 'count']]; //set the indent_level accordingly
+                        this.tags.parent = this.tags[temp_parent + 'parent']; //and set the current parent
+                    }
+                    delete this.tags[tag + this.tags[tag + 'count'] + 'parent']; //delete the closed tags parent reference...
+                    delete this.tags[tag + this.tags[tag + 'count']]; //...and the tag itself
+                    if (this.tags[tag + 'count'] === 1) {
+                        delete this.tags[tag + 'count'];
+                    } else {
+                        this.tags[tag + 'count']--;
+                    }
+                }
+            };
+
+            this.get_tag = function(peek) { //function to get a full tag and parse its type
+                var input_char = '',
+                    content = [],
+                    comment = '',
+                    space = false,
+                    tag_start, tag_end,
+                    orig_pos = this.pos,
+                    orig_line_char_count = this.line_char_count;
+
+                peek = peek !== undefined ? peek : false;
+
+                do {
+                    if (this.pos >= this.input.length) {
+                        if (peek) {
+                            this.pos = orig_pos;
+                            this.line_char_count = orig_line_char_count;
+                        }
+                        return content.length ? content.join('') : ['', 'TK_EOF'];
+                    }
+
+                    input_char = this.input.charAt(this.pos);
+                    this.pos++;
+
+                    if (this.Utils.in_array(input_char, this.Utils.whitespace)) { //don't want to insert unnecessary space
+                        space = true;
+                        continue;
+                    }
+
+                    if (input_char === "'" || input_char === '"') {
+                        input_char += this.get_unformatted(input_char);
+                        space = true;
+
+                    }
+
+                    if (input_char === '=') { //no space before =
+                        space = false;
+                    }
+
+                    if (content.length && content[content.length - 1] !== '=' && input_char !== '>' && space) {
+                        //no space after = or before >
+                        if (this.line_char_count >= this.wrap_line_length) {
+                            this.print_newline(false, content);
+                            this.print_indentation(content);
+                        } else {
+                            content.push(' ');
+                            this.line_char_count++;
+                        }
+                        space = false;
+                    }
+
+                    if (input_char === '<' && !tag_start) {
+                        tag_start = this.pos - 1;
+                    }
+
+                    this.line_char_count++;
+                    content.push(input_char); //inserts character at-a-time (or string)
+
+                    if (content[1] && content[1] === '!') { //if we're in a comment, do something special
+                        // We treat all comments as literals, even more than preformatted tags
+                        // we just look for the appropriate close tag
+                        content = [this.get_comment(tag_start)];
+                        break;
+                    }
+
+                } while (input_char !== '>');
+
+                var tag_complete = content.join('');
+                var tag_index;
+                if (tag_complete.indexOf(' ') !== -1) { //if there's whitespace, thats where the tag name ends
+                    tag_index = tag_complete.indexOf(' ');
+                } else { //otherwise go with the tag ending
+                    tag_index = tag_complete.indexOf('>');
+                }
+                var tag_check = tag_complete.substring(1, tag_index).toLowerCase();
+                if (tag_complete.charAt(tag_complete.length - 2) === '/' ||
+                    this.Utils.in_array(tag_check, this.Utils.single_token)) { //if this tag name is a single tag type (either in the list or has a closing /)
+                    if (!peek) {
+                        this.tag_type = 'SINGLE';
+                    }
+                } else if (tag_check === 'script') { //for later script handling
+                    if (!peek) {
+                        this.record_tag(tag_check);
+                        this.tag_type = 'SCRIPT';
+                    }
+                } else if (tag_check === 'style') { //for future style handling (for now it justs uses get_content)
+                    if (!peek) {
+                        this.record_tag(tag_check);
+                        this.tag_type = 'STYLE';
+                    }
+                } else if (this.is_unformatted(tag_check, unformatted)) { // do not reformat the "unformatted" tags
+                    comment = this.get_unformatted('</' + tag_check + '>', tag_complete); //...delegate to get_unformatted function
+                    content.push(comment);
+                    // Preserve collapsed whitespace either before or after this tag.
+                    if (tag_start > 0 && this.Utils.in_array(this.input.charAt(tag_start - 1), this.Utils.whitespace)) {
+                        content.splice(0, 0, this.input.charAt(tag_start - 1));
+                    }
+                    tag_end = this.pos - 1;
+                    if (this.Utils.in_array(this.input.charAt(tag_end + 1), this.Utils.whitespace)) {
+                        content.push(this.input.charAt(tag_end + 1));
+                    }
+                    this.tag_type = 'SINGLE';
+                } else if (tag_check.charAt(0) === '!') { //peek for <! comment
+                    // for comments content is already correct.
+                    if (!peek) {
+                        this.tag_type = 'SINGLE';
+                        this.traverse_whitespace();
+                    }
+                } else if (!peek) {
+                    if (tag_check.charAt(0) === '/') { //this tag is a double tag so check for tag-ending
+                        this.retrieve_tag(tag_check.substring(1)); //remove it and all ancestors
+                        this.tag_type = 'END';
+                        this.traverse_whitespace();
+                    } else { //otherwise it's a start-tag
+                        this.record_tag(tag_check); //push it on the tag stack
+                        if (tag_check.toLowerCase() !== 'html') {
+                            this.indent_content = true;
+                        }
+                        this.tag_type = 'START';
+
+                        // Allow preserving of newlines after a start tag
+                        this.traverse_whitespace();
+                    }
+                    if (this.Utils.in_array(tag_check, this.Utils.extra_liners)) { //check if this double needs an extra line
+                        this.print_newline(false, this.output);
+                        if (this.output.length && this.output[this.output.length - 2] !== '\n') {
+                            this.print_newline(true, this.output);
+                        }
+                    }
+                }
+
+                if (peek) {
+                    this.pos = orig_pos;
+                    this.line_char_count = orig_line_char_count;
+                }
+
+                return content.join(''); //returns fully formatted tag
+            };
+
+            this.get_comment = function(start_pos) { //function to return comment content in its entirety
+                // this is will have very poor perf, but will work for now.
+                var comment = '',
+                    delimiter = '>',
+                    matched = false;
+
+                this.pos = start_pos;
+                input_char = this.input.charAt(this.pos);
+                this.pos++;
+
+                while (this.pos <= this.input.length) {
+                    comment += input_char;
+
+                    // only need to check for the delimiter if the last chars match
+                    if (comment[comment.length - 1] === delimiter[delimiter.length - 1] &&
+                        comment.indexOf(delimiter) !== -1) {
+                        break;
+                    }
+
+                    // only need to search for custom delimiter for the first few characters
+                    if (!matched && comment.length < 10) {
+                        if (comment.indexOf('<![if') === 0) { //peek for <![if conditional comment
+                            delimiter = '<![endif]>';
+                            matched = true;
+                        } else if (comment.indexOf('<![cdata[') === 0) { //if it's a <[cdata[ comment...
+                            delimiter = ']]>';
+                            matched = true;
+                        } else if (comment.indexOf('<![') === 0) { // some other ![ comment? ...
+                            delimiter = ']>';
+                            matched = true;
+                        } else if (comment.indexOf('<!--') === 0) { // <!-- comment ...
+                            delimiter = '-->';
+                            matched = true;
+                        }
+                    }
+
+                    input_char = this.input.charAt(this.pos);
+                    this.pos++;
+                }
+
+                return comment;
+            };
+
+            this.get_unformatted = function(delimiter, orig_tag) { //function to return unformatted content in its entirety
+
+                if (orig_tag && orig_tag.toLowerCase().indexOf(delimiter) !== -1) {
+                    return '';
+                }
+                var input_char = '';
+                var content = '';
+                var space = true;
+                do {
+
+                    if (this.pos >= this.input.length) {
+                        return content;
+                    }
+
+                    input_char = this.input.charAt(this.pos);
+                    this.pos++;
+
+                    if (this.Utils.in_array(input_char, this.Utils.whitespace)) {
+                        if (!space) {
+                            this.line_char_count--;
+                            continue;
+                        }
+                        if (input_char === '\n' || input_char === '\r') {
+                            content += '\n';
+                            /*  Don't change tab indention for unformatted blocks.  If using code for html editing, this will greatly affect <pre> tags if they are specified in the 'unformatted array'
                 for (var i=0; i<this.indent_level; i++) {
                   content += this.indent_string;
                 }
                 space = false; //...and make sure other indentation is erased
                 */
-                this.line_char_count = 0;
-                continue;
-              }
-            }
-            content += input_char;
-            this.line_char_count++;
-            space = true;
+                            this.line_char_count = 0;
+                            continue;
+                        }
+                    }
+                    content += input_char;
+                    this.line_char_count++;
+                    space = true;
 
 
-          } while (content.toLowerCase().indexOf(delimiter) === -1);
-          return content;
-        };
+                } while (content.toLowerCase().indexOf(delimiter) === -1);
+                return content;
+            };
 
-        this.get_token = function () { //initial handler for token-retrieval
-          var token;
+            this.get_token = function() { //initial handler for token-retrieval
+                var token;
 
-          if (this.last_token === 'TK_TAG_SCRIPT' || this.last_token === 'TK_TAG_STYLE') { //check if we need to format javascript
-           var type = this.last_token.substr(7);
-           token = this.get_contents_to(type);
-            if (typeof token !== 'string') {
-              return token;
-            }
-            return [token, 'TK_' + type];
-          }
-          if (this.current_mode === 'CONTENT') {
-            token = this.get_content();
-            if (typeof token !== 'string') {
-              return token;
-            }
-            else {
-              return [token, 'TK_CONTENT'];
-            }
-          }
-
-          if (this.current_mode === 'TAG') {
-            token = this.get_tag();
-            if (typeof token !== 'string') {
-              return token;
-            }
-            else {
-              var tag_name_type = 'TK_TAG_' + this.tag_type;
-              return [token, tag_name_type];
-            }
-          }
-        };
-
-        this.get_full_indent = function (level) {
-          level = this.indent_level + level || 0;
-          if (level < 1) {
-            return '';
-          }
-
-          return Array(level + 1).join(this.indent_string);
-        };
-
-        this.is_unformatted = function(tag_check, unformatted) {
-            //is this an HTML5 block-level link?
-            if (!this.Utils.in_array(tag_check, unformatted)){
-                return false;
-            }
-
-            if (tag_check.toLowerCase() !== 'a' || !this.Utils.in_array('a', unformatted)){
-                return true;
-            }
-
-            //at this point we have an  tag; is its first child something we want to remain
-            //unformatted?
-            var next_tag = this.get_tag(true /* peek. */);
-
-            // tets next_tag to see if it is just html tag (no external content)
-            var tag = (next_tag || "").match(/^\s*<\s*\/?([a-z]*)\s*[^>]*>\s*$/);
-
-            // if next_tag comes back but is not an isolated tag, then
-            // let's treat the 'a' tag as having content
-            // and respect the unformatted option
-            if (!tag || this.Utils.in_array(tag, unformatted)){
-                return true;
-            } else {
-                return false;
-            }
-        };
-
-        this.printer = function (js_source, indent_character, indent_size, wrap_line_length, brace_style) { //handles input/output and some other printing functions
-
-          this.input = js_source || ''; //gets the input for the Parser
-          this.output = [];
-          this.indent_character = indent_character;
-          this.indent_string = '';
-          this.indent_size = indent_size;
-          this.brace_style = brace_style;
-          this.indent_level = 0;
-          this.wrap_line_length = wrap_line_length;
-          this.line_char_count = 0; //count to see if wrap_line_length was exceeded
-
-          for (var i=0; i<this.indent_size; i++) {
-            this.indent_string += this.indent_character;
-          }
-
-          this.print_newline = function (force, arr) {
-            this.line_char_count = 0;
-            if (!arr || !arr.length) {
-              return;
-            }
-            if (force || (arr[arr.length-1] !== '\n')) { //we might want the extra line
-              arr.push('\n');
-            }
-          };
-
-          this.print_indentation = function (arr) {
-            for (var i=0; i<this.indent_level; i++) {
-              arr.push(this.indent_string);
-              this.line_char_count += this.indent_string.length;
-            }
-          };
-
-          this.print_token = function (text) {
-            if (text || text !== '') {
-              if (this.output.length && this.output[this.output.length-1] === '\n') {
-                this.print_indentation(this.output);
-                text = ltrim(text);
-              }
-            }
-            this.print_token_raw(text);
-          };
-
-          this.print_token_raw = function (text) {
-            if (text && text !== '') {
-              if(text.length > 1 && text[text.length - 1] === '\n') {
-                // unformatted tags can grab newlines as their last character
-                this.output.push(text.slice(0, -1));
-                this.print_newline(false, this.output);
-              } else {
-                this.output.push(text);
-              }
-            }
-
-            for(var n=0; n < this.newlines; n++) {
-              this.print_newline(n > 0, this.output);
-            }
-            this.newlines = 0;
-          };
-
-          this.indent = function () {
-            this.indent_level++;
-          };
-
-          this.unindent = function () {
-            if (this.indent_level > 0) {
-              this.indent_level--;
-            }
-          };
-        };
-        return this;
-      }
-
-      /*_____________________--------------------_____________________*/
-
-      multi_parser = new Parser(); //wrapping functions Parser
-      multi_parser.printer(html_source, indent_character, indent_size, wrap_line_length, brace_style); //initialize starting values
-
-      while (true) {
-          var t = multi_parser.get_token();
-          multi_parser.token_text = t[0];
-          multi_parser.token_type = t[1];
-
-        if (multi_parser.token_type === 'TK_EOF') {
-          break;
-        }
-
-        switch (multi_parser.token_type) {
-          case 'TK_TAG_START':
-            multi_parser.print_newline(false, multi_parser.output);
-            multi_parser.print_token(multi_parser.token_text);
-            if (multi_parser.indent_content) {
-                multi_parser.indent();
-                multi_parser.indent_content = false;
-            }
-            multi_parser.current_mode = 'CONTENT';
-            break;
-          case 'TK_TAG_STYLE':
-          case 'TK_TAG_SCRIPT':
-            multi_parser.print_newline(false, multi_parser.output);
-            multi_parser.print_token(multi_parser.token_text);
-            multi_parser.current_mode = 'CONTENT';
-            break;
-          case 'TK_TAG_END':
-            //Print new line only if the tag has no content and has child
-            if (multi_parser.last_token === 'TK_CONTENT' && multi_parser.last_text === '') {
-                var tag_name = multi_parser.token_text.match(/\w+/)[0];
-                var tag_extracted_from_last_output = multi_parser.output[multi_parser.output.length -1].match(/<\s*(\w+)/);
-                if (tag_extracted_from_last_output === null ||
-                    tag_extracted_from_last_output[1] !== tag_name) {
-                    multi_parser.print_newline(false, multi_parser.output);
+                if (this.last_token === 'TK_TAG_SCRIPT' || this.last_token === 'TK_TAG_STYLE') { //check if we need to format javascript
+                    var type = this.last_token.substr(7);
+                    token = this.get_contents_to(type);
+                    if (typeof token !== 'string') {
+                        return token;
+                    }
+                    return [token, 'TK_' + type];
                 }
-            }
-            multi_parser.print_token(multi_parser.token_text);
-            multi_parser.current_mode = 'CONTENT';
-            break;
-          case 'TK_TAG_SINGLE':
-            // Don't add a newline before elements that should remain unformatted.
-            var tag_check = multi_parser.token_text.match(/^\s*<([a-z]+)/i);
-            if (!tag_check || !multi_parser.Utils.in_array(tag_check[1], unformatted)){
-                multi_parser.print_newline(false, multi_parser.output);
-            }
-            multi_parser.print_token(multi_parser.token_text);
-            multi_parser.current_mode = 'CONTENT';
-            break;
-          case 'TK_CONTENT':
-            multi_parser.print_token(multi_parser.token_text);
-            multi_parser.current_mode = 'TAG';
-            break;
-          case 'TK_STYLE':
-          case 'TK_SCRIPT':
-            if (multi_parser.token_text !== '') {
-              multi_parser.print_newline(false, multi_parser.output);
-              var text = multi_parser.token_text,
-                  _beautifier,
-                  script_indent_level = 1;
-              if (multi_parser.token_type === 'TK_SCRIPT') {
-                _beautifier = typeof js_beautify === 'function' && js_beautify;
-              } else if (multi_parser.token_type === 'TK_STYLE') {
-                _beautifier = typeof css_beautify === 'function' && css_beautify;
-              }
+                if (this.current_mode === 'CONTENT') {
+                    token = this.get_content();
+                    if (typeof token !== 'string') {
+                        return token;
+                    } else {
+                        return [token, 'TK_CONTENT'];
+                    }
+                }
 
-              if (options.indent_scripts === "keep") {
-                script_indent_level = 0;
-              } else if (options.indent_scripts === "separate") {
-                script_indent_level = -multi_parser.indent_level;
-              }
+                if (this.current_mode === 'TAG') {
+                    token = this.get_tag();
+                    if (typeof token !== 'string') {
+                        return token;
+                    } else {
+                        var tag_name_type = 'TK_TAG_' + this.tag_type;
+                        return [token, tag_name_type];
+                    }
+                }
+            };
 
-              var indentation = multi_parser.get_full_indent(script_indent_level);
-              if (_beautifier) {
-                // call the Beautifier if avaliable
-                text = _beautifier(text.replace(/^\s*/, indentation), options);
-              } else {
-                // simply indent the string otherwise
-                var white = text.match(/^\s*/)[0];
-                var _level = white.match(/[^\n\r]*$/)[0].split(multi_parser.indent_string).length - 1;
-                var reindent = multi_parser.get_full_indent(script_indent_level -_level);
-                text = text.replace(/^\s*/, indentation)
-                       .replace(/\r\n|\r|\n/g, '\n' + reindent)
-                       .replace(/\s+$/, '');
-              }
-              if (text) {
-                multi_parser.print_token_raw(indentation + trim(text));
-                multi_parser.print_newline(false, multi_parser.output);
-              }
-            }
-            multi_parser.current_mode = 'TAG';
-            break;
+            this.get_full_indent = function(level) {
+                level = this.indent_level + level || 0;
+                if (level < 1) {
+                    return '';
+                }
+
+                return Array(level + 1).join(this.indent_string);
+            };
+
+            this.is_unformatted = function(tag_check, unformatted) {
+                //is this an HTML5 block-level link?
+                if (!this.Utils.in_array(tag_check, unformatted)) {
+                    return false;
+                }
+
+                if (tag_check.toLowerCase() !== 'a' || !this.Utils.in_array('a', unformatted)) {
+                    return true;
+                }
+
+                //at this point we have an  tag; is its first child something we want to remain
+                //unformatted?
+                var next_tag = this.get_tag(true /* peek. */ );
+
+                // tets next_tag to see if it is just html tag (no external content)
+                var tag = (next_tag || "").match(/^\s*<\s*\/?([a-z]*)\s*[^>]*>\s*$/);
+
+                // if next_tag comes back but is not an isolated tag, then
+                // let's treat the 'a' tag as having content
+                // and respect the unformatted option
+                if (!tag || this.Utils.in_array(tag, unformatted)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            };
+
+            this.printer = function(js_source, indent_character, indent_size, wrap_line_length, brace_style) { //handles input/output and some other printing functions
+
+                this.input = js_source || ''; //gets the input for the Parser
+                this.output = [];
+                this.indent_character = indent_character;
+                this.indent_string = '';
+                this.indent_size = indent_size;
+                this.brace_style = brace_style;
+                this.indent_level = 0;
+                this.wrap_line_length = wrap_line_length;
+                this.line_char_count = 0; //count to see if wrap_line_length was exceeded
+
+                for (var i = 0; i < this.indent_size; i++) {
+                    this.indent_string += this.indent_character;
+                }
+
+                this.print_newline = function(force, arr) {
+                    this.line_char_count = 0;
+                    if (!arr || !arr.length) {
+                        return;
+                    }
+                    if (force || (arr[arr.length - 1] !== '\n')) { //we might want the extra line
+                        arr.push('\n');
+                    }
+                };
+
+                this.print_indentation = function(arr) {
+                    for (var i = 0; i < this.indent_level; i++) {
+                        arr.push(this.indent_string);
+                        this.line_char_count += this.indent_string.length;
+                    }
+                };
+
+                this.print_token = function(text) {
+                    if (text || text !== '') {
+                        if (this.output.length && this.output[this.output.length - 1] === '\n') {
+                            this.print_indentation(this.output);
+                            text = ltrim(text);
+                        }
+                    }
+                    this.print_token_raw(text);
+                };
+
+                this.print_token_raw = function(text) {
+                    if (text && text !== '') {
+                        if (text.length > 1 && text[text.length - 1] === '\n') {
+                            // unformatted tags can grab newlines as their last character
+                            this.output.push(text.slice(0, -1));
+                            this.print_newline(false, this.output);
+                        } else {
+                            this.output.push(text);
+                        }
+                    }
+
+                    for (var n = 0; n < this.newlines; n++) {
+                        this.print_newline(n > 0, this.output);
+                    }
+                    this.newlines = 0;
+                };
+
+                this.indent = function() {
+                    this.indent_level++;
+                };
+
+                this.unindent = function() {
+                    if (this.indent_level > 0) {
+                        this.indent_level--;
+                    }
+                };
+            };
+            return this;
         }
-        multi_parser.last_token = multi_parser.token_type;
-        multi_parser.last_text = multi_parser.token_text;
-      }
-      return multi_parser.output.join('');
+
+        /*_____________________--------------------_____________________*/
+
+        multi_parser = new Parser(); //wrapping functions Parser
+        multi_parser.printer(html_source, indent_character, indent_size, wrap_line_length, brace_style); //initialize starting values
+
+        while (true) {
+            var t = multi_parser.get_token();
+            multi_parser.token_text = t[0];
+            multi_parser.token_type = t[1];
+
+            if (multi_parser.token_type === 'TK_EOF') {
+                break;
+            }
+
+            switch (multi_parser.token_type) {
+                case 'TK_TAG_START':
+                    multi_parser.print_newline(false, multi_parser.output);
+                    multi_parser.print_token(multi_parser.token_text);
+                    if (multi_parser.indent_content) {
+                        multi_parser.indent();
+                        multi_parser.indent_content = false;
+                    }
+                    multi_parser.current_mode = 'CONTENT';
+                    break;
+                case 'TK_TAG_STYLE':
+                case 'TK_TAG_SCRIPT':
+                    multi_parser.print_newline(false, multi_parser.output);
+                    multi_parser.print_token(multi_parser.token_text);
+                    multi_parser.current_mode = 'CONTENT';
+                    break;
+                case 'TK_TAG_END':
+                    //Print new line only if the tag has no content and has child
+                    if (multi_parser.last_token === 'TK_CONTENT' && multi_parser.last_text === '') {
+                        var tag_name = multi_parser.token_text.match(/\w+/)[0];
+                        var tag_extracted_from_last_output = multi_parser.output[multi_parser.output.length - 1].match(/<\s*(\w+)/);
+                        if (tag_extracted_from_last_output === null ||
+                            tag_extracted_from_last_output[1] !== tag_name) {
+                            multi_parser.print_newline(false, multi_parser.output);
+                        }
+                    }
+                    multi_parser.print_token(multi_parser.token_text);
+                    multi_parser.current_mode = 'CONTENT';
+                    break;
+                case 'TK_TAG_SINGLE':
+                    // Don't add a newline before elements that should remain unformatted.
+                    var tag_check = multi_parser.token_text.match(/^\s*<([a-z]+)/i);
+                    if (!tag_check || !multi_parser.Utils.in_array(tag_check[1], unformatted)) {
+                        multi_parser.print_newline(false, multi_parser.output);
+                    }
+                    multi_parser.print_token(multi_parser.token_text);
+                    multi_parser.current_mode = 'CONTENT';
+                    break;
+                case 'TK_CONTENT':
+                    multi_parser.print_token(multi_parser.token_text);
+                    multi_parser.current_mode = 'TAG';
+                    break;
+                case 'TK_STYLE':
+                case 'TK_SCRIPT':
+                    if (multi_parser.token_text !== '') {
+                        multi_parser.print_newline(false, multi_parser.output);
+                        var text = multi_parser.token_text,
+                            _beautifier,
+                            script_indent_level = 1;
+                        if (multi_parser.token_type === 'TK_SCRIPT') {
+                            _beautifier = typeof js_beautify === 'function' && js_beautify;
+                        } else if (multi_parser.token_type === 'TK_STYLE') {
+                            _beautifier = typeof css_beautify === 'function' && css_beautify;
+                        }
+
+                        if (options.indent_scripts === "keep") {
+                            script_indent_level = 0;
+                        } else if (options.indent_scripts === "separate") {
+                            script_indent_level = -multi_parser.indent_level;
+                        }
+
+                        var indentation = multi_parser.get_full_indent(script_indent_level);
+                        if (_beautifier) {
+                            // call the Beautifier if avaliable
+                            text = _beautifier(text.replace(/^\s*/, indentation), options);
+                        } else {
+                            // simply indent the string otherwise
+                            var white = text.match(/^\s*/)[0];
+                            var _level = white.match(/[^\n\r]*$/)[0].split(multi_parser.indent_string).length - 1;
+                            var reindent = multi_parser.get_full_indent(script_indent_level - _level);
+                            text = text.replace(/^\s*/, indentation)
+                                .replace(/\r\n|\r|\n/g, '\n' + reindent)
+                                .replace(/\s+$/, '');
+                        }
+                        if (text) {
+                            multi_parser.print_token_raw(indentation + trim(text));
+                            multi_parser.print_newline(false, multi_parser.output);
+                        }
+                    }
+                    multi_parser.current_mode = 'TAG';
+                    break;
+            }
+            multi_parser.last_token = multi_parser.token_type;
+            multi_parser.last_text = multi_parser.token_text;
+        }
+        return multi_parser.output.join('');
     }
 
     if (typeof define === "function") {
         // Add support for require.js
         define(function(require, exports, module) {
-            var js_beautify  = require('./beautify.js').js_beautify;
+            var js_beautify = require('./beautify.js').js_beautify;
             var css_beautify = require('./beautify-css.js').css_beautify;
 
             exports.html_beautify = function(html_source, options) {
@@ -2862,7 +2876,7 @@ function detectXMLType(str) {
     } else if (typeof exports !== "undefined") {
         // Add support for CommonJS. Just put this file somewhere on your require.paths
         // and you will be able to `var html_beautify = require("beautify").html_beautify`.
-        var js_beautify  = require('./beautify.js').js_beautify;
+        var js_beautify = require('./beautify.js').js_beautify;
         var css_beautify = require('./beautify-css.js').css_beautify;
 
         exports.html_beautify = function(html_source, options) {
@@ -4454,6 +4468,9 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('<a b=\'Some """ quotes ""  inside string.\'/>', '<a b=\'Some """ quotes ""  inside string.\'/>');
         // Handles inline expressions
         bt('xml=<{a} b="c"><d/><e v={z}>\n foo</e>x</{a}>;', 'xml = <{a} b="c"><d/><e v={z}>\n foo</e>x</{a}>;');
+        // xml literals with special characters in elem names
+        // see http://www.w3.org/TR/REC-xml/#NT-NameChar
+        bt('xml = <_:.valid.xml- _:.valid.xml-="123"/>;', 'xml = <_:.valid.xml- _:.valid.xml-="123"/>;');
         // Handles CDATA
         bt('xml=<![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;', 'xml = <![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;');
         bt('xml=<![CDATA[]]>;', 'xml = <![CDATA[]]>;');
