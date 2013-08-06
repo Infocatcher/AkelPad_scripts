@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/winMergeTabs.js
 
 // (c) Infocatcher 2013
-// version 0.1.1 - 2013-05-06
+// version 0.1.1.1 - 2013-08-07
 
 // Compare contents of current and next selected tab using WinMerge (http://winmerge.org/)
 // or any other compare tool
@@ -63,6 +63,7 @@ var useTabsOrder = AkelPad.GetArgValue("useTabsOrder", false);
 var winMergePaths = paths
 	? paths.split("|")
 	: [
+		"<HKCU\\Software\\Thingamahoochie\\WinMerge\\Executable>",
 		"<HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\WinMergeU.exe\\>",
 		"<HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\WinMerge.exe\\>",
 		"%ProgramFiles%\\WinMerge\\WinMergeU.exe",
