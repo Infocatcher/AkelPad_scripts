@@ -229,24 +229,14 @@ function getFile(lpFrame) {
 			AkelPad.Command(4105); // IDM_FILE_SAVE
 		else {
 			var tempFile = file = getTempFile(hWndEdit, origFile);
-			if(origFile) {
-				var codePage = AkelPad.GetEditCodePage(hWndEdit);
-				var hasBOM = AkelPad.GetEditBOM(hWndEdit);
-			}
-			else {
+			var codePage = -1;
+			var hasBOM = -1;
+			if(!origFile) {
 				// Will use UTF-8 with BOM to correctly save all (most?) new documents
-				var codePage = 65001;
-				var hasBOM = 1;
+				codePage = 65001;
+				hasBOM = 1;
 			}
-			var text = AkelPad.GetTextRange(0, -1);
-
-			AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
-			AkelPad.SetSel(0, -1);
-			AkelPad.ReplaceSel(text);
-			var err = AkelPad.SaveFile(AkelPad.GetEditWnd(), tempFile, codePage, hasBOM);
-			if(err) // Allow silently close tab
-				AkelPad.SendMessage(AkelPad.GetEditWnd(), 3087 /*AEM_SETMODIFY*/, 0, 0);
-			AkelPad.Command(4318 /*IDM_WINDOW_FRAMECLOSE*/);
+			AkelPad.SaveFile(AkelPad.GetEditWnd(), tempFile, codePage, hasBOM, 0 /* W/o SD_UPDATE */);
 		}
 	}
 	return file;
