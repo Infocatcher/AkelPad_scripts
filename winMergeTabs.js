@@ -162,7 +162,8 @@ function compareTabs(lpFrame, lpFrame2) {
 	var file  = getFile(lpFrame);
 	var file2 = getFile(lpFrame2);
 
-	AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame2);
+	//if(AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0) != lpFrame2)
+	//	AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame2);
 	setRedraw(hMainWnd, true);
 	// Force redraw current edit window
 	oSys.Call("user32::InvalidateRect", AkelPad.GetEditWnd(), 0, true);
