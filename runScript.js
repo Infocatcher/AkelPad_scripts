@@ -1,8 +1,9 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11863#11863
 // http://infocatcher.ucoz.net/js/akelpad_scripts/runScript.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/runScript.js
 
 // (c) Infocatcher 2011, 2013
-// version 0.2.7pre - 2013-02-20
+// version 0.2.7 - 2013-08-14
 
 //===================
 // Run script from AkelFiles\Plugs\Scripts\ directory
@@ -469,7 +470,7 @@ function selectScriptDialog(modal) {
 				var hDC;
 				var lpGrip;
 				var rcGrip;
-				if(ps = AkelPad.MemAlloc(64 /*sizeof(PAINTSTRUCT)*/)) {
+				if(ps = AkelPad.MemAlloc(_X64 ? 72 : 64 /*sizeof(PAINTSTRUCT)*/)) {
 					if(hDC = oSys.Call("user32::BeginPaint", hWnd, ps)) {
 						if(lpGrip = AkelPad.MemAlloc(16 /*sizeof(RECT)*/)) {
 							if(oSys.Call("user32::GetClientRect", hWnd, lpGrip)) {
