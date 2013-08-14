@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/converter.js
 
 // (c) Infocatcher 2010-2013
-// version 0.2.4 - 2013-03-01
+// version 0.2.4.1 - 2013-08-14
 
 //===================
 // Hotkeys:
@@ -2237,7 +2237,7 @@ function converterDialog(modal) {
 				var hDC;
 				var lpGrip;
 				var rcGrip;
-				if(ps = AkelPad.MemAlloc(64 /*sizeof(PAINTSTRUCT)*/)) {
+				if(ps = AkelPad.MemAlloc(_X64 ? 72 : 64 /*sizeof(PAINTSTRUCT)*/)) {
 					if(hDC = oSys.Call("user32::BeginPaint", hWnd, ps)) {
 						if(lpGrip = AkelPad.MemAlloc(16 /*sizeof(RECT)*/)) {
 							if(oSys.Call("user32::GetClientRect", hWnd, lpGrip)) {
