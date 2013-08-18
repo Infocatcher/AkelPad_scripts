@@ -36,6 +36,7 @@
 //   -e4x=true                    - handle E4X XML literals
 //   -maxChar=70                  - maximum amount of characters per line (only for HTML), deprecated, use -wrapLineLength instead
 //   -unformattedTags=["a"]       - list of tags, that shouldn't be reformatted (only for HTML)
+//   -indentInnerHTML=true        - indent <head> and <body> sections (only for HTML)
 //   -detectPackers=true          - detect packers
 //   -css=true                    - force beautify CSS (just automatically wrap code into <style>...</style>)
 //   -update=1                    - update source from https://github.com/einars/js-beautify/
@@ -102,6 +103,7 @@ var wrapLineLength         = getArg("wrapLineLength");
 var e4x                    = getArg("e4x");
 var maxChar                = getArg("maxChar"); // Will use jsBeautifier defaults
 var unformattedTags        = getArg("unformattedTags"); // Will use jsBeautifier defaults
+var indentInnerHTML        = getArg("indentInnerHTML"); // Will use jsBeautifier defaults
 var detectPackers          = getArg("detectPackers", true);
 var beautifyCSS            = getArg("css", false);
 var test                   = getArg("test", false);
@@ -153,7 +155,8 @@ function beautify(source, syntax) { // Based on beautify function
 		e4x:                      e4x,
 		// for style_html():
 		max_char:                 maxChar,
-		unformatted:              unformattedTags
+		unformatted:              unformattedTags,
+		indent_inner_html:        indentInnerHTML
 	};
 
 	var res = "";
