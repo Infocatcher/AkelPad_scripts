@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.4 - 2013-05-03
-// Based on scripts from http://jsbeautifier.org/ [2013-08-16 11:30:55 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-08-27 20:49:37 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -476,6 +476,10 @@ function detectXMLType(str) {
         opt.wrap_line_length = (options.wrap_line_length === undefined) ? 0 : parseInt(options.wrap_line_length, 10);
         opt.e4x = (options.e4x === undefined) ? false : options.e4x;
 
+        if(options.indent_with_tabs){
+            opt.indent_char = '\t';
+            opt.indent_size = 1;
+        }
 
         //----------------------------------
         indent_string = '';
@@ -1354,7 +1358,13 @@ function detectXMLType(str) {
                 allow_wrap_or_preserved_newline();
             }
             if (opt.space_in_paren) {
-                output_space_before_token = true;
+                if (last_type === 'TK_START_EXPR') {
+                    // () [] no inner space in empty parens like these, ever, ref #320
+                    trim_output();
+                    output_space_before_token = false;
+                } else {
+                    output_space_before_token = true;
+                }
             }
             if (token_text === ']' && opt.keep_array_indentation) {
                 print_token();
@@ -2213,6 +2223,7 @@ function detectXMLType(str) {
     preserve_newlines (default true) - whether existing line breaks before elements should be preserved
                                         Only works before elements, not inside tags or for text.
     max_preserve_newlines (default unlimited) - maximum number of line breaks to be preserved in one chunk
+    indent_handlebars (default false) - format and indent {{#foo}} and {{/foo}}
 
     e.g.
 
@@ -2224,7 +2235,8 @@ function detectXMLType(str) {
       'brace_style': 'expand',
       'unformatted': ['a', 'sub', 'sup', 'b', 'i', 'u'],
       'preserve_newlines': true,
-      'max_preserve_newlines': 5
+      'max_preserve_newlines': 5,
+      'indent_handlebars': false
     });
 */
 
@@ -2266,6 +2278,7 @@ function detectXMLType(str) {
         unformatted = options.unformatted || ['a', 'span', 'bdo', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym', 'q', 'sub', 'sup', 'tt', 'i', 'b', 'big', 'small', 'u', 's', 'strike', 'font', 'ins', 'del', 'pre', 'address', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
         preserve_newlines = options.preserve_newlines || true;
         max_preserve_newlines = preserve_newlines ? parseInt(options.max_preserve_newlines || 32786, 10) : 0;
+        indent_handlebars = options.indent_handlebars || false;
 
         function Parser() {
 
@@ -2331,6 +2344,22 @@ function detectXMLType(str) {
                             space = true;
                         }
                         continue; //don't want to insert unnecessary space
+                    }
+
+                    if (indent_handlebars) {
+                        // Handlebars parsing is complicated.
+                        // {{#foo}} and {{/foo}} are formatted tags.
+                        // {{something}} should get treated as content, except:
+                        // {{else}} specifically behaves like {{#if}} and {{/if}}
+                        var peek3 = this.input.substr(this.pos, 3);
+                        if (peek3 === '{{#' || peek3 === '{{/') {
+                            // These are tags and not content.
+                            break;
+                        } else if (this.input.substr(this.pos, 2) === '{{') {
+                            if (this.get_tag(true) === '{{else}}') {
+                                break;
+                            }
+                        }
                     }
 
                     input_char = this.input.charAt(this.pos);
@@ -2404,12 +2433,30 @@ function detectXMLType(str) {
                 }
             };
 
+            this.indent_to_tag = function(tag) {
+                // Match the indentation level to the last use of this tag, but don't remove it.
+                if (!this.tags[tag + 'count']) {
+                    return;
+                }
+                var temp_parent = this.tags.parent;
+                while (temp_parent) {
+                    if (tag + this.tags[tag + 'count'] === temp_parent) {
+                        break;
+                    }
+                    temp_parent = this.tags[temp_parent + 'parent'];
+                }
+                if (temp_parent) {
+                    this.indent_level = this.tags[tag + this.tags[tag + 'count']];
+                }
+            };
+
             this.get_tag = function(peek) { //function to get a full tag and parse its type
                 var input_char = '',
                     content = [],
                     comment = '',
                     space = false,
                     tag_start, tag_end,
+                    tag_start_char,
                     orig_pos = this.pos,
                     orig_line_char_count = this.line_char_count;
 
@@ -2454,8 +2501,32 @@ function detectXMLType(str) {
                         space = false;
                     }
 
-                    if (input_char === '<' && !tag_start) {
+                    if (indent_handlebars && tag_start_char === '<') {
+                        // When inside an angle-bracket tag, put spaces around
+                        // handlebars not inside of strings.
+                        if ((input_char + this.input.charAt(this.pos)) === '{{') {
+                            input_char += this.get_unformatted('}}');
+                            if (content.length && content[content.length - 1] !== ' ' && content[content.length - 1] !== '<') {
+                                input_char = ' ' + input_char;
+                            }
+                            space = true;
+                        }
+                    }
+
+                    if (input_char === '<' && !tag_start_char) {
                         tag_start = this.pos - 1;
+                        tag_start_char = '<';
+                    }
+
+                    if (indent_handlebars && !tag_start_char) {
+                        if (content.length >= 2 && content[content.length - 1] === '{' && content[content.length - 2] == '{') {
+                            if (input_char === '#' || input_char === '/') {
+                                tag_start = this.pos - 3;
+                            } else {
+                                tag_start = this.pos - 2;
+                            }
+                            tag_start_char = '{';
+                        }
                     }
 
                     this.line_char_count++;
@@ -2468,20 +2539,39 @@ function detectXMLType(str) {
                         break;
                     }
 
+                    if (indent_handlebars && tag_start_char === '{' && content.length > 2 && content[content.length - 2] === '}' && content[content.length - 1] === '}') {
+                        break;
+                    }
                 } while (input_char !== '>');
 
                 var tag_complete = content.join('');
                 var tag_index;
+                var tag_offset;
+
                 if (tag_complete.indexOf(' ') !== -1) { //if there's whitespace, thats where the tag name ends
                     tag_index = tag_complete.indexOf(' ');
+                } else if (tag_complete[0] === '{') {
+                    tag_index = tag_complete.indexOf('}');
                 } else { //otherwise go with the tag ending
                     tag_index = tag_complete.indexOf('>');
                 }
-                var tag_check = tag_complete.substring(1, tag_index).toLowerCase();
+                if (tag_complete[0] === '<' || !indent_handlebars) {
+                    tag_offset = 1;
+                } else {
+                    tag_offset = tag_complete[2] === '#' ? 3 : 2;
+                }
+                var tag_check = tag_complete.substring(tag_offset, tag_index).toLowerCase();
                 if (tag_complete.charAt(tag_complete.length - 2) === '/' ||
                     this.Utils.in_array(tag_check, this.Utils.single_token)) { //if this tag name is a single tag type (either in the list or has a closing /)
                     if (!peek) {
                         this.tag_type = 'SINGLE';
+                    }
+                } else if (indent_handlebars && tag_complete[0] === '{' && tag_check === 'else') {
+                    if (!peek) {
+                        this.indent_to_tag('if');
+                        this.tag_type = 'HANDLEBARS_ELSE';
+                        this.indent_content = true;
+                        this.traverse_whitespace();
                     }
                 } else if (tag_check === 'script') { //for later script handling
                     if (!peek) {
@@ -2592,6 +2682,7 @@ function detectXMLType(str) {
                 }
                 var input_char = '';
                 var content = '';
+                var min_index = 0;
                 var space = true;
                 do {
 
@@ -2623,8 +2714,13 @@ function detectXMLType(str) {
                     this.line_char_count++;
                     space = true;
 
-
-                } while (content.toLowerCase().indexOf(delimiter) === -1);
+                    if (indent_handlebars && input_char === '{' && content.length && content[content.length - 2] === '{') {
+                        // Handlebars expressions in strings should also be unformatted.
+                        content += this.get_unformatted('}}');
+                        // These expressions are opaque.  Ignore delimiters found in them.
+                        min_index = content.length;
+                    }
+                } while (content.toLowerCase().indexOf(delimiter, min_index) === -1);
                 return content;
             };
 
@@ -2802,7 +2898,10 @@ function detectXMLType(str) {
                     //Print new line only if the tag has no content and has child
                     if (multi_parser.last_token === 'TK_CONTENT' && multi_parser.last_text === '') {
                         var tag_name = multi_parser.token_text.match(/\w+/)[0];
-                        var tag_extracted_from_last_output = multi_parser.output[multi_parser.output.length - 1].match(/<\s*(\w+)/);
+                        var tag_extracted_from_last_output = null;
+                        if (multi_parser.output.length) {
+                            tag_extracted_from_last_output = multi_parser.output[multi_parser.output.length - 1].match(/(?:<|{{#)\s*(\w+)/);
+                        }
                         if (tag_extracted_from_last_output === null ||
                             tag_extracted_from_last_output[1] !== tag_name) {
                             multi_parser.print_newline(false, multi_parser.output);
@@ -2818,6 +2917,14 @@ function detectXMLType(str) {
                         multi_parser.print_newline(false, multi_parser.output);
                     }
                     multi_parser.print_token(multi_parser.token_text);
+                    multi_parser.current_mode = 'CONTENT';
+                    break;
+                case 'TK_TAG_HANDLEBARS_ELSE':
+                    multi_parser.print_token(multi_parser.token_text);
+                    if (multi_parser.indent_content) {
+                        multi_parser.indent();
+                        multi_parser.indent_content = false;
+                    }
                     multi_parser.current_mode = 'CONTENT';
                     break;
                 case 'TK_CONTENT':
@@ -3261,7 +3368,7 @@ if (isNode) {
 /*global js_beautify: true */
 /*jshint */
 
-function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
+function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
 {
 
     var opts = {
@@ -3275,9 +3382,14 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         break_chained_methods: false
     };
 
-    function test_beautifier(input)
+    function test_js_beautifier(input)
     {
         return js_beautify(input, opts);
+    }
+
+    function test_html_beautifier(input)
+    {
+        return html_beautify(input, opts);
     }
 
     var sanitytest;
@@ -3304,6 +3416,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         var wrapped_input, wrapped_expectation;
 
         expectation = expectation || input;
+        sanitytest.test_function(test_js_beautifier, 'js_beautify');
         test_fragment(input, expectation);
 
         // test also the returned indentation
@@ -3322,6 +3435,41 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
 
     }
 
+    // test html
+    function bth(input, expectation)
+    {
+        var wrapped_input, wrapped_expectation, field_input, field_expectation;
+
+        expectation = expectation || input;
+        sanitytest.test_function(test_html_beautifier, 'html_beautify');
+        test_fragment(input, expectation);
+
+        if (opts.indent_size === 4 && input) {
+            wrapped_input = '<div>\n' + input.replace(/^(.+)$/mg, '    $1') + '\n    <span>inline</span>\n</div>';
+            wrapped_expectation = '<div>\n' + expectation.replace(/^(.+)$/mg, '    $1') + '\n    <span>inline</span>\n</div>';
+            test_fragment(wrapped_input, wrapped_expectation);
+        }
+
+        // Test that handlebars non-block {{}} tags act as content and do not
+        // get any spacing or line breaks.
+        if (input.indexOf('content') != -1) {
+            // Just {{field}}
+            field_input = input.replace(/content/g, '{{field}}');
+            field_expectation = expectation.replace(/content/g, '{{field}}');
+            test_fragment(field_input, field_expectation);
+
+            // handlebars comment
+            field_input = input.replace(/content/g, '{{! comment}}');
+            field_expectation = expectation.replace(/content/g, '{{! comment}}');
+            test_fragment(field_input, field_expectation);
+
+            // mixed {{field}} and content
+            field_input = input.replace(/content/g, 'pre{{field1}} {{field2}} {{field3}}post');
+            field_expectation = expectation.replace(/content/g, 'pre{{field1}} {{field2}} {{field3}}post');
+            test_fragment(field_input, field_expectation);
+        }
+    }
+
     // test the input on beautifier with the current flag settings,
     // but dont't
     function bt_braces(input, expectation)
@@ -3335,7 +3483,6 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
     function beautifier_tests()
     {
         sanitytest = test_obj;
-        sanitytest.test_function(test_beautifier, 'js_beautify');
 
         opts.indent_size       = 4;
         opts.indent_char       = ' ';
@@ -3662,8 +3809,17 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         bt('{ one_char() }', "{\n\tone_char()\n}");
         bt('x = a ? b : c; x;', 'x = a ? b : c;\nx;');
 
+        //set to something else than it should change to, but with tabs on, should override
+        opts.indent_size = 5;
+        opts.indent_char = ' ';
+        opts.indent_with_tabs = true;
+
+        bt('{ one_char() }', "{\n\tone_char()\n}");
+        bt('x = a ? b : c; x;', 'x = a ? b : c;\nx;');
+
         opts.indent_size = 4;
         opts.indent_char = ' ';
+        opts.indent_with_tabs = false;
 
         opts.preserve_newlines = false;
 
@@ -4451,12 +4607,12 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
         opts.space_in_paren = true
         bt('if(p) foo(a,b)', 'if ( p ) foo( a, b )');
         bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
-           'try {\n    while ( true ) {\n        willThrow( )\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
+           'try {\n    while ( true ) {\n        willThrow()\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
         bt('((e/((a+(b)*c)-d))^2)*5;', '( ( e / ( ( a + ( b ) * c ) - d ) ) ^ 2 ) * 5;');
         bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
-            'function f( a, b ) {\n    if ( a ) b( )\n}\n\nfunction g( a, b ) {\n    if ( !a ) b( )\n}');
-        bt('a=[ ];',
-            'a = [ ];');
+            'function f( a, b ) {\n    if ( a ) b()\n}\n\nfunction g( a, b ) {\n    if ( !a ) b()\n}');
+        bt('a=[];',
+            'a = [];');
         bt('a=[b,c,d];',
             'a = [ b, c, d ];');
         bt('a= f[b];',
@@ -4577,6 +4733,207 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify)
 //         bt('var a={bing:1},b=2,c=3;',
 //             'var a = {\n        bing: 1\n    },\n    b = 2,\n    c = 3;');
         Urlencoded.run_tests(sanitytest);
+
+        bth('');
+        bth('<div></div>');
+        bth('<div>content</div>');
+        bth('<div><div></div></div>',
+            '<div>\n' +
+            '    <div></div>\n' +
+            '</div>');
+        bth('<div><div>content</div></div>',
+            '<div>\n' +
+            '    <div>content</div>\n' +
+            '</div>');
+        bth('<div>\n' +
+            '    <span>content</span>\n' +
+            '</div>');
+        bth('<div>\n' +
+            '</div>');
+        bth('<div>\n' +
+            '    content\n' +
+            '</div>');
+        bth('<div>\n' +
+            '    </div>',
+            '<div>\n' +
+            '</div>');
+        bth('    <div>\n' +
+            '    </div>',
+            '<div>\n' +
+            '</div>');
+        bth('    <div>\n' +
+            '</div>',
+            '<div>\n' +
+            '</div>');
+        bth('<div        >content</div>',
+            '<div>content</div>');
+        bth('<div     thinger="preserve  space  here"   ></div  >',
+            '<div thinger="preserve  space  here"></div>');
+        bth('content\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            'content',
+            'content\n' +
+            '<div>\n' +
+            '</div>\n' +
+            'content');
+        bth('<li>\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '</li>');
+        bth('<li>\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '</li>',
+            '<li>\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '</li>');
+        bth('<li>\n' +
+            '    content\n' +
+            '</li>\n' +
+            '<li>\n' +
+            '    content\n' +
+            '</li>');
+
+        // Tests that don't pass, but probably should.
+        // bth('<div><span>content</span></div>');
+
+        // Handlebars tests
+        // Without the indent option on, handlebars are treated as content.
+        opts.indent_handlebars = false;
+        bth('{{#if 0}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}',
+            '{{#if 0}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}');
+        bth('<div>\n' +
+            '{{#each thing}}\n' +
+            '    {{name}}\n' +
+            '{{/each}}\n' +
+            '</div>',
+            '<div>\n' +
+            '    {{#each thing}} {{name}} {{/each}}\n' +
+            '</div>');
+
+        opts.indent_handlebars = true;
+        bth('{{#if 0}}{{/if}}');
+        bth('{{#if 0}}content{{/if}}');
+        bth('{{#if 0}}\n' +
+            '{{/if}}');
+        bth('{{#if     words}}{{/if}}',
+            '{{#if words}}{{/if}}');
+        bth('{{#if     words}}content{{/if}}',
+            '{{#if words}}content{{/if}}');
+        bth('{{#if     words}}content{{/if}}',
+            '{{#if words}}content{{/if}}');
+        bth('{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        bth('{{#if 1}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}',
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        bth('<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
+        bth('<div>\n' +
+            '{{#if 1}}\n' +
+            '{{/if}}\n' +
+            '</div>',
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
+        bth('{{#if}}\n' +
+            '{{#each}}\n' +
+            '{{#if}}\n' +
+            'content\n' +
+            '{{/if}}\n' +
+            '{{#if}}\n' +
+            'content\n' +
+            '{{/if}}\n' +
+            '{{/each}}\n' +
+            '{{/if}}',
+            '{{#if}}\n' +
+            '    {{#each}}\n' +
+            '        {{#if}}\n' +
+            '            content\n' +
+            '        {{/if}}\n' +
+            '        {{#if}}\n' +
+            '            content\n' +
+            '        {{/if}}\n' +
+            '    {{/each}}\n' +
+            '{{/if}}');
+        bth('{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+
+        // Test {{else}} aligned with {{#if}} and {{/if}}
+        bth('{{#if 1}}\n' +
+            '    content\n' +
+            '    {{else}}\n' +
+            '    content\n' +
+            '{{/if}}',
+            '{{#if 1}}\n' +
+            '    content\n' +
+            '{{else}}\n' +
+            '    content\n' +
+            '{{/if}}');
+        bth('{{#if 1}}\n' +
+            '    {{else}}\n' +
+            '    {{/if}}',
+            '{{#if 1}}\n' +
+            '{{else}}\n' +
+            '{{/if}}');
+        bth('{{#if thing}}\n' +
+            '{{#if otherthing}}\n' +
+            '    content\n' +
+            '    {{else}}\n' +
+            'content\n' +
+            '    {{/if}}\n' +
+            '       {{else}}\n'+
+            'content\n' +
+            '{{/if}}',
+            '{{#if thing}}\n' +
+            '    {{#if otherthing}}\n' +
+            '        content\n' +
+            '    {{else}}\n' +
+            '        content\n' +
+            '    {{/if}}\n' +
+            '{{else}}\n'+
+            '    content\n' +
+            '{{/if}}');
+
+        // Test {{}} inside of <> tags, which should be separated by spaces
+        // for readability, unless they are inside a string.
+        bth('<div{{somestyle}}></div>',
+            '<div {{somestyle}}></div>');
+        bth('<div{{#if test}}class="foo"{{/if}}>content</div>',
+            '<div {{#if test}} class="foo" {{/if}}>content</div>');
+        bth('<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>content</div>',
+            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>content</div>');
+        bth('<span{{#if condition}}class="foo"{{/if}}>content</span>',
+            '<span {{#if condition}} class="foo" {{/if}}>content</span>');
+        bth('<div unformatted="{{#if}}content{{/if}}">content</div>');
+        bth('<div unformatted="{{#if  }}    content{{/if}}">content</div>');
+
+        // Quotes found inside of Handlebars expressions inside of quoted
+        // strings themselves should not be considered string delimiters.
+        bth('<div class="{{#if thingIs "value"}}content{{/if}}"></div>');
+        bth('<div class="{{#if thingIs \'value\'}}content{{/if}}"></div>');
+        bth('<div class=\'{{#if thingIs "value"}}content{{/if}}\'></div>');
+        bth('<div class=\'{{#if thingIs \'value\'}}content{{/if}}\'></div>');
 
         return sanitytest;
     }
