@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.4 - 2013-05-03
-// Based on scripts from http://jsbeautifier.org/ [2013-08-27 20:49:37 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2013-10-11 23:30:30 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -431,6 +431,7 @@ function detectXMLType(str) {
                 indentation_level: next_indent_level,
                 line_indent_level: flags_base ? flags_base.line_indent_level : next_indent_level,
                 start_line_index: output_lines.length,
+                had_comment: false,
                 ternary_depth: 0
             }
             return next_flags;
@@ -559,11 +560,13 @@ function detectXMLType(str) {
                 // Just continue formatting and the behavior should be logical.
                 // Also ignore unknown tokens.  Again, this should result in better behavior.
                 if (token_type !== 'TK_INLINE_COMMENT' && token_type !== 'TK_COMMENT' &&
-                    token_type !== 'TK_UNKNOWN') {
+                    token_type !== 'TK_BLOCK_COMMENT' && token_type !== 'TK_UNKNOWN') {
                     last_last_text = flags.last_text;
                     last_type = token_type;
                     flags.last_text = token_text;
                 }
+                flags.had_comment = (token_type === 'TK_INLINE_COMMENT' || token_type === 'TK_COMMENT'
+                    || token_type === 'TK_BLOCK_COMMENT');
             }
 
 
@@ -808,6 +811,11 @@ function detectXMLType(str) {
                 previous_flags = flags;
                 flags = flag_store.pop();
             }
+        }
+
+        function start_of_object_property() {
+            return flags.mode === MODE.ObjectLiteral && flags.last_text === ':' &&
+                flags.ternary_depth === 0;
         }
 
         function start_of_statement() {
@@ -1327,7 +1335,7 @@ function detectXMLType(str) {
             //     (c || d));
             if (token_text === '(') {
                 if (last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
-                    if (flags.mode !== MODE.ObjectLiteral) {
+                    if (!start_of_object_property()) {
                         allow_wrap_or_preserved_newline();
                     }
                 }
@@ -1508,11 +1516,10 @@ function detectXMLType(str) {
                 if (flags.var_line && last_type !== 'TK_EQUALS') {
                     flags.var_line_reindented = true;
                 }
-                if ((just_added_newline() || flags.last_text === ';' || flags.last_text === '}') &&
-                    flags.last_text !== '{' && !is_array(flags.mode)) {
+                if (in_array(flags.last_text, ['}', ';']) || (just_added_newline() && ! in_array(flags.last_text, ['{', ':', '=', ',']))) {
                     // make sure there is a nice clean space of at least one blank line
-                    // before a new function definition, except in arrays
-                    if (!just_added_blankline()) {
+                    // before a new function definition
+                    if ( ! just_added_blankline() && ! flags.had_comment) {
                         print_newline();
                         print_newline(true);
                     }
@@ -1534,7 +1541,7 @@ function detectXMLType(str) {
             }
 
             if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
-                if (flags.mode !== MODE.ObjectLiteral) {
+                if (!start_of_object_property()) {
                     allow_wrap_or_preserved_newline();
                 }
             }
@@ -1667,7 +1674,7 @@ function detectXMLType(str) {
             } else if (last_type === 'TK_WORD') {
                 output_space_before_token = true;
             } else if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
-                if (flags.mode !== MODE.ObjectLiteral) {
+                if (!start_of_object_property()) {
                     allow_wrap_or_preserved_newline();
                 }
             } else {
@@ -2266,7 +2273,8 @@ function detectXMLType(str) {
         options = options || {};
 
         // backwards compatibility to 1.3.4
-        if (options.wrap_line_length === undefined && options.max_char !== undefined) {
+        if ((options.wrap_line_length === undefined || parseInt(options.wrap_line_length, 10) === 0) &&
+                (options.max_char === undefined || parseInt(options.max_char, 10) === 0)) {
             options.wrap_line_length = options.max_char;
         }
 
@@ -3523,8 +3531,10 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
         bt('a=0xff+4', 'a = 0xff + 4');
         bt('a = [1, 2, 3, 4]');
         bt('F*(g/=f)*g+b', 'F * (g /= f) * g + b');
-        bt('a.b({c:d})', "a.b({\n    c: d\n})");
-        bt('a.b\n(\n{\nc:\nd\n}\n)', "a.b({\n    c: d\n})");
+        bt('a.b({c:d})', 'a.b({\n    c: d\n})');
+        bt('a.b\n(\n{\nc:\nd\n}\n)', 'a.b({\n    c: d\n})');
+        bt('a.b({c:"d"})', 'a.b({\n    c: "d"\n})');
+        bt('a.b\n(\n{\nc:\n"d"\n}\n)', 'a.b({\n    c: "d"\n})');
         bt('a=!b', 'a = !b');
         bt('a?b:c', 'a ? b : c');
         bt('a?1:2', 'a ? 1 : 2');
@@ -4295,36 +4305,62 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
         test_fragment('foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
+                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}',
                       /* expected */
                       'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_.okay();');
+                      'if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}');
 
         opts.wrap_line_length = 70;
         //.............---------1---------2---------3---------4---------5---------6---------7
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
         test_fragment('foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
+                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}',
                       /* expected */
                       'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_.okay();');
+                      'if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}');
 
         opts.wrap_line_length = 40;
         //.............---------1---------2---------3---------4---------5---------6---------7
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
         test_fragment('foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
+                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}',
                       /* expected */
                       'foo.bar().baz().cucumber((fat &&\n' +
                       '    "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
-                      '    inside_an_if_block) that_is_.okay();');
+                      '    inside_an_if_block) that_is_.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap +\n' +
+                      '        but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" +\n' +
+                      '        "but_this_can"\n' +
+                      '}');
 
         opts.wrap_line_length = 41;
         // NOTE: wrap is only best effort - line continues until next wrap point is found.
@@ -4332,14 +4368,24 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
         test_fragment('foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
+                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}',
                       /* expected */
                       'foo.bar().baz().cucumber((fat && "sassy") ||\n' +
                       '    (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
-                      '    inside_an_if_block) that_is_.okay();');
+                      '    inside_an_if_block) that_is_.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap +\n' +
+                      '        but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" +\n' +
+                      '        "but_this_can"\n' +
+                      '}');
 
         opts.wrap_line_length = 45;
         // NOTE: wrap is only best effort - line continues until next wrap point is found.
@@ -4349,6 +4395,10 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
                       '    foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       '    Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
                       '    if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+                      '    object_literal = {\n' +
+                      '        property: first_token_should_never_wrap + but_this_can,\n' +
+                      '        proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '    }' +
                       '}',
                       /* expected */
                       '{\n' +
@@ -4358,6 +4408,12 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
                       '        .but_this_can\n' +
                       '    if (wraps_can_occur &&\n' +
                       '        inside_an_if_block) that_is_.okay();\n' +
+                      '    object_literal = {\n' +
+                      '        property: first_token_should_never_wrap +\n' +
+                      '            but_this_can,\n' +
+                      '        proper: "first_token_should_never_wrap" +\n' +
+                      '            "but_this_can"\n' +
+                      '    }\n'+
                       '}');
 
         opts.preserve_newlines = true;
@@ -4366,26 +4422,42 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
         test_fragment('foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
+                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}',
                       /* expected */
                       'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
-                      '    .okay();');
+                      '    .okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}');
 
         opts.wrap_line_length = 70;
         //.............---------1---------2---------3---------4---------5---------6---------7
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
         test_fragment('foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
+                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}',
                       /* expected */
                       'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
-                      '    .okay();');
+                      '    .okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}');
 
 
         opts.wrap_line_length = 40;
@@ -4393,7 +4465,11 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
         test_fragment('foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
+                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}',
                       /* expected */
                       'foo.bar().baz().cucumber((fat &&\n' +
                       '    "sassy") || (leans && mean));\n' +
@@ -4401,7 +4477,13 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
                       '    inside_an_if_block) that_is_\n' +
-                      '    .okay();');
+                      '    .okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap +\n' +
+                      '        but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" +\n' +
+                      '        "but_this_can"\n' +
+                      '}');
 
         opts.wrap_line_length = 41;
         // NOTE: wrap is only best effort - line continues until next wrap point is found.
@@ -4409,7 +4491,11 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
         test_fragment('foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();',
+                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap + but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '}',
                       /* expected */
                       'foo.bar().baz().cucumber((fat && "sassy") ||\n' +
                       '    (leans && mean));\n' +
@@ -4417,7 +4503,13 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
                       '    inside_an_if_block) that_is_\n' +
-                      '    .okay();');
+                      '    .okay();\n' +
+                      'object_literal = {\n' +
+                      '    property: first_token_should_never_wrap +\n' +
+                      '        but_this_can,\n' +
+                      '    proper: "first_token_should_never_wrap" +\n' +
+                      '        "but_this_can"\n' +
+                      '}');
 
         opts.wrap_line_length = 45;
         // NOTE: wrap is only best effort - line continues until next wrap point is found.
@@ -4427,6 +4519,10 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
                       '    foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       '    Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
                       '    if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+                      '    object_literal = {\n' +
+                      '        property: first_token_should_never_wrap + but_this_can,\n' +
+                      '        proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+                      '    }' +
                       '}',
                       /* expected */
                       '{\n' +
@@ -4437,6 +4533,12 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
                       '    if (wraps_can_occur &&\n' +
                       '        inside_an_if_block) that_is_\n' +
                       '        .okay();\n' +
+                      '    object_literal = {\n' +
+                      '        property: first_token_should_never_wrap +\n' +
+                      '            but_this_can,\n' +
+                      '        proper: "first_token_should_never_wrap" +\n' +
+                      '            "but_this_can"\n' +
+                      '    }\n'+
                       '}');
 
         opts.wrap_line_length = 0;
@@ -4570,6 +4672,14 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
         bt('(if(a) b())\n\n\n(if(a) b())',
             '(\n    if (a) b())\n\n\n(\n    if (a) b())');
 
+        // space between functions
+        bt('/*\n * foo\n */\nfunction foo() {}');
+        bt('// a nice function\nfunction foo() {}');
+        bt('function foo() {}\nfunction foo() {}',
+            'function foo() {}\n\nfunction foo() {}'
+        );
+
+
 
         bt("if\n(a)\nb();", "if (a)\n    b();");
         bt('var a =\nfoo', 'var a =\n    foo');
@@ -4637,6 +4747,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
         bt('xml=<![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;', 'xml = <![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;');
         bt('xml=<![CDATA[]]>;', 'xml = <![CDATA[]]>;');
         bt('xml=<a b="c"><![CDATA[d/></a></{}]]></a>;', 'xml = <a b="c"><![CDATA[d/></a></{}]]></a>;');
+
         // Handles messed up tags, as long as it isn't the same name
         // as the root tag. Also handles tags of same name as root tag
         // as long as nesting matches.
@@ -4934,6 +5045,40 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify)
         bth('<div class="{{#if thingIs \'value\'}}content{{/if}}"></div>');
         bth('<div class=\'{{#if thingIs "value"}}content{{/if}}\'></div>');
         bth('<div class=\'{{#if thingIs \'value\'}}content{{/if}}\'></div>');
+
+
+        opts.wrap_line_length = 0;
+        //...---------1---------2---------3---------4---------5---------6---------7
+        //...1234567890123456789012345678901234567890123456789012345678901234567890
+        bth('<div>Some test text that should wrap_inside_this section here.</div>',
+            /* expected */
+            '<div>Some test text that should wrap_inside_this section here.</div>');
+
+        opts.wrap_line_length = "0";
+        //...---------1---------2---------3---------4---------5---------6---------7
+        //...1234567890123456789012345678901234567890123456789012345678901234567890
+        bth('<div>Some test text that should wrap_inside_this section here.</div>',
+            /* expected */
+            '<div>Some test text that should wrap_inside_this section here.</div>');
+
+        //BUGBUG: This should wrap before 40 not after.
+        opts.wrap_line_length = 40;
+        //...---------1---------2---------3---------4---------5---------6---------7
+        //...1234567890123456789012345678901234567890123456789012345678901234567890
+        bth('<div>Some test text that should wrap_inside_this section here.</div>',
+            /* expected */
+            '<div>Some test text that should wrap_inside_this\n' +
+            '    section here.</div>');
+
+       opts.wrap_line_length = "40";
+        //...---------1---------2---------3---------4---------5---------6---------7
+        //...1234567890123456789012345678901234567890123456789012345678901234567890
+        bth('<div>Some test text that should wrap_inside_this section here.</div>',
+            /* expected */
+            '<div>Some test text that should wrap_inside_this\n' +
+            '    section here.</div>');
+
+
 
         return sanitytest;
     }
