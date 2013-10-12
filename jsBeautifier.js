@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // (c) Infocatcher 2011-2013
-// version 0.2.4 - 2013-05-03
+// version 0.2.5 - 2013-10-12
 // Based on scripts from http://jsbeautifier.org/ [2013-10-11 23:30:30 UTC]
 
 //===================
