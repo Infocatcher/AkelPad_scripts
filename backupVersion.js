@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=10791#10791
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=10791#10791
 // http://infocatcher.ucoz.net/js/akelpad_scripts/backupVersion.js
 
 // (c) Infocatcher 2011-2012
@@ -51,25 +51,25 @@ function trimVersion(version) {
 function _localize(s) {
 	var strings = {
 		"Save file first!": {
-			ru: "Сначала сохраните файл!"
+			ru: "РЎРЅР°С‡Р°Р»Р° СЃРѕС…СЂР°РЅРёС‚Рµ С„Р°Р№Р»!"
 		},
 		"Can't detect file version!": {
-			ru: "Не удалось определить версию файла!"
+			ru: "РќРµ СѓРґР°Р»РѕСЃСЊ РѕРїСЂРµРґРµР»РёС‚СЊ РІРµСЂСЃРёСЋ С„Р°Р№Р»Р°!"
 		},
 		"Can't use original file name!": {
-			ru: "Нельзя использовать имя исходного файла!"
+			ru: "РќРµР»СЊР·СЏ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РёРјСЏ РёСЃС…РѕРґРЅРѕРіРѕ С„Р°Р№Р»Р°!"
 		},
-		"File “%S” already exists!\nOverwrite?": {
-			ru: "Файл «%S» уже существует!\nПерезаписать?"
+		"File вЂњ%SвЂќ already exists!\nOverwrite?": {
+			ru: "Р¤Р°Р№Р» В«%SВ» СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚!\nРџРµСЂРµР·Р°РїРёСЃР°С‚СЊ?"
 		},
-		"Can't copy current file to “%F”\nError:\n%E": {
-			ru: "Не удалось копировать текущий файл в «%F»\nОшибка:\n%E"
+		"Can't copy current file to вЂњ%FвЂќ\nError:\n%E": {
+			ru: "РќРµ СѓРґР°Р»РѕСЃСЊ РєРѕРїРёСЂРѕРІР°С‚СЊ С‚РµРєСѓС‰РёР№ С„Р°Р№Р» РІ В«%FВ»\nРћС€РёР±РєР°:\n%E"
 		},
 		"Backup file was succefully created:\n%S": {
-			ru: "Файл резервной копии успешно создан:\n%S"
+			ru: "Р¤Р°Р№Р» СЂРµР·РµСЂРІРЅРѕР№ РєРѕРїРёРё СѓСЃРїРµС€РЅРѕ СЃРѕР·РґР°РЅ:\n%S"
 		},
 		"Name of backup file:": {
-			ru: "Имя файла резервной копии:"
+			ru: "РРјСЏ С„Р°Р№Р»Р° СЂРµР·РµСЂРІРЅРѕР№ РєРѕРїРёРё:"
 		}
 	};
 	var lng;
@@ -152,7 +152,7 @@ function copyFile() {
 
 			var btn = AkelPad.MessageBox(
 				hMainWnd,
-				_localize("File “%S” already exists!\nOverwrite?").replace("%S", newName),
+				_localize("File вЂњ%SвЂќ already exists!\nOverwrite?").replace("%S", newName),
 				dialogTitle,
 				35 /*MB_YESNOCANCEL|MB_ICONQUESTION*/
 			);
@@ -177,7 +177,7 @@ function _copy(curPath, curDir, newName, overwrite) {
 	catch(e) {
 		AkelPad.MessageBox(
 			hMainWnd,
-			_localize("Can't copy current file to “%F”\nError:\n%E")
+			_localize("Can't copy current file to вЂњ%FвЂќ\nError:\n%E")
 				.replace("%F", newName)
 				.replace("%E", e.message || e),
 			dialogTitle,
