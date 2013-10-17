@@ -2,15 +2,20 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/backupVersion.js
 
 // (c) Infocatcher 2011-2012
-// version 0.1.4.1 - 2012-02-24
+// version 0.1.5pre - 2012-04-25
 
 //===================
 // Tries find file version and copy current file to the same directory:
 //   file.js      -> file-%version%.js
 //   file.user.js -> file-%version%.user.js
 
+// Arguments:
+//   -forceDate=true  - force use last modification date
+//   -dateType=1      - see dateToString() in settings section
+
 // Usage:
 //   Call("Scripts::Main", 1, "backupVersion.js")
+//   Call("Scripts::Main", 1, "backupVersion.js", "-forceDate=true -dateType=1")
 //===================
 
 //== Settings begin
@@ -97,6 +102,8 @@ if(!curPath) {
 copyFile();
 
 function copyFile() {
+	var forceDate = AkelPad.GetArgValue("forceDate", false);
+
 	var curName = fso.GetFileName(curPath);
 	var curDir  = fso.GetParentFolderName(curPath);
 	var newName;
@@ -105,13 +112,16 @@ function copyFile() {
 		var path = curDir + "\\" + name;
 		return fso.FileExists(path) || fso.FolderExists(path);
 	};
-	var version = getVersion();
+	if(!forceDate)
+		var version = getVersion();
 	if(version)
 		newName = curName.replace(addVersionPattern, getVersionSeparator(version) + version + "$&");
 	else {
+		var dateType = AkelPad.GetArgValue("dateType", 0);
+
 		var askName = curName;
 		var lastMod = new Date(fso.GetFile(curPath).DateLastModified);
-		for(var i = 0; i < dateTypesCount; i++) {
+		for(var i = dateType; i < dateTypesCount; ++i) {
 			var lastModStr = dateToString(lastMod, i);
 			var testName = curName.replace(addVersionPattern, getVersionSeparator(lastModStr) + lastModStr + "$&");
 			if(!exists(testName)) {
@@ -119,8 +129,11 @@ function copyFile() {
 				break;
 			}
 		}
-		AkelPad.MessageBox(hMainWnd, _localize("Can't detect file version!"), dialogTitle, 48 /*MB_ICONEXCLAMATION*/);
-		newName = askFileName(askName);
+		if(!forceDate)
+			AkelPad.MessageBox(hMainWnd, _localize("Can't detect file version!"), dialogTitle, 48 /*MB_ICONEXCLAMATION*/);
+		newName = !forceDate || i > dateType
+			? askFileName(forceDate ? testName || askName : askName)
+			: askName;
 		if(!newName)
 			return;
 	}
