@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/backupVersion.js
 
 // (c) Infocatcher 2011-2012
-// version 0.1.5pre - 2012-04-25
+// version 0.1.5pre2 - 2012-08-27
 
 //===================
 // Tries find file version and copy current file to the same directory:
@@ -19,7 +19,7 @@
 //===================
 
 //== Settings begin
-var getVersionPattern  = /(^|[^a-z])(version|v\.)[ \t]*[-:=]?[ \t]*(\S+)/i;
+var getVersionPattern  = /(^|[^a-z])(version|ver\.|v\.)[ \t]*[-:=]?[ \t]*(\S+)/i;
 var versionBracketsNumber = 3; // We don't use (?:something) for backward compatibility with old JScript
 var testVersionPattern = /\d/; // Version string must contain number
 var linesLimit = 20; // Check only first 20 lines of file
