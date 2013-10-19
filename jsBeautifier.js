@@ -5291,7 +5291,7 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 				var syntax = { value: "css" };
 				res = (beautify(srcCSS) || "")
 					.replace(/^\s*<style>\n?/, "")
-					.replace(/\n?<\/style>\s*/, "");
+					.replace(/\n?<\/style>\s*$/, "");
 			}
 			else {
 				var syntax = { value: undefined };
