@@ -180,7 +180,7 @@ function jsBeautify() { // For backward compatibility, deprecated
 }
 function runTests() { // Based on run_tests function
 	var st = new SanityTest();
-	run_beautifier_tests(st, Urlencoded, js_beautify, html_beautify);
+	run_beautifier_tests(st, Urlencoded, js_beautify, html_beautify, css_beautify);
 	JavascriptObfuscator.run_tests(st);
 	P_A_C_K_E_R.run_tests(st);
 	Urlencoded.run_tests(st);
