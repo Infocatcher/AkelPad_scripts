@@ -3136,7 +3136,7 @@ function converterDialog(modal) {
 			},
 			function onComplete(state, code) {
 				onCodeUpdated(code);
-				if(update._btnLabel)
+				if(update._btnLabel && !pendingUpdate)
 					windowText(hWndUpdate, update._btnLabel);
 				if(
 					!report
