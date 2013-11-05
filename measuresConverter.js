@@ -1975,8 +1975,8 @@ var asyncUpdater = {
 		};
 		var url = getRequestURL(code);
 		request.open("GET", url, true);
-		request.send(null);
 		++this.activeRequests;
+		request.send(null);
 		return request;
 	},
 	nextRequest: function() {
