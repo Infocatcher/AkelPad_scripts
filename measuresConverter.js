@@ -6,7 +6,7 @@
 // version 0.2.5.1 - 2013-01-17
 
 //===================
-// Convert measures (internal) and currency (used data from exchange-rates.org and Google API, but with caching)
+// Convert measures (internal) and currency (used data from exchange-rates.org and fxexchangerate.com, but with caching)
 // Can convert numbers and expressions, pick up selected text
 
 // Hotkeys:
@@ -288,63 +288,8 @@ var measures = {
 		"Pound-force per square inch (psi)": 6894.757
 	},
 	"&Currency": {
-		// http://code.google.com/intl/en/apis/adwords/docs/developer/adwords_api_currency.html
-		/*
-		"United Arab Emirates Dirham": "AED",
-		"Argentine Peso":              "ARS",
-		"Australian Dollars":          "AUD",
-		"Bulgarian Lev":               "BGN",
-		"Bolivian Boliviano":          "BOB",
-		"Brazilian Real":              "BRL",
-		"Canadian Dollars":            "CAD",
-		"Swiss Francs":                "CHF",
-		"Chilean Peso":                "CLP",
-		"Yuan Renminbi":               "CNY",
-		"Colombian Peso":              "COP",
-		"Czech Koruna":                "CZK",
-		"Denmark Kroner":              "DKK",
-		"Estonian Kroon":              "EEK",
-		"Egyptian Pound":              "EGP",
-		"Euros":                       "EUR",
-		"British Pounds Sterling":     "GBP",
-		"Hong Kong Dollars":           "HKD",
-		"Croatian Kuna":               "HRK",
-		"Hungarian Forint":            "HUF",
-		"Indonesian Rupiah":           "IDR",
-		"Israeli Shekel":              "ILS",
-		"Indian Rupee":                "INR",
-		"Japanese Yen":                "JPY",
-		"South Korean Won":            "KRW",
-		"Lithuanian Litas":            "LTL",
-		"Moroccan Dirham":             "MAD",
-		"Mexico Peso":                 "MXN",
-		"Malaysian Ringgit":           "MYR",
-		"Norway Kroner":               "NOK",
-		"New Zealand Dollars":         "NZD",
-		"Peruvian Nuevo Sol":          "PEN",
-		"Philippine Peso":             "PHP",
-		"Pakistan Rupee":              "PKR",
-		"Polish New Zloty":            "PLN",
-		"New Romanian Leu":            "RON",
-		"Serbian Dinar":               "RSD",
-		"Russian Rouble":              "RUB",
-		"Saudi Riyal":                 "SAR",
-		"Sweden Kronor":               "SEK",
-		"Singapore Dollars":           "SGD",
-		"Slovak Koruna":               "SKK",
-		"Thai Baht":                   "THB",
-		"New Turkish Lira":            "TRY",
-		"New Taiwan Dollar":           "TWD",
-		"Ukrainian Hryvnia":           "UAH",
-		"US Dollars":                  1, //"USD"
-		//"Venezuela Bolivar Fuerte":    "VEF",
-		"Vietnamese Dong":             "VND",
-		"South African Rand":          "ZAR"
-		*/
-		"Estonian Kroon":                "EEK",
-		"Slovak Koruna":                 "SKK",
-		// http://exchange-rates.org/AddCustomContent/RatesTable/Preview/RT0007HHN
-		// Sorted by code
+		// Sorted by code (in each "section")
+		// http://exchange-rates.org/AddCustomContent/RatesTable/Preview/RT000B8OF
 		"United Arab Emirates Dirham":   "AED",
 		"Armenian Dram":                 "AMD",
 		"Netherlands Antillian Guilder": "ANG",
@@ -376,7 +321,6 @@ var measures = {
 		"Danish Krone":                  "DKK",
 		"Dominican Peso":                "DOP",
 		"Algerian Dinar":                "DZD",
-		//"Estonian Kroon":                "EEK", // N/a since 2012-05-05
 		"Egyptian Pound":                "EGP",
 		"Ethiopian Birr":                "ETB",
 		"Euro":                          "EUR",
@@ -463,7 +407,155 @@ var measures = {
 		"CFP Franc":                     "XPF",
 		"South African Rand":            "ZAR",
 		"Zambian Kwacha":                "ZMK",
-		"Zimbabwe Dollar":               "ZWD"
+		"Zimbabwe Dollar":               "ZWD",
+
+		// http://www.fxexchangerate.com/currency-converter-widget.html
+		"Albanian Lek":                  "ALL",
+		"Aruba Florin":                  "AWG",
+		"Bhutan Ngultrum":               "BTN",
+		"Estonian Kroon":                "EEK",
+		"Falkland Islands Pound":        "FKP",
+		"Guinea Franc":                  "GNF",
+		"Guyana Dollar":                 "GYD",
+		"Kyrgyzstan Som":                "KGS",
+		"Comoros Franc":                 "KMF",
+		"North Korean Won":              "KPW",
+		"Liberian Dollar":               "LRD",
+		"Macedonian Denar":              "MKD",
+		"Mongolian Tugrik":              "MNT",
+		"Mauritania Ougulya":            "MRO",
+		"Maldives Rufiyaa":              "MVR",
+		"Namibian Dollar":               "NAD",
+		"Papua New Guinea Kina":         "PGK",
+		"Solomon Islands Dollar":        "SBD",
+		"Sudanese Pound":                "SDG",
+		"St Helena Pound":               "SHP",
+		"Slovak Koruna":                 "SKK",
+		"Sierra Leone Leone":            "SLL",
+		"Sao Tome Dobra":                "STD",
+		"El Salvador Colon":             "SVC",
+		"Tonga Pa'ang":                  "TOP",
+		"Uzbekistan Sum":                "UZS",
+		"Vanuatu Vatu":                  "VUV",
+		"Samoa Tala":                    "WST",
+		"Yemen Riyal":                   "YER"
+		/*
+		"UAE Dirham":                    "AED",
+		"Neth Antilles Guilder":         "ANG",
+		"Argentine Peso":                "ARS",
+		"Australian Dollar":             "AUD",
+		"Barbados Dollar":               "BBD",
+		"Bangladesh Taka":               "BDT",
+		"Bulgarian Lev":                 "BGN",
+		"Bahraini Dinar":                "BHD",
+		"Burundi Franc":                 "BIF",
+		"Bermuda Dollar":                "BMD",
+		"Brunei Dollar":                 "BND",
+		"Bolivian Boliviano":            "BOB",
+		"Brazilian Real":                "BRL",
+		"Bahamian Dollar":               "BSD",
+		"Botswana Pula":                 "BWP",
+		"Belarus Ruble":                 "BYR",
+		"Belize Dollar":                 "BZD",
+		"Canadian Dollar":               "CAD",
+		"Swiss Franc":                   "CHF",
+		"Chilean Peso":                  "CLP",
+		"Chinese Yuan":                  "CNY",
+		"Colombian Peso":                "COP",
+		"Costa Rica Colon":              "CRC",
+		"Cuban Peso":                    "CUP",
+		"Cape Verde Escudo":             "CVE",
+		"Czech Koruna":                  "CZK",
+		"Djibouti Franc":                "DJF",
+		"Danish Krone":                  "DKK",
+		"Dominican Peso":                "DOP",
+		"Algerian Dinar":                "DZD",
+		"Egyptian Pound":                "EGP",
+		"Ethiopian Birr":                "ETB",
+		"Euro":                          "EUR",
+		"Fiji Dollar":                   "FJD",
+		"British Pound":                 "GBP",
+		"Ghanaian Cedi":                 "GHS",
+		"Gambian Dalasi":                "GMD",
+		"Guatemala Quetzal":             "GTQ",
+		"Hong Kong Dollar":              "HKD",
+		"Honduras Lempira":              "HNL",
+		"Croatian Kuna":                 "HRK",
+		"Haiti Gourde":                  "HTG",
+		"Hungarian Forint":              "HUF",
+		"Indonesian Rupiah":             "IDR",
+		"Israeli Shekel":                "ILS",
+		"Indian Rupee":                  "INR",
+		"Iraqi Dinar":                   "IQD",
+		"Iran Rial":                     "IRR",
+		"Iceland Krona":                 "ISK",
+		"Jamaican Dollar":               "JMD",
+		"Jordanian Dinar":               "JOD",
+		"Japanese Yen":                  "JPY",
+		"Kenyan Shilling":               "KES",
+		"Cambodia Riel":                 "KHR",
+		"Korean Won":                    "KRW",
+		"Kuwaiti Dinar":                 "KWD",
+		"Cayman Islands Dollar":         "KYD",
+		"Kazakhstan Tenge":              "KZT",
+		"Lao Kip":                       "LAK",
+		"Lebanese Pound":                "LBP",
+		"Sri Lanka Rupee":               "LKR",
+		"Lesotho Loti":                  "LSL",
+		"Lithuanian Lita":               "LTL",
+		"Latvian Lat":                   "LVL",
+		"Libyan Dinar":                  "LYD",
+		"Moroccan Dirham":               "MAD",
+		"Moldovan Leu":                  "MDL",
+		"Myanmar Kyat":                  "MMK",
+		"Macau Pataca":                  "MOP",
+		"Mauritius Rupee":               "MUR",
+		"Malawi Kwacha":                 "MWK",
+		"Mexican Peso":                  "MXN",
+		"Malaysian Ringgit":             "MYR",
+		"Nigerian Naira":                "NGN",
+		"Nicaragua Cordoba":             "NIO",
+		"Norwegian Krone":               "NOK",
+		"Nepalese Rupee":                "NPR",
+		"New Zealand Dollar":            "NZD",
+		"Omani Rial":                    "OMR",
+		"Panama Balboa":                 "PAB",
+		"Peruvian Nuevo Sol":            "PEN",
+		"Philippine Peso":               "PHP",
+		"Pakistani Rupee":               "PKR",
+		"Polish Zloty":                  "PLN",
+		"Paraguayan Guarani":            "PYG",
+		"Qatar Rial":                    "QAR",
+		"Romanian New Leu":              "RON",
+		"Russian Rouble":                "RUB",
+		"Rwanda Franc":                  "RWF",
+		"Saudi Arabian Riyal":           "SAR",
+		"Seychelles Rupee":              "SCR",
+		"Swedish Krona":                 "SEK",
+		"Singapore Dollar":              "SGD",
+		"Somali Shilling":               "SOS",
+		"Syrian Pound":                  "SYP",
+		"Swaziland Lilageni":            "SZL",
+		"Thai Baht":                     "THB",
+		"Tunisian Dinar":                "TND",
+		"Turkish Lira":                  "TRY",
+		"Trinidad Tobago Dollar":        "TTD",
+		"Taiwan Dollar":                 "TWD",
+		"Tanzanian Shilling":            "TZS",
+		"Ukraine Hryvnia":               "UAH",
+		"Ugandan Shilling":              "UGX",
+		"United States Dollar":          "USD",
+		"Uruguayan New Peso":            "UYU",
+		"Venezuelan Bolivar":            "VEF",
+		"Vietnam Dong":                  "VND",
+		"CFA Franc (BEAC)":              "XAF",
+		"East Caribbean Dollar":         "XCD",
+		"CFA Franc (BCEAO)":             "XOF",
+		"Pacific Franc":                 "XPF",
+		"South African Rand":            "ZAR",
+		"Zambian Kwacha":                "ZMK",
+		"Zimbabwe dollar":               "ZWD",
+		*/
 	}
 };
 
@@ -1098,9 +1190,6 @@ function _localize(s) {
 		"&Currency": {
 			ru: "Вал&юта"
 		},
-		"Slovak Koruna": {
-			ru: "Словацкая крона"
-		},
 		// http://ru.exchange-rates.org/AddCustomContent/RatesTable/Preview/RT0007HHO
 		"United Arab Emirates Dirham": {
 			ru: "ОАЭ Дирхам"
@@ -1194,9 +1283,6 @@ function _localize(s) {
 		},
 		"Algerian Dinar": {
 			ru: "Алжирский Динар"
-		},
-		"Estonian Kroon": {
-			ru: "Эстонская Крона"
 		},
 		"Egyptian Pound": {
 			ru: "Египетский Фунт"
@@ -1459,6 +1545,94 @@ function _localize(s) {
 		"Zimbabwe Dollar": {
 			ru: "Зимбабве Доллар"
 		},
+		// http://www.fxexchangerate.com/preview.php?ws=&fm=EUR&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=ru&tz=0s&wh=200x250
+		"Albanian Lek": {
+			ru: "Албанский лек"
+		},
+		"Aruba Florin": {
+			ru: "Арубанский флорин"
+		},
+		"Bhutan Ngultrum": {
+			ru: "Бутанский нгултрум"
+		},
+		"Estonian Kroon": {
+			ru: "Эстонская крона"
+		},
+		"Falkland Islands Pound": {
+			ru: "Фунт Фолклендских островов"
+		},
+		"Guinea Franc": {
+			ru: "Гвинейский франк"
+		},
+		"Guyana Dollar": {
+			ru: "Гайанский доллар"
+		},
+		"Kyrgyzstan Som": {
+			ru: "Киргизский сом"
+		},
+		"Comoros Franc": {
+			ru: "Франк Комор"
+		},
+		"North Korean Won": {
+			ru: "Северокорейская вона"
+		},
+		"Liberian Dollar": {
+			ru: "Либерийский доллар"
+		},
+		"Macedonian Denar": {
+			ru: "Денар Республики Македония"
+		},
+		"Mongolian Tugrik": {
+			ru: "Монгольский тугрик"
+		},
+		"Mauritania Ougulya": {
+			ru: "Мавританская угия"
+		},
+		"Maldives Rufiyaa": {
+			ru: "Мальдивская руфия"
+		},
+		"Namibian Dollar": {
+			ru: "Доллар Намибии"
+		},
+		"Papua New Guinea Kina": {
+			ru: "Папуа-Новая Гвинея Кина"
+		},
+		"Solomon Islands Dollar": {
+			ru: "Доллар Соломоновых островов"
+		},
+		"Sudanese Pound": {
+			ru: "Суданский фунт"
+		},
+		"St Helena Pound": {
+			ru: "Фунт Святой Елены"
+		},
+		"Slovak Koruna": {
+			ru: "Словацкая крона"
+		},
+		"Sierra Leone Leone": {
+			ru: "Сьерра-леонский леоне"
+		},
+		"Sao Tome Dobra": {
+			ru: "Добра Сан-Томе и Принсипи"
+		},
+		"El Salvador Colon": {
+			ru: "Сальвадорский колон"
+		},
+		"Tonga Pa'ang": {
+			ru: "Тонганская паанга"
+		},
+		"Uzbekistan Sum": {
+			ru: "Узбекский сум"
+		},
+		"Vanuatu Vatu": {
+			ru: "Вануатский вату"
+		},
+		"Samoa Tala": {
+			ru: "Самоанская тала"
+		},
+		"Yemen Riyal": {
+			ru: "Йеменский риал"
+		},
 
 		"OK": {
 			ru: "ОК"
@@ -1658,10 +1832,22 @@ function getCurrencyRatio(code) {
 		return currencyRatios[code].ratio;
 	return NaN;
 }
+var fxExchangeRate = [
+	"ALL", "AWG", "BTN", "EEK", "FKP", "GNF", "GYD", "KGS", "KMF", "KPW", "LRD",
+	"MKD", "MNT", "MRO", "MVR", "NAD", "PGK", "SBD", "SDG", "SHP", "SKK", "SLL",
+	"STD", "SVC", "TOP", "UZS", "VUV", "WST", "YER"
+];
+function useFXExchangeRate(code) {
+	for(var i = 0, l = fxExchangeRate.length; i < l; ++i)
+		if(code == fxExchangeRate[i])
+			return true;
+	return false;
+}
 function getRequestURL(code) {
-	if(code == "EEK" || code == "SKK") // Example: http://www.google.com/ig/calculator?hl=en&q=100EUR%3D%3FAUD
-		return "http://www.google.com/ig/calculator?hl=en&q=" + encodeURIComponent(1 + code + "=?" + BASE_CURRENCY)
-			+ "&rnd=" + Math.random().toString().substr(2);
+	if(useFXExchangeRate(code)) {
+		return "http://www.fxexchangerate.com/preview.php?ws=&fm=" + code + "&ft=" + BASE_CURRENCY
+			+ "&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250";
+	}
 	// Example: http://exchange-rates.org/converter/BYR/USD/1/Y
 	return "http://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
 }
@@ -1671,26 +1857,11 @@ function getRatioFromResponse(response) {
 	if(/<span id="ctl00_M_lblToAmount">([^<>]+)<\/span>/.test(response))
 		return Number(RegExp.$1.replace(/\s+/g, "").replace(/,/g, ""));
 
-	// http://www.google.com/ig/calculator?hl=en&q=100EUR%3D%3FAUD
-	// {lhs: "100 Euros",rhs: "135.069786 Australian dollars",error: "",icc: true}
-	// We don't have native JSON support :(
-	// And Google can return numbers in exponential format:
-	//   1.35069786 \x26#215; 10\x3csup\x3e-6\x3c/sup\x3e
-	//   => 1.35069786 &#215; 10<sup>-6</sup> => 1.35069786 × 10<sup>-6</sup>
-	// Or add spaces: 135 069.786
-	if(/[{,]\s*rhs:\s*"([^"]+)"\s*[,}]/.test(response)) {
-		var ratio = RegExp.$1
-			.replace(
-				/(\d)\s*\\x26#215;\s*10\\x3csup\\x3e([+-]?\d+)\\x3c\/sup\\x3e\s+/,
-				"$1e$2 "
-			)
-			.replace(/(\d)\s*million\s+/, "$1e6 ")
-			.replace(/(\d)\s*billion\s+/, "$1e9 ")
-			.replace(/(\d)\s*trillion\s+/, "$1e12 ")
-			.replace(/\s+(\d)/g, "$1");
-		if(/^\d+(\.\d+)?(e[+-]?\d+)?/.test(ratio))
-			return Number(RegExp.lastMatch);
-	}
+	// http://www.fxexchangerate.com/preview.php?ws=&fm=EEK&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250
+	// <td align="center" id="resultTD"  style="font-weight:bold;font-size:26px;color:#2D6AB4;">0.08629</td>
+	if(/\sid="resultTD"\s+\w+\s*=\s*"[^"]+"\s*>(\d+(\.\d+)?(E[+-]?\d+)?)</i.test(response))
+		return Number(RegExp.$1);
+
 	return NaN;
 }
 function loadOfflineCurrencyData(readMode) {
