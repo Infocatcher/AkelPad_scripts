@@ -1855,12 +1855,12 @@ function getRatioFromResponse(response) {
 	// http://exchange-rates.org/converter/BYR/USD/1/N
 	// <span id="ctl00_M_lblToAmount">0.0003295</span>
 	if(/<span id="ctl00_M_lblToAmount">([^<>]+)<\/span>/.test(response))
-		return Number(RegExp.$1.replace(/\s+/g, "").replace(/,/g, ""));
+		return +(RegExp.$1.replace(/\s+/g, "").replace(/,/g, ""));
 
 	// http://www.fxexchangerate.com/preview.php?ws=&fm=EEK&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250
 	// <td align="center" id="resultTD"  style="font-weight:bold;font-size:26px;color:#2D6AB4;">0.08629</td>
 	if(/\sid="resultTD"\s+\w+\s*=\s*"[^"]+"\s*>(\d+(\.\d+)?(E[+-]?\d+)?)</i.test(response))
-		return Number(RegExp.$1);
+		return +RegExp.$1;
 
 	return NaN;
 }
@@ -1875,8 +1875,8 @@ function loadOfflineCurrencyData(readMode) {
 	for(var i = 0, l = db.length; i < l; ++i) {
 		var parts = db[i].split("="); // code=ratio=timestamp
 		var code = parts[0];
-		var ratio = Number(parts[1]);
-		var time = Number(parts[2]);
+		var ratio = +parts[1];
+		var time = +parts[2];
 		if(!code || !isFinite(ratio) || !isFinite(time))
 			continue;
 		currencyRatios[code] = {
@@ -2037,8 +2037,8 @@ Number.prototype.toFixed = function(r) {
 		return this._origToFixed(r);
 	var n = this;
 	if(r >= 0 && n >= 1e+21 && /^(\d+)(\.(\d+))?e[+-]?(\d+)$/i.test(n)) {
-		return RegExp.$1 + RegExp.$3 //~ todo: RegExp.$3.length > Number(RegExp.$4) ?
-			+ new Array(Number(RegExp.$4) - RegExp.$3.length + 1).join("0")
+		return RegExp.$1 + RegExp.$3 //~ todo: RegExp.$3.length > +RegExp.$4 ?
+			+ new Array(+RegExp.$4 - RegExp.$3.length + 1).join("0")
 			+ (r ? "." : "")
 			+ new Array(r + 1).join("0");
 	}
@@ -2224,7 +2224,7 @@ function converterDialog(modal) {
 	var dwVersion = oSys.Call("kernel32::GetVersion");
 	if(dwVersion) {
 		dwVersion &= 0x0ffff; // LOWORD()
-		windowsVersion = Number(
+		windowsVersion = +(
 			(dwVersion & 0xff) // LOBYTE()
 			+ "."
 			+ (dwVersion >> 8 & 0xff) // HIBYTE()
@@ -3166,7 +3166,7 @@ function converterDialog(modal) {
 	function readRoundValue() {
 		var r = ROUND_OFF;
 		if(checked(hWndRound)) {
-			r = Math.ceil(Number(windowText(hWndRoundValue)));
+			r = Math.ceil(+windowText(hWndRoundValue));
 			var r2 = validateRoundValue(r);
 			if(r2 != r) {
 				r = r2;
@@ -3595,7 +3595,7 @@ function calcNum(val, showErrors, hWnd, hWndEdit) {
 	val = val.replace(/^\s+|\s+$/g, "");
 	if(!val)
 		return undefined;
-	//var num = Number(val);
+	//var num = +val;
 
 	if(isExpression(val))
 		val = prepareExpression(val);
