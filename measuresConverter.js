@@ -1363,7 +1363,7 @@ function _localize(s) {
 			ru: "Кувейтский динар"
 		},
 		"Cayman Islands Dollar": {
-			ru: "Каймановых островов, доллар"
+			ru: "Каймановых островов доллар"
 		},
 		"Kazakhstan Tenge": {
 			ru: "Казахский тенге"
@@ -1580,7 +1580,7 @@ function _localize(s) {
 			ru: "Либерийский доллар"
 		},
 		"Macedonian Denar": {
-			ru: "Денар Республики Македония"
+			ru: "Македонский денар"
 		},
 		"Mongolian Tugrik": {
 			ru: "Монгольский тугрик"
@@ -1592,19 +1592,19 @@ function _localize(s) {
 			ru: "Мальдивская руфия"
 		},
 		"Namibian Dollar": {
-			ru: "Доллар Намибии"
+			ru: "Намибийский доллар"
 		},
 		"Papua New Guinea Kina": {
 			ru: "Папуа-Новая Гвинея кина"
 		},
 		"Solomon Islands Dollar": {
-			ru: "Доллар Соломоновых островов"
+			ru: "Соломоновых островов доллар"
 		},
 		"Sudanese Pound": {
 			ru: "Суданский фунт"
 		},
 		"St Helena Pound": {
-			ru: "Фунт Святой Елены"
+			ru: "Святой Елены фунт"
 		},
 		"Slovak Koruna": {
 			ru: "Словацкая крона"
@@ -1613,7 +1613,7 @@ function _localize(s) {
 			ru: "Сьерра-леонский леоне"
 		},
 		"Sao Tome Dobra": {
-			ru: "Добра Сан-Томе и Принсипи"
+			ru: "Сан-Томе и Принсипи добра"
 		},
 		"El Salvador Colon": {
 			ru: "Сальвадорский колон"
