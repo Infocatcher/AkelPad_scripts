@@ -1942,11 +1942,13 @@ var asyncUpdater = {
 			var err = false;
 			if(request.status != 200) {
 				err = true;
-				if(request.status == 0)
+				if(request.status == 0) {
 					++_this.abortedErrors;
+					_this.details.push("Aborted: " + code + " " + url);
+				}
 				else {
 					++_this.errors;
-					_this.details.push("Network error: " + code + " (" + url + ")");
+					_this.details.push("Network error: " + code + " " + url);
 				}
 			}
 			var cnt = --_this.activeRequests;
@@ -1961,7 +1963,7 @@ var asyncUpdater = {
 				var ratio = getRatioFromResponse(request.responseText);
 				if(isNaN(ratio)) {
 					++_this.parseErrors;
-					_this.details.push("Parse error: " + code + " (" + url + ")");
+					_this.details.push("Parse error: " + code + " " + url);
 				}
 				else {
 					++_this.success;
