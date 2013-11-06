@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/measuresConverter.js
 
 // (c) Infocatcher 2011-2013
-// version 0.2.5.1 - 2013-01-17
+// version 0.2.6 - 2013-11-06
 
 //===================
 // Convert measures (internal) and currency (used data from exchange-rates.org and fxexchangerate.com, but with caching)
