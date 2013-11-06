@@ -2470,7 +2470,7 @@ function converterDialog(modal) {
 					hInstanceDLL,      //hInstance
 					0                  //lpParam
 				);
-				setWindowFontAndText(hWndGroupRound, hGuiFont, _localize(""));
+				//setWindowFontAndText(hWndGroupRound, hGuiFont, _localize(""));
 
 				// Checkbox round
 				hWndRound = createWindowEx(
