@@ -1848,20 +1848,25 @@ function getRequestURL(code) {
 		return "http://www.fxexchangerate.com/preview.php?ws=&fm=" + code + "&ft=" + BASE_CURRENCY
 			+ "&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250";
 	}
-	// Example: http://exchange-rates.org/converter/BYR/USD/1/Y
+	// Example: http://exchange-rates.org/converter/BYR/USD/1/N
 	return "http://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
 }
 function getRatioFromResponse(response) {
 	// http://exchange-rates.org/converter/BYR/USD/1/N
 	// <span id="ctl00_M_lblToAmount">0.0003295</span>
 	if(/<span id="ctl00_M_lblToAmount">([^<>]+)<\/span>/.test(response))
-		return +(RegExp.$1.replace(/\s+/g, "").replace(/,/g, ""));
+		return validateRatio(+(RegExp.$1.replace(/\s+/g, "").replace(/,/g, "")));
 
 	// http://www.fxexchangerate.com/preview.php?ws=&fm=EEK&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250
 	// <td align="center" id="resultTD"  style="font-weight:bold;font-size:26px;color:#2D6AB4;">0.08629</td>
 	if(/\sid="resultTD"\s+\w+\s*=\s*"[^"]+"\s*>(\d+(\.\d+)?(E[+-]?\d+)?)</i.test(response))
-		return +RegExp.$1;
+		return validateRatio(+RegExp.$1);
 
+	return NaN;
+}
+function validateRatio(n) {
+	if(isFinite(n) && n > 0)
+		return n;
 	return NaN;
 }
 function loadOfflineCurrencyData(readMode) {
@@ -1877,7 +1882,7 @@ function loadOfflineCurrencyData(readMode) {
 		var code = parts[0];
 		var ratio = +parts[1];
 		var time = +parts[2];
-		if(!code || !isFinite(ratio) || !isFinite(time))
+		if(!code || !validateRatio(ratio) || !isFinite(time))
 			continue;
 		currencyRatios[code] = {
 			ratio: ratio,
