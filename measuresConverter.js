@@ -23,6 +23,7 @@
 //   Shift+F5                          - Force update data only for current currencies (double click on row)
 
 // Arguments:
+//   -preferFXExchangeRate=true    - prefer data from fxexchangerate.com (faster updates)
 //   -offlineExpire=24*60*60*1000  - currency ratio expires after this time (in milliseconds)
 //   -updateOnStartup=true         - asynchronous update currency data on startup
 //   -updateOnStartupReport=1      - 0 - don't show, 1 - only errors, 2 - always
@@ -1730,6 +1731,7 @@ var saveOptions  = getArg("saveOptions",  true);
 var savePosition = getArg("savePosition", true);
 var saveOffline  = getArg("saveOffline",  true);
 
+var preferFXExchangeRate  = getArg("preferFXExchangeRate", true);
 var offlineExpire         = getArg("offlineExpire", 24*60*60*1000);
 var updateOnStartup       = getArg("updateOnStartup", true);
 var updateOnStartupReport = getArg("updateOnStartupReport", 1);
@@ -1838,6 +1840,8 @@ var fxExchangeRate = [
 	"STD", "SVC", "TOP", "UZS", "VUV", "WST", "YER"
 ];
 function useFXExchangeRate(code) {
+	if(preferFXExchangeRate)
+		return code != "AMD" && code != "RSD" && code != "SDD";
 	for(var i = 0, l = fxExchangeRate.length; i < l; ++i)
 		if(code == fxExchangeRate[i])
 			return true;
