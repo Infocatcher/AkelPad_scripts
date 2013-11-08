@@ -1834,21 +1834,26 @@ function getCurrencyRatio(code) {
 		return currencyRatios[code].ratio;
 	return NaN;
 }
-var fxExchangeRate = [
-	"ALL", "AWG", "BTN", "EEK", "FKP", "GNF", "GYD", "KGS", "KMF", "KPW", "LRD",
-	"MKD", "MNT", "MRO", "MVR", "NAD", "PGK", "SBD", "SDG", "SHP", "SKK", "SLL",
-	"STD", "SVC", "TOP", "UZS", "VUV", "WST", "YER"
-];
-function useFXExchangeRate(code) {
-	if(preferFXExchangeRate)
-		return code != "AMD" && code != "RSD" && code != "SDD";
-	for(var i = 0, l = fxExchangeRate.length; i < l; ++i)
-		if(code == fxExchangeRate[i])
-			return true;
-	return false;
+var missingCurrencies = {
+	"exchange-rates.org": [
+		"ALL", "AWG", "BTN", "EEK", "FKP", "GNF", "GYD", "KGS", "KMF", "KPW",
+		"LRD", "MKD", "MNT", "MRO", "MVR", "NAD", "PGK", "SBD", "SDG", "SHP",
+		"SKK", "SLL", "STD", "SVC", "TOP", "UZS", "VUV", "WST", "YER"
+	],
+	"fxexchangerate.com": ["AMD", "RSD", "SDD"]
+};
+function available(server, code) {
+	var missing = missingCurrencies[server];
+	for(var i = 0, l = missing.length; i < l; ++i)
+		if(code == missing[i])
+			return false;
+	return true;
 }
 function getRequestURL(code) {
-	if(useFXExchangeRate(code)) {
+	if(
+		available("fxexchangerate.com", code)
+		&& (preferFXExchangeRate || !available("exchange-rates.org", code))
+	) {
 		//return "http://www.fxexchangerate.com/preview.php?ws=&fm=" + code + "&ft=" + BASE_CURRENCY
 		//	+ "&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250";
 		return "http://www.fxexchangerate.com/getdata.php?fxfrom="
