@@ -1845,24 +1845,25 @@ function useFXExchangeRate(code) {
 }
 function getRequestURL(code) {
 	if(useFXExchangeRate(code)) {
-		return "http://www.fxexchangerate.com/preview.php?ws=&fm=" + code + "&ft=" + BASE_CURRENCY
-			+ "&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250";
+		//return "http://www.fxexchangerate.com/preview.php?ws=&fm=" + code + "&ft=" + BASE_CURRENCY
+		//	+ "&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250";
+		return "http://www.fxexchangerate.com/getdata.php?fxfrom=" + code + "&fxto=" + BASE_CURRENCY + "&amount=1";
 	}
-	// Example: http://exchange-rates.org/converter/BYR/USD/1/N
 	return "http://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
 }
 function getRatioFromResponse(response) {
-	// http://exchange-rates.org/converter/BYR/USD/1/N
+	// http://exchange-rates.org/converter/EUR/USD/1/N
 	// <span id="ctl00_M_lblToAmount">0.0003295</span>
 	if(/<span id="ctl00_M_lblToAmount">([^<>]+)<\/span>/.test(response))
 		return validateRatio(stringToNumber(RegExp.$1));
 
-	// http://www.fxexchangerate.com/preview.php?ws=&fm=EEK&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250
+	// http://www.fxexchangerate.com/preview.php?ws=&fm=EUR&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250
 	// <td align="center" id="resultTD"  style="font-weight:bold;font-size:26px;color:#2D6AB4;">0.08629</td>
-	if(/\sid="resultTD"\s+\w+\s*=\s*"[^"]+"\s*>([^<>]+)</i.test(response))
-		return validateRatio(stringToNumber(RegExp.$1));
+	//if(/\sid="resultTD"\s+\w+\s*=\s*"[^"]+"\s*>([^<>]+)</i.test(response))
+	//	return validateRatio(stringToNumber(RegExp.$1));
 
-	return NaN;
+	// http://www.fxexchangerate.com/getdata.php?fxfrom=EUR&fxto=USD&amount=1
+	return validateRatio(stringToNumber(response));
 }
 function stringToNumber(s) {
 	// Expected English format: 12,345.6
