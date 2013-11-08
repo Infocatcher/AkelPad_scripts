@@ -1851,7 +1851,9 @@ function getRequestURL(code) {
 	if(useFXExchangeRate(code)) {
 		//return "http://www.fxexchangerate.com/preview.php?ws=&fm=" + code + "&ft=" + BASE_CURRENCY
 		//	+ "&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250";
-		return "http://www.fxexchangerate.com/getdata.php?fxfrom=" + code + "&fxto=" + BASE_CURRENCY + "&amount=1";
+		return "http://www.fxexchangerate.com/getdata.php?fxfrom="
+			+ code + "&fxto=" + BASE_CURRENCY + "&amount=1"
+			+ "&" + new Date().getTime();
 	}
 	return "http://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
 }
