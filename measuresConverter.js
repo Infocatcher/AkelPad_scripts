@@ -1982,6 +1982,8 @@ var asyncUpdater = {
 		};
 		var url = getRequestURL(code);
 		request.open("GET", url, true);
+		if(typeof request.setRequestHeader != "undefined")
+			request.setRequestHeader("Accept-Language", "en-us,en;q=0.5");
 		++this.activeRequests;
 		request.send(null);
 		return request;
