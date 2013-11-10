@@ -51,7 +51,7 @@
 // Create own scope for internal functions to make eval() more safe
 (function(
 	evalGlobal, eval, Math,
-	String, Number, RegExp, Date,
+	String, Number, RegExp, Date, Boolean, Array,
 	isFinite, isNaN,
 	undefined, NaN, Infinity,
 	AkelPad, WScript, ActiveXObject
@@ -3738,14 +3738,15 @@ function evalInGlobalContext(code) {
 
 })(
 	function evalGlobal(code, eval, Math) {
-		var WScript = null; // Prevent WScript.Quit();
-		var ActiveXObject = null;
-		var Function = null; // new Function("WScript.Quit();")();
+		var WScript, // Prevent WScript.Quit();
+			ActiveXObject,
+			Function, // new Function("WScript.Quit();")();
+			AkelPad; // Forbid AkelPad API
 		with(Math)
 			return eval(code);
 	},
 	eval, Math,
-	String, Number, RegExp, Date,
+	String, Number, RegExp, Date, Boolean, Array,
 	isFinite, isNaN,
 	undefined, NaN, Infinity,
 	AkelPad, WScript, ActiveXObject
