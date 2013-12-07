@@ -58,6 +58,8 @@ if(nBufferLength) {
 if(!curDir)
 	curDir = akelDir;
 
+AkelPad.Exec('"%nirCmd%" killprocess "%nirCmd%"'.replace(/%nirCmd%/g, nirCmd)); //~ todo: check process command line
+
 var cmd = '"%nirCmd%" waitprocess /%pid% exec2 show "%workDir%" "%akelExe%"';
 if(!sessionAutoload)
 	cmd += ' /Call("Sessions::Main", 1, "%session%")';
