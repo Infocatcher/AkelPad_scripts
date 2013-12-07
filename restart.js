@@ -7,13 +7,14 @@
 // Restart AkelPad
 
 // Dependencies:
-//   Sessions plugin with checked "save on exit" option
+//   Sessions plugin
 //   NirCmd utility - http://www.nirsoft.net/utils/nircmd.html
 
 // Arguments:
 //   -nirCmd="path\to\nircmd.exe" - you can use environment variables like %ProgramFiles%
 //   -session="OnExit"            - name of autosaved session in Sessions plugin
-//   -sessionAutoload=false       - should be false if "open on start" in Sessions plugin are unchecked
+//   -sessionAutoSave=false       - should be false if "save on exit" in Sessions plugin are unchecked
+//   -sessionAutoLoad=false       - should be false if "open on start" in Sessions plugin are unchecked
 
 // Usage:
 //   Call("Scripts::Main", 1, "restart.js")
@@ -27,7 +28,8 @@ if(!new ActiveXObject("Scripting.FileSystemObject").FileExists(nirCmd)) {
 	WScript.Quit();
 }
 var session = AkelPad.GetArgValue("session", "OnExit");
-var sessionAutoload = AkelPad.GetArgValue("sessionAutoload", false);
+var sessionAutoSave = AkelPad.GetArgValue("sessionAutoSave", false);
+var sessionAutoLoad = AkelPad.GetArgValue("sessionAutoLoad", false);
 var pid = oSys.Call("kernel32::GetCurrentProcessId");
 
 // Get real AkelPad executable
@@ -58,10 +60,13 @@ if(nBufferLength) {
 if(!curDir)
 	curDir = akelDir;
 
+if(!sessionAutoSave || !AkelPad.IsPluginRunning("Sessions::Main"))
+	AkelPad.Call("Sessions::Main", 2, session);
+
 AkelPad.Exec('"%nirCmd%" killprocess "%nirCmd%"'.replace(/%nirCmd%/g, nirCmd)); //~ todo: check process command line
 
 var cmd = '"%nirCmd%" waitprocess /%pid% exec2 show "%workDir%" "%akelExe%"';
-if(!sessionAutoload)
+if(!sessionAutoLoad)
 	cmd += ' /Call("Sessions::Main", 1, "%session%")';
 cmd = cmd
 	.replace(/%nirCmd%/g, nirCmd)
@@ -69,10 +74,8 @@ cmd = cmd
 	.replace(/%workDir%/g, curDir)
 	.replace(/%akelExe%/g, akelExe)
 	.replace(/%session%/g, session);
-AkelPad.Exec(cmd, akelDir);
-if(!AkelPad.IsPluginRunning("Sessions::Main"))
-	AkelPad.Call("Sessions::Main");
 AkelPad.Command(4109); // Exit
+AkelPad.Exec(cmd, akelDir);
 
 function expandEnvironmentVariables(s) {
 	return new ActiveXObject("WScript.Shell").ExpandEnvironmentStrings(s);
