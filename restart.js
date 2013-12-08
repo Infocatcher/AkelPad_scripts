@@ -1,5 +1,6 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=18433#18433
 // http://infocatcher.ucoz.net/js/akelpad_scripts/restart.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/restart.js
 
 // (c) Infocatcher 2012
 // version 0.1.0 - 2012-06-13
@@ -13,8 +14,8 @@
 // Arguments:
 //   -nirCmd="path\to\nircmd.exe" - you can use environment variables like %ProgramFiles%
 //   -session="OnExit"            - name of autosaved session in Sessions plugin
-//   -sessionAutoSave=false       - should be false if "save on exit" in Sessions plugin are unchecked
-//   -sessionAutoLoad=false       - should be false if "open on start" in Sessions plugin are unchecked
+//   -sessionAutoSave=false       - checked state of "save on exit" in Sessions plugin settings
+//   -sessionAutoLoad=false       - checked state of "open on start" in Sessions plugin settings
 
 // Usage:
 //   Call("Scripts::Main", 1, "restart.js")
