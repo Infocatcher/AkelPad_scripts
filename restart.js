@@ -78,6 +78,8 @@ AkelPad.Command(4109); // Exit
 AkelPad.Exec(cmd, akelDir);
 
 function expandEnvironmentVariables(s) {
+	if(/^%a[\\\/]/.test(s))
+		s = akelDir + s.substr(2);
 	return new ActiveXObject("WScript.Shell").ExpandEnvironmentStrings(s);
 }
 function error(s) {
