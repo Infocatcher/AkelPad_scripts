@@ -22,9 +22,13 @@
 
 var oSys = AkelPad.SystemFunction();
 var akelDir = AkelPad.GetAkelDir();
-var nirCmd = expandEnvironmentVariables(AkelPad.GetArgValue("nirCmd", akelDir + "\\AkelFiles\\Utils\\nircmd.exe"));
+var nirCmdPath = AkelPad.GetArgValue("nirCmd", "%a\\AkelFiles\\Utils\\nircmd.exe");
+var nirCmd = expandEnvironmentVariables(nirCmdPath);
 if(!new ActiveXObject("Scripting.FileSystemObject").FileExists(nirCmd)) {
-	error("NirCmd utility not found!\n" + nirCmd);
+	error(
+		"NirCmd utility not found!\nYou can download it here: http://www.nirsoft.net/utils/nircmd.html\n\n"
+		+ (nirCmd == nirCmdPath ? nirCmd : nirCmdPath + "\n=> " + nirCmd)
+	);
 	WScript.Quit();
 }
 var session = AkelPad.GetArgValue("session", "OnExit");
