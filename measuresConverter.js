@@ -6,7 +6,7 @@
 // version 0.2.6 - 2013-11-06
 
 //===================
-// Convert measures (internal) and currency (used data from exchange-rates.org and fxexchangerate.com, but with caching)
+// Convert measures (internal) and currency (used cached data from exchange-rates.org, fxexchangerate.com and bitcoincharts.com)
 // Can convert numbers and expressions, pick up selected text
 
 // Hotkeys:
@@ -439,7 +439,7 @@ var measures = {
 		"Uzbekistan Sum":                "UZS",
 		"Vanuatu Vatu":                  "VUV",
 		"Samoa Tala":                    "WST",
-		"Yemen Riyal":                   "YER"
+		"Yemen Riyal":                   "YER",
 		/*
 		"UAE Dirham":                    "AED",
 		"Neth Antilles Guilder":         "ANG",
@@ -557,6 +557,10 @@ var measures = {
 		"Zambian Kwacha":                "ZMK",
 		"Zimbabwe dollar":               "ZWD",
 		*/
+
+		// http://bitcoincharts.com/about/markets-api/
+		// + http://bitcoincharts.com/markets/currencies/
+		"Bitcoin": "BTC"
 	}
 };
 
@@ -1635,6 +1639,10 @@ function _localize(s) {
 			ru: "Йеменский риал"
 		},
 
+		"Bitcoin": {
+			ru: "Биткоин"
+		},
+
 		"OK": {
 			ru: "ОК"
 		},
@@ -1850,6 +1858,8 @@ function available(server, code) {
 	return true;
 }
 function getRequestURL(code) {
+	if(code == "BTC")
+		return "http://api.bitcoincharts.com/v1/weighted_prices.json?" + new Date().getTime();
 	if(
 		available("fxexchangerate.com", code)
 		&& (preferFXExchangeRate || !available("exchange-rates.org", code))
@@ -1867,6 +1877,26 @@ function getRatioFromResponse(response) {
 	// <span id="ctl00_M_lblToAmount">0.0003295</span>
 	if(/<span id="ctl00_M_lblToAmount">([^<>]+)<\/span>/.test(response))
 		return validateRatio(stringToNumber(RegExp.$1));
+
+	if(response.charAt(0) == "{") { // Looks like JSON
+		// http://api.bitcoincharts.com/v1/weighted_prices.json
+		var btcPattern = getRatioFromResponse.btcPattern || (
+			getRatioFromResponse.btcPattern = new RegExp(
+				// "USD": {"7d": "860.00", "30d": "732.82", "24h": "898.98"}
+				'"' + BASE_CURRENCY + '":\\s*\\{\\s*("[^"]+":\\s*"[^"]+"(,\\s*"[^"]+":\\s*"[^"]+")*)\\s*\\}'
+			)
+		);
+		if(btcPattern.test(response)) {
+			var data = RegExp.$1;
+			if(
+				/"24h":\s*"([^"]+)"/.test(data)
+				|| /"7d":\s*"([^"]+)"/.test(data)
+				|| /"30d":\s*"([^"]+)"/.test(data)
+				|| /"\d+d":\s*"([^"]+)"/.test(data)
+			)
+				return validateRatio(stringToNumber(RegExp.$1));
+		}
+	}
 
 	// http://www.fxexchangerate.com/preview.php?ws=&fm=EUR&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250
 	// <td align="center" id="resultTD"  style="font-weight:bold;font-size:26px;color:#2D6AB4;">0.08629</td>
