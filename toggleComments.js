@@ -16,6 +16,7 @@
 //   -removeSpaces=true
 //   -preferLineComments=false     - true => don't use block comments for multiple lines
 //   -lineCommentsAtStart=false    - put line comments for multiple lines at line start
+//   -ignoreLineCommentsAfterCode  - ignore "code // comment"
 //   -checkBlockComments=0         - don't check block comments inside commented code
 //                      =1         - ask user with default OK button
 //                      =2         - (default) ask user with default Cancel button
@@ -252,6 +253,7 @@ var addSpaces                = getArg("addSpaces", true);
 var removeSpaces             = getArg("removeSpaces", true);
 var preferLineComments       = getArg("preferLineComments", false);
 var lineCommentsAtStart      = getArg("lineCommentsAtStart", false);
+var ignoreLineCommentsAfterCode = getArg("ignoreLineCommentsAfterCode", false);
 var checkBlockComments       = getArg("checkBlockComments", 2);
 var blockCommentsEntireLines = getArg("blockCommentsEntireLines", 1);
 var searchRegions            = getArg("searchRegions", true);
@@ -419,7 +421,11 @@ Comments.prototype = {
 				cmmLineIndx != -1
 				&& (
 					this.selStart >= lineStart + cmmLineIndx // Caret should be after comment
-					|| /^[ \t]*$/.test(this.fullText.substring(lineStart, this.selStart)) // Or only spaces befor
+					|| /^[ \t]*$/.test(this.fullText.substring(lineStart, this.selStart)) // Or only spaces before
+				)
+				&& (
+					!this.ignoreLineCmmAfterCode
+					|| /^[ \t]*$/.test(line.substring(0, cmmLineIndx)) // Only spaces before before comment
 				)
 			) {
 				var linePart = line.substring(cmmLineIndx);
@@ -1102,6 +1108,7 @@ function parseContent(method) {
 		blockCmmsEntireLines: blockCommentsEntireLines,
 		pLineCmm:             preferLineComments,
 		lineCmmAtStart:       lineCommentsAtStart,
+		ignoreLineCmmAfterCode: ignoreLineCommentsAfterCode,
 		preserveSelection:    preserveSelection
 	});
 	var insData = comments.toggleComments(method);
