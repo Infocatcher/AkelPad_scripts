@@ -9,29 +9,29 @@
 // Adds/removes comments
 
 // Arguments:
-//   -method=0                     - toggle (default)
-//          =1                     - add
-//          =2                     - remove
-//   -addSpaces=true               - true => code /* comment */ code, false => code/*comment*/code
+//   -method=0                          - toggle (default)
+//          =1                          - add
+//          =2                          - remove
+//   -addSpaces=true                    - true => code /* comment */ code, false => code/*comment*/code
 //   -removeSpaces=true
-//   -preferLineComments=false     - true => don't use block comments for multiple lines
-//   -lineCommentsAtStart=false    - put line comments for multiple lines at line start
-//   -ignoreLineCommentsAfterCode  - ignore "code // comment"
-//   -checkBlockComments=0         - don't check block comments inside commented code
-//                      =1         - ask user with default OK button
-//                      =2         - (default) ask user with default Cancel button
-//                      =3         - don't ask and don't add comments
-//   -blockCommentsEntireLines=-1  - only if end EOL selected
-//                            =0   - only if entire lines selected (with or without end EOL)
-//                            =1   - always
-//   -preserveSelection=true       - preserve selection / caret position
-//   -searchRegions=true           - allow search regions like <?php ... ?>
-//   -checkSyntax=0                - don't check any syntax constructions, fast, but may works incorrect
-//               =1                - check simple syntax constructions
-//               =2                - (default) check complex syntax constructions (only in *.js for now), may be very slow
-//   -saveLastExt=0                - don't save last used extension
-//               =1                - save only typed (default)
-//               =2                - always save
+//   -preferLineComments=false          - true => don't use block comments for multiple lines
+//   -lineCommentsAtStart=false         - put line comments for multiple lines at line start
+//   -ignoreLineCommentsAfterCode=false - ignore "code // comment"
+//   -checkBlockComments=0              - don't check block comments inside commented code
+//                      =1              - ask user with default OK button
+//                      =2              - (default) ask user with default Cancel button
+//                      =3              - don't ask and don't add comments
+//   -blockCommentsEntireLines=-1       - only if end EOL selected
+//                            =0        - only if entire lines selected (with or without end EOL)
+//                            =1        - always
+//   -preserveSelection=true            - preserve selection / caret position
+//   -searchRegions=true                - allow search regions like <?php ... ?>
+//   -checkSyntax=0                     - don't check any syntax constructions, fast, but may works incorrect
+//               =1                     - check simple syntax constructions
+//               =2                     - (default) check complex syntax constructions (only in *.js for now), may be very slow
+//   -saveLastExt=0                     - don't save last used extension
+//               =1                     - save only typed (default)
+//               =2                     - always save
 
 // For boolean arguments you can use
 //   -argName       - true
@@ -248,18 +248,18 @@ var oldRegExp = "x".replace(/x/, function(s) { return "y" }) != "y";
 
 // Read arguments:
 // getArg(argName, defaultValue)
-var method                   = getArg("method", 0);
-var addSpaces                = getArg("addSpaces", true);
-var removeSpaces             = getArg("removeSpaces", true);
-var preferLineComments       = getArg("preferLineComments", false);
-var lineCommentsAtStart      = getArg("lineCommentsAtStart", false);
+var method                      = getArg("method", 0);
+var addSpaces                   = getArg("addSpaces", true);
+var removeSpaces                = getArg("removeSpaces", true);
+var preferLineComments          = getArg("preferLineComments", false);
+var lineCommentsAtStart         = getArg("lineCommentsAtStart", false);
 var ignoreLineCommentsAfterCode = getArg("ignoreLineCommentsAfterCode", false);
-var checkBlockComments       = getArg("checkBlockComments", 2);
-var blockCommentsEntireLines = getArg("blockCommentsEntireLines", 1);
-var searchRegions            = getArg("searchRegions", true);
-var preserveSelection        = getArg("preserveSelection", true);
-var checkSyntax              = getArg("checkSyntax", 2);
-var saveLastExt              = getArg("saveLastExt", 1);
+var checkBlockComments          = getArg("checkBlockComments", 2);
+var blockCommentsEntireLines    = getArg("blockCommentsEntireLines", 1);
+var searchRegions               = getArg("searchRegions", true);
+var preserveSelection           = getArg("preserveSelection", true);
+var checkSyntax                 = getArg("checkSyntax", 2);
+var saveLastExt                 = getArg("saveLastExt", 1);
 
 // Support for old arguments
 if(getArg("noSpaces") !== undefined && getArg("addSpaces") === undefined) {
@@ -1096,20 +1096,19 @@ function parseContent(method) {
 	if(!cmmParams)
 		return;
 	var comments = new Comments({
-		ext:                  ext,
-		cmmSets:              commentsSets,
-		cmmRegions:           commentsRegions,
-		cmmExcludes:          commentsExcludes,
-		//selParams:            selParams,
-		addSpaces:            addSpaces,
-		removeSpaces:         removeSpaces,
-		searchRegions:        searchRegions,
-		checkBlockCmms:       checkBlockComments,
-		blockCmmsEntireLines: blockCommentsEntireLines,
-		pLineCmm:             preferLineComments,
-		lineCmmAtStart:       lineCommentsAtStart,
+		ext:                    ext,
+		cmmSets:                commentsSets,
+		cmmRegions:             commentsRegions,
+		cmmExcludes:            commentsExcludes,
+		addSpaces:              addSpaces,
+		removeSpaces:           removeSpaces,
+		searchRegions:          searchRegions,
+		checkBlockCmms:         checkBlockComments,
+		blockCmmsEntireLines:   blockCommentsEntireLines,
+		pLineCmm:               preferLineComments,
+		lineCmmAtStart:         lineCommentsAtStart,
 		ignoreLineCmmAfterCode: ignoreLineCommentsAfterCode,
-		preserveSelection:    preserveSelection
+		preserveSelection:      preserveSelection
 	});
 	var insData = comments.toggleComments(method);
 	if(!insData)
