@@ -15,7 +15,7 @@
 //   -addSpaces=true               - true => code /* comment */ code, false => code/*comment*/code
 //   -removeSpaces=true
 //   -preferLineComments=false     - true => don't use block comments for multiple lines
-//   -lineCommentsAtStart=false
+//   -lineCommentsAtStart=false    - put line comments for multiple lines at line start
 //   -checkBlockComments=0         - don't check block comments inside commented code
 //                      =1         - ask user with default OK button
 //                      =2         - (default) ask user with default Cancel button
