@@ -186,7 +186,16 @@ var commentsExcludes = { // Now used only in delLineComments()
 	h:    "c",
 	java: "c",
 	php:  "c",
-	dpr:  "c"
+	dpr:  "c",
+	coder: function(str) {
+		if(oldRegExp)
+			return str;
+		// Remove strings ("...", '...' and `...`)
+		return str
+			.replace(/"[^"\n\r]+"/g, escaper)
+			.replace(/'[^'\n\r]+'/g, escaper)
+			.replace(/`[^`\n\r]+`/g, escaper);
+	}
 };
 //== Settings end
 
