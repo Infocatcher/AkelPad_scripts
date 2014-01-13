@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/toggleComments.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/toggleComments.js
 
-// (c) Infocatcher 2008-2013
-// version 0.4.4pre - 2013-05-05
+// (c) Infocatcher 2008-2014
+// version 0.4.4pre2 - 2014-01-13
 
 //===================
 // Adds/removes comments
