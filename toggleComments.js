@@ -1167,6 +1167,11 @@ function getCurrentExt() {
 		if(ext && !commentsSets[ext])
 			ext = null;
 	}
+	if(!ext || !searchRegions && commentsRegions[ext]) {
+		var coderExt = getCoderExt();
+		if(coderExt)
+			ext = coderExt;
+	}
 	var read, write;
 	if(saveLastExt && (read = oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/))) {
 		var extCacheId = "processId:" + oSys.Call("kernel32::GetCurrentProcessId")
@@ -1223,6 +1228,30 @@ function getCurrentExt() {
 	}
 	write && oSet.End();
 	return [ext, cmmSet];
+}
+function getCoderExt() {
+	var alias = getCoderAlias();
+	if(/^\.[^.]+$/.test(alias)) {
+		var ext = alias.substr(1).toLowerCase();
+		if(commentsSets[ext])
+			return ext;
+	}
+	return "";
+}
+function getCoderAlias() {
+	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
+	var hWndEdit = AkelPad.GetEditWnd();
+	var hDocEdit = AkelPad.GetEditDoc();
+	var pAlias = "";
+	if(hWndEdit && hDocEdit) {
+		var lpAlias = AkelPad.MemAlloc(256 * 2 /*sizeof(wchar_t)*/);
+		if(lpAlias) {
+			AkelPad.CallW("Coder::Settings", 18 /*DLLA_CODER_GETALIAS*/, hWndEdit, hDocEdit, lpAlias, 0);
+			pAlias = AkelPad.MemRead(lpAlias, 1 /*DT_UNICODE*/);
+			AkelPad.MemFree(lpAlias);
+		}
+	}
+	return pAlias;
 }
 
 function getArg(argName, defaultVal) {
