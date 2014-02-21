@@ -35,6 +35,7 @@
 //   -maxHeight=0                  - maximum window height for create listboxes instead of radiobuttons
 //                                   -1 => no resize window
 //                                    0 => always use listboxes
+//   -showLastUpdate=2             - 0 - don't show, 1 - show only if selected currencies, 2 - always show
 //   -from="Pound"                 - set source measure (you should use English names!)
 //   -to="Kilogram"                - set target measure (you should use English names!)
 //   -dialog=false                 - don't show dialog
@@ -1759,6 +1760,7 @@ var sortByName            = getArg("sortByName");
 var roundMeasures         = getArg("roundMeasures");
 var roundCurrencies       = getArg("roundCurrencies");
 var dlgMaxH               = getArg("maxHeight", 0); // -1 => no resize
+var showLastUpdate        = getArg("showLastUpdate", 2);
 
 var from   = getArg("from");
 var to     = getArg("to");
@@ -2901,15 +2903,17 @@ function converterDialog(modal) {
 
 	function setDialogTitle(hWnd) {
 		var caption = dialogTitle;
-		var lastUpdate = getLastUpdate();
-		var lastUpdateStr;
-		if(lastUpdate == undefined || lastUpdate == Infinity)
-			lastUpdateStr = _localize("n/a");
-		else if(lastUpdate == 0)
-			lastUpdateStr = _localize("never");
-		else
-			lastUpdateStr = new Date(lastUpdate).toLocaleString();
-		caption += _localize(" [last update: %t]").replace("%t", lastUpdateStr);
+		if(showLastUpdate > 1 || showLastUpdate == 1 && curType == "&Currency") {
+			var lastUpdate = getLastUpdate();
+			var lastUpdateStr;
+			if(lastUpdate == undefined || lastUpdate == Infinity)
+				lastUpdateStr = _localize("n/a");
+			else if(lastUpdate == 0)
+				lastUpdateStr = _localize("never");
+			else
+				lastUpdateStr = new Date(lastUpdate).toLocaleString();
+			caption += _localize(" [last update: %t]").replace("%t", lastUpdateStr);
+		}
 		windowText(hWnd || hWndDialog, caption);
 	}
 	function getLastUpdate() {
