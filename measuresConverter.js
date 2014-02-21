@@ -1715,6 +1715,16 @@ function _localize(s) {
 		},
 		"Cancel update?": {
 			ru: "Отменить обновление?"
+		},
+
+		" [last update: %t]": {
+			ru: " [последнее обновление: %t]"
+		},
+		"n/a": {
+			ru: "н/д"
+		},
+		"never": {
+			ru: "никогда"
 		}
 	};
 	var lng;
@@ -2349,8 +2359,7 @@ function converterDialog(modal) {
 		msgLoop:
 		switch(uMsg) {
 			case 1: //WM_CREATE
-				// Dialog caption
-				windowText(hWnd, dialogTitle);
+				setDialogTitle(hWnd);
 
 				var y = typeY;
 				for(var type in measures) {
@@ -2815,6 +2824,8 @@ function converterDialog(modal) {
 						else
 							curItem2 = lbStrings[AkelPad.SendMessage(hWndListBox2, 0x188 /*LB_GETCURSEL*/, 0, 0)];
 						convertGUI();
+						if(curType == "&Currency")
+							setDialogTitle(hWnd);
 					break msgLoop;
 					case IDC_ROUND:
 						enableRoundValue();
@@ -2862,6 +2873,7 @@ function converterDialog(modal) {
 						for(var type in hWndTypes)
 							checked(hWndTypes[type], IDCTypes[type] == idc);
 						convertGUI();
+						setDialogTitle(hWnd);
 						break msgLoop;
 					}
 				}
@@ -2887,6 +2899,38 @@ function converterDialog(modal) {
 		return 0;
 	}
 
+	function setDialogTitle(hWnd) {
+		var caption = dialogTitle;
+		var lastUpdate = getLastUpdate();
+		var lastUpdateStr;
+		if(lastUpdate == undefined || lastUpdate == Infinity)
+			lastUpdateStr = _localize("n/a");
+		else if(lastUpdate == 0)
+			lastUpdateStr = _localize("never");
+		else
+			lastUpdateStr = new Date(lastUpdate).toLocaleString();
+		caption += _localize(" [last update: %t]").replace("%t", lastUpdateStr);
+		windowText(hWnd || hWndDialog, caption);
+	}
+	function getLastUpdate() {
+		var selected = curType == "&Currency" && curItem && curItem2
+			? [curItem, curItem2]
+			: selectedItems["&Currency"];
+		if(!selected)
+			return undefined;
+		var currencies = measures["&Currency"];
+		return Math.min(
+			getLastUpdateForCurrency(currencies[selected[0]]),
+			getLastUpdateForCurrency(currencies[selected[1]])
+		);
+	}
+	function getLastUpdateForCurrency(code) {
+		if(typeof code != "string")
+			return Infinity;
+		if(!currencyRatios[code])
+			return 0;
+		return currencyRatios[code].timestamp;
+	}
 	function draw(type, hWndDialog, typeChanged) {
 		setRedraw(hWndDialog, false);
 
@@ -3196,6 +3240,7 @@ function converterDialog(modal) {
 						oSys.Call("user32::SetFocus", hWndIts2[primary ? curItem2 : curItem]);
 				}
 				convertGUI();
+				setDialogTitle();
 				return true;
 			}
 		}
@@ -3428,8 +3473,10 @@ function converterDialog(modal) {
 		return true;
 	}
 	function onCodeUpdated(code) {
-		if(code && curType == "&Currency" && (measures[curType][curItem] == code || measures[curType][curItem2] == code))
+		if(code && curType == "&Currency" && (measures[curType][curItem] == code || measures[curType][curItem2] == code)) {
 			convertGUI();
+			setDialogTitle();
+		}
 	}
 
 	function restoreWindowPosition(hWnd, hWndParent) {
