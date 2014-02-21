@@ -2914,6 +2914,9 @@ function converterDialog(modal) {
 				lastUpdateStr = new Date(lastUpdate).toLocaleString();
 			caption += _localize(" [last update: %t]").replace("%t", lastUpdateStr);
 		}
+		else if(!showLastUpdate) {
+			setDialogTitle = function() {};
+		}
 		windowText(hWnd || hWndDialog, caption);
 	}
 	function getLastUpdate() {
