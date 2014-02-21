@@ -1724,6 +1724,9 @@ function _localize(s) {
 		"n/a": {
 			ru: "н/д"
 		},
+		"now…": {
+			ru: "сейчас…"
+		},
 		"never": {
 			ru: "никогда"
 		}
@@ -2909,7 +2912,7 @@ function converterDialog(modal) {
 			if(lastUpdate == undefined || lastUpdate == Infinity)
 				lastUpdateStr = _localize("n/a");
 			else if(lastUpdate == 0)
-				lastUpdateStr = _localize("never");
+				lastUpdateStr = _localize(asyncUpdater.activeRequests ? "now…" : "never");
 			else
 				lastUpdateStr = new Date(lastUpdate).toLocaleString();
 			caption += _localize(" [last update: %t]").replace("%t", lastUpdateStr);
@@ -3416,8 +3419,8 @@ function converterDialog(modal) {
 				onCodeUpdated(code);
 				if(update._btnLabel && !pendingUpdate) {
 					windowText(hWndUpdate, update._btnLabel);
-					if(curType != "&Currency")
-						setDialogTitle();
+					//if(curType != "&Currency")
+					setDialogTitle();
 				}
 				if(
 					!report
@@ -3467,6 +3470,7 @@ function converterDialog(modal) {
 			},
 			maskInclude
 		);
+		setDialogTitle();
 	}
 	function cancelUpdate() {
 		if(!asyncUpdater.activeRequests || asyncUpdater.aborted)
