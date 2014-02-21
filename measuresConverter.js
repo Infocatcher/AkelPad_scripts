@@ -3414,8 +3414,11 @@ function converterDialog(modal) {
 			},
 			function onComplete(state, code) {
 				onCodeUpdated(code);
-				if(update._btnLabel && !pendingUpdate)
+				if(update._btnLabel && !pendingUpdate) {
 					windowText(hWndUpdate, update._btnLabel);
+					if(curType != "&Currency")
+						setDialogTitle();
+				}
 				if(
 					!report
 					|| (
