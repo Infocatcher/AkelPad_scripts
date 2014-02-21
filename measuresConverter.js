@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/measuresConverter.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/measuresConverter.js
 
-// (c) Infocatcher 2011-2013
-// version 0.2.6 - 2013-11-06
+// (c) Infocatcher 2011-2014
+// version 0.2.7 - 2014-02-21
 
 //===================
 // Convert measures (internal) and currency (used cached data from exchange-rates.org, fxexchangerate.com and bitcoincharts.com)
