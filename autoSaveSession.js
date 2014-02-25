@@ -26,7 +26,11 @@ var hMainWnd = AkelPad.GetMainWnd();
 var oSys = AkelPad.SystemFunction();
 var minDelay = AkelPad.GetArgValue("minDelay", 8e3);
 var sessionName = AkelPad.GetArgValue("session", "OnExit");
+
+var asapDelay = 250;
+
 var timer = 0;
+var lastSave = 0;
 
 if(hMainWnd) {
 	if(
@@ -93,7 +97,8 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 	if(!AkelPad.GetEditFile(0))
 		return;
 
-	timer = setTimeout(saveSession, minDelay);
+	var delay = new Date().getTime() - lastSave > minDelay ? asapDelay : minDelay;
+	timer = setTimeout(saveSession, delay);
 }
 function saveSession() {
 	if(!oSys.Call("user32::IsWindowEnabled", hMainWnd)) {
@@ -101,6 +106,7 @@ function saveSession() {
 		return;
 	}
 	timer = 0;
+	lastSave = new Date().getTime();
 	AkelPad.Call("Sessions::Main", 2, sessionName);
 	//oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, "Save: " + new Date().toLocaleString());
 }
