@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/autoSaveSession.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/autoSaveSession.js
 
-// (c) Infocatcher 2012-2013
-// version 0.2.0pre5 - 2013-05-27
+// (c) Infocatcher 2012-2014
+// version 0.2.0pre6 - 2014-02-25
 
 // Automatically saves current session after selection or scroll changes
 // Required Sessions plugin!
