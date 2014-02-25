@@ -11,6 +11,7 @@
 // Arguments:
 //   -startupDelay=1500    - (in ms) ignore all changes just after startup
 //   -minDelay=8000        - (in ms) minimum interval between two saves
+//   -smallDelay=500       - (in ms) minimum daley between change and save
 //   -session="OnExit"     - name of session file
 
 // Usage:
@@ -30,9 +31,8 @@ var stopWait = new Date().getTime() + startupDelay;
 var hMainWnd = AkelPad.GetMainWnd();
 var oSys = AkelPad.SystemFunction();
 var minDelay = AkelPad.GetArgValue("minDelay", 8e3);
+var smallDelay = AkelPad.GetArgValue("smallDelay", 500);
 var sessionName = AkelPad.GetArgValue("session", "OnExit");
-
-var asapDelay = 250;
 
 var timer = 0;
 var lastSave = 0;
@@ -102,7 +102,7 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 	if(!AkelPad.GetEditFile(0))
 		return;
 
-	var delay = new Date().getTime() - lastSave > minDelay ? asapDelay : minDelay;
+	var delay = new Date().getTime() - lastSave > minDelay ? smallDelay : minDelay;
 	timer = setTimeout(saveSession, delay);
 }
 function saveSession() {
