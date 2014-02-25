@@ -8,6 +8,11 @@
 // Automatically saves current session after selection or scroll changes
 // Required Sessions plugin!
 
+// Arguments:
+//   -startupDelay=1500    - (in ms) ignore all changes just after startup
+//   -minDelay=8000        - (in ms) minimum interval between two saves
+//   -session="OnExit"     - name of session file
+
 // Usage:
 // add
 //   /Call("Scripts::Main", 1, "autoSaveSession.js")
