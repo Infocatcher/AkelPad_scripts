@@ -24,7 +24,7 @@
 
 // Arguments:
 //   -preferFXExchangeRate=true    - prefer data from fxexchangerate.com (faster updates)
-//   -offlineExpire=24*60*60*1000  - currency ratio expires after this time (in milliseconds)
+//   -offlineExpire=22*60*60*1000  - currency ratio expires after this time (in milliseconds)
 //   -updateOnStartup=true         - asynchronous update currency data on startup
 //   -updateOnStartupReport=1      - 0 - don't show, 1 - only errors, 2 - always
 //   -convertNumbers=true          - convert numbers (1234.5 -> 1 234,5)
@@ -1754,7 +1754,7 @@ var savePosition = getArg("savePosition", true);
 var saveOffline  = getArg("saveOffline",  true);
 
 var preferFXExchangeRate  = getArg("preferFXExchangeRate", true);
-var offlineExpire         = getArg("offlineExpire", 24*60*60*1000);
+var offlineExpire         = getArg("offlineExpire", 22*60*60*1000);
 var updateOnStartup       = getArg("updateOnStartup", true);
 var updateOnStartupReport = getArg("updateOnStartupReport", 1);
 var convertNumbers        = getArg("convertNumbers", true);
