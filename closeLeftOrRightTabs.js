@@ -1,5 +1,6 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p= ~todo
+// http://akelpad.sourceforge.net/forum/viewtopic.php?p=24138#24138
 // http://infocatcher.ucoz.net/js/akelpad_scripts/closeLeftOrRightTabs.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/closeLeftOrRightTabs.js
 
 // (c) Infocatcher 2014
 // version 0.1.0 - 2014-03-01
