@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/tabsNextPrevious.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/tabsNextPrevious.js
 
-// (c) Infocatcher 2011
-// version 0.1.1 - 2011-11-16
+// (c) Infocatcher 2011, 2014
+// version 0.1.2 - 2014-03-03
 
 //===================
 // Switch between tabs in order of them usage (temporary check "Switch tabs: next-previous" option)
