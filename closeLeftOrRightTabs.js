@@ -17,7 +17,7 @@
 var toRight = WScript.Arguments.length ? WScript.Arguments(0) != "-left" : true;
 
 var hMainWnd = AkelPad.GetMainWnd();
-if(hMainWnd) {
+if(hMainWnd && AkelPad.IsMDI()) {
 	var tabOpts = AkelPad.SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 157 /*MI_TABOPTIONSMDI*/, 0);
 	var forceRightLeft = !(tabOpts & 0x20000 /*TAB_SWITCH_RIGHTLEFT*/);
 	if(forceRightLeft)
@@ -27,6 +27,9 @@ if(hMainWnd) {
 
 	if(forceRightLeft)
 		AkelPad.SendMessage(hMainWnd, 1219 /*AKD_SETMAININFO*/, 157 /*MI_TABOPTIONSMDI*/, tabOpts);
+}
+else {
+	AkelPad.MessageBox(hMainWnd, "MDI or PMDI window mode required!", WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
 }
 
 function closeTabs(toRight) {
