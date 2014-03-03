@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/tabsSwitchAlt.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/tabsSwitchAlt.js
 
-// (c) Infocatcher 2011
-// version 0.1.1 - 2011-11-16
+// (c) Infocatcher 2011, 2014
+// version 0.1.2 - 2014-03-03
 
 //===================
 // Switch between tabs using alternative way
