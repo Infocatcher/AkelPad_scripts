@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/tabsRightLeft.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/tabsRightLeft.js
 
-// (c) Infocatcher 2011
-// version 0.1.2 - 2011-11-16
+// (c) Infocatcher 2011, 2014
+// version 0.1.3 - 2014-03-03
 
 //===================
 // Switch between tabs in order of them arrangement (temporary check "Switch tabs: right-left" option)
