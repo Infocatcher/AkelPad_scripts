@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/closeLeftOrRightTabs.js
 
 // (c) Infocatcher 2014
-// version 0.1.0 - 2014-03-01
+// version 0.1.1 - 2014-03-03
 
 //===================
 // Close tabs to the left or right (temporary check "Switch tabs: right-left" option)
