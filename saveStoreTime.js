@@ -19,5 +19,5 @@ if(hMainWnd) {
 		AkelPad.Command(4252 /*IDM_OPTIONS_SAVETIME*/);
 	AkelPad.Command(4105 /*IDM_FILE_SAVE*/);
 	if(!saveTime)
-		AkelPad.SendMessage(hMainWnd, 1219 /*AKD_SETMAININFO*/, 148 /*MI_SAVETIME*/, saveTime);
+		AkelPad.SendMessage(hMainWnd, 1219 /*AKD_SETMAININFO*/, 148 /*MIS_SAVETIME*/, saveTime);
 }

@@ -25,7 +25,7 @@ if(hMainWnd && AkelPad.IsMDI()) {
 	var isNextPrev = tabOpts & 0x10000 /*TAB_SWITCH_NEXTPREV*/;
 	AkelPad.Command(isNextPrev ? 4311 /*IDM_WINDOW_TABSWITCH_RIGHTLEFT*/ : 4310 /*IDM_WINDOW_TABSWITCH_NEXTPREV*/);
 	selectTab(next);
-	AkelPad.SendMessage(hMainWnd, 1219 /*AKD_SETMAININFO*/, 157 /*MI_TABOPTIONSMDI*/, tabOpts);
+	AkelPad.SendMessage(hMainWnd, 1219 /*AKD_SETMAININFO*/, 157 /*MIS_TABOPTIONSMDI*/, tabOpts);
 }
 else {
 	AkelPad.MessageBox(hMainWnd, "MDI or PMDI window mode required!", WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
