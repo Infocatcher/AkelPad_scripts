@@ -17,27 +17,17 @@
 var next = WScript.Arguments.length ? WScript.Arguments(0) != "-prev" : true;
 
 var hMainWnd = AkelPad.GetMainWnd();
-var oSys = AkelPad.SystemFunction();
 
 if(hMainWnd) {
-	//var hMenuMain = oSys.Call("user32::GetMenu", hMainWnd);
-	var hMenuMain = AkelPad.SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 21 /*MI_MENUMAIN*/, 0);
-	if(hMenuMain) {
-		var dwState = oSys.Call(
-			"user32::GetMenuState",
-			hMenuMain,
-			4310 /*IDM_WINDOW_TABSWITCH_NEXTPREV*/,
-			0 /*MF_BYCOMMAND*/
-		);
-		if(dwState & 0x8 /*MF_CHECKED*/) {
-			AkelPad.Command(4311 /*IDM_WINDOW_TABSWITCH_RIGHTLEFT*/);
-			selectTab(next);
-			AkelPad.Command(4310 /*IDM_WINDOW_TABSWITCH_NEXTPREV*/);
-		}
-		else {
-			selectTab(next);
-		}
-	}
+	var tabOpts = AkelPad.SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 157 /*MI_TABOPTIONSMDI*/, 0);
+	var forceRightLeft = !(tabOpts & 0x20000 /*TAB_SWITCH_RIGHTLEFT*/);
+	if(forceRightLeft)
+		AkelPad.Command(4311 /*IDM_WINDOW_TABSWITCH_RIGHTLEFT*/);
+
+	selectTab(next);
+
+	if(forceRightLeft)
+		AkelPad.SendMessage(hMainWnd, 1219 /*AKD_SETMAININFO*/, 157 /*MI_TABOPTIONSMDI*/, tabOpts);
 }
 
 function selectTab(next) {
