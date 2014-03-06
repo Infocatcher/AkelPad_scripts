@@ -41,9 +41,12 @@ var lastSave = 0;
 var lpTimerCallback = 0;
 var nIDEvent = 10;
 
+debug && _log("start");
+
 var hScript = AkelPad.ScriptHandle(WScript.ScriptName, 3 /*SH_FINDSCRIPT*/);
 if(hScript && AkelPad.ScriptHandle(hScript, 13 /*SH_GETMESSAGELOOP*/)) {
 	// Script is running, second call close it
+	debug && _log("quit");
 	AkelPad.ScriptHandle(hScript, 33 /*SH_CLOSESCRIPT*/);
 	WScript.Quit();
 }
@@ -125,7 +128,7 @@ function saveSession() {
 	timer = 0;
 	lastSave = new Date().getTime();
 	AkelPad.Call("Sessions::Main", 2, sessionName);
-	debug && oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, "Save: " + new Date().toLocaleString());
+	debug && _log("saved at " + new Date().toLocaleString());
 }
 function saveSessionDelayed(delay) {
 	lpTimerCallback = oSys.RegisterCallback("saveSessionTimerProc");
@@ -144,4 +147,7 @@ function destroyTimer() {
 		oSys.UnregisterCallback(lpTimerCallback);
 		lpTimerCallback = 0;
 	}
+}
+function _log(s) {
+	oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, WScript.ScriptName + ": " + s);
 }
