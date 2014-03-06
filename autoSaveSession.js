@@ -33,6 +33,7 @@ var oSys = AkelPad.SystemFunction();
 var minDelay = AkelPad.GetArgValue("minDelay", 8e3);
 var smallDelay = AkelPad.GetArgValue("smallDelay", 500);
 var sessionName = AkelPad.GetArgValue("session", "OnExit");
+var debug = AkelPad.GetArgValue("debug", false);
 
 var timer = 0;
 var lastSave = 0;
@@ -117,7 +118,7 @@ function saveSession() {
 	timer = 0;
 	lastSave = new Date().getTime();
 	AkelPad.Call("Sessions::Main", 2, sessionName);
-	//oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, "Save: " + new Date().toLocaleString());
+	debug && oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, "Save: " + new Date().toLocaleString());
 }
 function saveSessionDelayed(delay) {
 	lpTimerCallback = oSys.RegisterCallback("saveSessionTimerProc");
