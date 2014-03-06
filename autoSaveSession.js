@@ -37,6 +37,9 @@ var sessionName = AkelPad.GetArgValue("session", "OnExit");
 var timer = 0;
 var lastSave = 0;
 
+var lpTimerCallback = 0;
+var nIDEvent = 10;
+
 if(hMainWnd) {
 	if(
 		AkelPad.WindowSubClass(
@@ -62,6 +65,7 @@ if(hMainWnd) {
 
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
 			AkelPad.WindowUnsubClass(3 /*WSC_FRAMEPROC*/);
+			destroyTimer();
 		}
 		else {
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
@@ -103,11 +107,11 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 		return;
 
 	var delay = new Date().getTime() - lastSave > minDelay ? smallDelay : minDelay;
-	timer = setTimeout(saveSession, delay);
+	timer = saveSessionDelayed(delay);
 }
 function saveSession() {
 	if(!oSys.Call("user32::IsWindowEnabled", hMainWnd)) {
-		timer = setTimeout(saveSession, minDelay);
+		timer = saveSessionDelayed(minDelay);
 		return;
 	}
 	timer = 0;
@@ -115,17 +119,21 @@ function saveSession() {
 	AkelPad.Call("Sessions::Main", 2, sessionName);
 	//oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, "Save: " + new Date().toLocaleString());
 }
-function setTimeout(f, d) {
-	var window = new ActiveXObject("htmlfile").parentWindow;
-	setTimeout = function(f, d) {
-		try {
-			return window.setTimeout(f, d);
-		}
-		catch(e) {
-		}
-		//oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, "setTimeout() failed! " + new Date().toLocaleString());
-		window = new ActiveXObject("htmlfile").parentWindow;
-		return window.setTimeout(f, d);
+function saveSessionDelayed(delay) {
+	lpTimerCallback = oSys.RegisterCallback("saveSessionTimerProc");
+	saveSessionDelayed = function(delay) {
+		return oSys.Call("user32::SetTimer", hMainWnd, nIDEvent, delay, lpTimerCallback);
 	};
-	return setTimeout(f, d);
+	return saveSessionDelayed(delay);
+}
+function saveSessionTimerProc(hWnd, uMsg, nIDEvent, dwTime) {
+	oSys.Call("user32::KillTimer", hMainWnd, nIDEvent);
+	saveSession();
+}
+function destroyTimer() {
+	if(lpTimerCallback) {
+		oSys.Call("user32::KillTimer", hMainWnd, nIDEvent);
+		oSys.UnregisterCallback(lpTimerCallback);
+		lpTimerCallback = 0;
+	}
 }
