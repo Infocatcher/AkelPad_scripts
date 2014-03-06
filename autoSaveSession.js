@@ -44,9 +44,9 @@ if(hMainWnd) {
 			mainCallback,
 			0x4E /*WM_NOTIFY*/,
 			0x416 /*AKDN_FRAME_ACTIVATE*/,
-			0x418 /*AKDN_FRAME_DESTROY*/,
+			0x418 /*AKDN_FRAME_DESTROY*/
 			//0x436 /*AKDN_OPENDOCUMENT_FINISH*/
-			0x406 /*AKDN_MAIN_ONFINISH*/
+			//0x406 /*AKDN_MAIN_ONFINISH*/
 		)
 	) {
 		if(
@@ -74,10 +74,10 @@ if(hMainWnd) {
 }
 
 function mainCallback(hWnd, uMsg, wParam, lParam) {
-	if(uMsg == 0x406 /*AKDN_MAIN_ONFINISH*/) {
-		oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
-		return;
-	}
+	//if(uMsg == 0x406 /*AKDN_MAIN_ONFINISH*/) {
+	//	oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
+	//	return;
+	//}
 
 	if(timer) // Already scheduled
 		return;
