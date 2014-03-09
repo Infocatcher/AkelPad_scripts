@@ -1661,18 +1661,11 @@ function _localize(s) {
 		"Round:": {
 			ru: "Округлять:"
 		},
-		"Round:": {
-			ru: "Округлять:"
-		},
-
 		"Measures": {
 			ru: "Величины"
 		},
 		"Sort": {
 			ru: "Сортировать"
-		},
-		"Measures": {
-			ru: "Величины"
 		},
 
 		"Currency": {
