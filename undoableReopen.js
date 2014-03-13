@@ -14,7 +14,7 @@ function undoableReopen() {
 	if(!file)
 		return;
 
-	var text = AkelPad.ReadFile(file);
+	var text = AkelPad.ReadFile(file, 0, AkelPad.GetEditCodePage(0), AkelPad.GetEditBOM(0));
 	if(text == AkelPad.GetTextRange(0, -1, 4 - AkelPad.GetEditNewLine(0)))
 		return;
 
