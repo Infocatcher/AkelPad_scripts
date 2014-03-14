@@ -1,13 +1,14 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/undoableReopen.js
 
-// (c) Infocatcher 2012
-// version 0.1.0pre - 2012-05-11
+// (c) Infocatcher 2012, 2014
+// version 0.1.0pre2 - 2014-03-14
 
 // Reopen file and preserve undo/redo buffer (just replace all text, if it was changed)
 
+var hMainWnd = AkelPad.GetMainWnd();
 var oSys = AkelPad.SystemFunction();
 var hWndEdit = AkelPad.GetEditWnd();
-if(hWndEdit)
+if(hMainWnd && hWndEdit)
 	undoableReopen();
 function undoableReopen() {
 	var file = AkelPad.GetEditFile(0);
@@ -15,8 +16,10 @@ function undoableReopen() {
 		return;
 
 	var text = AkelPad.ReadFile(file, 0, AkelPad.GetEditCodePage(0), AkelPad.GetEditBOM(0));
-	if(text == AkelPad.GetTextRange(0, -1, 4 - AkelPad.GetEditNewLine(0)))
+	if(text == AkelPad.GetTextRange(0, -1, 4 - AkelPad.GetEditNewLine(0))) {
+		AkelPad.SendMessage(hMainWnd, 1229 /*AKD_SETMODIFY*/, hWndEdit, false);
 		return;
+	}
 
 	// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=13296#13296
 	var lpSel = AkelPad.MemAlloc(_X64 ? 56 : 28 /*sizeof(AESELECTION)*/);
@@ -31,6 +34,7 @@ function undoableReopen() {
 	noScroll(function() {
 		AkelPad.SetSel(0, -1);
 		AkelPad.ReplaceSel(text);
+		AkelPad.SendMessage(hMainWnd, 1229 /*AKD_SETMODIFY*/, hWndEdit, false);
 
 		var dwFlags = AkelPad.MemRead(lpSel + (_X64 ? 48 : 24) /*AESELECTION.dwFlags*/, 3 /*DT_DWORD*/);
 		AkelPad.MemCopy(lpSel + (_X64 ? 48 : 24) /*AESELECTION.dwFlags*/, dwFlags | 0x808 /*AESELT_LOCKSCROLL|AESELT_INDEXUPDATE*/, 3 /*DT_DWORD*/);
