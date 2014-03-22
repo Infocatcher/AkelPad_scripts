@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.5 - 2013-10-12
-// Based on scripts from http://jsbeautifier.org/ [2013-11-23 01:01:40 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-03-20 15:04:08 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -433,7 +433,7 @@ function detectXMLType(str) {
                 start_line_index: output_lines.length,
                 had_comment: false,
                 ternary_depth: 0
-            }
+            };
             return next_flags;
         }
 
@@ -1879,19 +1879,11 @@ function detectXMLType(str) {
     }
 
 
-    if (typeof define === "function") {
+    if (typeof define === "function" && define.amd) {
         // Add support for require.js
-        if (typeof define.amd === "undefined") {
-            define(function(require, exports, module) {
-                exports.js_beautify = js_beautify;
-            });
-        } else {
-            // if is AMD ( https://github.com/amdjs/amdjs-api/wiki/AMD#defineamd-property- )
-            define([], function() {
-                return js_beautify;
-            });
-        }
-
+        define([], function() {
+            return js_beautify;
+        });
     } else if (typeof exports !== "undefined") {
         // Add support for CommonJS. Just put this file somewhere on your require.paths
         // and you will be able to `var js_beautify = require("beautify").js_beautify`.
@@ -1942,7 +1934,7 @@ function detectXMLType(str) {
 
     Written by Harutyun Amirjanyan, (amirjanyan@gmail.com)
 
-    Based on code initially developed by: Einar Lielmanis, <elfz@laacz.lv>
+    Based on code initially developed by: Einar Lielmanis, <einar@jsbeautifier.org>
         http://jsbeautifier.org/
 
     Usage:
@@ -2273,10 +2265,10 @@ function detectXMLType(str) {
     };
 
     /*global define */
-    if (typeof define === "function") {
+    if (typeof define === "function" && define.amd) {
         // Add support for require.js
-        define(function (require, exports, module) {
-            exports.css_beautify = css_beautify;
+        define([], function () {
+            return css_beautify;
         });
     } else if (typeof exports !== "undefined") {
         // Add support for CommonJS. Just put this file somewhere on your require.paths
@@ -2328,7 +2320,7 @@ function detectXMLType(str) {
 
   Written by Nochum Sossonko, (nsossonko@hotmail.com)
 
-  Based on code initially developed by: Einar Lielmanis, <elfz@laacz.lv>
+  Based on code initially developed by: Einar Lielmanis, <einar@jsbeautifier.org>
     http://jsbeautifier.org/
 
   Usage:
@@ -2392,7 +2384,7 @@ function detectXMLType(str) {
 
         // backwards compatibility to 1.3.4
         if ((options.wrap_line_length === undefined || parseInt(options.wrap_line_length, 10) === 0) &&
-                (options.max_char === undefined || parseInt(options.max_char, 10) === 0)) {
+                (options.max_char !== undefined && parseInt(options.max_char, 10) !== 0)) {
             options.wrap_line_length = options.max_char;
         }
 
@@ -3103,9 +3095,9 @@ function detectXMLType(str) {
         return multi_parser.output.join('');
     }
 
-    if (typeof define === "function") {
+    if (typeof define === "function" && define.amd) {
         // Add support for require.js
-        define(["./beautify.js", "./beautify-css.js"], function(js_beautify, css_beautify) {
+        define(["./beautify", "./beautify-css"], function(js_beautify, css_beautify) {
             return {
               html_beautify: function(html_source, options) {
                 return style_html(html_source, options, js_beautify, css_beautify);
@@ -5181,20 +5173,33 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bth('<div class=\'{{#if thingIs "value"}}content{{/if}}\'></div>');
         bth('<div class=\'{{#if thingIs \'value\'}}content{{/if}}\'></div>');
 
-
         opts.wrap_line_length = 0;
         //...---------1---------2---------3---------4---------5---------6---------7
         //...1234567890123456789012345678901234567890123456789012345678901234567890
-        bth('<div>Some test text that should wrap_inside_this section here.</div>',
+        bth('<div>Some text that should not wrap at all.</div>',
             /* expected */
-            '<div>Some test text that should wrap_inside_this section here.</div>');
+            '<div>Some text that should not wrap at all.</div>');
+
+        // A value of 0 means no max line length, and should not wrap.
+        //...---------1---------2---------3---------4---------5---------6---------7---------8---------9--------10--------11--------12--------13--------14--------15--------16--------17--------18--------19--------20--------21--------22--------23--------24--------25--------26--------27--------28--------29
+        //...12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+        bth('<div>Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all.</div>',
+            /* expected */
+            '<div>Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all.</div>');
 
         opts.wrap_line_length = "0";
         //...---------1---------2---------3---------4---------5---------6---------7
         //...1234567890123456789012345678901234567890123456789012345678901234567890
-        bth('<div>Some test text that should wrap_inside_this section here.</div>',
+        bth('<div>Some text that should not wrap at all.</div>',
             /* expected */
-            '<div>Some test text that should wrap_inside_this section here.</div>');
+            '<div>Some text that should not wrap at all.</div>');
+
+        // A value of "0" means no max line length, and should not wrap
+        //...---------1---------2---------3---------4---------5---------6---------7---------8---------9--------10--------11--------12--------13--------14--------15--------16--------17--------18--------19--------20--------21--------22--------23--------24--------25--------26--------27--------28--------29
+        //...12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+        bth('<div>Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all.</div>',
+            /* expected */
+            '<div>Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all.</div>');
 
         //BUGBUG: This should wrap before 40 not after.
         opts.wrap_line_length = 40;
@@ -5205,7 +5210,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '<div>Some test text that should wrap_inside_this\n' +
             '    section here.</div>');
 
-       opts.wrap_line_length = "40";
+        opts.wrap_line_length = "40";
         //...---------1---------2---------3---------4---------5---------6---------7
         //...1234567890123456789012345678901234567890123456789012345678901234567890
         bth('<div>Some test text that should wrap_inside_this section here.</div>',
