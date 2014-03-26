@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.5 - 2013-10-12
-// Based on scripts from http://jsbeautifier.org/ [2014-03-20 15:04:08 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-03-25 16:54:05 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -470,6 +470,7 @@ function detectXMLType(str) {
         opt.break_chained_methods = (options.break_chained_methods === undefined) ? false : options.break_chained_methods;
         opt.max_preserve_newlines = (options.max_preserve_newlines === undefined) ? 0 : parseInt(options.max_preserve_newlines, 10);
         opt.space_in_paren = (options.space_in_paren === undefined) ? false : options.space_in_paren;
+        opt.space_in_empty_paren = (options.space_in_empty_paren === undefined) ? false : options.space_in_empty_paren;
         opt.jslint_happy = (options.jslint_happy === undefined) ? false : options.jslint_happy;
         opt.keep_array_indentation = (options.keep_array_indentation === undefined) ? false : options.keep_array_indentation;
         opt.space_before_conditional = (options.space_before_conditional === undefined) ? true : options.space_before_conditional;
@@ -1366,7 +1367,7 @@ function detectXMLType(str) {
                 allow_wrap_or_preserved_newline();
             }
             if (opt.space_in_paren) {
-                if (last_type === 'TK_START_EXPR') {
+                if (last_type === 'TK_START_EXPR' && ! opt.space_in_empty_paren) {
                     // () [] no inner space in empty parens like these, ever, ref #320
                     trim_output();
                     output_space_before_token = false;
@@ -2378,7 +2379,8 @@ function detectXMLType(str) {
             brace_style,
             unformatted,
             preserve_newlines,
-            max_preserve_newlines;
+            max_preserve_newlines,
+            indent_handlebars;
 
         options = options || {};
 
@@ -4841,7 +4843,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'a = [b, c, d];');
         bt('a= f[b];',
             'a = f[b];');
-        opts.space_in_paren = true
+        opts.space_in_paren = true;
         bt('if(p) foo(a,b)', 'if ( p ) foo( a, b )');
         bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
            'try {\n    while ( true ) {\n        willThrow()\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
@@ -4854,6 +4856,20 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'a = [ b, c, d ];');
         bt('a= f[b];',
             'a = f[ b ];');
+        opts.space_in_empty_paren = true;
+        bt('if(p) foo(a,b)', 'if ( p ) foo( a, b )');
+        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
+           'try {\n    while ( true ) {\n        willThrow( )\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
+        bt('((e/((a+(b)*c)-d))^2)*5;', '( ( e / ( ( a + ( b ) * c ) - d ) ) ^ 2 ) * 5;');
+        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
+            'function f( a, b ) {\n    if ( a ) b( )\n}\n\nfunction g( a, b ) {\n    if ( !a ) b( )\n}');
+        bt('a=[];',
+            'a = [ ];');
+        bt('a=[b,c,d];',
+            'a = [ b, c, d ];');
+        bt('a= f[b];',
+            'a = f[ b ];');
+        opts.space_in_empty_paren = false;
         opts.space_in_paren = false;
 
         // Test that e4x literals passed through when e4x-option is enabled
