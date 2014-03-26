@@ -46,6 +46,9 @@
 //   -forceNoCache                - prevent caching during update
 //   -test                        - force run the tests
 
+// You also can pass any arguments to js_beautify()/html_beautify() using "_raw_" prefix, example:
+//   -_raw_indent_handlebars=true - add "indent_handlebars: true" to options object
+
 // Usage:
 //   Call("Scripts::Main", 1, "jsBeautifier.js")
 //   Call("Scripts::Main", 1, "jsBeautifier.js", "-css=true")
@@ -124,6 +127,15 @@ var indentChar = indentSize == 1
 	? "\t"
 	: " ";
 
+function getRawArgs() {
+	var rawArgs = {};
+	var args = getArg._args;
+	for(var arg in args)
+		if(arg.substr(0, 5) == "_raw_")
+			rawArgs[arg.substr(5)] = args[arg];
+	return rawArgs;
+}
+
 // Limitations with JScript in WSH:
 // 1) string[number] doesn't work - string.charAt(number) should be used instead
 // 2) Strange things with string.split(regexp):
@@ -164,6 +176,10 @@ function beautify(source, syntax) { // Based on beautify function
 		unformatted:              unformattedTags,
 		indent_inner_html:        indentInnerHTML
 	};
+	var rawArgs = getRawArgs();
+	for(var rawArg in rawArgs)
+		if(opts[rawArg] === undefined)
+			opts[rawArg] = rawArgs[rawArg];
 
 	var res = "";
 	if(looks_like_html(source)) {
@@ -5816,7 +5832,7 @@ function setRedraw(hWnd, bRedraw) {
 
 function getArg(argName, defaultVal) {
 	var args = {};
-	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
+	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; ++i)
 		if(/^[-\/](\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
 			args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
 	getArg = function(argName, defaultVal) {
@@ -5825,5 +5841,6 @@ function getArg(argName, defaultVal) {
 			? defaultVal
 			: args[argName];
 	};
+	getArg._args = args;
 	return getArg(argName, defaultVal);
 }
