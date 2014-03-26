@@ -26,6 +26,8 @@
 //              ="end-expand"     - end braces on own line
 //   -keepArrayIndentation=true   - keep array indentation
 //   -breakChainedMethods=false   - break lines on chained methods
+//   -spaceInParen=true           - add padding spaces within paren, i.e. f( a, b )
+//   -spaceInEmptyParen=true      - add a single space inside empty paren, i.e. f( )
 //   -jsLintHappy=true            - use "function ()" instead of "function()"
 //   -spaceBeforeConditional=true - space before conditional: "if(x)" / "if (x)"
 //   -indentScripts="keep"        - HTML <style>, <script> formatting: keep indent level of the tag
@@ -95,6 +97,8 @@ var maxPreserveNewlines    = getArg("maxPreserveNewlines", 2);
 var braceStyle             = getArg("braceStyle", "end-expand");
 var keepArrayIndentation   = getArg("keepArrayIndentation", true);
 var breakChainedMethods    = getArg("breakChainedMethods", false);
+var spaceInParen           = getArg("spaceInParen", false);
+var spaceInEmptyParen      = getArg("spaceInEmptyParen", false);
 var jsLintHappy            = getArg("jsLintHappy", false);
 var spaceBeforeConditional = getArg("spaceBeforeConditional", false);
 var indentScripts          = getArg("indentScripts", "normal");
@@ -147,6 +151,8 @@ function beautify(source, syntax) { // Based on beautify function
 		brace_style:              braceStyle,
 		keep_array_indentation:   keepArrayIndentation,
 		break_chained_methods:    breakChainedMethods,
+		space_in_paren:           spaceInParen,
+		space_in_empty_paren:     spaceInEmptyParen,
 		jslint_happy:             jsLintHappy,
 		space_before_conditional: spaceBeforeConditional,
 		indent_scripts:           indentScripts,
