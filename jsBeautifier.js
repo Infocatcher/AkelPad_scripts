@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.5 - 2013-10-12
-// Based on scripts from http://jsbeautifier.org/ [2014-03-26 23:58:48 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-03-27 16:59:41 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -393,7 +393,7 @@ function detectXMLType(str) {
         punct = punct.split(' ');
 
         // words which should always start on new line.
-        line_starters = 'continue,try,throw,return,var,if,switch,case,default,for,while,break,function'.split(',');
+        line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function'.split(',');
 
         MODE = {
             BlockStatement: 'BlockStatement', // 'BLOCK'
@@ -1489,7 +1489,7 @@ function detectXMLType(str) {
             } else if (input_wanted_newline && !is_expression(flags.mode) &&
                 (last_type !== 'TK_OPERATOR' || (flags.last_text === '--' || flags.last_text === '++')) &&
                 last_type !== 'TK_EQUALS' &&
-                (opt.preserve_newlines || flags.last_text !== 'var')) {
+                (opt.preserve_newlines || !in_array(flags.last_text, ['var', 'let', 'const']))) {
 
                 print_newline();
             }
@@ -1631,7 +1631,7 @@ function detectXMLType(str) {
                     // no newline between 'return nnn'
                     output_space_before_token = true;
                 } else if (last_type !== 'TK_END_EXPR') {
-                    if ((last_type !== 'TK_START_EXPR' || token_text !== 'var') && flags.last_text !== ':') {
+                    if ((last_type !== 'TK_START_EXPR' || !in_array(token_text, ['var', 'let', 'const'])) && flags.last_text !== ':') {
                         // no need to force newline on 'var': for (var x = 0...)
                         if (token_text === 'if' && flags.last_word === 'else' && flags.last_text !== '{') {
                             // no newline for } else if {
@@ -1655,7 +1655,7 @@ function detectXMLType(str) {
             print_token();
             flags.last_word = token_text;
 
-            if (token_text === 'var') {
+            if (in_array(token_text, ['var', 'let', 'const'])) {
                 flags.var_line = true;
                 flags.var_line_reindented = false;
                 flags.var_line_tainted = false;
@@ -3661,6 +3661,12 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('var a = 1 var b = 2', "var a = 1\nvar b = 2");
         bt('var a=1, b=c[d], e=6;', 'var a = 1,\n    b = c[d],\n    e = 6;');
         bt('var a,\n    b,\n    c;');
+        bt('let a = 1 let b = 2', "let a = 1\nlet b = 2");
+        bt('let a=1, b=c[d], e=6;', 'let a = 1,\n    b = c[d],\n    e = 6;');
+        bt('let a,\n    b,\n    c;');
+        bt('const a = 1 const b = 2', "const a = 1\nconst b = 2");
+        bt('const a=1, b=c[d], e=6;', 'const a = 1,\n    b = c[d],\n    e = 6;');
+        bt('const a,\n    b,\n    c;');
         bt('a = " 12345 "');
         bt("a = ' 12345 '");
         bt('if (a == 1) b = 2;', "if (a == 1) b = 2;");
