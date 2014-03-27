@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.5 - 2013-10-12
-// Based on scripts from http://jsbeautifier.org/ [2014-03-25 16:54:05 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-03-26 23:58:48 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -388,7 +388,7 @@ function detectXMLType(str) {
         wordchar = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$'.split('');
         digits = '0123456789'.split('');
 
-        punct = '+ - * / % & ++ -- = += -= *= /= %= == === != !== > < >= <= >> << >>> >>>= >>= <<= && &= | || ! !! , : ? ^ ^= |= ::';
+        punct = '+ - * / % & ++ -- = += -= *= /= %= == === != !== > < >= <= >> << >>> >>>= >>= <<= && &= | || ! !! , : ? ^ ^= |= :: =>';
         punct += ' <%= <% %> <?= <? ?>'; // try to be a good boy and try not to break the markup language identifiers
         punct = punct.split(' ');
 
@@ -1091,7 +1091,7 @@ function detectXMLType(str) {
             }
 
 
-            if (c === "'" || c === '"' || // string
+            if (c === '`' || c === "'" || c === '"' || // string
                 (
                     (c === '/') || // regexp
                     (opt.e4x && c === "<" && input.slice(parser_pos - 1).match(/^<([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([-a-zA-Z:0-9_.]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*\/?\s*>/)) // xml
@@ -3775,6 +3775,10 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt("function x(){(a||b).c()}", "function x() {\n    (a || b).c()\n}");
         bt("function x(){return - 1}", "function x() {\n    return -1\n}");
         bt("function x(){return ! a}", "function x() {\n    return !a\n}");
+        bt("x => x", "x => x");
+        bt("(x) => x", "(x) => x");
+        bt("x => { x }", "x => {\n    x\n}");
+        bt("(x) => { x }", "(x) => {\n    x\n}");
 
         // a common snippet in jQuery plugins
         bt("settings = $.extend({},defaults,settings);", "settings = $.extend({}, defaults, settings);");
@@ -3803,6 +3807,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         test_fragment('"incomplete-string');
         test_fragment("'incomplete-string");
         test_fragment('/incomplete-regex');
+        test_fragment('`incomplete-template-string');
 
         test_fragment('{a:1},{a:2}', '{\n    a: 1\n}, {\n    a: 2\n}');
         test_fragment('var ary=[{a:1}, {a:2}];', 'var ary = [{\n    a: 1\n}, {\n    a: 2\n}];');
@@ -4893,6 +4898,10 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'a = f[ b ];');
         opts.space_in_empty_paren = false;
         opts.space_in_paren = false;
+
+        // Test template strings
+        bt('`This is a ${template} string.`', '`This is a ${template} string.`');
+        bt('`This\n  is\n  a\n  ${template}\n  string.`', '`This\n  is\n  a\n  ${template}\n  string.`');
 
         // Test that e4x literals passed through when e4x-option is enabled
         bt('xml=<a b="c"><d/><e>\n foo</e>x</a>;', 'xml = < a b = "c" > < d / > < e >\n    foo < /e>x</a > ;');
