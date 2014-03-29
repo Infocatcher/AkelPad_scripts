@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/restart.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/restart.js
 
-// (c) Infocatcher 2012-2013
-// version 0.1.1 - 2013-12-08
+// (c) Infocatcher 2012-2014
+// version 0.1.1+ - 2014-03-29
 
 // Restart AkelPad
 
@@ -79,8 +79,8 @@ cmd = cmd
 	.replace(/%workDir%/g, curDir)
 	.replace(/%akelExe%/g, akelExe)
 	.replace(/%session%/g, session);
-AkelPad.Command(4109); // Exit
 AkelPad.Exec(cmd, akelDir);
+AkelPad.Command(4109); // Exit
 
 function expandEnvironmentVariables(s) {
 	if(/^%a[\\\/]/.test(s))
