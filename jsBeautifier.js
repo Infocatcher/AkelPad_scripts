@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.5 - 2013-10-12
-// Based on scripts from http://jsbeautifier.org/ [2014-03-27 16:59:41 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-03-28 04:47:21 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -376,7 +376,7 @@ function detectXMLType(str) {
         var input, output_lines;
         var token_text, token_type, last_type, last_last_text, indent_string;
         var flags, previous_flags, flag_store;
-        var whitespace, wordchar, punct, parser_pos, line_starters, digits;
+        var whitespace, wordchar, punct, parser_pos, line_starters, reserved_words, digits;
         var prefix;
         var input_wanted_newline;
         var output_wrapped, output_space_before_token;
@@ -394,6 +394,8 @@ function detectXMLType(str) {
 
         // words which should always start on new line.
         line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function'.split(',');
+        reserved_words = line_starters.concat(['do', 'in', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof']);
+
 
         MODE = {
             BlockStatement: 'BlockStatement', // 'BLOCK'
@@ -411,6 +413,7 @@ function detectXMLType(str) {
             'TK_START_BLOCK': handle_start_block,
             'TK_END_BLOCK': handle_end_block,
             'TK_WORD': handle_word,
+            'TK_RESERVED': handle_word,
             'TK_SEMICOLON': handle_semicolon,
             'TK_STRING': handle_string,
             'TK_EQUALS': handle_equals,
@@ -843,14 +846,14 @@ function detectXMLType(str) {
 
         function start_of_statement() {
             if (
-                (flags.last_text === 'do' ||
-                    (flags.last_text === 'else' && token_text !== 'if') ||
+                ((last_type === 'TK_RESERVED' && flags.last_text === 'do') ||
+                    (last_type === 'TK_RESERVED' && flags.last_text === 'else' && !(token_type === 'TK_RESERVED' && token_text === 'if')) ||
                     (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)))) {
                 // Issue #276:
                 // If starting a new statement with [if, for, while, do], push to a new line.
                 // if (a) if (b) if(c) d(); else e(); else f();
                 allow_wrap_or_preserved_newline(
-                    in_array(token_text, ['do', 'for', 'if', 'while']));
+                    token_type === 'TK_RESERVED' && in_array(token_text, ['do', 'for', 'if', 'while']));
 
                 set_mode(MODE.Statement);
                 // Issue #275:
@@ -1023,8 +1026,11 @@ function detectXMLType(str) {
                     return [c, 'TK_WORD'];
                 }
 
-                if (c === 'in') { // hack for 'in' operator
-                    return [c, 'TK_OPERATOR'];
+                if (last_type !== 'TK_DOT' && in_array(c, reserved_words)) {
+                    if (c === 'in') { // hack for 'in' operator
+                        return [c, 'TK_OPERATOR'];
+                    }
+                    return [c, 'TK_RESERVED'];
                 }
                 return [c, 'TK_WORD'];
             }
@@ -1096,7 +1102,7 @@ function detectXMLType(str) {
                     (c === '/') || // regexp
                     (opt.e4x && c === "<" && input.slice(parser_pos - 1).match(/^<([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([-a-zA-Z:0-9_.]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*\/?\s*>/)) // xml
                 ) && ( // regex and xml can only appear in specific locations during parsing
-                    (last_type === 'TK_WORD' && is_special_word(flags.last_text)) ||
+                    (last_type === 'TK_RESERVED' && is_special_word(flags.last_text)) ||
                     (last_type === 'TK_END_EXPR' && in_array(previous_flags.mode, [MODE.Conditional, MODE.ForInitializer])) ||
                     (in_array(last_type, ['TK_COMMENT', 'TK_START_EXPR', 'TK_START_BLOCK',
                         'TK_END_BLOCK', 'TK_OPERATOR', 'TK_EQUALS', 'TK_EOF', 'TK_SEMICOLON', 'TK_COMMA'
@@ -1296,10 +1302,10 @@ function detectXMLType(str) {
             var next_mode = MODE.Expression;
             if (token_text === '[') {
 
-                if (last_type === 'TK_WORD' || flags.last_text === ')') {
+                if (last_type === 'TK_WORD' || last_type === 'TK_RESERVED' || flags.last_text === ')') {
                     // this is array index specifier, break immediately
                     // a[x], fn()[x]
-                    if (in_array(flags.last_text, line_starters)) {
+                    if (last_type === 'TK_RESERVED' && in_array(flags.last_text, line_starters)) {
                         output_space_before_token = true;
                     }
                     set_mode(next_mode);
@@ -1324,9 +1330,9 @@ function detectXMLType(str) {
                 }
 
             } else {
-                if (flags.last_text === 'for') {
+                if (last_type === 'TK_RESERVED' && flags.last_text === 'for') {
                     next_mode = MODE.ForInitializer;
-                } else if (in_array(flags.last_text, ['if', 'while'])) {
+                } else if (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['if', 'while'])) {
                     next_mode = MODE.Conditional;
                 } else {
                     // next_mode = MODE.Expression;
@@ -1340,14 +1346,14 @@ function detectXMLType(str) {
                 allow_wrap_or_preserved_newline(input_wanted_newline);
                 output_wrapped = false;
                 // do nothing on (( and )( and ][ and ]( and .(
-            } else if (last_type !== 'TK_WORD' && last_type !== 'TK_OPERATOR') {
+            } else if (last_type !== 'TK_RESERVED' && last_type !== 'TK_WORD' && last_type !== 'TK_OPERATOR') {
                 output_space_before_token = true;
-            } else if (flags.last_word === 'function' || flags.last_word === 'typeof') {
+            } else if (last_type === 'TK_RESERVED' && (flags.last_word === 'function' || flags.last_word === 'typeof')) {
                 // function() vs function ()
                 if (opt.jslint_happy) {
                     output_space_before_token = true;
                 }
-            } else if (in_array(flags.last_text, line_starters) || flags.last_text === 'catch') {
+            } else if (last_type === 'TK_RESERVED' && (in_array(flags.last_text, line_starters) || flags.last_text === 'catch')) {
                 if (opt.space_before_conditional) {
                     output_space_before_token = true;
                 }
@@ -1426,7 +1432,7 @@ function detectXMLType(str) {
                 if (last_type !== 'TK_OPERATOR' &&
                     (empty_anonymous_function ||
                         last_type === 'TK_EQUALS' ||
-                        (is_special_word(flags.last_text) && flags.last_text !== 'else'))) {
+                        (last_type === 'TK_RESERVED' && is_special_word(flags.last_text) && flags.last_text !== 'else'))) {
                     output_space_before_token = true;
                 } else {
                     print_newline();
@@ -1489,13 +1495,13 @@ function detectXMLType(str) {
             } else if (input_wanted_newline && !is_expression(flags.mode) &&
                 (last_type !== 'TK_OPERATOR' || (flags.last_text === '--' || flags.last_text === '++')) &&
                 last_type !== 'TK_EQUALS' &&
-                (opt.preserve_newlines || !in_array(flags.last_text, ['var', 'let', 'const']))) {
+                (opt.preserve_newlines || !(last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const'])))) {
 
                 print_newline();
             }
 
             if (flags.do_block && !flags.do_while) {
-                if (token_text === 'while') {
+                if (token_type === 'TK_RESERVED' && token_text === 'while') {
                     // do {} ## while ()
                     output_space_before_token = true;
                     print_token();
@@ -1514,7 +1520,7 @@ function detectXMLType(str) {
             // Bare/inline ifs are tricky
             // Need to unwind the modes correctly: if (a) if (b) c(); else d(); else e();
             if (flags.if_block) {
-                if (token_text !== 'else') {
+                if (!(token_type === 'TK_RESERVED' && token_text === 'else')) {
                     while (flags.mode === MODE.Statement) {
                         restore_mode();
                     }
@@ -1522,7 +1528,7 @@ function detectXMLType(str) {
                 }
             }
 
-            if (token_text === 'case' || (token_text === 'default' && flags.in_case_statement)) {
+            if (token_type === 'TK_RESERVED' && (token_text === 'case' || (token_text === 'default' && flags.in_case_statement))) {
                 print_newline();
                 if (flags.case_body || opt.jslint_happy) {
                     // switch cases following one another
@@ -1535,7 +1541,7 @@ function detectXMLType(str) {
                 return;
             }
 
-            if (token_text === 'function') {
+            if (token_type === 'TK_RESERVED' && token_text === 'function') {
                 if (flags.var_line && last_type !== 'TK_EQUALS') {
                     flags.var_line_reindented = true;
                 }
@@ -1547,8 +1553,8 @@ function detectXMLType(str) {
                         print_newline(true);
                     }
                 }
-                if (last_type === 'TK_WORD') {
-                    if (flags.last_text === 'get' || flags.last_text === 'set' || flags.last_text === 'new' || flags.last_text === 'return') {
+                if (last_type === 'TK_RESERVED' || last_type === 'TK_WORD') {
+                    if (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['get', 'set', 'new', 'return'])) {
                         output_space_before_token = true;
                     } else {
                         print_newline();
@@ -1569,7 +1575,7 @@ function detectXMLType(str) {
                 }
             }
 
-            if (token_text === 'function') {
+            if (token_type === 'TK_RESERVED' && token_text === 'function') {
                 print_token();
                 flags.last_word = token_text;
                 return;
@@ -1578,7 +1584,7 @@ function detectXMLType(str) {
             prefix = 'NONE';
 
             if (last_type === 'TK_END_BLOCK') {
-                if (!in_array(token_text, ['else', 'catch', 'finally'])) {
+                if (!(token_type === 'TK_RESERVED' && in_array(token_text, ['else', 'catch', 'finally']))) {
                     prefix = 'NEWLINE';
                 } else {
                     if (opt.brace_style === "expand" || opt.brace_style === "end-expand") {
@@ -1595,7 +1601,7 @@ function detectXMLType(str) {
                 prefix = 'SPACE';
             } else if (last_type === 'TK_STRING') {
                 prefix = 'NEWLINE';
-            } else if (last_type === 'TK_WORD') {
+            } else if (last_type === 'TK_RESERVED' || last_type === 'TK_WORD') {
                 prefix = 'SPACE';
             } else if (last_type === 'TK_START_BLOCK') {
                 prefix = 'NEWLINE';
@@ -1604,7 +1610,7 @@ function detectXMLType(str) {
                 prefix = 'NEWLINE';
             }
 
-            if (in_array(token_text, line_starters) && flags.last_text !== ')') {
+            if (token_type === 'TK_RESERVED' && in_array(token_text, line_starters) && flags.last_text !== ')') {
                 if (flags.last_text === 'else') {
                     prefix = 'SPACE';
                 } else {
@@ -1613,7 +1619,7 @@ function detectXMLType(str) {
 
             }
 
-            if (in_array(token_text, ['else', 'catch', 'finally'])) {
+            if (token_type === 'TK_RESERVED' && in_array(token_text, ['else', 'catch', 'finally'])) {
                 if (last_type !== 'TK_END_BLOCK' || opt.brace_style === "expand" || opt.brace_style === "end-expand") {
                     print_newline();
                 } else {
@@ -1627,13 +1633,13 @@ function detectXMLType(str) {
                     output_space_before_token = true;
                 }
             } else if (prefix === 'NEWLINE') {
-                if (is_special_word(flags.last_text)) {
+                if (last_type === 'TK_RESERVED' && is_special_word(flags.last_text)) {
                     // no newline between 'return nnn'
                     output_space_before_token = true;
                 } else if (last_type !== 'TK_END_EXPR') {
-                    if ((last_type !== 'TK_START_EXPR' || !in_array(token_text, ['var', 'let', 'const'])) && flags.last_text !== ':') {
+                    if ((last_type !== 'TK_START_EXPR' || !(token_type === 'TK_RESERVED' && in_array(token_text, ['var', 'let', 'const']))) && flags.last_text !== ':') {
                         // no need to force newline on 'var': for (var x = 0...)
-                        if (token_text === 'if' && flags.last_word === 'else' && flags.last_text !== '{') {
+                        if (token_type === 'TK_RESERVED' && token_text === 'if' && flags.last_word === 'else' && flags.last_text !== '{') {
                             // no newline for } else if {
                             output_space_before_token = true;
                         } else {
@@ -1642,7 +1648,7 @@ function detectXMLType(str) {
                             print_newline();
                         }
                     }
-                } else if (in_array(token_text, line_starters) && flags.last_text !== ')') {
+                } else if (token_type === 'TK_RESERVED' && in_array(token_text, line_starters) && flags.last_text !== ')') {
                     flags.var_line = false;
                     flags.var_line_reindented = false;
                     print_newline();
@@ -1655,17 +1661,17 @@ function detectXMLType(str) {
             print_token();
             flags.last_word = token_text;
 
-            if (in_array(token_text, ['var', 'let', 'const'])) {
+            if (token_type === 'TK_RESERVED' && in_array(token_text, ['var', 'let', 'const'])) {
                 flags.var_line = true;
                 flags.var_line_reindented = false;
                 flags.var_line_tainted = false;
             }
 
-            if (token_text === 'do') {
+            if (token_type === 'TK_RESERVED' && token_text === 'do') {
                 flags.do_block = true;
             }
 
-            if (token_text === 'if') {
+            if (token_type === 'TK_RESERVED' && token_text === 'if') {
                 flags.if_block = true;
             }
         }
@@ -1694,7 +1700,7 @@ function detectXMLType(str) {
                 // The conditional starts the statement if appropriate.
                 // One difference - strings want at least a space before
                 output_space_before_token = true;
-            } else if (last_type === 'TK_WORD') {
+            } else if (last_type === 'TK_RESERVED' || last_type === 'TK_WORD') {
                 output_space_before_token = true;
             } else if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
                 if (!start_of_object_property()) {
@@ -1760,7 +1766,7 @@ function detectXMLType(str) {
         function handle_operator() {
             var space_before = true;
             var space_after = true;
-            if (is_special_word(flags.last_text)) {
+            if (last_type === 'TK_RESERVED' && is_special_word(flags.last_text)) {
                 // "return" had a special handling in TK_WORD. Now we need to return the favor
                 output_space_before_token = true;
                 print_token();
@@ -1806,7 +1812,7 @@ function detectXMLType(str) {
                     space_before = true;
                 }
 
-                if (last_type === 'TK_WORD' && in_array(flags.last_text, line_starters)) {
+                if (last_type === 'TK_RESERVED') {
                     space_before = true;
                 }
 
@@ -1881,7 +1887,7 @@ function detectXMLType(str) {
         }
 
         function handle_dot() {
-            if (is_special_word(flags.last_text)) {
+            if (last_type === 'TK_RESERVED' && is_special_word(flags.last_text)) {
                 output_space_before_token = true;
             } else {
                 // allow preserved newlines before dots in general
@@ -3788,6 +3794,12 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         // a common snippet in jQuery plugins
         bt("settings = $.extend({},defaults,settings);", "settings = $.extend({}, defaults, settings);");
+
+        // reserved words used as property names
+        bt("$http().then().finally().default()", "$http().then().finally().default()");
+        bt("$http()\n.then()\n.finally()\n.default()", "$http()\n    .then()\n    .finally()\n    .default()");
+        bt("$http().when.in.new.catch().throw()", "$http().when.in.new.catch().throw()");
+        bt("$http()\n.when\n.in\n.new\n.catch()\n.throw()", "$http()\n    .when\n    .in\n    .new\n    .catch()\n    .throw()");
 
         bt('{xxx;}()', '{\n    xxx;\n}()');
 
