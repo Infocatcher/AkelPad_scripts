@@ -1,8 +1,9 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=11213#11213
 // http://infocatcher.ucoz.net/js/akelpad_scripts/insertTag.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/insertTag.js
 
-// (c) Infocatcher 2009-2012
-// version 0.2.4 - 2012-09-17
+// (c) Infocatcher 2009-2012, 2014
+// version 0.2.5 - 2014-03-30
 
 //===================
 // Simplify tags insertion.
