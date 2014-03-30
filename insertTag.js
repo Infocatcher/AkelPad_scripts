@@ -38,8 +38,8 @@
 
 function _localize(s) {
 	var strings = {
-		"Tag:": {
-			ru: "Тэг:"
+		"Tag or template:": {
+			ru: "Тэг или шаблон:"
 		}
 	};
 	var lng = "en";
@@ -119,7 +119,7 @@ function insertTag() {
 			tag = AkelPad.InputBox(
 				hMainWnd,
 				WScript.ScriptName,
-				_localize("Tag:"),
+				_localize("Tag or template:"),
 				saveLastTag && pref("lastTag", 3 /*PO_STRING*/) || ""
 			);
 		}
@@ -127,6 +127,12 @@ function insertTag() {
 			return;
 		if(saveLastTag && (tagTyped || saveLastTag == 2))
 			pref("lastTag", 3 /*PO_STRING*/, tag);
+
+		if(tagTyped && /%[%|SC]/.test(tag)) {
+			template = tag;
+			insertTag();
+			return;
+		}
 
 		if(tagTyped) {
 			var first = tag.charAt(0);
