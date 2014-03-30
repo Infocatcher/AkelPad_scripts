@@ -186,11 +186,7 @@ function getCoderAlias() {
 }
 
 function insertNoScroll(str, ss, se) {
-	var lpPoint = AkelPad.MemAlloc(8 /*sizeof(POINT)*/);
-	if(!lpPoint)
-		return;
-	AkelPad.SendMessage(hWndEdit, 1245 /*EM_GETSCROLLPOS*/, 0, lpPoint);
-	setRedraw(hWndEdit, false);
+	var nFirstLine = saveLineScroll(hWndEdit);
 
 	//var ss = AkelPad.GetSelStart();
 	AkelPad.ReplaceSel(str, true);
@@ -203,13 +199,32 @@ function insertNoScroll(str, ss, se) {
 		AkelPad.SetSel(ss, se);
 	}
 
-	AkelPad.SendMessage(hWndEdit, 1246 /*EM_SETSCROLLPOS*/, 0, lpPoint);
-	setRedraw(hWndEdit, true);
-	AkelPad.MemFree(lpPoint);
+	restoreLineScroll(hWndEdit, nFirstLine);
 }
-function setRedraw(hWnd, bRedraw) {
-	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
-	bRedraw && oSys.Call("user32::InvalidateRect", hWnd, 0, true);
+// From Instructor's SearchReplace.js
+function saveLineScroll(hWnd)
+{
+	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, false, 0);
+	return AkelPad.SendMessage(hWnd, 3129 /*AEM_GETLINENUMBER*/, 4 /*AEGL_FIRSTVISIBLELINE*/, 0);
+}
+function restoreLineScroll(hWnd, nBeforeLine)
+{
+	if (AkelPad.SendMessage(hWnd, 3129 /*AEM_GETLINENUMBER*/, 4 /*AEGL_FIRSTVISIBLELINE*/, 0) != nBeforeLine)
+	{
+		var lpScrollPos;
+		var nPosY=AkelPad.SendMessage(hWnd, 3198 /*AEM_VPOSFROMLINE*/, 0 /*AECT_GLOBAL*/, nBeforeLine);
+
+		if (lpScrollPos=AkelPad.MemAlloc(_X64?16:8 /*sizeof(POINT64)*/))
+		{
+			AkelPad.MemCopy(lpScrollPos + 0 /*offsetof(POINT64, x)*/, -1, 2 /*DT_QWORD*/);
+			AkelPad.MemCopy(lpScrollPos + (_X64?8:4) /*offsetof(POINT64, y)*/, nPosY, 2 /*DT_QWORD*/);
+			AkelPad.SendMessage(hWnd, 3180 /*AEM_SETSCROLLPOS*/, 0, lpScrollPos);
+			AkelPad.MemFree(lpScrollPos);
+		}
+	}
+	AkelPad.SendMessage(hWnd, 3377 /*AEM_UPDATECARET*/, 0, 0);
+	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, true, 0);
+	oSys.Call("user32::InvalidateRect", hWnd, 0, true);
 }
 
 function getArg(argName, defaultVal) {
