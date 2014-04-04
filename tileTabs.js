@@ -122,9 +122,11 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 	var lpRect = AkelPad.MemAlloc(16 /*sizeof(RECT)*/);
 	if(!lpRect)
 		return;
-	if(!oSys.Call("user32::GetClientRect", hMdiClient, lpRect))
+	var rcClient = oSys.Call("user32::GetClientRect", hMdiClient, lpRect)
+		&& parseRect(lpRect);
+	AkelPad.MemFree(lpRect);
+	if(!rcClient)
 		return;
-	var rcClient = parseRect(lpRect);
 
 	var hWndMdi  = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame);
 	var hWndMdi2 = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame2);
