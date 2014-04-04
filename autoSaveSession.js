@@ -39,7 +39,7 @@ var timer = 0;
 var lastSave = 0;
 
 var lpTimerCallback = 0;
-var nIDEvent = 10;
+var nIDEvent = AkelPad.SendMessage(hMainWnd, 1319 /*AKD_UNIQUEID*/, 0, 0) || 10;
 
 debug && _log("start");
 
