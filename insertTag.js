@@ -137,9 +137,11 @@ function insertTag() {
 
 		if(tagTyped) {
 			var first = tag.charAt(0);
-			if(first == "<" || first == "[") {
+			if(first == "<" || first == "[") { // [tag -> tag
 				useBBCode = first == "[";
 				tag = tag.substr(1);
+				if(tag.charAt(tag.length - 1) == (useBBCode ? "]" : ">")) // tag] -> tag
+					tag = tag.slice(0, -1);
 			}
 		}
 
