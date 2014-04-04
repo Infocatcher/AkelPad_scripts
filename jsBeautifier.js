@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.5 - 2013-10-12
-// Based on scripts from http://jsbeautifier.org/ [2014-04-01 19:24:58 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-04-04 17:35:29 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -448,7 +448,7 @@ function detectXMLType(str) {
         wordchar = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$'.split('');
         digits = '0123456789'.split('');
 
-        punct = '+ - * / % & ++ -- = += -= *= /= %= == === != !== > < >= <= >> << >>> >>>= >>= <<= && &= | || ! !! , : ? ^ ^= |= :: =>';
+        punct = '+ - * / % & ++ -- = += -= *= /= %= == === != !== > < >= <= >> << >>> >>>= >>= <<= && &= | || ! , : ? ^ ^= |= :: =>';
         punct += ' <%= <% %> <?= <? ?>'; // try to be a good boy and try not to break the markup language identifiers
         punct = punct.split(' ');
 
@@ -490,7 +490,6 @@ function detectXMLType(str) {
             var next_indent_level = 0;
             if (flags_base) {
                 next_indent_level = flags_base.indentation_level;
-                next_indent_level += (flags_base.var_line && flags_base.var_line_reindented) ? 1 : 0;
                 if (!just_added_newline() &&
                     flags_base.line_indent_level > next_indent_level) {
                     next_indent_level = flags_base.line_indent_level;
@@ -502,9 +501,8 @@ function detectXMLType(str) {
                 parent: flags_base,
                 last_text: flags_base ? flags_base.last_text : '', // last token text
                 last_word: flags_base ? flags_base.last_word : '', // last 'TK_WORD' passed
-                var_line: false,
-                var_line_tainted: false,
-                var_line_reindented: false,
+                declaration_statement: false,
+                declaration_assignment: false,
                 in_html_comment: false,
                 multiline_frame: false,
                 if_block: false,
@@ -615,6 +613,10 @@ function detectXMLType(str) {
                 token_type = t[1];
 
                 if (token_type === 'TK_EOF') {
+                    // Unwind any open statements
+                    while (flags.mode === MODE.Statement) {
+                        restore_mode();
+                    }
                     break;
                 }
 
@@ -746,7 +748,7 @@ function detectXMLType(str) {
                 print_newline(false, true);
 
                 // Expressions and array literals already indent their contents.
-                if (!(is_array(flags.mode) || is_expression(flags.mode))) {
+                if (!(is_array(flags.mode) || is_expression(flags.mode) || flags.mode === MODE.Statement)) {
                     output_wrapped = true;
                 }
             }
@@ -757,7 +759,7 @@ function detectXMLType(str) {
             output_space_before_token = false;
 
             if (!preserve_statement_flags) {
-                if (flags.last_text !== ';') {
+                if (flags.last_text !== ';' && flags.last_text !== ',' && flags.last_text !== '=') {
                     while (flags.mode === MODE.Statement && !flags.if_block && !flags.do_block) {
                         restore_mode();
                     }
@@ -789,7 +791,6 @@ function detectXMLType(str) {
                     }
 
                     print_indent_string(flags.indentation_level +
-                        (flags.var_line && flags.var_line_reindented ? 1 : 0) +
                         (output_wrapped ? 1 : 0));
                 }
             }
@@ -896,6 +897,9 @@ function detectXMLType(str) {
             if (flag_store.length > 0) {
                 previous_flags = flags;
                 flags = flag_store.pop();
+                if (previous_flags.mode === MODE.Statement) {
+                    remove_redundant_indentation(previous_flags);
+                }
             }
         }
 
@@ -906,23 +910,26 @@ function detectXMLType(str) {
 
         function start_of_statement() {
             if (
-                ((last_type === 'TK_RESERVED' && flags.last_text === 'do') ||
+                    (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const']) && token_type === 'TK_WORD') ||
+                    ((last_type === 'TK_RESERVED' && flags.last_text === 'do') ||
                     (last_type === 'TK_RESERVED' && flags.last_text === 'else' && !(token_type === 'TK_RESERVED' && token_text === 'if')) ||
                     (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)))) {
+
+                set_mode(MODE.Statement);
+                indent();
+
+                if (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const']) && token_type === 'TK_WORD') {
+                    flags.declaration_statement = true;
+                }
+
                 // Issue #276:
                 // If starting a new statement with [if, for, while, do], push to a new line.
                 // if (a) if (b) if(c) d(); else e(); else f();
                 allow_wrap_or_preserved_newline(
                     token_type === 'TK_RESERVED' && in_array(token_text, ['do', 'for', 'if', 'while']));
 
-                set_mode(MODE.Statement);
-                // Issue #275:
-                // If starting on a newline, all of a statement should be indented.
-                // if not, use line wrapping logic for indent.
-                if (just_added_newline()) {
-                    indent();
-                    output_wrapped = false;
-                }
+                output_wrapped = false;
+
                 return true;
             }
             return false;
@@ -1088,7 +1095,9 @@ function detectXMLType(str) {
                     return [c, 'TK_WORD'];
                 }
 
-                if (last_type !== 'TK_DOT' && in_array(c, reserved_words)) {
+                if (!(last_type === 'TK_DOT' ||
+                        (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['set', 'get'])))
+                    && in_array(c, reserved_words)) {
                     if (c === 'in') { // hack for 'in' operator
                         return [c, 'TK_OPERATOR'];
                     }
@@ -1497,7 +1506,7 @@ function detectXMLType(str) {
                         (last_type === 'TK_RESERVED' && is_special_word(flags.last_text) && flags.last_text !== 'else'))) {
                     output_space_before_token = true;
                 } else {
-                    print_newline();
+                    print_newline(false, true);
                 }
             } else { // collapse
                 if (last_type !== 'TK_OPERATOR' && last_type !== 'TK_START_EXPR') {
@@ -1557,7 +1566,7 @@ function detectXMLType(str) {
             } else if (input_wanted_newline && !is_expression(flags.mode) &&
                 (last_type !== 'TK_OPERATOR' || (flags.last_text === '--' || flags.last_text === '++')) &&
                 last_type !== 'TK_EQUALS' &&
-                (opt.preserve_newlines || !(last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const'])))) {
+                (opt.preserve_newlines || !(last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const', 'set', 'get'])))) {
 
                 print_newline();
             }
@@ -1604,9 +1613,6 @@ function detectXMLType(str) {
             }
 
             if (token_type === 'TK_RESERVED' && token_text === 'function') {
-                if (flags.var_line && last_type !== 'TK_EQUALS') {
-                    flags.var_line_reindented = true;
-                }
                 if (in_array(flags.last_text, ['}', ';']) || (just_added_newline() && ! in_array(flags.last_text, ['{', ':', '=', ',']))) {
                     // make sure there is a nice clean space of at least one blank line
                     // before a new function definition
@@ -1705,14 +1711,10 @@ function detectXMLType(str) {
                             // no newline for } else if {
                             output_space_before_token = true;
                         } else {
-                            flags.var_line = false;
-                            flags.var_line_reindented = false;
                             print_newline();
                         }
                     }
                 } else if (token_type === 'TK_RESERVED' && in_array(token_text, line_starters) && flags.last_text !== ')') {
-                    flags.var_line = false;
-                    flags.var_line_reindented = false;
                     print_newline();
                 }
             } else if (is_array(flags.mode) && flags.last_text === ',' && last_last_text === '}') {
@@ -1722,12 +1724,6 @@ function detectXMLType(str) {
             }
             print_token();
             flags.last_word = token_text;
-
-            if (token_type === 'TK_RESERVED' && in_array(token_text, ['var', 'let', 'const'])) {
-                flags.var_line = true;
-                flags.var_line_reindented = false;
-                flags.var_line_tainted = false;
-            }
 
             if (token_type === 'TK_RESERVED' && token_text === 'do') {
                 flags.do_block = true;
@@ -1748,8 +1744,6 @@ function detectXMLType(str) {
                 restore_mode();
             }
             print_token();
-            flags.var_line = false;
-            flags.var_line_reindented = false;
             if (flags.mode === MODE.ObjectLiteral) {
                 // if we're in OBJECT mode and see a semicolon, its invalid syntax
                 // recover back to treating this as a BLOCK
@@ -1775,9 +1769,9 @@ function detectXMLType(str) {
         }
 
         function handle_equals() {
-            if (flags.var_line) {
+            if (flags.declaration_statement) {
                 // just got an '=' in a var-line, different formatting/line-breaking, etc will now be done
-                flags.var_line_tainted = true;
+                flags.declaration_assignment = true;
             }
             output_space_before_token = true;
             print_token();
@@ -1785,21 +1779,17 @@ function detectXMLType(str) {
         }
 
         function handle_comma() {
-            if (flags.var_line) {
-                if (is_expression(flags.mode) || last_type === 'TK_END_BLOCK') {
+            if (flags.declaration_statement) {
+                if (is_expression(flags.parent.mode)) {
                     // do not break on comma, for(var a = 1, b = 2)
-                    flags.var_line_tainted = false;
-                }
-
-                if (flags.var_line) {
-                    flags.var_line_reindented = true;
+                    flags.declaration_assignment = false;
                 }
 
                 print_token();
 
-                if (flags.var_line_tainted) {
-                    flags.var_line_tainted = false;
-                    print_newline();
+                if (flags.declaration_assignment) {
+                    flags.declaration_assignment = false;
+                    print_newline(false, true);
                 } else {
                     output_space_before_token = true;
                 }
@@ -3770,6 +3760,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a.b({c:"d"})', 'a.b({\n    c: "d"\n})');
         bt('a.b\n(\n{\nc:\n"d"\n}\n)', 'a.b({\n    c: "d"\n})');
         bt('a=!b', 'a = !b');
+        bt('a=!!b', 'a = !!b');
         bt('a?b:c', 'a ? b : c');
         bt('a?1:2', 'a ? 1 : 2');
         bt('a?(b):c', 'a ? (b) : c');
@@ -3977,9 +3968,9 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('catch(e)', 'catch (e)');
 
         bt('var a=1,b={foo:2,bar:3},{baz:4,wham:5},c=4;',
-            'var a = 1,\n    b = {\n        foo: 2,\n        bar: 3\n    }, {\n        baz: 4,\n        wham: 5\n    }, c = 4;');
+            'var a = 1,\n    b = {\n        foo: 2,\n        bar: 3\n    },\n    {\n        baz: 4,\n        wham: 5\n    }, c = 4;');
         bt('var a=1,b={foo:2,bar:3},{baz:4,wham:5},\nc=4;',
-            'var a = 1,\n    b = {\n        foo: 2,\n        bar: 3\n    }, {\n        baz: 4,\n        wham: 5\n    },\n    c = 4;');
+            'var a = 1,\n    b = {\n        foo: 2,\n        bar: 3\n    },\n    {\n        baz: 4,\n        wham: 5\n    },\n    c = 4;');
 
 
         // inline comment
@@ -4006,7 +3997,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('if (a) a()\nnewline()');
         bt('a=typeof(x)', 'a = typeof(x)');
 
-        bt('var a = function() {\n    return null;\n},\n    b = false;');
+        bt('var a = function() {\n        return null;\n    },\n    b = false;');
 
         bt('var a = function() {\n    func1()\n}');
         bt('var a = function() {\n    func1()\n}\nvar b = function() {\n    func2()\n}');
@@ -4032,7 +4023,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('switch(x){case -1:break;case !y:break;}',
             'switch (x) {\n    case -1:\n        break;\n    case !y:\n        break;\n}');
         test_fragment("// comment 2\n(function()", "// comment 2\n(function()"); // typical greasemonkey start
-        bt("var a2, b2, c2, d2 = 0, c = function() {}, d = '';", "var a2, b2, c2, d2 = 0,\n    c = function() {}, d = '';");
+        bt("var a2, b2, c2, d2 = 0, c = function() {}, d = '';", "var a2, b2, c2, d2 = 0,\n    c = function() {},\n    d = '';");
         bt("var a2, b2, c2, d2 = 0, c = function() {},\nd = '';", "var a2, b2, c2, d2 = 0,\n    c = function() {},\n    d = '';");
         bt('var o2=$.extend(a);function(){alert(x);}', 'var o2 = $.extend(a);\n\nfunction() {\n    alert(x);\n}');
 
@@ -4091,7 +4082,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
           );
 
         opts.preserve_newlines = true;
-        bt('var\na=do_preserve_newlines;', 'var\na = do_preserve_newlines;');
+        bt('var\na=do_preserve_newlines;', 'var\n    a = do_preserve_newlines;');
         bt('// a\n// b\n\n// c\n// d');
         bt('if (foo) //  comment\n{\n    bar();\n}');
 
@@ -4181,7 +4172,9 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a: do {} while (); xxx', 'a: do {} while ();\nxxx');
         bt('var a = new function();');
         bt('var a = new function() {};');
-        bt('var a = new function a()\n    {};');
+        bt('var a = new function()\n{};', 'var a = new function() {};');
+        bt('var a = new function a()\n{};');
+        bt('var a = new function a()\n    {},\n    b = new function b()\n    {};');
         test_fragment('new function');
         bt("foo({\n    'a': 1\n},\n10);",
             "foo(\n    {\n        'a': 1\n    },\n    10);");
@@ -4451,6 +4444,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt("{\n    var a = set\n    foo();\n}");
         bt("var x = {\n    get function()\n}");
         bt("var x = {\n    set function()\n}");
+        bt("var x = set\n\na() {}", "var x = set\n\n    a() {}");
         bt("var x = set\n\nfunction() {}", "var x = set\n\n    function() {}");
 
         bt('<!-- foo\nbar();\n-->');
@@ -5081,12 +5075,10 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
            '    });');
         // END tests for issue 281
 
-        // This is what I think these should look like related #256
-        // we don't have the ability yet
-//         bt('var a=1,b={bang:2},c=3;',
-//             'var a = 1,\n    b = {\n        bang: 2\n    },\n     c = 3;');
-//         bt('var a={bing:1},b=2,c=3;',
-//             'var a = {\n        bing: 1\n    },\n    b = 2,\n    c = 3;');
+        bt('var a=1,b={bang:2},c=3;',
+            'var a = 1,\n    b = {\n        bang: 2\n    },\n    c = 3;');
+        bt('var a={bing:1},b=2,c=3;',
+            'var a = {\n        bing: 1\n    },\n    b = 2,\n    c = 3;');
         Urlencoded.run_tests(sanitytest);
 
         bth('');
