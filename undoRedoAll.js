@@ -20,18 +20,8 @@ var MODE_UNDO = 0;
 var MODE_REDO = 1;
 
 // Read arguments:
-var args = {};
-for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
-	if(/^-(\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
-		args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
-function getArg(argName, defaultVal) {
-	return typeof args[argName] == "undefined" // argName in args
-		? defaultVal
-		: args[argName];
-}
-
-var mode        = getArg("mode",        0);
-var stopOnSaved = getArg("stoponsaved", false);
+var mode        = AkelPad.GetArgValue("mode", MODE_UNDO);
+var stopOnSaved = AkelPad.GetArgValue("stopOnSaved", false);
 
 var CAN_ACTION = AEM_CANUNDO;
 var ACTION     = AEM_UNDO;
