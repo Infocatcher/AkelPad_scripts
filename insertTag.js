@@ -131,6 +131,7 @@ function insertTag() {
 
 		if(tagTyped && /%[%|SC]/.test(tag)) {
 			template = tag;
+			useBBCode = tag.charAt(0) == "[";
 			insertTag();
 			return;
 		}
