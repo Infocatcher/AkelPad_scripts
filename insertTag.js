@@ -163,12 +163,8 @@ function insertTag() {
 	insertNoScroll(txt, ss, se);
 }
 function detectBBCode() {
-	var file = AkelPad.GetEditFile(0);
-	if(!file)
-		file = getCoderAlias();
-	else if(/\.[^.]*$/.test(file))
-		file = RegExp.lastMatch;
-	return !new RegExp("\\.(" + xmlExts + ")$", "i").test(file);
+	var fileType = getCoderAlias() || AkelPad.GetEditFile(0);
+	return !new RegExp("\\.(" + xmlExts + ")$", "i").test(fileType);
 }
 function getCoderAlias() {
 	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
