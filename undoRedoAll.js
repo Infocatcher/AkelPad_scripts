@@ -1,7 +1,5 @@
-// (c) Infocatcher 2010
-// version 0.1.0 - 2010-06-25
-
-// AkelPad 4.x.x only
+// (c) Infocatcher 2010, 2014
+// version 0.1.1 - 2014-04-04
 
 // Arguments:
 //   -mode=0       - undo
