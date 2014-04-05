@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.5 - 2013-10-12
-// Based on scripts from http://jsbeautifier.org/ [2014-04-04 17:35:29 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-04-05 02:17:39 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1373,7 +1373,7 @@ function detectXMLType(str) {
             var next_mode = MODE.Expression;
             if (token_text === '[') {
 
-                if (last_type === 'TK_WORD' || last_type === 'TK_RESERVED' || flags.last_text === ')') {
+                if (last_type === 'TK_WORD' || flags.last_text === ')') {
                     // this is array index specifier, break immediately
                     // a[x], fn()[x]
                     if (last_type === 'TK_RESERVED' && in_array(flags.last_text, line_starters)) {
@@ -1417,7 +1417,7 @@ function detectXMLType(str) {
                 allow_wrap_or_preserved_newline(input_wanted_newline);
                 output_wrapped = false;
                 // do nothing on (( and )( and ][ and ]( and .(
-            } else if (last_type !== 'TK_RESERVED' && last_type !== 'TK_WORD' && last_type !== 'TK_OPERATOR') {
+            } else if (!(last_type === 'TK_RESERVED' && token_text === '(') && last_type !== 'TK_WORD' && last_type !== 'TK_OPERATOR') {
                 output_space_before_token = true;
             } else if (last_type === 'TK_RESERVED' && (flags.last_word === 'function' || flags.last_word === 'typeof')) {
                 // function() vs function ()
@@ -1458,13 +1458,11 @@ function detectXMLType(str) {
                 restore_mode();
             }
 
-            if (token_text === ']' && is_array(flags.mode) && flags.multiline_frame && !opt.keep_array_indentation) {
-                print_newline();
+            if (flags.multiline_frame) {
+                allow_wrap_or_preserved_newline(token_text === ']' && is_array(flags.mode) && !opt.keep_array_indentation);
+                output_wrapped = false;
             }
 
-            if (flags.multiline_frame) {
-                allow_wrap_or_preserved_newline();
-            }
             if (opt.space_in_paren) {
                 if (last_type === 'TK_START_EXPR' && ! opt.space_in_empty_paren) {
                     // () [] no inner space in empty parens like these, ever, ref #320
@@ -3942,6 +3940,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         // allow unescaped / in char classes
         bt('a(/[a/b]/);b()', "a(/[a/b]/);\nb()");
 
+        bt('function foo() {\n    return [\n        "one",\n        "two"\n    ];\n}');
         bt('a=[[1,2],[4,5],[7,8]]', "a = [\n    [1, 2],\n    [4, 5],\n    [7, 8]\n]");
         bt('a=[[1,2],[4,5],function(){},[7,8]]',
             "a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    [7, 8]\n]");
@@ -4107,8 +4106,69 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '{\n    a([\n        [a1]\n    ], {\n        b;\n    });\n}');
         bt("a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
             "a();\n[\n    ['sdfsdfsd'],\n    ['sdfsdfsdf']\n].toString();");
+        bt("a();\na = [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
+            "a();\na = [\n    ['sdfsdfsd'],\n    ['sdfsdfsdf']\n].toString();");
         bt("function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}",
             "function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}");
+        bt('function foo() {\n    return [\n        "one",\n        "two"\n    ];\n}');
+        // 4 spaces per indent input, processed with 4-spaces per indent
+        bt( "function foo() {\n" +
+            "    return [\n" +
+            "        {\n" +
+            "            one: 'x',\n" +
+            "            two: [\n" +
+            "                {\n" +
+            "                    id: 'a',\n" +
+            "                    name: 'apple'\n" +
+            "                }, {\n" +
+            "                    id: 'b',\n" +
+            "                    name: 'banana'\n" +
+            "                }\n" +
+            "            ]\n" +
+            "        }\n" +
+            "    ];\n" +
+            "}",
+            "function foo() {\n" +
+            "    return [{\n" +
+            "        one: 'x',\n" +
+            "        two: [{\n" +
+            "            id: 'a',\n" +
+            "            name: 'apple'\n" +
+            "        }, {\n" +
+            "            id: 'b',\n" +
+            "            name: 'banana'\n" +
+            "        }]\n" +
+            "    }];\n" +
+            "}");
+        // 3 spaces per indent input, processed with 4-spaces per indent
+        bt( "function foo() {\n" +
+            "   return [\n" +
+            "      {\n" +
+            "         one: 'x',\n" +
+            "         two: [\n" +
+            "            {\n" +
+            "               id: 'a',\n" +
+            "               name: 'apple'\n" +
+            "            }, {\n" +
+            "               id: 'b',\n" +
+            "               name: 'banana'\n" +
+            "            }\n" +
+            "         ]\n" +
+            "      }\n" +
+            "   ];\n" +
+            "}",
+            "function foo() {\n" +
+            "    return [{\n" +
+            "        one: 'x',\n" +
+            "        two: [{\n" +
+            "            id: 'a',\n" +
+            "            name: 'apple'\n" +
+            "        }, {\n" +
+            "            id: 'b',\n" +
+            "            name: 'banana'\n" +
+            "        }]\n" +
+            "    }];\n" +
+            "}");
 
         opts.keep_array_indentation = true;
         bt("a = ['a', 'b', 'c',\n   'd', 'e', 'f']");
@@ -4125,8 +4185,47 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '{\n    a([[a1]], {\n        b;\n    });\n}');
         bt("a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
             "a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();");
+        bt("a();\na = [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
+            "a();\na = [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();");
         bt("function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}",
             "function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}");
+        bt('function foo() {\n    return [\n        "one",\n        "two"\n    ];\n}');
+        // 4 spaces per indent input, processed with 4-spaces per indent
+        bt( "function foo() {\n" +
+            "    return [\n" +
+            "        {\n" +
+            "            one: 'x',\n" +
+            "            two: [\n" +
+            "                {\n" +
+            "                    id: 'a',\n" +
+            "                    name: 'apple'\n" +
+            "                }, {\n" +
+            "                    id: 'b',\n" +
+            "                    name: 'banana'\n" +
+            "                }\n" +
+            "            ]\n" +
+            "        }\n" +
+            "    ];\n" +
+            "}");
+        // 3 spaces per indent input, processed with 4-spaces per indent
+        // Should be unchanged, but is not - #445
+//         bt( "function foo() {\n" +
+//             "   return [\n" +
+//             "      {\n" +
+//             "         one: 'x',\n" +
+//             "         two: [\n" +
+//             "            {\n" +
+//             "               id: 'a',\n" +
+//             "               name: 'apple'\n" +
+//             "            }, {\n" +
+//             "               id: 'b',\n" +
+//             "               name: 'banana'\n" +
+//             "            }\n" +
+//             "         ]\n" +
+//             "      }\n" +
+//             "   ];\n" +
+//             "}");
+
 
         opts.keep_array_indentation = false;
 
