@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2013
 // version 0.2.5 - 2013-10-12
-// Based on scripts from http://jsbeautifier.org/ [2014-04-05 02:17:39 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-04-05 20:50:00 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -759,7 +759,7 @@ function detectXMLType(str) {
             output_space_before_token = false;
 
             if (!preserve_statement_flags) {
-                if (flags.last_text !== ';' && flags.last_text !== ',' && flags.last_text !== '=') {
+                if (flags.last_text !== ';' && flags.last_text !== ',' && flags.last_text !== '=' && last_type !== 'TK_OPERATOR') {
                     while (flags.mode === MODE.Statement && !flags.if_block && !flags.do_block) {
                         restore_mode();
                     }
@@ -911,9 +911,10 @@ function detectXMLType(str) {
         function start_of_statement() {
             if (
                     (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const']) && token_type === 'TK_WORD') ||
-                    ((last_type === 'TK_RESERVED' && flags.last_text === 'do') ||
+                    (last_type === 'TK_RESERVED' && flags.last_text === 'do') ||
+                    (last_type === 'TK_RESERVED' && flags.last_text === 'return' && !input_wanted_newline) ||
                     (last_type === 'TK_RESERVED' && flags.last_text === 'else' && !(token_type === 'TK_RESERVED' && token_text === 'if')) ||
-                    (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)))) {
+                    (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional))) {
 
                 set_mode(MODE.Statement);
                 indent();
@@ -3803,6 +3804,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('if (template.user[n] in bk) foo();');
         bt('{{}/z/}', "{\n    {}\n    /z/\n}");
         bt('return 45', "return 45");
+        bt('return this.prevObject ||\n\n    this.constructor(null);');
         bt('If[1]', "If[1]");
         bt('Then[1]', "Then[1]");
         bt('a = 1e10', "a = 1e10");
@@ -4001,6 +4003,11 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('var a = function() {\n    func1()\n}');
         bt('var a = function() {\n    func1()\n}\nvar b = function() {\n    func2()\n}');
 
+        // code with and without semicolons
+        bt( 'var whatever = require("whatever");\nfunction() {\n    a = 6;\n}',
+            'var whatever = require("whatever");\n\nfunction() {\n    a = 6;\n}');
+        bt( 'var whatever = require("whatever")\nfunction() {\n    a = 6\n}',
+            'var whatever = require("whatever")\n\nfunction() {\n    a = 6\n}');
 
 
         opts.jslint_happy = true;
