@@ -40,6 +40,7 @@ var lastSave = 0;
 
 var lpTimerCallback = 0;
 var nIDEvent = AkelPad.SendMessage(hMainWnd, 1319 /*AKD_UNIQUEID*/, 0, 0) || 10;
+var error = "";
 
 debug && _log("start");
 
@@ -77,6 +78,7 @@ if(hMainWnd) {
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
 			AkelPad.WindowUnsubClass(3 /*WSC_FRAMEPROC*/);
 			destroyTimer();
+			error && AkelPad.MessageBox(hMainWnd, error, WScript.ScriptName, 16 /*MB_ICONERROR*/);
 		}
 		else {
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
@@ -136,6 +138,11 @@ function saveSessionDelayed(delay) {
 	}
 	catch(e) {
 		lpTimerCallback = oSys.RegisterCallback("saveSessionTimerProc");
+	}
+	if(!lpTimerCallback) {
+		error = "oSys.RegisterCallback() failed!\nScript was terminated.";
+		oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
+		return 0;
 	}
 	saveSessionDelayed = function(delay) {
 		return oSys.Call("user32::SetTimer", hMainWnd, nIDEvent, delay, lpTimerCallback);
