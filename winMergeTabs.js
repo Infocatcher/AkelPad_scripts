@@ -7,6 +7,8 @@
 
 // Compare contents of current and next selected tab using WinMerge (http://winmerge.org/)
 // or any other compare tool
+// Required MDI or PMDI window mode and timer.js library!
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
 
 // Arguments:
 //   -path="%ProgramFiles%\WinMerge\WinMerge.exe" - path to WinMerge executable
@@ -90,17 +92,24 @@ if(
 		var statusMsg = _localize("Select tab!");
 		statusbar.set(statusMsg);
 
-		var showDelay = 600;
-		var hideDelay = 150;
-		try {
-			var window = new ActiveXObject("htmlfile").parentWindow;
-			var shown = true;
-			var timer = window.setTimeout(function blink() {
-				statusbar.set(shown ? "" : statusMsg);
-				timer = window.setTimeout(blink, (shown = !shown) ? showDelay : hideDelay);
+		if(AkelPad.Include("timer.js")) {
+			var showDelay = 600;
+			var hideDelay = 150;
+			// show -> [showDelay] -> hide -> [hideDelay] -> show -> [showDelay] -> hide
+			var timerHide = setTimeout(function() {
+				statusbar.set("");
+				clearTimeout(timerHide);
+				timerHide = setInterval(function() {
+					statusbar.set("");
+				}, showDelay + hideDelay, timerHide);
 			}, showDelay);
-		}
-		catch(e) {
+			var timerShow = setInterval(function() {
+				statusbar.set(statusMsg);
+			}, showDelay + hideDelay);
+			var stopTimers = function() {
+				clearInterval(timerHide);
+				clearInterval(timerShow);
+			};
 		}
 	}
 
@@ -118,13 +127,14 @@ if(
 		AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
 
 		AkelPad.ScriptNoMutex(8 /*ULT_UNLOCKMULTICOPY*/);
-		timer && window.clearTimeout(timer);
+
+		stopTimers && stopTimers();
 		statusbar.restore();
 		if(lpFrame2)
 			compareTabs(lpFrame, lpFrame2);
 	}
 	else {
-		timer && window.clearTimeout(timer);
+		stopTimers && stopTimers();
 		statusbar && statusbar.restore();
 		AkelPad.MessageBox(hMainWnd, _localize("No tabs!"), WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
 	}

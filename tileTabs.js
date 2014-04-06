@@ -7,7 +7,8 @@
 
 // Tile current tab with next selected:
 // select first tab, call script and then select second tab.
-// Required MDI window mode!
+// Required MDI window mode and timer.js library!
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
 
 // Usage:
 //   Call("Scripts::Main", 1, "tileTabs.js")         - tile vertical
@@ -55,17 +56,24 @@ if(
 		var statusMsg = _localize("Select tab!");
 		statusbar.set(statusMsg);
 
-		var showDelay = 600;
-		var hideDelay = 150;
-		try {
-			var window = new ActiveXObject("htmlfile").parentWindow;
-			var shown = true;
-			var timer = window.setTimeout(function blink() {
-				statusbar.set(shown ? "" : statusMsg);
-				timer = window.setTimeout(blink, (shown = !shown) ? showDelay : hideDelay);
+		if(AkelPad.Include("timer.js")) {
+			var showDelay = 600;
+			var hideDelay = 150;
+			// show -> [showDelay] -> hide -> [hideDelay] -> show -> [showDelay] -> hide
+			var timerHide = setTimeout(function() {
+				statusbar.set("");
+				clearTimeout(timerHide);
+				timerHide = setInterval(function() {
+					statusbar.set("");
+				}, showDelay + hideDelay, timerHide);
 			}, showDelay);
-		}
-		catch(e) {
+			var timerShow = setInterval(function() {
+				statusbar.set(statusMsg);
+			}, showDelay + hideDelay);
+			var stopTimers = function() {
+				clearInterval(timerHide);
+				clearInterval(timerShow);
+			};
 		}
 	}
 
@@ -82,7 +90,7 @@ if(
 		AkelPad.WindowGetMessage(); // Message loop
 		AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
 
-		timer && window.clearTimeout(timer);
+		stopTimers && stopTimers();
 		statusbar.restore();
 		if(lpFrame2) {
 			var tileHorizontal, useTabsOrder;
@@ -97,7 +105,7 @@ if(
 		//AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame);
 	}
 	else {
-		timer && window.clearTimeout(timer);
+		stopTimers && stopTimers();
 		statusbar && statusbar.restore();
 		AkelPad.MessageBox(hMainWnd, _localize("No tabs!"), WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
 	}
