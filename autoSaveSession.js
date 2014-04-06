@@ -131,7 +131,12 @@ function saveSession() {
 	debug && _log("saved at " + new Date().toLocaleString());
 }
 function saveSessionDelayed(delay) {
-	lpTimerCallback = oSys.RegisterCallback("saveSessionTimerProc");
+	try { // AkelPad 4.8.8+
+		lpTimerCallback = oSys.RegisterCallback(saveSessionTimerProc);
+	}
+	catch(e) {
+		lpTimerCallback = oSys.RegisterCallback("saveSessionTimerProc");
+	}
 	saveSessionDelayed = function(delay) {
 		return oSys.Call("user32::SetTimer", hMainWnd, nIDEvent, delay, lpTimerCallback);
 	};
