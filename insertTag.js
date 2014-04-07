@@ -170,6 +170,12 @@ function detectBBCode() {
 	return !new RegExp("\\.(" + xmlExts + ")$", "i").test(fileType);
 }
 function getCoderAlias() {
+	if(
+		!AkelPad.IsPluginRunning("Coder::HighLight")
+		&& !AkelPad.IsPluginRunning("Coder::CodeFold")
+		&& !AkelPad.IsPluginRunning("Coder::AutoComplete")
+	)
+		return "";
 	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
 	var hWndEdit = AkelPad.GetEditWnd();
 	var hDocEdit = AkelPad.GetEditDoc();
