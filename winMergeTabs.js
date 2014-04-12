@@ -56,6 +56,16 @@ function _localize(s) {
 	return _localize(s);
 }
 
+var hScript = AkelPad.ScriptHandle(WScript.ScriptName, 3 /*SH_FINDSCRIPT*/);
+if(hScript) do {
+	if(AkelPad.ScriptHandle(hScript, 13 /*SH_GETMESSAGELOOP*/)) {
+		// Script is running, second call close it
+		AkelPad.ScriptHandle(hScript, 33 /*SH_CLOSESCRIPT*/);
+		WScript.Quit();
+	}
+}
+while(hScript = AkelPad.ScriptHandle(hScript, 32 /*SH_NEXTSAMESCRIPT*/));
+
 var paths = AkelPad.GetArgValue("path", "");
 var cmdLineTemplate = AkelPad.GetArgValue("cmd", "<exe> <f1> <f2>");
 var save = AkelPad.GetArgValue("save", false);
@@ -122,11 +132,9 @@ if(
 			0x418 /*AKDN_FRAME_DESTROY*/
 		)
 	) {
-		AkelPad.ScriptNoMutex(5 /*ULT_UNLOCKSCRIPTSQUEUE|ULT_LOCKMULTICOPY*/); // Allow other scripts running
+		AkelPad.ScriptNoMutex(); // Allow other scripts running
 		AkelPad.WindowGetMessage(); // Message loop
 		AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
-
-		AkelPad.ScriptNoMutex(8 /*ULT_UNLOCKMULTICOPY*/);
 
 		stopTimers && stopTimers();
 		statusbar.restore();
