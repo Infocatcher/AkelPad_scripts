@@ -39,6 +39,13 @@ function _localize(s) {
 	return _localize(s);
 }
 
+var hScript = AkelPad.ScriptHandle(WScript.ScriptName, 3 /*SH_FINDSCRIPT*/);
+if(hScript && AkelPad.ScriptHandle(hScript, 13 /*SH_GETMESSAGELOOP*/)) {
+	// Script is running, second call close it
+	AkelPad.ScriptHandle(hScript, 33 /*SH_CLOSESCRIPT*/);
+	WScript.Quit();
+}
+
 var hMainWnd = AkelPad.GetMainWnd();
 var oSys = AkelPad.SystemFunction();
 
@@ -86,7 +93,7 @@ if(
 			0x418 /*AKDN_FRAME_DESTROY*/
 		)
 	) {
-		AkelPad.ScriptNoMutex(5 /*ULT_UNLOCKSCRIPTSQUEUE|ULT_LOCKMULTICOPY*/); // Allow other scripts running
+		AkelPad.ScriptNoMutex(); // Allow other scripts running
 		AkelPad.WindowGetMessage(); // Message loop
 		AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
 
