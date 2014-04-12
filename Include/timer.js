@@ -1,8 +1,9 @@
+// http://akelpad.sourceforge.net/forum/viewtopic.php?p=24559#24559
 // http://infocatcher.ucoz.net/js/akelpad_scripts/Include/timer.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
 
 // (c) Infocatcher 2014
-// version 0.1.0pre - 2014-04-06
+// version 0.1.0 - 2014-04-06
 
 // Helper functions for user32::SetTimer()
 // Usage example:
