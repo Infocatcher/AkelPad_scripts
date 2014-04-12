@@ -1,9 +1,9 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p= //~ todo
+﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=24561#24561
 // http://infocatcher.ucoz.net/js/akelpad_scripts/autoSaveSession.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/autoSaveSession.js
 
 // (c) Infocatcher 2012-2014
-// version 0.2.0pre7 - 2014-04-06
+// version 0.2.0 - 2014-04-06
 
 // Automatically saves current session after selection or scroll changes
 // Required Sessions plugin!
@@ -13,13 +13,12 @@
 //   -minDelay=8000        - (in ms) minimum interval between two saves
 //   -smallDelay=500       - (in ms) minimum daley between change and save
 //   -session="OnExit"     - name of session file
+//   -debug=true           - show debug messages in window title
 
 // Usage:
-// add
-//   /Call("Scripts::Main", 1, "autoSaveSession.js")
-// or
-//   /Call("Scripts::Main", 1, "autoSaveSession.js", '-startupDelay=2000 -minDelay=12000 -session="OnExit"')
-// to "CmdLineBegin" option
+//   CmdLineBegin=/Call("Scripts::Main", 1, "autoSaveSession.js")
+//   CmdLineBegin=/Call("Scripts::Main", 1, "autoSaveSession.js", '-startupDelay=2000 -minDelay=12000 -session="OnExit"')
+// (see AkelHelp*.htm for manual settings)
 
 var isMDI = AkelPad.IsMDI();
 if(!isMDI) // We silently ignore SDI mode to allow use the same settings in any mode!
