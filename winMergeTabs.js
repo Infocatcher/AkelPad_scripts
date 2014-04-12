@@ -9,6 +9,7 @@
 // or any other compare tool
 // Required MDI or PMDI window mode and timer.js library!
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
+// (or use -noBlink=true argument to work without timer.js)
 
 // Arguments:
 //   -path="%ProgramFiles%\WinMerge\WinMerge.exe" - path to WinMerge executable
@@ -19,6 +20,7 @@
 //                                                  false - use temporary files for modified files
 //   -temp="%AkelScripts%\temp"                   - path to temporary directory
 //   -useTabsOrder=true                           - always compare left tab with right tab
+//   -noBlink=true                                - disable blink in status bar (and just show "Select tab!" text)
 
 // Usage:
 //   Call("Scripts::Main", 1, "winMergeTabs.js")
@@ -102,7 +104,10 @@ if(
 		var statusMsg = _localize("Select tab!");
 		statusbar.set(statusMsg);
 
-		if(AkelPad.Include("timer.js")) {
+		if(
+			!AkelPad.GetArgValue("noBlink", false)
+			&& AkelPad.Include("timer.js")
+		) {
 			var showDelay = 600;
 			var hideDelay = 150;
 			// show -> [showDelay] -> hide -> [hideDelay] -> show -> [showDelay] -> hide

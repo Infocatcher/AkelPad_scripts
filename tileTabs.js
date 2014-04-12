@@ -9,12 +9,15 @@
 // select first tab, call script and then select second tab.
 // Required MDI window mode and timer.js library!
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
+// (or use -noBlink=true argument to work without timer.js)
 
 // Usage:
 //   Call("Scripts::Main", 1, "tileTabs.js")         - tile vertical
 //   Call("Scripts::Main", 1, "tileTabs.js", "o")    - tile vertical and preserve tabs order
 //   Call("Scripts::Main", 1, "tileTabs.js", "h")    - tile horizontal
 //   Call("Scripts::Main", 1, "tileTabs.js", "h o")  - tile horizontal and preserve tabs order
+
+// Also use -noBlink=true to disable blink in status bar (and just show "Select tab!" text)
 
 function _localize(s) {
 	var strings = {
@@ -63,7 +66,10 @@ if(
 		var statusMsg = _localize("Select tab!");
 		statusbar.set(statusMsg);
 
-		if(AkelPad.Include("timer.js")) {
+		if(
+			!AkelPad.GetArgValue("noBlink", false)
+			&& AkelPad.Include("timer.js")
+		) {
 			var showDelay = 600;
 			var hideDelay = 150;
 			// show -> [showDelay] -> hide -> [hideDelay] -> show -> [showDelay] -> hide
