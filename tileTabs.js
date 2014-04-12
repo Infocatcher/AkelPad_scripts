@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/tileTabs.js
 
 // (c) Infocatcher 2012-2014
-// version 0.1.3pre - 2014-04-06
+// version 0.1.3 - 2014-04-13
 
 // Tile current tab with next selected:
 // select first tab, call script and then select second tab.
