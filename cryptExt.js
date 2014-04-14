@@ -2,22 +2,31 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
 
 // (c) Infocatcher 2010-2012
-// version 0.4.1 - 2012-01-04
+// version 0.5.0a1 - 2012-06-09
+
+// !!!WARNING!!!
+// In version 0.5.0 changed method of double encryption!
+// Use version 0.4.1 to decrypt old texts!
+// http://infocatcher.ucoz.net/js/akelpad_scripts/crypt-0.4.1.js
 
 //===================
 // AES-256 and Blowfish encrypt/decrypt
 // Based on scripts from http://www.movable-type.co.uk/scripts/aes.html and http://www.farfarfar.com/scripts/encrypt/
 
+// Password length limit:
+//   AES-256  - 32*8 = 256 bit (32 single bit chars from UTF-8 encoded string)
+//   Blowfish - 56*8 = 448 bit
+
 // Simple encryption:
-//   text = encrypt(text, pass)
-//   text = base64(text)
+//   encrypted = encrypt(text, pass)
+//   encrypted = base64(encrypted)
 
 // Double encryption:
-//   text = encrypt_1(text, pass)
-//   text = encrypt_2(text, hash(pass))
-//   text = base64(text)
+//   encrypted = encrypt_1(text, pass)
+//   encrypted = encrypt_2(encrypted, hash(pass))
+//   encrypted = base64(encrypted)
 
-// Used SHA-512 hash function for AES-256 password (because of Blowfish key length limitations)
+// Used SHA-256 hash function for "external" encryption (because of key length limitations)
 
 // Hotkeys:
 //   Enter                    - Ok
@@ -337,9 +346,13 @@ Aes.Ctr = {};  // Aes.Ctr namespace: a subclass or extension of Aes
  */
 Aes.Ctr.encrypt = function(plaintext, password, nBits, rawOutput) {
   var blockSize = 16;  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
-  if (!(nBits==128 || nBits==192 || nBits==256)) return '';  // standard allows 128/192/256 bit keys
-  plaintext = Utf8.encode(plaintext);
+  if (!(nBits==128 || nBits==192 || nBits==256)) // standard allows 128/192/256 bit keys
+    throw "AES: wrong nBits argument: " + nBits;
   password = Utf8.encode(password);
+  //if (password.length*8 > nBits)
+  //  throw "AES: Your key length must be between 0 and " + nBits + " bits long";
+  plaintext = Utf8.encode(plaintext);
+
   //var t = new Date();  // timer
 
   // use AES itself to encrypt password to get cipher key (using plain password as source for key
@@ -885,18 +898,19 @@ Blowfish.prototype.resetKey = function () {
 };
 Blowfish.prototype.setKey = function (key) {
 	if (key.length > 56)
-		throw "Your key length must be between 0 and 448 bits long";
+		//throw "Blowfish: Your key length must be between 0 and 448 bits long";
+		key = key.substr(0, 56);
 	this.resetKey();
 	var data;
 	var keys = strToBytes(key);
 	var keyBytes = keys.length;
 	var i = 0,
 		j = 0;
-	for (i = 0; i < 18; i++) {
+	for (i = 0; i < 18; ++i) {
 		data = 0x00000000;
-		for (var k = 0; k < 4; k++) {
+		for (var k = 0; k < 4; ++k) {
 			data = ((data << 8) | (keys[j]));
-			j++;
+			++j;
 			if (j >= keyBytes) {
 				j = 0;
 			}
@@ -912,7 +926,7 @@ Blowfish.prototype.setKey = function (key) {
 		this.pArray[i] = datal;
 		this.pArray[i + 1] = datar;
 	}
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < 4; ++i) {
 		for (j = 0; j < 256; j += 2) {
 			var tmp = this.encipher(datal, datar);
 			datal = tmp[0];
@@ -924,7 +938,7 @@ Blowfish.prototype.setKey = function (key) {
 };
 Blowfish.prototype.encrypt = function (str) {
 	if (!this.pArray[0]) {
-		throw "You must initialize a key!";
+		throw "Blowfish: You must initialize a key!";
 	}
 	var out = [];
 	str = addPadding(str, 8, str.length);
@@ -948,44 +962,46 @@ Blowfish.prototype.decrypt = function (str) {
 	return hexToStr(bigEndianArrayToHex(out));
 };
 Blowfish.prototype.encipher = function (xl, xr) {
-	xl ^= this.pArray[0];
-	xr ^= this.f(xl) ^ this.pArray[1];
-	xl ^= this.f(xr) ^ this.pArray[2];
-	xr ^= this.f(xl) ^ this.pArray[3];
-	xl ^= this.f(xr) ^ this.pArray[4];
-	xr ^= this.f(xl) ^ this.pArray[5];
-	xl ^= this.f(xr) ^ this.pArray[6];
-	xr ^= this.f(xl) ^ this.pArray[7];
-	xl ^= this.f(xr) ^ this.pArray[8];
-	xr ^= this.f(xl) ^ this.pArray[9];
-	xl ^= this.f(xr) ^ this.pArray[10];
-	xr ^= this.f(xl) ^ this.pArray[11];
-	xl ^= this.f(xr) ^ this.pArray[12];
-	xr ^= this.f(xl) ^ this.pArray[13];
-	xl ^= this.f(xr) ^ this.pArray[14];
-	xr ^= this.f(xl) ^ this.pArray[15];
+	var pArray = this.pArray;
+	xl ^= pArray[0];
+	xr ^= this.f(xl) ^ pArray[1];
+	xl ^= this.f(xr) ^ pArray[2];
+	xr ^= this.f(xl) ^ pArray[3];
+	xl ^= this.f(xr) ^ pArray[4];
+	xr ^= this.f(xl) ^ pArray[5];
+	xl ^= this.f(xr) ^ pArray[6];
+	xr ^= this.f(xl) ^ pArray[7];
+	xl ^= this.f(xr) ^ pArray[8];
+	xr ^= this.f(xl) ^ pArray[9];
+	xl ^= this.f(xr) ^ pArray[10];
+	xr ^= this.f(xl) ^ pArray[11];
+	xl ^= this.f(xr) ^ pArray[12];
+	xr ^= this.f(xl) ^ pArray[13];
+	xl ^= this.f(xr) ^ pArray[14];
+	xr ^= this.f(xl) ^ pArray[15];
 	xl ^= this.f(xr);
-	return [xr ^ this.pArray[17], xl ^ this.pArray[16]];
+	return [xr ^ pArray[17], xl ^ pArray[16]];
 };
 Blowfish.prototype.decipher = function (xl, xr) {
-	xl ^= this.pArray[17];
-	xr ^= this.f(xl) ^ this.pArray[16];
-	xl ^= this.f(xr) ^ this.pArray[15];
-	xr ^= this.f(xl) ^ this.pArray[14];
-	xl ^= this.f(xr) ^ this.pArray[13];
-	xr ^= this.f(xl) ^ this.pArray[12];
-	xl ^= this.f(xr) ^ this.pArray[11];
-	xr ^= this.f(xl) ^ this.pArray[10];
-	xl ^= this.f(xr) ^ this.pArray[9];
-	xr ^= this.f(xl) ^ this.pArray[8];
-	xl ^= this.f(xr) ^ this.pArray[7];
-	xr ^= this.f(xl) ^ this.pArray[6];
-	xl ^= this.f(xr) ^ this.pArray[5];
-	xr ^= this.f(xl) ^ this.pArray[4];
-	xl ^= this.f(xr) ^ this.pArray[3];
-	xr ^= this.f(xl) ^ this.pArray[2];
+	var pArray = this.pArray;
+	xl ^= pArray[17];
+	xr ^= this.f(xl) ^ pArray[16];
+	xl ^= this.f(xr) ^ pArray[15];
+	xr ^= this.f(xl) ^ pArray[14];
+	xl ^= this.f(xr) ^ pArray[13];
+	xr ^= this.f(xl) ^ pArray[12];
+	xl ^= this.f(xr) ^ pArray[11];
+	xr ^= this.f(xl) ^ pArray[10];
+	xl ^= this.f(xr) ^ pArray[9];
+	xr ^= this.f(xl) ^ pArray[8];
+	xl ^= this.f(xr) ^ pArray[7];
+	xr ^= this.f(xl) ^ pArray[6];
+	xl ^= this.f(xr) ^ pArray[5];
+	xr ^= this.f(xl) ^ pArray[4];
+	xl ^= this.f(xr) ^ pArray[3];
+	xr ^= this.f(xl) ^ pArray[2];
 	xl ^= this.f(xr);
-	return [(xr ^ this.pArray[0]), xl ^ this.pArray[1]];
+	return [(xr ^ pArray[0]), xl ^ pArray[1]];
 };
 Blowfish.prototype.f = function (x) {
 	var str = ((this.sBox[0][(x >>> 24) & 0xff] + this.sBox[1][(x >>> 16) & 0xff]) ^ this.sBox[2][(x >>> 8) & 0xff])
@@ -1014,7 +1030,7 @@ function blowfishDecrypt(text, pass, rawInput) {
 
 //===================
 
-function SHA512(str, variant) {
+function SHA(str, variant) {
 	// http://www.farfarfar.com/scripts/encrypt/
 	//str_sha(val, "SHA-224")
 	//str_sha(val, "SHA-384")
@@ -1631,7 +1647,24 @@ function SHA512(str, variant) {
 
 //===================
 
-var hashStaticSalt = "ji&Qm1t0I2,eZF1G"; // Say hello to rainbow tables :)
+var hashStaticSalt = "H,61d'c7J;\"Zy{nY"; // Say hello to rainbow tables :)
+function packHex(hex) {
+	var n = 4;
+	var len = hex.length;
+	var r = len % n;
+	if(r) {
+		var add = n - r;
+		hex += new Array(add + 1).join("\x00");
+		len += add;
+	}
+	var out = "";
+	for(var i = 0; i < len; i += n)
+		out += String.fromCharCode(Number("0x" + hex.substr(i, n)));
+	return out;
+}
+function hash(pass) { // 64/4*(1..3)*8 = (16..48)*8 bits
+	return packHex(SHA(pass + hashStaticSalt, "SHA-256"));
+}
 var cryptors = {
 	// speed: symbols/ms [encryptSpeed, decryptSpeed]
 	aes256: {
@@ -1654,13 +1687,13 @@ var cryptors = {
 		prettyName: "AES-256 + Blowfish",
 		speed: [14.3, 31.5],
 		encrypt: function(text, pass) {
-			text = Aes.Ctr.encrypt(text, SHA512(pass + hashStaticSalt, "SHA-512"), 256, true);
-			text = blowfishEncrypt(text, pass);
+			text = Aes.Ctr.encrypt(text, pass, 256, true);
+			text = blowfishEncrypt(text, hash(pass));
 			return text;
 		},
 		decrypt: function(text, pass) {
-			text = blowfishDecrypt(text, pass);
-			text = Aes.Ctr.decrypt(text, SHA512(pass + hashStaticSalt, "SHA-512"), 256, true);
+			text = blowfishDecrypt(text, hash(pass));
+			text = Aes.Ctr.decrypt(text, pass, 256, true);
 			return text;
 		}
 	},
@@ -1669,11 +1702,11 @@ var cryptors = {
 		speed: [11.1, 24.4],
 		encrypt: function(text, pass) {
 			text = blowfishEncrypt(text, pass, true);
-			text = Aes.Ctr.encrypt(text, SHA512(pass + hashStaticSalt, "SHA-512"), 256);
+			text = Aes.Ctr.encrypt(text, hash(pass), 256);
 			return text;
 		},
 		decrypt: function(text, pass) {
-			text = Aes.Ctr.decrypt(text, SHA512(pass + hashStaticSalt, "SHA-512"), 256);
+			text = Aes.Ctr.decrypt(text, hash(pass), 256);
 			text = blowfishDecrypt(text, pass, true);
 			return text;
 		}
@@ -1682,9 +1715,9 @@ var cryptors = {
 
 
 var hMainWnd = AkelPad.GetMainWnd();
+var hWndEdit = AkelPad.GetEditWnd();
 var oSys = AkelPad.SystemFunction();
 var oSet = AkelPad.ScriptSettings();
-var hWndEdit = AkelPad.GetEditWnd();
 var dialogTitle = WScript.ScriptName.replace(/^[!-\-_]+/, "");
 dialogTitle = dialogTitle.charAt(0).toUpperCase() + dialogTitle.substr(1);
 
@@ -1800,6 +1833,8 @@ function encryptOrDecrypt(pass) {
 		var res = cryptorData[decrypt ? "decrypt" : "encrypt"](text, pass);
 	}
 	catch(e) {
+		//if(e.name)
+		//	throw e;
 		AkelPad.MessageBox(
 			hMainWnd,
 			e.name ? e.name + "\n" + e.message : e,
