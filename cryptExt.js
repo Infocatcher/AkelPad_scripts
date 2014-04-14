@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
 
 // (c) Infocatcher 2010-2012
-// version 0.5.0a8 - 2012-06-18
+// version 0.5.0a9 - 2012-06-20
 
 // !!!WARNING!!!
 // In version 0.5.0 changed the method of double encryption!
@@ -199,7 +199,7 @@ var MODE_DECRYPT     = 2;
 var mode             = getArg("mode", MODE_USER_SELECT);
 var modalDlg         = getArg("modal", false);
 var cryptor          = getArg("cryptor", "").toLowerCase();
-var pbkdf2Iterations = getArg("PBKDF2Iterations", 2500);
+var pbkdf2Iterations = getArg("PBKDF2Iterations", 15); //~~~~~~~~~~~~~~~~~~~~~
 var maxLineWidth     = getArg("maxLineWidth", 75);
 var showPassword     = getArg("showPassword");
 var onlySelected     = getArg("onlySelected", false);
@@ -420,8 +420,8 @@ Aes.Ctr.encrypt = function(plaintext, password, nBits, raw) {
   var nonceSec = Math.floor(nonce/1000);
   var nonceMs = nonce%1000;
   // encode nonce with seconds in 1st 4 bytes, and (repeated) ms part filling 2nd 4 bytes
-  for (var i=0; i<4; i++) counterBlock[i] = (nonceSec >>> i*8) & 0xff;
-  for (var i=0; i<4; i++) counterBlock[i+4] = nonceMs & 0xff;
+  for (var i=0; i<4; ++i) counterBlock[i] = (nonceSec >>> i*8) & 0xff;
+  for (var i=0; i<4; ++i) counterBlock[i+4] = nonceMs & 0xff;
   // and convert it to a string to go on the front of the ciphertext
   var ctrTxt = '';
   for (var i=0; i<8; ++i) ctrTxt += String.fromCharCode(counterBlock[i]);
@@ -546,8 +546,8 @@ var base64 = {
 	_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
 	encode: function (input, utf8Encode) {
 		//if(utf8Encode === true)
-		//	input = convertFromUnicode(input, codePageBase64); //~ todo: CP_NOT_CONVERT seems buggy
-		//	input = Utf8.encode(input);
+		//input = convertFromUnicode(input, cp);
+		input = Utf8.encode(input);
 
 		var output = "";
 		var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
@@ -581,7 +581,7 @@ var base64 = {
 		var _keyMap = this._keyMap;
 		if(!_keyMap) {
 			_keyMap = this._keyMap = {};
-			for (var j = 0, l = _keyStr.length; j < l; j++)
+			for (var j = 0, l = _keyStr.length; j < l; ++j)
 				_keyMap[_keyStr.charAt(j)] = j;
 		}
 
@@ -605,8 +605,8 @@ var base64 = {
 				output = output + String.fromCharCode(chr3);
 		}
 		//if(utf8Decode === true)
-		//	output = convertToUnicode(output, cp);
-		//	output = Utf8.decode(output);
+		//output = convertToUnicode(output, cp);
+		output = Utf8.decode(output);
 		return output;
 	}
 };
@@ -683,24 +683,28 @@ function strToBytes(str) {
 	} while (i < len);
 	return ar;
 }
-function addPadding(str, divisible, len) {
-	var standardPadding = false;
-	var paddingLen;
-	if (len % divisible !== 0) {
-		paddingLen = divisible - (len % divisible);
-	} else {
-		paddingLen = 0;
-	}
-	if (standardPadding) {
-		for (var i = 0; i < paddingLen; i++) {
-			str += String.fromCharCode(paddingLen);
-		}
-	} else {
-		for (var i = 0; i < paddingLen; i++) {
-			str += "\x00";
-		}
-	}
+function addPadding(str, divisible) {
+	// http://www.di-mgt.com.au/cryptopad.html
+	var len = str.length;
+	if(len % divisible == 0)
+		return str;
+	var paddingLen = divisible - (len % divisible);
+	//var paddingChar = String.fromCharCode(paddingLen);
+	for(var i = 1; i < paddingLen; ++i)
+		str += "\x00";
+	str += String.fromCharCode(paddingLen);
 	return str;
+}
+function removePadding(str, divisible) {
+	var len = str.length;
+	var paddingLen = str.charCodeAt(len - 1);
+	for(var i = 1; i < paddingLen; ++i)
+		if(str.charCodeAt(len - 1 - i) != 0)
+			return str; // Bad padding
+	return str.slice(0, -paddingLen);
+	//if(str.length % divisible != 0)
+	//	return str; // Bad padding
+	//return str.replace(new RegExp("\x00{1," + (divisible - 1) + "}$"), "");
 }
 function strToBigEndianArray(str) {
 	var charBit = 8;
@@ -983,11 +987,11 @@ Blowfish.prototype.encrypt = function (str) {
 		throw "Blowfish: You must initialize a key!";
 	}
 	var out = [];
-	str = addPadding(str, 8, str.length);
+	str = addPadding(str, 8);
 	str = strToBigEndianArray(str);
 	var t = str;
 	var t2;
-	for (var i = 0; i < t.length; i += 2) {
+	for (var i = 0, l = t.length; i < l; i += 2) {
 		t2 = this.encipher(t[i], t[i + 1]);
 		out.push(t2[0], t2[1]);
 	}
@@ -997,11 +1001,12 @@ Blowfish.prototype.decrypt = function (str) {
 	var out = [];
 	var t = strToBigEndianArray(str);
 	var t2;
-	for (var i = 0; i < t.length; i += 2) {
+	for (var i = 0, l = t.length; i < l; i += 2) {
 		t2 = this.decipher(t[i], t[i + 1]);
 		out.push(t2[0], t2[1]);
 	}
-	return hexToStr(bigEndianArrayToHex(out));
+	str = hexToStr(bigEndianArrayToHex(out));
+	return removePadding(str, 8);
 };
 Blowfish.prototype.encipher = function (xl, xr) {
 	var pArray = this.pArray;
@@ -1052,7 +1057,6 @@ Blowfish.prototype.f = function (x) {
 };
 
 function blowfishRawEncrypt(text, pass) {
-	text = text.replace(/\x00+$/, ""); // We can get \0 at end after decrypt sometimes
 	var bf = new Blowfish();
 	bf.setKey(pass);
 	text = bf.encrypt(text);
@@ -1061,7 +1065,8 @@ function blowfishRawEncrypt(text, pass) {
 function blowfishRawDecrypt(text, pass) {
 	var bf = new Blowfish();
 	bf.setKey(pass);
-	return bf.decrypt(text).replace(/\x00+$/, "");
+	text = bf.decrypt(text);
+	return text;
 }
 
 //===================
@@ -1725,8 +1730,9 @@ sjcl.misc.pbkdf2 = function (password, salt, count, length, Prff) {
 
 var _cache = {};
 function getHash(pass, salt, iterations) {
-	return _cache[pass] || (
-		_cache[pass] = packHex(
+	var key = pass + "\x00" + salt + "\x00" + iterations;
+	return _cache[key] || (
+		_cache[key] = packHex(
 			sjcl.codec.hex.fromBits(
 				sjcl.misc.pbkdf2(pass, salt, iterations, 64*4)
 			)
@@ -1743,18 +1749,14 @@ function getSalt() {
 function getHeader(iterations, salt) {
 	return iterations + "\x00" + salt + "\x00";
 }
-function getDummyHeader() {
-	return getHeader(pbkdf2Iterations, getSalt());
-}
 function parseHeader(str) {
-	if(/^(\d+)\x00([^\x00]+)\x00/.test(str)) {
-		return {
-			iterations: Number(RegExp.$1),
-			salt: RegExp.$2,
-			text: str.substr(RegExp.lastMatch.length)
-		};
-	}
-	throw "Can't decrypt: bad header";
+	if(!/^(\d+)\x00([^\x00]+)\x00/.test(str))
+		throw "Can't decrypt: bad header";
+	return {
+		iterations: Number(RegExp.$1),
+		salt: RegExp.$2,
+		text: str.substr(RegExp.lastMatch.length)
+	};
 }
 function packHex(hex) {
 	var n = 4;
@@ -1774,30 +1776,90 @@ function feedback(msg) {
 	_feedback && _feedback(msg);
 }
 function encrypt(text, pass, encrypter, encrypter2) {
-	feedback("1/3: " + _localize("=> UTF-8"));
+	var n = encrypter2 ? 6 : 4;
+	var s = "/" + n + ": ";
+	var i = 0;
+
+	feedback(++i + s + _localize("=> UTF-8"));
 	text = Utf8.encode(text);
 	pass = Utf8.encode(pass);
 
-	feedback("2/3: " + _localize("encrypt"));
-	text = encrypter(text, pass);
+	feedback(++i + s + _localize("hashing" + (encrypter2 ? "-1" : "")));
+	var salt = getSalt();
+	var hash = getHash(pass, salt, pbkdf2Iterations);
 
-	feedback("3/3: " + _localize("base64"));
+	//text = text.replace(/\x00+$/, "");
+
+	feedback(++i + s + _localize("encrypt" + (encrypter2 ? "-1" : "")));
+	text = getHeader(pbkdf2Iterations, salt) + encrypter(text, hash);
+
+	if(encrypter2) {
+		feedback(++i + s + _localize("hashing-2"));
+		var salt2 = getSalt();
+		var hash2 = getHash(pass, salt2, pbkdf2Iterations);
+
+		//text = text.replace(/\x00+$/, "");
+
+		feedback(++i + s + _localize("Unicode => UTF-8"));
+		text = Utf8.encode(text);
+
+		feedback(++i + s + _localize("encrypt-2"));
+		text = getHeader(pbkdf2Iterations, salt2) + encrypter2(text, hash2);
+	}
+
+	feedback(++i + s + _localize("=> base64"));
 	text = base64.encode(text);
 
 	feedback();
 	return text;
 }
-function decrypt(text, pass, decrypter) {
-	feedback("1/4: " + _localize("Unicode => UTF-8"));
+function decrypt(text, pass, decrypter, decrypter2) {
+	var n = decrypter2 ? 7 : 5;
+	var s = "/" + n + ": ";
+	var i = 0;
+
+	//~ todo: remove stats?
+	feedback(++i + s + _localize("Unicode => UTF-8"));
 	pass = Utf8.encode(pass);
 
-	feedback("2/4: " + _localize("base64"));
+	feedback(++i + s + _localize("base64 => text"));
 	text = base64.decode(text);
 
-	feedback("3/4: " + _localize("decrypt"));
-	text = decrypter(text, pass);
+	var h = parseHeader(text);
+	var salt = h.salt;
+	var iterations = h.iterations;
+	text = h.text;
 
-	feedback("4/4: " + _localize("UTF-8 => Unicode"));
+	feedback(++i + s + _localize("hashing" + (decrypter2 ? "-1" : "")));
+	var hash = getHash(pass, salt, iterations);
+
+	feedback(++i + s + _localize("decrypt" + (decrypter2 ? "-1" : "")));
+	text = decrypter(text, hash);
+
+	//if(decrypter == blowfishRawDecrypt)
+	//	text = removePadding(text, 8);
+	//text = text.replace(/\x00+$/, "");
+
+	if(decrypter2) {
+		feedback(++i + s + _localize("UTF-8"));
+		text = Utf8.decode(text);
+
+		feedback(++i + s + _localize("hashing-2"));
+		var h2 = parseHeader(text);
+		var salt2 = h2.salt;
+		var iterations2 = h2.iterations;
+		text = h2.text;
+		var hash2 = getHash(pass, salt2, iterations2);
+
+		feedback(++i + s + _localize("decrypt-2"));
+		text = decrypter2(text, hash2);
+
+		//if(decrypter2 == blowfishRawDecrypt)
+		//	text = removePadding(text, 8);
+		//text = text.replace(/\x00+$/, "");
+	}
+
+	feedback(++i + s + _localize("UTF-8 => Unicode"));
 	text = Utf8.decode(text);
 
 	feedback();
@@ -1830,60 +1892,20 @@ var cryptors = {
 		prettyName: "AES-256 + Blowfish",
 		speed: [14.3, 31.5],
 		encrypt: function(text, pass) {
-			feedback("1/4: " + _localize("hashing"));
-			var salt = getSalt();
-			var hash = getHash(pass, salt, pbkdf2Iterations);
-			feedback("2/4: " + _localize("encrypt-1"));
-			text = Aes.Ctr.encrypt(text, pass, 256, true);
-			feedback("3/4: " + _localize("encrypt-2"));
-			text = blowfishEncrypt(text, hash, true);
-			feedback("4/4: " + _localize("base64"));
-			var header = getHeader(pbkdf2Iterations, salt);
-			text = base64.encode(header + text);
-			feedback();
-			return text;
+			return encrypt(text, pass, aesRawEncrypt, blowfishRawEncrypt);
 		},
 		decrypt: function(text, pass) {
-			feedback("1/4: " + _localize("base64"));
-			text = base64.decode(text);
-			var h = parseHeader(text);
-			var salt = h.salt;
-			var iterations = h.iterations;
-			text = h.text;
-			feedback("2/4: " + _localize("hash"));
-			var hash = getHash(pass, salt, iterations);
-			feedback("3/4: " + _localize("decrypt-1"));
-			text = blowfishDecrypt(text, hash, true);
-			feedback("4/4: " + _localize("decrypt-2"));
-			text = Aes.Ctr.decrypt(text, pass, 256, true);
-			feedback();
-			return text;
+			return decrypt(text, pass, blowfishRawDecrypt, aesRawDecrypt);
 		}
 	},
 	blowfish_aes256: {
 		prettyName: "Blowfish + AES-256",
 		speed: [11.1, 24.4],
 		encrypt: function(text, pass) {
-			feedback("1/4: " + _localize("hashing"));
-			var salt = getSalt();
-			var hash = getHash(pass, salt, pbkdf2Iterations);
-			feedback("2/4: " + _localize("encrypt-1"));
-			text = blowfishEncrypt(text, pass, true);
-			feedback("3/4: " + _localize("encrypt-2"));
-			text = Aes.Ctr.encrypt(text, hash, 256, true);
-			feedback("4/4: " + _localize("base64"));
-			var header = getHeader(pbkdf2Iterations, salt);
-			text = base64.encode(header + text);
-			feedback();
-			return text;
+			return encrypt(text, pass, blowfishRawEncrypt, aesRawEncrypt);
 		},
 		decrypt: function(text, pass) {
-			feedback("1/2");
-			text = Aes.Ctr.decrypt(text, hash(pass), 256);
-			feedback("2/2");
-			text = blowfishDecrypt(text, pass, true);
-			feedback();
-			return text;
+			return decrypt(text, pass, aesRawDecrypt, blowfishRawDecrypt);
 		}
 	}
 };
@@ -1973,7 +1995,7 @@ function encryptOrDecrypt(pass) {
 	if(!pass) // Cancel
 		return;
 
-	if(warningTime > 0) {
+	if(warningTime > 0 || false) { //~~~~~ disabled
 		var speed = cryptorData.speed[isDecrypt ? 1 : 0];
 		//var remTime = text.length/speed;
 
@@ -2036,17 +2058,18 @@ function encryptOrDecrypt(pass) {
 
 function cryptTest() {
 	//var u = "";
-	//for(var i = 0; i <= 0xffff; i++)
+	//for(var i = 0; i <= 0xffff; ++i)
 	//	u += String.fromCharCode(i);
+	var pi = pbkdf2Iterations;
+	pbkdf2Iterations = 12;
 	var texts = [
 		"Abcdef0123",
 		"Abef015@#$%^&*()-_=+/\\\n!\r\t'\" ",
-		"Qw\u0419\u0446\u0443\u043a\uffe0\uffe1\uf900\x00\uff4d\n5\r\u210c\t\u215e\uffc7\uac06\u0e04\uff66"
+		"૷ௐغఌØѧ࿛ੜಐྜજࡼࣿܩٚ㩝䢿ૺ୭掇垜淤٘᪏뉹䚮㞽聻昅컝≂❵ꚞ뽲",
+		"\x00\x01\x02\x05\x00\x00\x00"
 	];
 	var passwords = [
-		"ab01",
 		"Qw987-_=+\\|%^$;:'\t !~ *",
-		"Af46\u0424\u044b\u0432\u0430\u0107\u03b1\u05dc\uac03\t\uff25\uff3d\uffed\u8030\u0108\u01b6 \u4e42",
 		"Rt\u041a\u0435\u043d\x00 \r\n\u4e5b\u75bb\ufb44"
 	];
 	var ok = 0;
@@ -2058,19 +2081,36 @@ function cryptTest() {
 			var pass = passwords[ip];
 			for(var cr in cryptors) {
 				var crData = cryptors[cr];
-				var enc = crData.encrypt(text, pass);
-				var dec = crData.decrypt(enc, pass);
-				if(dec == text)
-					ok++;
-				else {
+				var err = function(e) {
 					fail[fail.length] = (crData.prettyName || cr) + " (" + it + ", " + ip + ") fail:\n"
+						+ (e ? "Error:\n" + (e.name ? e.name + "\n" + e.message : e) + "\n" : "")
 						+ esc(text) + "\n=>\n"
 						+ esc(enc)  + "\n=>\n"
 						+ esc(dec);
 				}
+				try {
+					var enc = crData.encrypt(text, pass);
+				}
+				catch(e) {
+					err(e);
+					continue;
+				}
+				try {
+					var dec = crData.decrypt(enc, pass);
+				}
+				catch(e) {
+					err(e);
+					continue;
+				}
+				if(dec == text)
+					ok++;
+				else {
+					err();
+				}
 			}
 		}
 	}
+	pbkdf2Iterations = pi;
 	var elapsedTime = "\nElapsed time: " + (new Date().getTime() - t) + " ms";
 	AkelPad.MessageBox(
 		hMainWnd,
