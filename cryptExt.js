@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
 
 // (c) Infocatcher 2010-2012
-// version 0.5.0a1 - 2012-06-09
+// version 0.5.0a2 - 2012-06-09
 
 // !!!WARNING!!!
 // In version 0.5.0 changed method of double encryption!
@@ -63,6 +63,12 @@
 //   Call("Scripts::Main", 1, "crypt.js", "-mode=2 -cryptor='AES256'")     - decrypt
 //   Call("Scripts::Main", 1, "crypt.js", "-mode=0 -maxLineWidth=0 -showPassword=true -saveOptions=0")
 //===================
+
+// Wrapper for AkelPad.Include()
+if(!cryptorsArgs)
+	var cryptorsArgs = {};
+var _exports = (function() {
+var overrideArgs = cryptorsArgs;
 
 function _localize(s) {
 	var strings = {
@@ -1721,7 +1727,7 @@ var oSet = AkelPad.ScriptSettings();
 var dialogTitle = WScript.ScriptName.replace(/^[!-\-_]+/, "");
 dialogTitle = dialogTitle.charAt(0).toUpperCase() + dialogTitle.substr(1);
 
-if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())) {
+if(hMainWnd && !AkelPad.IsInclude()) {
 	if(test || test === undefined && !AkelPad.SendMessage(hMainWnd, 1185 /*AKD_GETTEXTLENGTH*/, hWndEdit, 0))
 		cryptTest();
 	else if(!modalDlg)
@@ -1756,7 +1762,7 @@ function encryptOrDecrypt(pass) {
 			var decryptObj = { value: isBase64(trimBase64String(text)) };
 		if(!cryptor)
 			var cryptorObj = { value: "" };
-		var pass = passwordPrompt(
+		var pass = _passwordPrompt(
 			dialogTitle + (cryptor ? " :: " + cryptors[cryptor].prettyName : ""),
 			_localize(mode == MODE_ENCRYPT ? "Encrypt" : mode == MODE_DECRYPT ? "Decrypt" : "Password"),
 			modalDlg,
@@ -1787,7 +1793,7 @@ function encryptOrDecrypt(pass) {
 	}
 
 	if(!pass) {
-		pass = passwordPrompt(
+		pass = _passwordPrompt(
 			dialogTitle + " :: " + cryptorData.prettyName,
 			_localize(decrypt ? "Decrypt" : "Encrypt"),
 			modalDlg
@@ -1922,7 +1928,7 @@ function cryptDialog() {
 	var cryptorObj = cryptor && cryptors[cryptor]
 		? null
 		: {};
-	passwordPrompt(
+	_passwordPrompt(
 		dialogTitle + (cryptor && cryptors[cryptor] ? " :: " + cryptors[cryptor].prettyName : ""),
 		_localize(mode == MODE_ENCRYPT ? "Encrypt" : mode == MODE_DECRYPT ? "Decrypt" : "Password"),
 		false,
@@ -1931,7 +1937,22 @@ function cryptDialog() {
 	);
 }
 
-function passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
+function passwordPrompt(decryptObj, cryptorObj) {
+	var _cryptor = cryptorObj
+		? cryptorObj.value
+		: cryptor;
+	var caption = dialogTitle + (_cryptor && cryptors[_cryptor] ? " :: " + cryptors[_cryptor].prettyName : "");
+	var _decrypt = decryptObj ? undefined : decrypt;
+	var label = _localize(
+		_decrypt == undefined
+			? "Password"
+			: decrypt
+				? "Decrypt"
+				: "Encrypt"
+	);
+	return _passwordPrompt(caption, label, true, decryptObj, cryptorObj);
+}
+function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	var hInstanceDLL = AkelPad.GetInstanceDll();
 	var dialogClass = "AkelPad::Scripts::" + WScript.ScriptName + "::" + oSys.Call("kernel32::GetCurrentProcessId");
 
@@ -2771,6 +2792,8 @@ function getArg(argName, defaultVal) {
 	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
 		if(/^[-\/](\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
 			args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
+	for(var p in overrideArgs)
+		args[p.toLowerCase()] = overrideArgs[p];
 	getArg = function(argName, defaultVal) {
 		argName = argName.toLowerCase();
 		return typeof args[argName] == "undefined" // argName in args
@@ -2779,3 +2802,20 @@ function getArg(argName, defaultVal) {
 	};
 	return getArg(argName, defaultVal);
 }
+
+return {
+	cryptors: cryptors,
+	passwordPrompt: passwordPrompt,
+	packHex: packHex,
+	utf8: Utf8,
+	base64: Base64,
+	trimBase64String: trimBase64String,
+	isBase64: isBase64
+};
+
+})();
+
+if(_exports && AkelPad.IsInclude()) // this.foo doesn't work: http://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#18304
+	for(var _p in _exports)
+		eval("if(!_p) var _p = _exports._p;".replace(/_p/g, _p));
+_exports = _p = undefined;
