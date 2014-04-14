@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
 
 // (c) Infocatcher 2010-2012
-// version 0.5.0a4 - 2012-06-18
+// version 0.5.0a5 - 2012-06-18
 
 // !!!WARNING!!!
 // In version 0.5.0 changed the method of double encryption!
@@ -31,7 +31,7 @@
 //   encrypted = encrypt_1(text, pass)
 //   encrypted = encrypt_2(encrypted, hash(pass))
 //   encrypted = base64(encrypted)
-// Where hash() is PBKDF2 function http://en.wikipedia.org/wiki/PBKDF2
+// where hash() is PBKDF2 function http://en.wikipedia.org/wiki/PBKDF2
 
 // PBKDF2 configuration:
 //   hash algorithm:   SHA-256
@@ -1723,31 +1723,55 @@ function hash(pass) {
 }
 function init() {
 	init = function() {};
-	if(!oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/))
-		return;
-	var salt = oSet.Read("staticSalt", 3 /*PO_STRING*/);
-	var count = oSet.Read("PBKDF2Count", 1 /*PO_DWORD*/);
-	oSet.End();
+	if(oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/)) {
+		var salt = oSet.Read("staticSalt", 3 /*PO_STRING*/);
+		var count = oSet.Read("PBKDF2Count", 1 /*PO_DWORD*/);
+		oSet.End();
+	}
 	if(!salt || !count) { // Initialize
-		salt = "";
-		var chrs = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`~!@#$%^&*()-_=+[]{}\\|;:'\"<>,.?/";
-		var num = 16;
-		var len = chrs.length;
-		for(var i = 0; i < num; ++i)
-			salt += chrs.charAt(Math.floor(Math.random()*len));
+		salt = getRandom(
+			"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`~!@#$%^&*()-_=+[]{}\\|;:'\"<>,.?/",
+			16
+		);
 		count = hashPBKDF2Count;
 
+		var ok = false;
 		if(oSet.Begin(WScript.ScriptBaseName, 0x2 /*POB_SAVE*/)) {
 			oSet.Write("staticSalt", 3 /*PO_STRING*/, salt);
 			oSet.Write("PBKDF2Count", 1 /*PO_DWORD*/, count);
-			oSet.End();
+			ok = oSet.End();
 		}
-		else {
+		if(!ok) {
+			AkelPad.MessageBox(
+				hWndDialog || hMainWnd,
+				_localize("Can't save generated salt!"),
+				dialogTitle + " :: " + _localize("Error"),
+				16 /*MB_ICONERROR*/
+			);
 			salt = hashStaticSalt;
 		}
 	}
 	hashStaticSalt = salt;
 	hashPBKDF2Count = count;
+}
+function getRandom(chars, num) {
+	chars = shuffle(chars);
+	var len = chars.length;
+	var rnd = "";
+	for(var i = 0; i < num; ++i)
+		rnd += chars.charAt(Math.floor(Math.random()*len));
+	return rnd;
+}
+function shuffle(chars) {
+	var arr = chars.split("");
+	var i = arr.length;
+	while(--i) {
+		var rnd = Math.floor(Math.random()*(i + 1));
+		var tmp = arr[i];
+		arr[i] = arr[rnd];
+		arr[rnd] = tmp;
+	}
+	return arr.join("");
 }
 function packHex(hex) {
 	var n = 4;
@@ -1815,6 +1839,7 @@ var cryptors = {
 
 var hMainWnd = AkelPad.GetMainWnd();
 var hWndEdit = AkelPad.GetEditWnd();
+var hWndDialog;
 var oSys = AkelPad.SystemFunction();
 var oSet = AkelPad.ScriptSettings();
 var dialogTitle = WScript.ScriptName.replace(/^[!-\-_]+/, "");
@@ -2049,7 +2074,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	var hInstanceDLL = AkelPad.GetInstanceDll();
 	var dialogClass = "AkelPad::Scripts::" + WScript.ScriptName + "::" + oSys.Call("kernel32::GetCurrentProcessId");
 
-	var hWndDialog = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, dialogClass, 0);
+	hWndDialog = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, dialogClass, 0);
 	if(hWndDialog) {
 		if(oSys.Call("user32::IsIconic", hWndDialog))
 			oSys.Call("user32::ShowWindow", hWndDialog, 9 /*SW_RESTORE*/);
