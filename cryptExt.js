@@ -3500,8 +3500,10 @@ function packHex(hex) {
 	return out;
 }
 function feedback(msg) {
-	if(new Date().getTime() - feedback._start > 150)
+	if(new Date().getTime() - feedback._start > 150) {
 		_feedback && _feedback(msg);
+		hWndDialog && AkelPad.SendMessage(hWndDialog, 15 /*WM_PAINT*/, 0, 0);
+	}
 }
 function encrypt(text, pass, encrypters) {
 	//var encrypters = Array.prototype.slice.call(arguments, 3);
