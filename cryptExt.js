@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
 
 // (c) Infocatcher 2010-2012
-// version 0.5.0a7 - 2012-06-18
+// version 0.5.0a8 - 2012-06-18
 
 // !!!WARNING!!!
 // In version 0.5.0 changed the method of double encryption!
@@ -107,6 +107,32 @@ function _localize(s) {
 		"Passwords do not match!": {
 			ru: "Пароли не совпадают!"
 		},
+
+		"hashing": {
+			ru: "хэширование"
+		},
+		"encrypt": {
+			ru: "шифрование"
+		},
+		"encrypt-1": {
+			ru: "шифрование-1"
+		},
+		"encrypt-2": {
+			ru: "шифрование-2"
+		},
+		"base64": {
+			ru: "base64"
+		},
+		"decrypt": {
+			ru: "дешифрование"
+		},
+		"decrypt-1": {
+			ru: "дешифрование-1"
+		},
+		"decrypt-2": {
+			ru: "дешифрование-2"
+		},
+
 		"Direction": {
 			ru: "Направление"
 		},
@@ -184,7 +210,7 @@ var test             = getArg("test");
 var saveOptions      = getArg("saveOptions", 1);
 var savePosition     = getArg("savePosition", true);
 
-var decrypt = mode == MODE_DECRYPT;
+var isDecrypt = mode == MODE_DECRYPT;
 
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
@@ -367,22 +393,21 @@ Aes.Ctr = {};  // Aes.Ctr namespace: a subclass or extension of Aes
  * @param {Number} nBits     Number of bits to be used in the key (128, 192, or 256)
  * @returns {string}         Encrypted text
  */
-Aes.Ctr.encrypt = function(plaintext, password, nBits, rawOutput) {
+Aes.Ctr.encrypt = function(plaintext, password, nBits, raw) {
   var blockSize = 16;  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
-  if (!(nBits==128 || nBits==192 || nBits==256)) // standard allows 128/192/256 bit keys
+  if (nBits != 128 && nBits != 192 && nBits != 256) // standard allows 128/192/256 bit keys
     throw "AES: wrong nBits argument: " + nBits;
-  password = Utf8.encode(password);
-  //if (password.length*8 > nBits)
-  //  throw "AES: Your key length must be between 0 and " + nBits + " bits long";
-  plaintext = Utf8.encode(plaintext);
-
+  if (!raw) {
+    plaintext = Utf8.encode(plaintext);
+    password = Utf8.encode(password);
+  }
   //var t = new Date();  // timer
 
   // use AES itself to encrypt password to get cipher key (using plain password as source for key
   // expansion) - gives us well encrypted key
   var nBytes = nBits/8;  // no bytes in key
   var pwBytes = new Array(nBytes);
-  for (var i=0; i<nBytes; i++) {
+  for (var i=0; i<nBytes; ++i) {
     pwBytes[i] = isNaN(password.charCodeAt(i)) ? 0 : password.charCodeAt(i);
   }
   var key = Aes.cipher(pwBytes, Aes.keyExpansion(pwBytes));  // gives us 16-byte key
@@ -399,7 +424,7 @@ Aes.Ctr.encrypt = function(plaintext, password, nBits, rawOutput) {
   for (var i=0; i<4; i++) counterBlock[i+4] = nonceMs & 0xff;
   // and convert it to a string to go on the front of the ciphertext
   var ctrTxt = '';
-  for (var i=0; i<8; i++) ctrTxt += String.fromCharCode(counterBlock[i]);
+  for (var i=0; i<8; ++i) ctrTxt += String.fromCharCode(counterBlock[i]);
 
   // generate key schedule - an expansion of the key into distinct Key Rounds for each round
   var keySchedule = Aes.keyExpansion(key);
@@ -407,11 +432,11 @@ Aes.Ctr.encrypt = function(plaintext, password, nBits, rawOutput) {
   var blockCount = Math.ceil(plaintext.length/blockSize);
   var ciphertxt = new Array(blockCount);  // ciphertext as array of strings
 
-  for (var b=0; b<blockCount; b++) {
+  for (var b=0; b<blockCount; ++b) {
     // set counter (block #) in last 8 bytes of counter block (leaving nonce in 1st 8 bytes)
     // done in two stages for 32-bit ops: using two words allows us to go past 2^32 blocks (68GB)
-    for (var c=0; c<4; c++) counterBlock[15-c] = (b >>> c*8) & 0xff;
-    for (var c=0; c<4; c++) counterBlock[15-c-4] = (b/0x100000000 >>> c*8)
+    for (var c=0; c<4; ++c) counterBlock[15-c] = (b >>> c*8) & 0xff;
+    for (var c=0; c<4; ++c) counterBlock[15-c-4] = (b/0x100000000 >>> c*8)
 
     var cipherCntr = Aes.cipher(counterBlock, keySchedule);  // -- encrypt counter block --
 
@@ -419,7 +444,7 @@ Aes.Ctr.encrypt = function(plaintext, password, nBits, rawOutput) {
     var blockLength = b<blockCount-1 ? blockSize : (plaintext.length-1)%blockSize+1;
     var cipherChar = new Array(blockLength);
 
-    for (var i=0; i<blockLength; i++) {  // -- xor plaintext with ciphered counter char-by-char --
+    for (var i=0; i<blockLength; ++i) {  // -- xor plaintext with ciphered counter char-by-char --
       cipherChar[i] = cipherCntr[i] ^ plaintext.charCodeAt(b*blockSize+i);
       cipherChar[i] = String.fromCharCode(cipherChar[i]);
     }
@@ -428,8 +453,7 @@ Aes.Ctr.encrypt = function(plaintext, password, nBits, rawOutput) {
 
   // Array.join is more efficient than repeated string concatenation in IE
   var ciphertext = ctrTxt + ciphertxt.join('');
-  if(!rawOutput)
-    ciphertext = base64.encode(ciphertext);  // encode in base64
+  //ciphertext = Base64.encode(ciphertext);  // encode in base64
 
   //alert((new Date()) - t);
   return ciphertext;
@@ -443,18 +467,18 @@ Aes.Ctr.encrypt = function(plaintext, password, nBits, rawOutput) {
  * @param {Number} nBits      Number of bits to be used in the key (128, 192, or 256)
  * @returns {String}          Decrypted text
  */
-Aes.Ctr.decrypt = function(ciphertext, password, nBits, rawInput) {
+Aes.Ctr.decrypt = function(ciphertext, password, nBits, raw) {
   var blockSize = 16;  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
-  if (!(nBits==128 || nBits==192 || nBits==256)) return '';  // standard allows 128/192/256 bit keys
-  if(!rawInput)
-    ciphertext = base64.decode(ciphertext);
-  password = Utf8.encode(password);
+  if (nBits != 128 && nBits != 192 && nBits != 256) // standard allows 128/192/256 bit keys
+    throw "AES: wrong nBits argument: " + nBits;
+  //ciphertext = Base64.decode(ciphertext);
+  if (!raw) password = Utf8.encode(password);
   //var t = new Date();  // timer
 
   // use AES to encrypt password (mirroring encrypt routine)
   var nBytes = nBits/8;  // no bytes in key
   var pwBytes = new Array(nBytes);
-  for (var i=0; i<nBytes; i++) {
+  for (var i=0; i<nBytes; ++i) {
     pwBytes[i] = isNaN(password.charCodeAt(i)) ? 0 : password.charCodeAt(i);
   }
   var key = Aes.cipher(pwBytes, Aes.keyExpansion(pwBytes));
@@ -463,7 +487,7 @@ Aes.Ctr.decrypt = function(ciphertext, password, nBits, rawInput) {
   // recover nonce from 1st 8 bytes of ciphertext
   var counterBlock = new Array(8);
   ctrTxt = ciphertext.slice(0, 8);
-  for (var i=0; i<8; i++) counterBlock[i] = ctrTxt.charCodeAt(i);
+  for (var i=0; i<8; ++i) counterBlock[i] = ctrTxt.charCodeAt(i);
 
   // generate key schedule
   var keySchedule = Aes.keyExpansion(key);
@@ -471,21 +495,22 @@ Aes.Ctr.decrypt = function(ciphertext, password, nBits, rawInput) {
   // separate ciphertext into blocks (skipping past initial 8 bytes)
   var nBlocks = Math.ceil((ciphertext.length-8) / blockSize);
   var ct = new Array(nBlocks);
-  for (var b=0; b<nBlocks; b++) ct[b] = ciphertext.slice(8+b*blockSize, 8+b*blockSize+blockSize);
+  for (var b=0; b<nBlocks; ++b) ct[b] = ciphertext.slice(8+b*blockSize, 8+b*blockSize+blockSize);
   ciphertext = ct;  // ciphertext is now array of block-length strings
 
   // plaintext will get generated block-by-block into array of block-length strings
   var plaintxt = new Array(ciphertext.length);
 
-  for (var b=0; b<nBlocks; b++) {
+  for (var b=0; b<nBlocks; ++b) {
     // set counter (block #) in last 8 bytes of counter block (leaving nonce in 1st 8 bytes)
-    for (var c=0; c<4; c++) counterBlock[15-c] = ((b) >>> c*8) & 0xff;
-    for (var c=0; c<4; c++) counterBlock[15-c-4] = (((b+1)/0x100000000-1) >>> c*8) & 0xff;
+    for (var c=0; c<4; ++c) counterBlock[15-c] = ((b) >>> c*8) & 0xff;
+    for (var c=0; c<4; ++c) counterBlock[15-c-4] = (((b+1)/0x100000000-1) >>> c*8) & 0xff;
 
     var cipherCntr = Aes.cipher(counterBlock, keySchedule);  // encrypt counter block
 
-    var plaintxtByte = new Array(ciphertext[b].length);
-    for (var i=0; i<ciphertext[b].length; i++) {
+	var len = ciphertext[b].length;
+    var plaintxtByte = new Array(len);
+    for (var i=0; i<len; ++i) {
       // -- xor plaintxt with ciphered counter byte-by-byte --
       plaintxtByte[i] = cipherCntr[i] ^ ciphertext[b].charCodeAt(i);
       plaintxtByte[i] = String.fromCharCode(plaintxtByte[i]);
@@ -495,11 +520,19 @@ Aes.Ctr.decrypt = function(ciphertext, password, nBits, rawInput) {
 
   // join array of blocks into single plaintext string
   var plaintext = plaintxt.join('');
-  plaintext = Utf8.decode(plaintext);  // decode from UTF8 back to Unicode multi-byte chars
+  if (!raw) plaintext = Utf8.decode(plaintext);  // decode from UTF8 back to Unicode multi-byte chars
 
   //alert((new Date()) - t);
   return plaintext;
 }
+
+function aesRawEncrypt(text, pass) {
+	return Aes.Ctr.encrypt(text, pass, 256, true);
+}
+function aesRawDecrypt(text, pass) {
+	return Aes.Ctr.decrypt(text, pass, 256, true);
+}
+
 
 //===================
 
@@ -511,9 +544,10 @@ function isBase64(str) {
 }
 var base64 = {
 	_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-	encode: function (input, toDataURI) {
-		//input = convertFromUnicode(input, codePageBase64); //~ todo: CP_NOT_CONVERT seems buggy
-		input = Utf8.encode(input);
+	encode: function (input, utf8Encode) {
+		//if(utf8Encode === true)
+		//	input = convertFromUnicode(input, codePageBase64); //~ todo: CP_NOT_CONVERT seems buggy
+		//	input = Utf8.encode(input);
 
 		var output = "";
 		var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
@@ -534,24 +568,10 @@ var base64 = {
 			output = output + _keyStr.charAt(enc1) + _keyStr.charAt(enc2) + _keyStr.charAt(enc3) + _keyStr.charAt(enc4);
 		}
 
-		//if(toDataURI) {
-		//	var charsetName = getCharsetName(codePageBase64);
-		//	output = "data:text/plain;" + (charsetName ? "charset=" + charsetName + ";" : "") + "base64," + output;
-		//}
-		//else if(maxLineWidth > 0)
-		//	output = output.replace(new RegExp(".{" + maxLineWidth + "}", "g"), "$&\n");
 		return output;
 	},
-	decode: function (input) {
-		//var cp = codePageBase64;
-		//input = trimBase64String(input);
-
-		//if(/^data:([^:,;=]+(;charset=([^:,;=]+))?)?;base64,/.test(input)) {
-		//	input = input.substr(RegExp.lastMatch.length);
-		//	if(RegExp.$3)
-		//		cp = getCharsetCode(RegExp.$3) || cp;
-		//}
-
+	decode: function (input, utf8Decode) {
+		input = trimBase64String(input);
 		if(!isBase64(input))
 			throw "Not a Base64 string!";
 
@@ -584,8 +604,10 @@ var base64 = {
 			if(enc4 != 64)
 				output = output + String.fromCharCode(chr3);
 		}
-		//return convertToUnicode(output, cp);
-		return Utf8.decode(output);
+		//if(utf8Decode === true)
+		//	output = convertToUnicode(output, cp);
+		//	output = Utf8.decode(output);
+		return output;
 	}
 };
 
@@ -1029,23 +1051,17 @@ Blowfish.prototype.f = function (x) {
 	return str;
 };
 
-function blowfishEncrypt(text, pass, rawOutput) {
-	text = Utf8.encode(text.replace(/\x00+$/, "")); // We can get \0 at end after decrypt sometimes
-	pass = Utf8.encode(pass);
+function blowfishRawEncrypt(text, pass) {
+	text = text.replace(/\x00+$/, ""); // We can get \0 at end after decrypt sometimes
 	var bf = new Blowfish();
 	bf.setKey(pass);
 	text = bf.encrypt(text);
-	if(!rawOutput)
-		text = base64.encode(text);
 	return text;
 }
-function blowfishDecrypt(text, pass, rawInput) {
-	if(!rawInput)
-		text = base64.decode(text);
-	pass = Utf8.encode(pass);
+function blowfishRawDecrypt(text, pass) {
 	var bf = new Blowfish();
 	bf.setKey(pass);
-	return Utf8.decode(bf.decrypt(text)).replace(/\x00+$/, "");
+	return bf.decrypt(text).replace(/\x00+$/, "");
 }
 
 //===================
@@ -1678,6 +1694,9 @@ sjcl.misc.pbkdf2 = function (password, salt, count, length, Prff) {
   if (typeof password === "string") {
     password = sjcl.codec.utf8String.toBits(password);
   }
+  if (typeof salt === "string") { //?
+    salt = sjcl.codec.utf8String.toBits(salt);
+  }
 
   Prff = Prff || sjcl.misc.hmac;
 
@@ -1754,6 +1773,36 @@ function packHex(hex) {
 function feedback(msg) {
 	_feedback && _feedback(msg);
 }
+function encrypt(text, pass, encrypter, encrypter2) {
+	feedback("1/3: " + _localize("=> UTF-8"));
+	text = Utf8.encode(text);
+	pass = Utf8.encode(pass);
+
+	feedback("2/3: " + _localize("encrypt"));
+	text = encrypter(text, pass);
+
+	feedback("3/3: " + _localize("base64"));
+	text = base64.encode(text);
+
+	feedback();
+	return text;
+}
+function decrypt(text, pass, decrypter) {
+	feedback("1/4: " + _localize("Unicode => UTF-8"));
+	pass = Utf8.encode(pass);
+
+	feedback("2/4: " + _localize("base64"));
+	text = base64.decode(text);
+
+	feedback("3/4: " + _localize("decrypt"));
+	text = decrypter(text, pass);
+
+	feedback("4/4: " + _localize("UTF-8 => Unicode"));
+	text = Utf8.decode(text);
+
+	feedback();
+	return text;
+}
 
 var cryptors = {
 	// speed: symbols/ms [encryptSpeed, decryptSpeed]
@@ -1761,47 +1810,51 @@ var cryptors = {
 		prettyName: "AES-256",
 		speed: [19.3, 28.3],
 		encrypt: function(text, pass) {
-			return Aes.Ctr.encrypt(text, pass, 256);
+			return encrypt(text, pass, aesRawEncrypt);
 		},
 		decrypt: function(text, pass) {
-			return Aes.Ctr.decrypt(text, pass, 256);
+			return decrypt(text, pass, aesRawDecrypt);
 		}
 	},
 	blowfish: {
 		prettyName: "Blowfish",
 		speed: [78.5, 113.2],
-		encrypt: blowfishEncrypt,
-		decrypt: blowfishDecrypt
+		encrypt: function(text, pass) {
+			return encrypt(text, pass, blowfishRawEncrypt);
+		},
+		decrypt: function(text, pass) {
+			return decrypt(text, pass, blowfishRawDecrypt);
+		}
 	},
 	aes256_blowfish: {
 		prettyName: "AES-256 + Blowfish",
 		speed: [14.3, 31.5],
 		encrypt: function(text, pass) {
-			feedback("1/4: hash");
+			feedback("1/4: " + _localize("hashing"));
 			var salt = getSalt();
 			var hash = getHash(pass, salt, pbkdf2Iterations);
-			feedback("2/4: encrypt-1");
+			feedback("2/4: " + _localize("encrypt-1"));
 			text = Aes.Ctr.encrypt(text, pass, 256, true);
-			feedback("3/4: encrypt-2");
+			feedback("3/4: " + _localize("encrypt-2"));
 			text = blowfishEncrypt(text, hash, true);
-			feedback("4/4: base64");
+			feedback("4/4: " + _localize("base64"));
 			var header = getHeader(pbkdf2Iterations, salt);
 			text = base64.encode(header + text);
 			feedback();
 			return text;
 		},
 		decrypt: function(text, pass) {
-			feedback("1/4: base64");
+			feedback("1/4: " + _localize("base64"));
 			text = base64.decode(text);
 			var h = parseHeader(text);
 			var salt = h.salt;
 			var iterations = h.iterations;
 			text = h.text;
-			feedback("2/4: hash");
+			feedback("2/4: " + _localize("hash"));
 			var hash = getHash(pass, salt, iterations);
-			feedback("3/4: decrypt-1");
+			feedback("3/4: " + _localize("decrypt-1"));
 			text = blowfishDecrypt(text, hash, true);
-			feedback("4/4: decrypt-2");
+			feedback("4/4: " + _localize("decrypt-2"));
 			text = Aes.Ctr.decrypt(text, pass, 256, true);
 			feedback();
 			return text;
@@ -1811,10 +1864,16 @@ var cryptors = {
 		prettyName: "Blowfish + AES-256",
 		speed: [11.1, 24.4],
 		encrypt: function(text, pass) {
-			feedback("1/2");
+			feedback("1/4: " + _localize("hashing"));
+			var salt = getSalt();
+			var hash = getHash(pass, salt, pbkdf2Iterations);
+			feedback("2/4: " + _localize("encrypt-1"));
 			text = blowfishEncrypt(text, pass, true);
-			feedback("2/2");
-			text = Aes.Ctr.encrypt(text, hash(pass), 256);
+			feedback("3/4: " + _localize("encrypt-2"));
+			text = Aes.Ctr.encrypt(text, hash, 256, true);
+			feedback("4/4: " + _localize("base64"));
+			var header = getHeader(pbkdf2Iterations, salt);
+			text = base64.encode(header + text);
 			feedback();
 			return text;
 		},
@@ -1828,13 +1887,6 @@ var cryptors = {
 		}
 	}
 };
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-var h = getDummyHeader() + "|||qwe";
-var b = base64.encode(h);
-//WScript.Echo(b);
-var d = base64.decode(b);
-WScript.Echo((h + "\n" + d).replace(/\x00/g, "<\\0>"));
-WScript.Echo(d === h);
 
 
 var hMainWnd = AkelPad.GetMainWnd();
@@ -1891,14 +1943,14 @@ function encryptOrDecrypt(pass) {
 		if(!pass) // Cancel
 			return;
 		if(decryptObj)
-			decrypt = decryptObj.value;
+			isDecrypt = decryptObj.value;
 		if(cryptorObj)
 			cryptor = cryptorObj.value;
 	}
 
 	var cryptorData = cryptors[cryptor];
 
-	if(decrypt) {
+	if(isDecrypt) {
 		text = trimBase64String(text);
 		if(!isBase64(text)) {
 			AkelPad.MessageBox(
@@ -1914,7 +1966,7 @@ function encryptOrDecrypt(pass) {
 	if(!pass) {
 		pass = _passwordPrompt(
 			dialogTitle + " :: " + cryptorData.prettyName,
-			_localize(decrypt ? "Decrypt" : "Encrypt"),
+			_localize(isDecrypt ? "Decrypt" : "Encrypt"),
 			modalDlg
 		);
 	}
@@ -1922,19 +1974,19 @@ function encryptOrDecrypt(pass) {
 		return;
 
 	if(warningTime > 0) {
-		var speed = cryptorData.speed[decrypt ? 1 : 0];
+		var speed = cryptorData.speed[isDecrypt ? 1 : 0];
 		//var remTime = text.length/speed;
 
 		//hash(pass); // Cache it!
 
 		var len = Math.max(500, 60*speed);
-		if(decrypt && len % 4 != 0)
+		if(isDecrypt && len % 4 != 0)
 			len += 4 - len % 4;
 		var part = text.substr(0, len);
 		var t = new Date().getTime();
 		_testMode = true;
 		try {
-			cryptorData[decrypt ? "decrypt" : "encrypt"](part, pass);
+			cryptorData[isDecrypt ? "decrypt" : "encrypt"](part, pass);
 		}
 		catch(e) {
 		}
@@ -1962,7 +2014,7 @@ function encryptOrDecrypt(pass) {
 
 	//var t = new Date().getTime();
 	try {
-		var res = cryptorData[decrypt ? "decrypt" : "encrypt"](text, pass);
+		var res = cryptorData[isDecrypt ? "decrypt" : "encrypt"](text, pass);
 	}
 	catch(e) {
 		if(e.name)
@@ -1975,7 +2027,7 @@ function encryptOrDecrypt(pass) {
 		);
 		return;
 	}
-	if(!decrypt && maxLineWidth > 0)
+	if(!isDecrypt && maxLineWidth > 0)
 		res = res.replace(new RegExp(".{" + maxLineWidth + "}", "g"), "$&\n");
 	//WScript.Echo(text.length/(new Date().getTime() - t));
 
@@ -2062,11 +2114,11 @@ function passwordPrompt(decryptObj, cryptorObj) {
 		? cryptorObj.value
 		: cryptor;
 	var caption = dialogTitle + (_cryptor && cryptors[_cryptor] ? " :: " + cryptors[_cryptor].prettyName : "");
-	var _decrypt = decryptObj ? undefined : decrypt;
+	var _decrypt = decryptObj ? undefined : isDecrypt;
 	var label = _localize(
 		_decrypt == undefined
 			? "Password"
-			: decrypt
+			: isDecrypt
 				? "Decrypt"
 				: "Encrypt"
 	);
@@ -2079,10 +2131,11 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	_feedback = function(msg) {
 		if(_testMode)
 			return;
+		if(!_feedback._title)
+			_feedback._title = windowText(hWndDialog);
 		windowText(
 			hWndDialog,
-			windowText(hWndDialog).replace(/\s+\[.*\]$/, "")
-			+ (msg ? " [" + msg + "]" : "")
+			(msg ? msg + " - " : "") + _feedback._title
 		);
 	}
 
@@ -2165,7 +2218,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	var hWndOK, hWndApply, hWndCancel;
 
 	var addY = (decryptObj ? 54 : 0) + (cryptorObj ? 54 + 18 : 0);
-	var p2h = decryptObj || !decrypt ? 0 : 52; // Show or hide second password field
+	var p2h = decryptObj || !isDecrypt ? 0 : 52; // Show or hide second password field
 	var btnW = modal ? 124 : 79;
 	var btnSp = 12;
 
@@ -2411,7 +2464,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 				);
 				setWindowFontAndText(hWndPass, hGuiFont, "");
 
-				if(decryptObj || !decrypt) {
+				if(decryptObj || !isDecrypt) {
 					// Static window: password 2 label
 					hWndPass2Label = createWindowEx(
 						0,               //dwExStyle
@@ -2464,7 +2517,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 				);
 				setWindowFontAndText(hWndShowPass, hGuiFont, _localize("&Show password"));
 				checked(hWndShowPass, showPassword);
-				setShowPass(showPassword, decryptObj ? !decryptObj.value : !decrypt);
+				setShowPass(showPassword, decryptObj ? !decryptObj.value : !isDecrypt);
 
 				// OK button window
 				hWndOK = createWindowEx(
@@ -2592,7 +2645,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						if(!readRadiosState())
 							break;
 						var showPass = checked(hWndShowPass);
-						var enc = decryptObj ? checked(hWndEncrypt) : !decrypt;
+						var enc = decryptObj ? checked(hWndEncrypt) : !isDecrypt;
 						if(!showPass && enc) { // Check second password
 							var pass2 = windowText(hWndPass2);
 							if(pass1 != pass2) {
@@ -2611,7 +2664,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						pass = pass1;
 						if(!modal) {
 							if(decryptObj)
-								decrypt = decryptObj.value;
+								isDecrypt = decryptObj.value;
 							if(cryptorObj)
 								cryptor = cryptorObj.value;
 							controlsEnabled(false);
@@ -2631,7 +2684,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						if((wParam >> 16 & 0xFFFF) == 5 /*BN_DOUBLECLICKED*/)
 							cmdApply();
 					case IDC_SHOWPASS:
-						setShowPass(checked(hWndShowPass), decryptObj ? checked(hWndEncrypt) : !decrypt);
+						setShowPass(checked(hWndShowPass), decryptObj ? checked(hWndEncrypt) : !isDecrypt);
 					break;
 					case IDC_AES256:
 					case IDC_BLOWFISH:
