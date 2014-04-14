@@ -38,8 +38,8 @@
 //   Enter                    - Ok
 //   Ctrl+Enter, Shift+Enter  - Apply
 //   Escape                   - Cancel
-//   F3                       - Select direction (encrypt/decrypt)
-//   F4                       - Select cryptor
+//   F2                       - Select direction (encrypt/decrypt)
+//   F3                       - Select cryptor
 //   Ctrl+Z                   - Undo
 //   Ctrl+Shift+Z             - Redo
 //   Ctrl+C, Ctrl+Insert      - Copy
@@ -4441,9 +4441,9 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 				}
 				else if(ctrl && wParam == 83 /*S*/) // Ctrl+S
 					AkelPad.Command(4105); // IDM_FILE_SAVE
-				else if(wParam == 114 /*VK_F3*/) // F3
+				else if(wParam == 113 /*VK_F2*/) // F2
 					switchDirection();
-				else if(wParam == 115 /*VK_F4*/) // F4
+				else if(wParam == 114 /*VK_F3*/) // F3
 					switchCryptor();
 			break;
 			case 273: //WM_COMMAND
@@ -4741,7 +4741,9 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 			: AkelPad.SendMessage(hWnd, 241 /*BM_SETCHECK*/, val ? 1 /*BST_CHECKED*/ : 0, 0);
 	}
 	function enabled(hWnd, val) {
-		oSys.Call("user32::EnableWindow", hWnd, val);
+		return arguments.length == 1
+			? oSys.Call("user32::IsWindowEnabled", hWnd)
+			: oSys.Call("user32::EnableWindow", hWnd, val);
 	}
 	function controlsEnabled(val) {
 		enabled(hWndOK, val);
@@ -4756,8 +4758,23 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 			switchRadio(hWndEncrypt, hWndDecrypt);
 	}
 	function switchCryptor() {
-		if(cryptorObj)
-			switchRadio(hWndAES256, hWndBlowfish, hWndAESBlowfish, hWndBlowfishAES);
+		//if(cryptorObj)
+		//	switchRadio(hWndAES256, hWndBlowfish, hWndAESBlowfish, hWndBlowfishAES);
+		var hWndFocused = oSys.Call("user32::GetFocus");
+		var candidates;
+		if(hWndFocused == hWndCombobox1)
+			candidates = [hWndCombobox2, hWndCombobox3];
+		else if(hWndFocused == hWndCombobox2)
+			candidates = [hWndCombobox3, hWndCombobox1];
+		else
+			candidates = [hWndCombobox1, hWndCombobox2, hWndCombobox3];
+		for(var i = 0, l = candidates.length; i < l; ++i) {
+			var hWndFocus = candidates[i];
+			if(enabled(hWndFocus)) {
+				oSys.Call("user32::SetFocus", hWndFocus);
+				break;
+			}
+		}
 	}
 	function switchRadio() {
 		var hWndChecked = arguments[0];
