@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
 
 // (c) Infocatcher 2010-2012
-// version 0.5.0a10 - 2012-06-20
+// version 0.5.0a11 - 2012-06-21, 2012-09-12
 
 // !!!WARNING!!!
 // In version 0.5.0 changed the method of double encryption!
@@ -81,7 +81,7 @@
 // Wrapper for AkelPad.Include()
 if(!cryptorsArgs)
 	var cryptorsArgs = {};
-var _exports = (function() {
+(function() {
 var overrideArgs = cryptorsArgs;
 
 function _localize(s) {
@@ -111,14 +111,14 @@ function _localize(s) {
 		"hashing": {
 			ru: "хэширование"
 		},
+		"hashing-%S": {
+			ru: "хэширование-%S"
+		},
 		"encrypt": {
 			ru: "шифрование"
 		},
-		"encrypt-1": {
-			ru: "шифрование-1"
-		},
-		"encrypt-2": {
-			ru: "шифрование-2"
+		"encrypt-%S": {
+			ru: "шифрование-%S"
 		},
 		"base64": {
 			ru: "base64"
@@ -126,11 +126,8 @@ function _localize(s) {
 		"decrypt": {
 			ru: "дешифрование"
 		},
-		"decrypt-1": {
-			ru: "дешифрование-1"
-		},
-		"decrypt-2": {
-			ru: "дешифрование-2"
+		"decrypt-%S": {
+			ru: "дешифрование-%S"
 		},
 
 		"Direction": {
@@ -1775,8 +1772,11 @@ function packHex(hex) {
 function feedback(msg) {
 	_feedback && _feedback(msg);
 }
-function encrypt(text, pass, encrypter, encrypter2) {
-	var n = encrypter2 ? 6 : 4;
+function encrypt(text, pass, encrypter, encrypter2/*, encrypter3, ...*/) {
+	var encrypters = Array.prototype.slice.call(arguments, 3);
+	var encryptersCount = encrypters.length;
+
+	var n = 4 + encryptersCount*3;
 	var s = "/" + n + ": ";
 	var i = 0;
 
@@ -1790,21 +1790,19 @@ function encrypt(text, pass, encrypter, encrypter2) {
 
 	//text = text.replace(/\x00+$/, "");
 
-	feedback(++i + s + _localize("encrypt" + (encrypter2 ? "-1" : "")));
+	feedback(++i + s + _localize("encrypt" + (encrypter2 ? "-%S" : "")).replace("%S", 1));
 	text = getHeader(pbkdf2Iterations, salt) + encrypter(text, hash);
 
-	if(encrypter2) {
-		feedback(++i + s + _localize("hashing-2"));
+	for(var j = 0; j < encryptersCount; ++j) {
+		feedback(++i + s + _localize("hashing-" + (j + 2)));
 		var salt2 = getSalt();
 		var hash2 = getHash(pass, salt2, pbkdf2Iterations);
-
-		//text = text.replace(/\x00+$/, "");
 
 		feedback(++i + s + _localize("Unicode => UTF-8"));
 		text = Utf8.encode(text);
 
-		feedback(++i + s + _localize("encrypt-2"));
-		text = getHeader(pbkdf2Iterations, salt2) + encrypter2(text, hash2);
+		feedback(++i + s + _localize("encrypt-%S").replace("%S", j + 2));
+		text = getHeader(pbkdf2Iterations, salt2) + encrypters[j](text, hash2);
 	}
 
 	feedback(++i + s + _localize("=> base64"));
@@ -1813,8 +1811,11 @@ function encrypt(text, pass, encrypter, encrypter2) {
 	feedback();
 	return text;
 }
-function decrypt(text, pass, decrypter, decrypter2) {
-	var n = decrypter2 ? 7 : 5;
+function decrypt(text, pass, decrypter, decrypter2/*, decrypter3, ...*/) {
+	var decrypters = Array.prototype.slice.call(arguments, 3);
+	var decryptersCount = decrypters.length;
+
+	var n = 5 + decryptersCount*3;
 	var s = "/" + n + ": ";
 	var i = 0;
 
@@ -1830,33 +1831,25 @@ function decrypt(text, pass, decrypter, decrypter2) {
 	var iterations = h.iterations;
 	text = h.text;
 
-	feedback(++i + s + _localize("hashing" + (decrypter2 ? "-1" : "")));
+	feedback(++i + s + _localize("hashing" + (decrypter2 ? "-%S" : "")).replace("%S", 1));
 	var hash = getHash(pass, salt, iterations);
 
-	feedback(++i + s + _localize("decrypt" + (decrypter2 ? "-1" : "")));
+	feedback(++i + s + _localize("decrypt" + (decrypter2 ? "-%S" : "")).replace("%S", 1));
 	text = decrypter(text, hash);
 
-	//if(decrypter == blowfishRawDecrypt)
-	//	text = removePadding(text, 8);
-	//text = text.replace(/\x00+$/, "");
-
-	if(decrypter2) {
+	for(var j = 0; j < decryptersCount; ++j) {
 		feedback(++i + s + _localize("UTF-8"));
 		text = Utf8.decode(text);
 
-		feedback(++i + s + _localize("hashing-2"));
+		feedback(++i + s + _localize("hashing-%S").replace("%S", j + 2));
 		var h2 = parseHeader(text);
 		var salt2 = h2.salt;
 		var iterations2 = h2.iterations;
 		text = h2.text;
 		var hash2 = getHash(pass, salt2, iterations2);
 
-		feedback(++i + s + _localize("decrypt-2"));
-		text = decrypter2(text, hash2);
-
-		//if(decrypter2 == blowfishRawDecrypt)
-		//	text = removePadding(text, 8);
-		//text = text.replace(/\x00+$/, "");
+		feedback(++i + s + _localize("decrypt-%S").replace("%S", j + 2));
+		text = decrypters[j](text, hash2);
 	}
 
 	feedback(++i + s + _localize("UTF-8 => Unicode"));
@@ -1864,6 +1857,37 @@ function decrypt(text, pass, decrypter, decrypter2) {
 
 	feedback();
 	return text;
+}
+
+var validCryptors = ["AES-256", "Blowfish", "Twofish", "Serpent"];
+function getEncryptor(name) {
+	switch(name.toLowerCase()) {
+		case "aes-256":  return aesRawEncrypt;
+		case "blowfish": return blowfishRawEncrypt;
+		case "twofish":  return twofishRawEncrypt;
+		case "serpent":  return serpentRawEncrypt;
+	}
+	return null;
+}
+function getDecryptor(name) {
+	switch(name.toLowerCase()) {
+		case "aes-256":  return aesRawDecrypt;
+		case "blowfish": return blowfishRawDecrypt;
+		case "twofish":  return twofishRawDecrypt;
+		case "serpent":  return serpentRawDecrypt;
+	}
+	return null;
+}
+function getCryptors(cryptors, getter) {
+	// Usage:
+	// var encryptors = getCryptors(cryptors, getEncryptor)
+	// var decryptors = getCryptors(cryptors, getDecryptor)
+	var out = [];
+	for(var i = 0, l = cryptors.length; i < l; ++i) {
+		var c = getter(cryptors[i]);
+		c && out.push(c);
+	}
+	return out;
 }
 
 var cryptors = {
@@ -2215,7 +2239,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 			return;
 		if(!oSet.Begin(WScript.ScriptBaseName, 0x2 /*POB_SAVE*/))
 			return;
-		if(runned ? saveOptions : saveOptions == 2 && readRadiosState()) {
+		if(runned ? saveOptions : saveOptions == 2 && readControlsState()) {
 			oSet.Write("cryptor", 3 /*PO_STRING*/, cryptorObj ? cryptorObj.value : cryptor);
 			oSet.Write("showPassword", 1 /*PO_DWORD*/, Number(checked(hWndShowPass)));
 		}
@@ -2261,7 +2285,8 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	var hWndGroupPass, hWndPassLabel, hWndPass, hWndPass2Label, hWndPass2, hWndShowPass;
 	var hWndOK, hWndApply, hWndCancel;
 
-	var cryptorsLabels = [_localize("(none)"), "AES-256", "Blowfish", "Twofish", "Serpent"];
+	var cryptorsLabels = validCryptors.concat();
+	cryptorsLabels.unshift(_localize("(none)"));
 
 	var addY = (decryptObj ? 54 : 0) + (cryptorObj ? 54 + 18 : 0);
 	var p2h = decryptObj || !isDecrypt ? 0 : 52; // Show or hide second password field
@@ -2737,7 +2762,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						var pass1 = windowText(hWndPass);
 						if(!pass1)
 							break;
-						if(!readRadiosState())
+						if(!readControlsState())
 							break;
 						var showPass = checked(hWndShowPass);
 						var enc = decryptObj ? checked(hWndEncrypt) : !isDecrypt;
@@ -2990,7 +3015,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 
 		enabled(hWndCombobox3, !dis3);
 	}
-	function readRadiosState() {
+	function readControlsState() {
 		if(decryptObj) {
 			if(checked(hWndEncrypt))
 				decryptObj.value = false;
@@ -3001,6 +3026,15 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 		}
 
 		if(cryptorObj) {
+			//~ todo
+			var cryptors = [windowText(hWndCombobox1)];
+			var s2 = windowText(hWndCombobox2);
+			if(s2 != cryptorsLabels[0])
+				cryptors.push(s2);
+			var s3 = windowText(hWndCombobox3);
+			if(s3 != cryptorsLabels[0])
+				cryptors.push(s3);
+
 			if(checked(hWndAES256))
 				cryptorObj.value = "aes256";
 			else if(checked(hWndBlowfish))
@@ -3202,20 +3236,25 @@ function getArg(argName, defaultVal) {
 	return getArg(argName, defaultVal);
 }
 
-return {
-	cryptors: cryptors,
-	passwordPrompt: passwordPrompt,
-	packHex: packHex,
-	utf8: Utf8,
-	base64: base64,
-	trimBase64String: trimBase64String,
-	isBase64: isBase64,
-	sjcl: sjcl
-};
+if(AkelPad.IsInclude()) {
+	// this.foo = ... doesn't work:
+	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#18304
+	// But declarations without "var" becomes global
+	var _exports = {
+		cryptors: cryptors,
+		passwordPrompt: passwordPrompt,
+		packHex: packHex,
+		utf8: Utf8,
+		base64: base64,
+		trimBase64String: trimBase64String,
+		isBase64: isBase64,
+		sjcl: sjcl
+	};
+	var _f = [];
+	for(var _p in _exports)
+		_f[_f.length] = "if(typeof " + _p + " == 'undefined') " + _p + " = e." + _p + ";";
+	// Go to the global scope
+	new Function("e", _f.join("\n"))(_exports);
+}
 
 })();
-
-if(_exports && AkelPad.IsInclude()) // this.foo doesn't work: http://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#18304
-	for(var _p in _exports)
-		eval("if(!_p) var _p = _exports._p;".replace(/_p/g, _p));
-_exports = _p = undefined;
