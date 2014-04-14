@@ -1,35 +1,36 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=12843#12843
 // http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
 
-// (c) Infocatcher 2010-2012
-// version 0.5.0a11 - 2012-06-21, 2012-09-12, 2014-04-14
+// (c) Infocatcher 2010-2012, 2014
+// version 0.5.0a12 - 2014-04-14
 
 //===================
-// AES-256 and Blowfish encrypt/decrypt
+// AES-256/Blowfish/Twofish/Serpent encrypt/decrypt
 // Based on scripts from
 // http://www.movable-type.co.uk/scripts/aes.html
 // http://www.farfarfar.com/scripts/encrypt/
 // https://github.com/bitwiseshiftleft/sjcl/
-
-// Password length limit:
-//   AES-256  - 32*8 = 256 bit (32 single bit chars from UTF-8 encoded string)
-//   Blowfish - 56*8 = 448 bit
+// http://ats.oka.nu/titaniumcore/js/crypto/Cipher.sample.html
 
 // Simple encryption:
 //   encrypted = encrypt(text, hash(pass))
 //   encrypted = base64(encrypted)
 
-// Double encryption:
+// Multiple encryption:
 //   encrypted = encrypt_1(text, hash(pass))
 //   encrypted = encrypt_2(encrypted, hash(pass))
+//   ...
 //   encrypted = base64(encrypted)
 
 // where hash() is PBKDF2 function http://en.wikipedia.org/wiki/PBKDF2
 
 // PBKDF2 configuration:
 //   hash algorithm:   SHA-256
-//   iterations count: -PBKDF2Iterations argument
-//   salt:             random string with -saltLength length
+//   iterations count: random between -PBKDF2IterationsMin and -PBKDF2IterationsMax
+//   salt:             random string with -saltLengthMin .. -saltLengthMax length
+
+// Raw data after each encryption:
+//   <salt><iterations><encrypted data>
 
 // Hotkeys:
 //   Enter                    - Ok
@@ -47,21 +48,26 @@
 //   Ctrl+S                   - Save file
 
 // Arguments:
-//   -mode=0             - (default) ask user about direction (encrypt or decrypt)
-//        =1             - encrypt
-//        =2             - decrypt
-//   -modal=true         - use modal dialog
-//   -cryptor="AES256"   - encryption algorithm: "AES256", "Blowfish", "AES256_Blowfish" or "Blowfish_AES256"
-//   -maxLineWidth=75    - allow split output to lines with fixed width
-//   -showPassword=true  - force show or hide password
-//   -onlySelected=true  - use only selected text
-//   -warningTime=4000   - show warning for slow calculations
-//   -focusPass=true     - focus password field instead of radio buttons
-//   -test=true          - run tests
-//   -saveOptions=0      - don't store options
-//               =1      - (default) save options after encrypt/decrypt
-//               =2      - save options on exit
-//   -savePosition=true  - allow store last window position
+//   -mode=0                  - (default) ask user about direction (encrypt or decrypt)
+//        =1                  - encrypt
+//        =2                  - decrypt
+//   -modal=true              - use modal dialog
+//   -cryptor="AES256"        - encryption algorithm: "AES256", "Blowfish", "Twofish" or "Serpent"
+//                              (or combination like "AES256+Twofish")
+//   -PBKDF2IterationsMin=50
+//   -PBKDF2IterationsMax=100 - iterations for PBKDF2
+//   -saltLengthMin=8
+//   -saltLengthMax=16        - length of "salt" string
+//   -maxLineWidth=75         - allow split output to lines with fixed width
+//   -showPassword=true       - force show or hide password
+//   -onlySelected=true       - use only selected text
+//   -warningTime=4000        - show warning for slow calculations
+//   -focusPass=true          - focus password field instead of radio buttons
+//   -test=true               - run tests
+//   -saveOptions=0           - don't store options
+//               =1           - (default) save options after encrypt/decrypt
+//               =2           - save options on exit
+//   -savePosition=true       - allow store last window position
 
 // Usage:
 //   Call("Scripts::Main", 1, "crypt.js")
@@ -3579,23 +3585,26 @@ function decrypt(text, pass, decrypters) {
 }
 
 var validCryptors = ["AES-256", "Blowfish", "Twofish", "Serpent"];
+function normalizeName(name) {
+	return name.toLowerCase().replace(/-/, "");
+}
 function getEncryptor(name) {
-	var cryptor = cryptors[name.toLowerCase()] || {};
+	var cryptor = cryptors[normalizeName(name)] || {};
 	return cryptor.rawEncrypt || null;
 }
 function getDecryptor(name) {
-	var cryptor = cryptors[name.toLowerCase()] || {};
+	var cryptor = cryptors[normalizeName(name)] || {};
 	return cryptor.rawDecrypt || null;
 }
-function getCryptors(cryptors, getter) {
+function getCryptors(names, getter) {
 	// Usage:
-	// var encryptors = getCryptors(cryptors, getEncryptor)
-	// var decryptors = getCryptors(cryptors, getDecryptor)
+	// var encryptors = getCryptors(names, getEncryptor)
+	// var decryptors = getCryptors(names, getDecryptor)
 	if(getter == getDecryptor)
-		cryptors = cryptors.slice().reverse();
+		names = names.slice().reverse();
 	var out = [];
-	for(var i = 0, l = cryptors.length; i < l; ++i) {
-		var c = getter(cryptors[i]);
+	for(var i = 0, l = names.length; i < l; ++i) {
+		var c = getter(names[i]);
 		c && out.push(c);
 	}
 	return out;
@@ -3605,7 +3614,7 @@ function getPrettyName(cryptorNames) {
 		cryptorNames = cryptorNames.split(/\s*\+\s*/);
 	var out = [];
 	for(var i = 0, l = cryptorNames.length; i < l; ++i) {
-		var name = cryptorNames[i];
+		var name = normalizeName(cryptorNames[i]);
 		out[i] = cryptors[name] && cryptors[name].prettyName || name;
 	}
 	return out.join("+");
@@ -3613,7 +3622,7 @@ function getPrettyName(cryptorNames) {
 
 var cryptors = {
 	// speed: symbols/ms [encryptSpeed, decryptSpeed]
-	"aes-256": {
+	aes256: {
 		prettyName: "AES-256",
 		speed: [19.3, 28.3],
 		encrypt: function(text, pass) {
@@ -3625,7 +3634,7 @@ var cryptors = {
 		rawEncrypt: aesRawEncrypt,
 		rawDecrypt: aesRawDecrypt
 	},
-	"blowfish": {
+	blowfish: {
 		prettyName: "Blowfish",
 		speed: [78.5, 113.2],
 		encrypt: function(text, pass) {
@@ -3637,7 +3646,7 @@ var cryptors = {
 		rawEncrypt: blowfishRawEncrypt,
 		rawDecrypt: blowfishRawDecrypt
 	},
-	"twofish": {
+	twofish: {
 		prettyName: "Twofish",
 		speed: [19.3, 28.3],
 		encrypt: function(text, pass) {
@@ -3649,7 +3658,7 @@ var cryptors = {
 		rawEncrypt: twofishRawEncrypt,
 		rawDecrypt: twofishRawDecrypt
 	},
-	"serpent": {
+	serpent: {
 		prettyName: "Serpent",
 		speed: [19.3, 28.3],
 		encrypt: function(text, pass) {
@@ -3700,10 +3709,10 @@ function encryptOrDecrypt(pass) {
 	var cryptorsArr = (cryptor || "").split(/\s*\+\s*/);
 	var wrongCryptors = [];
 	for(var i = 0, l = cryptorsArr.length; i < l; ++i)
-		if(!cryptors[cryptorsArr[i]])
+		if(!cryptors[normalizeName(cryptorsArr[i])])
 			wrongCryptors.push(cryptorsArr[i]);
 	if(!pass && cryptor && wrongCryptors.length) {
-		var msg = _localize("Cryptor “%S” not found!").replace("%S", cryptorsArr.join("+"));
+		var msg = _localize("Cryptor “%S” not found!").replace("%S", getPrettyName(cryptorsArr));
 		AkelPad.MessageBox(hMainWnd, msg, dialogTitle, 48 /*MB_ICONEXCLAMATION*/);
 		cryptor = "";
 		cryptorsArr = [];
@@ -3731,7 +3740,6 @@ function encryptOrDecrypt(pass) {
 		}
 	}
 
-	//var cryptorData = cryptors[cryptor];
 	var prettyName = getPrettyName(cryptorsArr);
 
 	if(isDecrypt) {
@@ -3916,7 +3924,7 @@ function cryptDialog() {
 				AkelPad.GetSelText() || (onlySelected ? "" : getAllText())
 			))
 		};
-	var cryptorObj = cryptor && cryptors[cryptor]
+	var cryptorObj = cryptor
 		? null
 		: {};
 	_passwordPrompt(
@@ -3995,7 +4003,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 		if(!oSet.Begin(WScript.ScriptBaseName, 0x2 /*POB_SAVE*/))
 			return;
 		if(runned ? saveOptions : saveOptions == 2 && readControlsState()) {
-			oSet.Write("cryptor", 3 /*PO_STRING*/, cryptorObj ? cryptorObj.value : cryptor);
+			oSet.Write("cryptor", 3 /*PO_STRING*/, cryptorObj ? cryptorObj.value.join("+") : cryptor);
 			oSet.Write("showPassword", 1 /*PO_DWORD*/, Number(checked(hWndShowPass)));
 		}
 		if(savePosition && !oSys.Call("user32::IsIconic", hWndDialog)) {
@@ -4008,8 +4016,6 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 		oSet.End();
 	}
 
-	if(!cryptors[cryptor])
-		cryptor = "aes256";
 	if(showPassword === undefined)
 		showPassword = false;
 
@@ -4043,7 +4049,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	var cryptorsLabels = validCryptors.concat();
 	cryptorsLabels.unshift(_localize("(none)"));
 
-	var addY = (decryptObj ? 54 : 0) + (cryptorObj ? 54 + 18 : 0);
+	var addY = (decryptObj ? 54-8 : 0) + (cryptorObj ? 54 + 18 : 0);
 	var p2h = decryptObj || !isDecrypt ? 0 : 52; // Show or hide second password field
 	var btnW = modal ? 124 : 79;
 	var btnSp = 12;
@@ -4141,10 +4147,6 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 				}
 
 				if(cryptorObj) {
-					var cr = cryptorObj.value || cryptor;
-					if(!cryptors[cr])
-						cr = "aes256";
-
 					// GroupBox cryptor
 					hWndGroupCryptor = createWindowEx(
 						0,            //dwExStyle
@@ -4154,7 +4156,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						14,           //x
 						dy + 13,      //y
 						258,          //nWidth
-						44 + 18,           //nHeight
+						54,           //nHeight
 						hWnd,         //hWndParent
 						IDC_STATIC,   //ID
 						hInstanceDLL, //hInstance
@@ -4162,89 +4164,14 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 					);
 					setWindowFontAndText(hWndGroupCryptor, _localize("Encryption algorithm"));
 
-					//~ todo: remove
-					/*
-					// Radiobutton AES256
-					hWndAES256 = createWindowEx(
-						0,            //dwExStyle
-						"BUTTON",     //lpClassName
-						0,            //lpWindowName
-						0x50000004,   //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
-						26,           //x
-						dy + 33,      //y
-						113,          //nWidth
-						16,           //nHeight
-						hWnd,         //hWndParent
-						IDC_AES256,   //ID
-						hInstanceDLL, //hInstance
-						0             //lpParam
-					);
-					setWindowFontAndText(hWndAES256, _localize("AES-&256"));
-					checked(hWndAES256, cr == "aes256");
-
-					// Radiobutton Blowfish
-					hWndBlowfish = createWindowEx(
-						0,            //dwExStyle
-						"BUTTON",     //lpClassName
-						0,            //lpWindowName
-						0x50000004,   //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
-						145,          //x
-						dy + 33,      //y
-						113,          //nWidth
-						16,           //nHeight
-						hWnd,         //hWndParent
-						IDC_BLOWFISH, //ID
-						hInstanceDLL, //hInstance
-						0             //lpParam
-					);
-					setWindowFontAndText(hWndBlowfish, _localize("&Blowfish"));
-					checked(hWndBlowfish, cr == "blowfish");
-
-					// Radiobutton AES256 + Blowfish
-					hWndAESBlowfish = createWindowEx(
-						0,            //dwExStyle
-						"BUTTON",     //lpClassName
-						0,            //lpWindowName
-						0x50000004,   //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
-						26,           //x
-						dy + 32 + 19,      //y
-						113,          //nWidth
-						16,           //nHeight
-						hWnd,         //hWndParent
-						IDC_AES_BLOWFISH,   //ID
-						hInstanceDLL, //hInstance
-						0             //lpParam
-					);
-					setWindowFontAndText(hWndAESBlowfish, _localize("AES-2&56 + Blowfish"));
-					checked(hWndAESBlowfish, cr == "aes256_blowfish");
-
-					// Radiobutton Blowfish + AES256
-					hWndBlowfishAES = createWindowEx(
-						0,            //dwExStyle
-						"BUTTON",     //lpClassName
-						0,            //lpWindowName
-						0x50000004,   //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
-						145,          //x
-						dy + 32 + 19,      //y
-						113,          //nWidth
-						16,           //nHeight
-						hWnd,         //hWndParent
-						IDC_BLOWFISH_AES, //ID
-						hInstanceDLL, //hInstance
-						0             //lpParam
-					);
-					setWindowFontAndText(hWndBlowfishAES, _localize("Blowfish + AES-25&6"));
-					checked(hWndBlowfishAES, cr == "blowfish_aes256");
-					*/
-
 					hWndCombobox1 = createWindowEx(
 						0,              //dwExStyle
 						"COMBOBOX",     //lpClassName
 						0,              //lpWindowName
 						0x50210003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|WS_VSCROLL|CBS_DROPDOWNLIST
 						26,             //x
-						dy + 33,        //y
-						cbW,             //nWidth
+						dy + 34,        //y
+						cbW,            //nWidth
 						160,            //nHeight
 						hWnd,           //hWndParent
 						IDC_COMBOBOX_1, //ID
@@ -4254,38 +4181,41 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 					setWindowFont(hWndCombobox1);
 
 					hWndCombobox2 = createWindowEx(
-						0,              //dwExStyle
-						"COMBOBOX",     //lpClassName
-						0,              //lpWindowName
-						0x50210003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|WS_VSCROLL|CBS_DROPDOWNLIST
-						26 + cbW + cbSep,             //x
-						dy + 33,        //y
-						cbW,             //nWidth
-						160,            //nHeight
-						hWnd,           //hWndParent
-						IDC_COMBOBOX_2, //ID
-						hInstanceDLL,   //hInstance
-						0               //lpParam
+						0,                //dwExStyle
+						"COMBOBOX",       //lpClassName
+						0,                //lpWindowName
+						0x50210003,       //WS_VISIBLE|WS_CHILD|WS_TABSTOP|WS_VSCROLL|CBS_DROPDOWNLIST
+						26 + cbW + cbSep, //x
+						dy + 34,          //y
+						cbW,              //nWidth
+						160,              //nHeight
+						hWnd,             //hWndParent
+						IDC_COMBOBOX_2,   //ID
+						hInstanceDLL,     //hInstance
+						0                 //lpParam
 					);
 					setWindowFont(hWndCombobox2);
 
 					hWndCombobox3 = createWindowEx(
-						0,              //dwExStyle
-						"COMBOBOX",     //lpClassName
-						0,              //lpWindowName
-						0x50210003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|WS_VSCROLL|CBS_DROPDOWNLIST
-						26 + (cbW + cbSep)*2,             //x
-						dy + 33,        //y
-						cbW,             //nWidth
-						160,            //nHeight
-						hWnd,           //hWndParent
-						IDC_COMBOBOX_3, //ID
-						hInstanceDLL,   //hInstance
-						0               //lpParam
+						0,                    //dwExStyle
+						"COMBOBOX",           //lpClassName
+						0,                    //lpWindowName
+						0x50210003,           //WS_VISIBLE|WS_CHILD|WS_TABSTOP|WS_VSCROLL|CBS_DROPDOWNLIST
+						26 + (cbW + cbSep)*2, //x
+						dy + 34,             //y
+						cbW,                 //nWidth
+						160,                 //nHeight
+						hWnd,                //hWndParent
+						IDC_COMBOBOX_3,      //ID
+						hInstanceDLL,        //hInstance
+						0                    //lpParam
 					);
 					setWindowFont(hWndCombobox3);
 
-					fillComboboxes(null, [cryptorsLabels[1], cryptorsLabels[0], cryptorsLabels[0]]);
+					var selected = cryptor
+						? getPrettyName(cryptor).split(/\s*\+\s*/)
+						: [cryptorsLabels[1], cryptorsLabels[0], cryptorsLabels[0]];
+					fillComboboxes(null, selected);
 				}
 
 				// GroupBox password
@@ -4722,9 +4652,9 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	}
 	function fillComboboxes(idc, selected) {
 		if(selected) {
-			var s1 = selected[0];
-			var s2 = selected[1];
-			var s3 = selected[2];
+			var s1 = selected[0] || cryptorsLabels[0];
+			var s2 = selected[1] || cryptorsLabels[0];
+			var s3 = selected[2] || cryptorsLabels[0];
 		}
 		else {
 			var s1 = windowText(hWndCombobox1);
@@ -4781,34 +4711,20 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 		}
 
 		if(cryptorObj) {
-			//~ todo
-			var cryptors = [];
+			var names = [];
 			var sNone = cryptorsLabels[0];
 			var s1 = windowText(hWndCombobox1);
 			if(s1 != sNone)
-				cryptors.push(s1.toLowerCase());
+				names.push(s1.toLowerCase());
 			var s2 = windowText(hWndCombobox2);
 			if(s2 != sNone)
-				cryptors.push(s2.toLowerCase());
+				names.push(s2.toLowerCase());
 			var s3 = windowText(hWndCombobox3);
 			if(s3 != sNone)
-				cryptors.push(s3.toLowerCase());
-			cryptorObj.value = cryptors;
-			return cryptors.length > 0;
+				names.push(s3.toLowerCase());
+			cryptorObj.value = names;
+			return names.length > 0;
 		}
-
-		//if(cryptorObj) {
-		//	if(checked(hWndAES256))
-		//		cryptorObj.value = "aes256";
-		//	else if(checked(hWndBlowfish))
-		//		cryptorObj.value = "blowfish";
-		//	else if(checked(hWndAESBlowfish))
-		//		cryptorObj.value = "aes256_blowfish";
-		//	else if(checked(hWndBlowfishAES))
-		//		cryptorObj.value = "blowfish_aes256";
-		//	else
-		//		return false;
-		//}
 
 		return true;
 	}
