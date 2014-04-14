@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
 
 // (c) Infocatcher 2010-2012
-// version 0.5.0a6 - 2012-06-18
+// version 0.5.0a7 - 2012-06-18
 
 // !!!WARNING!!!
 // In version 0.5.0 changed the method of double encryption!
@@ -170,17 +170,19 @@ var MODE_DECRYPT     = 2;
 
 // Read arguments:
 // getArg(argName, defaultValue)
-var mode         = getArg("mode", MODE_USER_SELECT);
-var modalDlg     = getArg("modal", false);
-var cryptor      = getArg("cryptor", "").toLowerCase();
-var maxLineWidth = getArg("maxLineWidth", 75);
-var showPassword = getArg("showPassword");
-var onlySelected = getArg("onlySelected", false);
-var warningTime  = getArg("warningTime", 4000);
-var focusPass    = getArg("focusPass", true);
-var test         = getArg("test");
-var saveOptions  = getArg("saveOptions", 1);
-var savePosition = getArg("savePosition", true);
+var mode             = getArg("mode", MODE_USER_SELECT);
+var modalDlg         = getArg("modal", false);
+var cryptor          = getArg("cryptor", "").toLowerCase();
+var pbkdf2Iterations = getArg("PBKDF2Iterations", 2500);
+var maxLineWidth     = getArg("maxLineWidth", 75);
+var showPassword     = getArg("showPassword");
+var onlySelected     = getArg("onlySelected", false);
+var warningTime      = getArg("warningTime", 4000);
+var saltLength       = getArg("saltLength", 16); // See getSalt()
+var focusPass        = getArg("focusPass", true);
+var test             = getArg("test");
+var saveOptions      = getArg("saveOptions", 1);
+var savePosition     = getArg("savePosition", true);
 
 var decrypt = mode == MODE_DECRYPT;
 
@@ -427,7 +429,7 @@ Aes.Ctr.encrypt = function(plaintext, password, nBits, rawOutput) {
   // Array.join is more efficient than repeated string concatenation in IE
   var ciphertext = ctrTxt + ciphertxt.join('');
   if(!rawOutput)
-    ciphertext = Base64.encode(ciphertext);  // encode in base64
+    ciphertext = base64.encode(ciphertext);  // encode in base64
 
   //alert((new Date()) - t);
   return ciphertext;
@@ -445,7 +447,7 @@ Aes.Ctr.decrypt = function(ciphertext, password, nBits, rawInput) {
   var blockSize = 16;  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
   if (!(nBits==128 || nBits==192 || nBits==256)) return '';  // standard allows 128/192/256 bit keys
   if(!rawInput)
-    ciphertext = Base64.decode(ciphertext);
+    ciphertext = base64.decode(ciphertext);
   password = Utf8.encode(password);
   //var t = new Date();  // timer
 
@@ -499,98 +501,95 @@ Aes.Ctr.decrypt = function(ciphertext, password, nBits, rawInput) {
   return plaintext;
 }
 
+//===================
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-/*  Base64 class: Base 64 encoding / decoding (c) Chris Veness 2002-2010                          */
-/*    note: depends on Utf8 class                                                                 */
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-
-var Base64 = {};  // Base64 namespace
-
-Base64.code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-
-/**
- * Encode string into Base64, as defined by RFC 4648 [http://tools.ietf.org/html/rfc4648]
- * (instance method extending String object). As per RFC 4648, no newlines are added.
- *
- * @param {String} str The string to be encoded as base-64
- * @param {Boolean} [utf8encode=false] Flag to indicate whether str is Unicode string to be encoded
- *   to UTF8 before conversion to base64; otherwise string is assumed to be 8-bit characters
- * @returns {String} Base64-encoded string
- */
-Base64.encode = function(str, utf8encode) {  // http://tools.ietf.org/html/rfc4648
-  utf8encode =  (typeof utf8encode == 'undefined') ? false : utf8encode;
-  var o1, o2, o3, bits, h1, h2, h3, h4, e=[], pad = '', c, plain, coded;
-  var b64 = Base64.code;
-
-  plain = utf8encode ? str.encodeUTF8() : str;
-
-  c = plain.length % 3;  // pad string to length of multiple of 3
-  if (c > 0) { while (c++ < 3) { pad += '='; plain += '\0'; } }
-  // note: doing padding here saves us doing special-case packing for trailing 1 or 2 chars
-
-  for (c=0; c<plain.length; c+=3) {  // pack three octets into four hexets
-    o1 = plain.charCodeAt(c);
-    o2 = plain.charCodeAt(c+1);
-    o3 = plain.charCodeAt(c+2);
-
-    bits = o1<<16 | o2<<8 | o3;
-
-    h1 = bits>>18 & 0x3f;
-    h2 = bits>>12 & 0x3f;
-    h3 = bits>>6 & 0x3f;
-    h4 = bits & 0x3f;
-
-    // use hextets to index into code string
-    e[c/3] = b64.charAt(h1) + b64.charAt(h2) + b64.charAt(h3) + b64.charAt(h4);
-  }
-  coded = e.join('');  // join() is far faster than repeated string concatenation in IE
-
-  // replace 'A's from padded nulls with '='s
-  coded = coded.slice(0, coded.length-pad.length) + pad;
-
-  return coded;
+function trimBase64String(str) {
+	return str.replace(/^\s+|[\n\r]+|[\s\x00]+$/g, "");
 }
-
-/**
- * Decode string from Base64, as defined by RFC 4648 [http://tools.ietf.org/html/rfc4648]
- * (instance method extending String object). As per RFC 4648, newlines are not catered for.
- *
- * @param {String} str The string to be decoded from base-64
- * @param {Boolean} [utf8decode=false] Flag to indicate whether str is Unicode string to be decoded
- *   from UTF8 after conversion from base64
- * @returns {String} decoded string
- */
-Base64.decode = function(str, utf8decode) {
-  utf8decode =  (typeof utf8decode == 'undefined') ? false : utf8decode;
-  var o1, o2, o3, h1, h2, h3, h4, bits, d=[], plain, coded;
-  var b64 = Base64.code;
-
-  coded = utf8decode ? str.decodeUTF8() : str;
-
-
-  for (var c=0; c<coded.length; c+=4) {  // unpack four hexets into three octets
-    h1 = b64.indexOf(coded.charAt(c));
-    h2 = b64.indexOf(coded.charAt(c+1));
-    h3 = b64.indexOf(coded.charAt(c+2));
-    h4 = b64.indexOf(coded.charAt(c+3));
-
-    bits = h1<<18 | h2<<12 | h3<<6 | h4;
-
-    o1 = bits>>>16 & 0xff;
-    o2 = bits>>>8 & 0xff;
-    o3 = bits & 0xff;
-
-    d[c/4] = String.fromCharCode(o1, o2, o3);
-    // check for padding
-    if (h4 == 0x40) d[c/4] = String.fromCharCode(o1, o2);
-    if (h3 == 0x40) d[c/4] = String.fromCharCode(o1);
-  }
-  plain = d.join('');  // join() is far faster than repeated string concatenation in IE
-
-  return utf8decode ? plain.decodeUTF8() : plain;
+function isBase64(str) {
+	return str.length % 4 == 0 && !/[^a-zA-Z0-9+\/]/.test(str.replace(/=+$/, ""));
 }
+var base64 = {
+	_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+	encode: function (input, toDataURI) {
+		//input = convertFromUnicode(input, codePageBase64); //~ todo: CP_NOT_CONVERT seems buggy
+		input = Utf8.encode(input);
 
+		var output = "";
+		var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
+		var _keyStr = this._keyStr;
+		var i = 0;
+		while(i < input.length) {
+			chr1 = input.charCodeAt(i++);
+			chr2 = input.charCodeAt(i++);
+			chr3 = input.charCodeAt(i++);
+			enc1 = chr1 >> 2;
+			enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+			enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+			enc4 = chr3 & 63;
+			if(isNaN(chr2))
+				enc3 = enc4 = 64;
+			else if (isNaN(chr3))
+				enc4 = 64;
+			output = output + _keyStr.charAt(enc1) + _keyStr.charAt(enc2) + _keyStr.charAt(enc3) + _keyStr.charAt(enc4);
+		}
+
+		//if(toDataURI) {
+		//	var charsetName = getCharsetName(codePageBase64);
+		//	output = "data:text/plain;" + (charsetName ? "charset=" + charsetName + ";" : "") + "base64," + output;
+		//}
+		//else if(maxLineWidth > 0)
+		//	output = output.replace(new RegExp(".{" + maxLineWidth + "}", "g"), "$&\n");
+		return output;
+	},
+	decode: function (input) {
+		//var cp = codePageBase64;
+		//input = trimBase64String(input);
+
+		//if(/^data:([^:,;=]+(;charset=([^:,;=]+))?)?;base64,/.test(input)) {
+		//	input = input.substr(RegExp.lastMatch.length);
+		//	if(RegExp.$3)
+		//		cp = getCharsetCode(RegExp.$3) || cp;
+		//}
+
+		if(!isBase64(input))
+			throw "Not a Base64 string!";
+
+		var output = "";
+
+		var _keyStr = this._keyStr;
+		var _keyMap = this._keyMap;
+		if(!_keyMap) {
+			_keyMap = this._keyMap = {};
+			for (var j = 0, l = _keyStr.length; j < l; j++)
+				_keyMap[_keyStr.charAt(j)] = j;
+		}
+
+		var chr1, chr2, chr3;
+		var enc1, enc2, enc3, enc4;
+		var i = 0;
+		var inputLen = input.length;
+		//input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+		while(i < inputLen) {
+			enc1 = _keyMap[input.charAt(i++)];
+			enc2 = _keyMap[input.charAt(i++)];
+			enc3 = _keyMap[input.charAt(i++)];
+			enc4 = _keyMap[input.charAt(i++)];
+			chr1 = (enc1 << 2) | (enc2 >> 4);
+			chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+			chr3 = ((enc3 & 3) << 6) | enc4;
+			output = output + String.fromCharCode(chr1);
+			if(enc3 != 64)
+				output = output + String.fromCharCode(chr2);
+			if(enc4 != 64)
+				output = output + String.fromCharCode(chr3);
+		}
+		//return convertToUnicode(output, cp);
+		return Utf8.decode(output);
+	}
+};
+
+//===================
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 /*  Utf8 class: encode / decode between multi-byte Unicode characters and UTF-8 multiple          */
@@ -1037,12 +1036,12 @@ function blowfishEncrypt(text, pass, rawOutput) {
 	bf.setKey(pass);
 	text = bf.encrypt(text);
 	if(!rawOutput)
-		text = Base64.encode(text);
+		text = base64.encode(text);
 	return text;
 }
 function blowfishDecrypt(text, pass, rawInput) {
 	if(!rawInput)
-		text = Base64.decode(text);
+		text = base64.decode(text);
 	pass = Utf8.encode(pass);
 	var bf = new Blowfish();
 	bf.setKey(pass);
@@ -1705,77 +1704,38 @@ sjcl.misc.pbkdf2 = function (password, salt, count, length, Prff) {
 
 //===================
 
-var hashStaticSalt = "H,61d'c7J;\"Zy{nY";
-var hashPBKDF2Count = 2500;
 var _cache = {};
-function hash(pass) {
-	if(_cache[pass])
-		return _cache[pass];
-
-	init();
-
-	var salt = packHex(
-		sjcl.codec.hex.fromBits(
-			sjcl.hash.sha256.hash(pass + hashStaticSalt)
-		)
-	);
-	return _cache[pass] = packHex(
-		sjcl.codec.hex.fromBits(
-			sjcl.misc.pbkdf2(pass, salt, hashPBKDF2Count, 64*4)
+function getHash(pass, salt, iterations) {
+	return _cache[pass] || (
+		_cache[pass] = packHex(
+			sjcl.codec.hex.fromBits(
+				sjcl.misc.pbkdf2(pass, salt, iterations, 64*4)
+			)
 		)
 	);
 }
-function init() {
-	init = function() {};
-	if(oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/)) {
-		var salt = oSet.Read("staticSalt", 3 /*PO_STRING*/);
-		var count = oSet.Read("PBKDF2Count", 1 /*PO_DWORD*/);
-		oSet.End();
-	}
-	if(!salt || !count) { // Initialize
-		salt = getRandom(
-			"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`~!@#$%^&*()-_=+[]{}\\|;:'\"<>,.?/",
-			16
-		);
-		count = hashPBKDF2Count;
-
-		var ok = false;
-		if(oSet.Begin(WScript.ScriptBaseName, 0x2 /*POB_SAVE*/)) {
-			oSet.Write("staticSalt", 3 /*PO_STRING*/, salt);
-			oSet.Write("PBKDF2Count", 1 /*PO_DWORD*/, count);
-			ok = oSet.End();
-		}
-		if(!ok) {
-			AkelPad.MessageBox(
-				hWndDialog || hMainWnd,
-				_localize("Can't save generated salt!"),
-				dialogTitle + " :: " + _localize("Error"),
-				16 /*MB_ICONERROR*/
-			);
-			salt = hashStaticSalt;
-		}
-	}
-	hashStaticSalt = salt;
-	hashPBKDF2Count = count;
-}
-function getRandom(chars, num) {
-	chars = shuffle(chars);
-	var len = chars.length;
+function getSalt() {
+	var num = saltLength;
 	var rnd = "";
 	for(var i = 0; i < num; ++i)
-		rnd += chars.charAt(Math.floor(Math.random()*len));
+		rnd += String.fromCharCode(Math.floor(Math.random()*0xfffe) + 1); // 1 ... 0xffff
 	return rnd;
 }
-function shuffle(chars) {
-	var arr = chars.split("");
-	var i = arr.length;
-	while(--i) {
-		var rnd = Math.floor(Math.random()*(i + 1));
-		var tmp = arr[i];
-		arr[i] = arr[rnd];
-		arr[rnd] = tmp;
+function getHeader(iterations, salt) {
+	return iterations + "\x00" + salt + "\x00";
+}
+function getDummyHeader() {
+	return getHeader(pbkdf2Iterations, getSalt());
+}
+function parseHeader(str) {
+	if(/^(\d+)\x00([^\x00]+)\x00/.test(str)) {
+		return {
+			iterations: Number(RegExp.$1),
+			salt: RegExp.$2,
+			text: str.substr(RegExp.lastMatch.length)
+		};
 	}
-	return arr.join("");
+	throw "Can't decrypt: bad header";
 }
 function packHex(hex) {
 	var n = 4;
@@ -1817,17 +1777,31 @@ var cryptors = {
 		prettyName: "AES-256 + Blowfish",
 		speed: [14.3, 31.5],
 		encrypt: function(text, pass) {
-			feedback("1/2");
+			feedback("1/4: hash");
+			var salt = getSalt();
+			var hash = getHash(pass, salt, pbkdf2Iterations);
+			feedback("2/4: encrypt-1");
 			text = Aes.Ctr.encrypt(text, pass, 256, true);
-			feedback("2/2");
-			text = blowfishEncrypt(text, hash(pass));
+			feedback("3/4: encrypt-2");
+			text = blowfishEncrypt(text, hash, true);
+			feedback("4/4: base64");
+			var header = getHeader(pbkdf2Iterations, salt);
+			text = base64.encode(header + text);
 			feedback();
 			return text;
 		},
 		decrypt: function(text, pass) {
-			feedback("1/2");
-			text = blowfishDecrypt(text, hash(pass));
-			feedback("2/2");
+			feedback("1/4: base64");
+			text = base64.decode(text);
+			var h = parseHeader(text);
+			var salt = h.salt;
+			var iterations = h.iterations;
+			text = h.text;
+			feedback("2/4: hash");
+			var hash = getHash(pass, salt, iterations);
+			feedback("3/4: decrypt-1");
+			text = blowfishDecrypt(text, hash, true);
+			feedback("4/4: decrypt-2");
 			text = Aes.Ctr.decrypt(text, pass, 256, true);
 			feedback();
 			return text;
@@ -1854,6 +1828,13 @@ var cryptors = {
 		}
 	}
 };
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+var h = getDummyHeader() + "|||qwe";
+var b = base64.encode(h);
+//WScript.Echo(b);
+var d = base64.decode(b);
+WScript.Echo((h + "\n" + d).replace(/\x00/g, "<\\0>"));
+WScript.Echo(d === h);
 
 
 var hMainWnd = AkelPad.GetMainWnd();
@@ -1944,9 +1925,12 @@ function encryptOrDecrypt(pass) {
 		var speed = cryptorData.speed[decrypt ? 1 : 0];
 		//var remTime = text.length/speed;
 
-		hash(pass); // Cache it!
+		//hash(pass); // Cache it!
 
-		var part = text.substr(0, Math.max(500, 60*speed));
+		var len = Math.max(500, 60*speed);
+		if(decrypt && len % 4 != 0)
+			len += 4 - len % 4;
+		var part = text.substr(0, len);
 		var t = new Date().getTime();
 		_testMode = true;
 		try {
@@ -1996,12 +1980,6 @@ function encryptOrDecrypt(pass) {
 	//WScript.Echo(text.length/(new Date().getTime() - t));
 
 	insertNoScroll(res, selectAll);
-}
-function trimBase64String(str) {
-	return str.replace(/^\s+|[\n\r]+|[\s\x00]+$/g, "");
-}
-function isBase64(str) {
-	return str.length % 4 == 0 && !/[^a-zA-Z0-9+\/]/.test(str.replace(/=+$/, ""));
 }
 
 function cryptTest() {
@@ -2999,7 +2977,7 @@ return {
 	passwordPrompt: passwordPrompt,
 	packHex: packHex,
 	utf8: Utf8,
-	base64: Base64,
+	base64: base64,
 	trimBase64String: trimBase64String,
 	isBase64: isBase64,
 	sjcl: sjcl
