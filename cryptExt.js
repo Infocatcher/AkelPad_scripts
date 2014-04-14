@@ -1,5 +1,6 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=12843#12843
-// http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
+// http://infocatcher.ucoz.net/js/akelpad_scripts/cryptExt.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/cryptExt.js
 
 // (c) Infocatcher 2010-2012, 2014
 // version 0.5.0a12 - 2014-04-14
@@ -30,7 +31,8 @@
 //   salt:             random string with -saltLengthMin .. -saltLengthMax length
 
 // Raw data after each encryption:
-//   <salt><iterations><encrypted data>
+//   <salt><iterations><separator><encrypted data>
+// See getHeader() and parseHeader()
 
 // Hotkeys:
 //   Enter                    - Ok
@@ -55,7 +57,7 @@
 //   -cryptor="AES256"        - encryption algorithm: "AES256", "Blowfish", "Twofish" or "Serpent"
 //                              (or combination like "AES256+Twofish")
 //   -PBKDF2IterationsMin=50
-//   -PBKDF2IterationsMax=100 - iterations for PBKDF2
+//   -PBKDF2IterationsMax=100 - iterations for PBKDF2, 33 ... 65535 (due to encode method)
 //   -saltLengthMin=8
 //   -saltLengthMax=16        - length of "salt" string
 //   -maxLineWidth=75         - allow split output to lines with fixed width
@@ -197,21 +199,21 @@ var MODE_DECRYPT     = 2;
 
 // Read arguments:
 // getArg(argName, defaultValue)
-var mode             = getArg("mode", MODE_USER_SELECT);
-var modalDlg         = getArg("modal", false);
-var cryptor          = getArg("cryptor", "").toLowerCase();
-var pbkdf2IterationsMin = getArg("pbkdf2IterationsMin", 15); //~~~~~~~~~~~~~~~~~~~~~
-var pbkdf2IterationsMax = getArg("pbkdf2IterationsMax", 30); //~~~~~~~~~~~~~~~~~~~~~
-var maxLineWidth     = getArg("maxLineWidth", 75);
-var showPassword     = getArg("showPassword");
-var onlySelected     = getArg("onlySelected", false);
-var warningTime      = getArg("warningTime", 4000);
-var saltLengthMin    = getArg("saltLengthMin", 8);
-var saltLengthMax    = getArg("saltLengthMax", 16);
-var focusPass        = getArg("focusPass", true);
-var test             = getArg("test");
-var saveOptions      = getArg("saveOptions", 1);
-var savePosition     = getArg("savePosition", true);
+var mode                = getArg("mode", MODE_USER_SELECT);
+var modalDlg            = getArg("modal", false);
+var cryptor             = getArg("cryptor", "").toLowerCase();
+var pbkdf2IterationsMin = getArg("pbkdf2IterationsMin", 33); //~~~~~~~~~~~~~~~~~~~~~
+var pbkdf2IterationsMax = getArg("pbkdf2IterationsMax", 45); //~~~~~~~~~~~~~~~~~~~~~
+var saltLengthMin       = getArg("saltLengthMin", 8);
+var saltLengthMax       = getArg("saltLengthMax", 16);
+var maxLineWidth        = getArg("maxLineWidth", 75);
+var showPassword        = getArg("showPassword");
+var onlySelected        = getArg("onlySelected", false);
+var warningTime         = getArg("warningTime", 4000);
+var focusPass           = getArg("focusPass", true);
+var test                = getArg("test");
+var saveOptions         = getArg("saveOptions", 1);
+var savePosition        = getArg("savePosition", true);
 
 var isDecrypt = mode == MODE_DECRYPT;
 
@@ -3460,22 +3462,27 @@ function getSalt() {
 	var num = getRandomInt(saltLengthMin, saltLengthMax);
 	var rnd = "";
 	for(var i = 0; i < num; ++i)
-		rnd += String.fromCharCode(Math.floor(Math.random()*0xfffe) + 1); // 1 ... 0xffff
+		rnd += String.fromCharCode(getRandomInt(0x21, 0xffff));
 	return rnd;
 }
 function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 function getHeader(iterations, salt) {
-	return salt + "\x00" + iterations + "\x00";
+	if(iterations <= 0x20)
+		throw "Too small iterations count!";
+	return salt
+		+ String.fromCharCode(iterations)
+		+ String.fromCharCode(getRandomInt(0, 0x20));
 }
 function parseHeader(str) {
-	if(!/^([^\x00]+)\x00(\d+)\x00/.test(str))
+	if(!/^([^\x00-\x20]{2,})[\x00-\x20]/.test(str))
 		throw "Can't decrypt: bad header";
+	var header = RegExp.$1;
 	return {
-		salt: RegExp.$1,
-		iterations: Number(RegExp.$2),
-		text: str.substr(RegExp.lastMatch.length)
+		salt: header.slice(0, -1),
+		iterations: header.charCodeAt(header.length - 1),
+		text: RegExp.rightContext
 	};
 }
 function packHex(hex) {
@@ -3834,8 +3841,8 @@ function encryptOrDecrypt(pass) {
 function cryptTest() {
 	var piMin = pbkdf2IterationsMin;
 	var piMax = pbkdf2IterationsMax;
-	pbkdf2IterationsMin = 6;
-	pbkdf2IterationsMax = 14;
+	pbkdf2IterationsMin = 33;
+	pbkdf2IterationsMax = 40;
 	var texts = [
 		"Abcdef0123",
 		"AbefАбвг015@#$%^&*()-_=+/\\\n!\r\t'\" ",
