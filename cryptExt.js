@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
 
 // (c) Infocatcher 2010-2012
-// version 0.5.0a9 - 2012-06-20
+// version 0.5.0a10 - 2012-06-20
 
 // !!!WARNING!!!
 // In version 0.5.0 changed the method of double encryption!
@@ -2240,27 +2240,36 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	var IDC_STATIC       = -1;
 	var IDC_ENCRYPT      = 1001;
 	var IDC_DECRYPT      = 1002;
-	var IDC_AES256       = 1003;
-	var IDC_BLOWFISH     = 1004;
-	var IDC_AES_BLOWFISH = 1005;
-	var IDC_BLOWFISH_AES = 1006;
-	var IDC_PASS         = 1007;
-	var IDC_PASS2        = 1008;
-	var IDC_PASS2_LABEL  = 1009;
-	var IDC_SHOWPASS     = 1010;
-	var IDC_OK           = 1011;
-	var IDC_APPLY        = 1012;
-	var IDC_CANCEL       = 1013;
+	var IDC_COMBOBOX_1   = 1003;
+	var IDC_COMBOBOX_2   = 1004;
+	var IDC_COMBOBOX_3   = 1005;
+	var IDC_AES256       = 1006;
+	var IDC_BLOWFISH     = 1007;
+	var IDC_AES_BLOWFISH = 1008;
+	var IDC_BLOWFISH_AES = 1009;
+	var IDC_PASS         = 1010;
+	var IDC_PASS2        = 1011;
+	var IDC_PASS2_LABEL  = 1012;
+	var IDC_SHOWPASS     = 1013;
+	var IDC_OK           = 1014;
+	var IDC_APPLY        = 1015;
+	var IDC_CANCEL       = 1016;
 
 	var hWndGroupDir, hWndEncrypt, hWndDecrypt;
 	var hWndGroupCryptor, hWndAES256, hWndBlowfish, hWndAESBlowfish, hWndBlowfishAES;
+	var hWndGroupCryptor, hWndCombobox1, hWndCombobox2, hWndCombobox3;
 	var hWndGroupPass, hWndPassLabel, hWndPass, hWndPass2Label, hWndPass2, hWndShowPass;
 	var hWndOK, hWndApply, hWndCancel;
+
+	var cryptorsLabels = [_localize("(none)"), "AES-256", "Blowfish", "Twofish", "Serpent"];
 
 	var addY = (decryptObj ? 54 : 0) + (cryptorObj ? 54 + 18 : 0);
 	var p2h = decryptObj || !isDecrypt ? 0 : 52; // Show or hide second password field
 	var btnW = modal ? 124 : 79;
 	var btnSp = 12;
+
+	var cbW = 72;
+	var cbSep = 8;
 
 	var scale = new Scale(0, hMainWnd);
 	var sizeNonClientX = oSys.Call("user32::GetSystemMetrics", 7 /*SM_CXFIXEDFRAME*/)*2;
@@ -2289,13 +2298,6 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	function dialogCallback(hWnd, uMsg, wParam, lParam) {
 		switch(uMsg) {
 			case 1: //WM_CREATE
-				function setWindowFontAndText(hWnd, hFont, pText) {
-					AkelPad.SendMessage(hWnd, 48 /*WM_SETFONT*/, hFont, true);
-					windowText(hWnd, pText);
-				}
-
-				var hGuiFont = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
-
 				// Dialog caption
 				windowText(hWnd, caption);
 
@@ -2319,7 +2321,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						hInstanceDLL, //hInstance
 						0             //lpParam
 					);
-					setWindowFontAndText(hWndGroupDir, hGuiFont, _localize("Direction"));
+					setWindowFontAndText(hWndGroupDir, _localize("Direction"));
 
 					// Radiobutton encrypt
 					hWndEncrypt = createWindowEx(
@@ -2336,7 +2338,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						hInstanceDLL, //hInstance
 						0             //lpParam
 					);
-					setWindowFontAndText(hWndEncrypt, hGuiFont, _localize("&Encrypt"));
+					setWindowFontAndText(hWndEncrypt, _localize("&Encrypt"));
 					checked(hWndEncrypt, !decryptObj.value);
 
 					// Radiobutton decrypt
@@ -2354,7 +2356,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						hInstanceDLL, //hInstance
 						0             //lpParam
 					);
-					setWindowFontAndText(hWndDecrypt, hGuiFont, _localize("&Decrypt"));
+					setWindowFontAndText(hWndDecrypt, _localize("&Decrypt"));
 					checked(hWndDecrypt, decryptObj.value);
 				}
 
@@ -2378,8 +2380,10 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						hInstanceDLL, //hInstance
 						0             //lpParam
 					);
-					setWindowFontAndText(hWndGroupCryptor, hGuiFont, _localize("Encryption algorithm"));
+					setWindowFontAndText(hWndGroupCryptor, _localize("Encryption algorithm"));
 
+					//~ todo: remove
+					/*
 					// Radiobutton AES256
 					hWndAES256 = createWindowEx(
 						0,            //dwExStyle
@@ -2395,7 +2399,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						hInstanceDLL, //hInstance
 						0             //lpParam
 					);
-					setWindowFontAndText(hWndAES256, hGuiFont, _localize("AES-&256"));
+					setWindowFontAndText(hWndAES256, _localize("AES-&256"));
 					checked(hWndAES256, cr == "aes256");
 
 					// Radiobutton Blowfish
@@ -2413,7 +2417,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						hInstanceDLL, //hInstance
 						0             //lpParam
 					);
-					setWindowFontAndText(hWndBlowfish, hGuiFont, _localize("&Blowfish"));
+					setWindowFontAndText(hWndBlowfish, _localize("&Blowfish"));
 					checked(hWndBlowfish, cr == "blowfish");
 
 					// Radiobutton AES256 + Blowfish
@@ -2431,7 +2435,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						hInstanceDLL, //hInstance
 						0             //lpParam
 					);
-					setWindowFontAndText(hWndAESBlowfish, hGuiFont, _localize("AES-2&56 + Blowfish"));
+					setWindowFontAndText(hWndAESBlowfish, _localize("AES-2&56 + Blowfish"));
 					checked(hWndAESBlowfish, cr == "aes256_blowfish");
 
 					// Radiobutton Blowfish + AES256
@@ -2449,8 +2453,59 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						hInstanceDLL, //hInstance
 						0             //lpParam
 					);
-					setWindowFontAndText(hWndBlowfishAES, hGuiFont, _localize("Blowfish + AES-25&6"));
+					setWindowFontAndText(hWndBlowfishAES, _localize("Blowfish + AES-25&6"));
 					checked(hWndBlowfishAES, cr == "blowfish_aes256");
+					*/
+
+					hWndCombobox1 = createWindowEx(
+						0,              //dwExStyle
+						"COMBOBOX",     //lpClassName
+						0,              //lpWindowName
+						0x50210003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|WS_VSCROLL|CBS_DROPDOWNLIST
+						26,             //x
+						dy + 33,        //y
+						cbW,             //nWidth
+						160,            //nHeight
+						hWnd,           //hWndParent
+						IDC_COMBOBOX_1, //ID
+						hInstanceDLL,   //hInstance
+						0               //lpParam
+					);
+					setWindowFont(hWndCombobox1);
+
+					hWndCombobox2 = createWindowEx(
+						0,              //dwExStyle
+						"COMBOBOX",     //lpClassName
+						0,              //lpWindowName
+						0x50210003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|WS_VSCROLL|CBS_DROPDOWNLIST
+						26 + cbW + cbSep,             //x
+						dy + 33,        //y
+						cbW,             //nWidth
+						160,            //nHeight
+						hWnd,           //hWndParent
+						IDC_COMBOBOX_2, //ID
+						hInstanceDLL,   //hInstance
+						0               //lpParam
+					);
+					setWindowFont(hWndCombobox2);
+
+					hWndCombobox3 = createWindowEx(
+						0,              //dwExStyle
+						"COMBOBOX",     //lpClassName
+						0,              //lpWindowName
+						0x50210003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|WS_VSCROLL|CBS_DROPDOWNLIST
+						26 + (cbW + cbSep)*2,             //x
+						dy + 33,        //y
+						cbW,             //nWidth
+						160,            //nHeight
+						hWnd,           //hWndParent
+						IDC_COMBOBOX_3, //ID
+						hInstanceDLL,   //hInstance
+						0               //lpParam
+					);
+					setWindowFont(hWndCombobox3);
+
+					fillComboboxes(null, [cryptorsLabels[1], cryptorsLabels[0], cryptorsLabels[0]]);
 				}
 
 				// GroupBox password
@@ -2468,7 +2523,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 					hInstanceDLL, //hInstance
 					0             //lpParam
 				);
-				setWindowFontAndText(hWndGroupPass, hGuiFont, label);
+				setWindowFontAndText(hWndGroupPass, label);
 
 				// Static window: password label
 				hWndPassLabel = createWindowEx(
@@ -2485,7 +2540,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 					hInstanceDLL, //hInstance
 					0             //lpParam
 				);
-				setWindowFontAndText(hWndPassLabel, hGuiFont, _localize("Enter &password:"));
+				setWindowFontAndText(hWndPassLabel, _localize("Enter &password:"));
 
 				// Edit window: password
 				hWndPass = createWindowEx(
@@ -2502,7 +2557,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 					hInstanceDLL, //hInstance
 					0             //lpParam
 				);
-				setWindowFontAndText(hWndPass, hGuiFont, "");
+				setWindowFontAndText(hWndPass, "");
 
 				if(decryptObj || !isDecrypt) {
 					// Static window: password 2 label
@@ -2520,7 +2575,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						hInstanceDLL,    //hInstance
 						0                //lpParam
 					);
-					setWindowFontAndText(hWndPass2Label, hGuiFont, _localize("Reenter p&assword:"));
+					setWindowFontAndText(hWndPass2Label, _localize("Reenter p&assword:"));
 
 					// Edit window: password 2
 					hWndPass2 = createWindowEx(
@@ -2537,7 +2592,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						hInstanceDLL, //hInstance
 						0             //lpParam
 					);
-					setWindowFontAndText(hWndPass2, hGuiFont, "");
+					setWindowFontAndText(hWndPass2, "");
 				}
 
 				// Checkbox: show password
@@ -2555,7 +2610,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 					hInstanceDLL,     //hInstance
 					0                 //lpParam
 				);
-				setWindowFontAndText(hWndShowPass, hGuiFont, _localize("&Show password"));
+				setWindowFontAndText(hWndShowPass, _localize("&Show password"));
 				checked(hWndShowPass, showPassword);
 				setShowPass(showPassword, decryptObj ? !decryptObj.value : !isDecrypt);
 
@@ -2574,7 +2629,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 					hInstanceDLL,     //hInstance
 					0                 //lpParam
 				);
-				setWindowFontAndText(hWndOK, hGuiFont, _localize("OK"));
+				setWindowFontAndText(hWndOK, _localize("OK"));
 
 				if(!modal) {
 					// Apply button window
@@ -2592,7 +2647,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						hInstanceDLL,      //hInstance
 						0                  //lpParam
 					);
-					setWindowFontAndText(hWndApply, hGuiFont, _localize("Apply"));
+					setWindowFontAndText(hWndApply, _localize("Apply"));
 				}
 
 				// Cancel button window
@@ -2610,7 +2665,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 					hInstanceDLL,                        //hInstance
 					0                                    //lpParam
 				);
-				setWindowFontAndText(hWndCancel, hGuiFont, _localize("Cancel"));
+				setWindowFontAndText(hWndCancel, _localize("Cancel"));
 
 				oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_PASS, 0);
 
@@ -2726,6 +2781,15 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 					case IDC_SHOWPASS:
 						setShowPass(checked(hWndShowPass), decryptObj ? checked(hWndEncrypt) : !isDecrypt);
 					break;
+					case IDC_COMBOBOX_1:
+					case IDC_COMBOBOX_2:
+					case IDC_COMBOBOX_3:
+						if(wParam >> 16 == 1 /*CBN_SELCHANGE*/) {
+							fillComboboxes(idc);
+						}
+					break;
+
+					//~ todo: remove:
 					case IDC_AES256:
 					case IDC_BLOWFISH:
 					case IDC_AES_BLOWFISH:
@@ -2852,6 +2916,79 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 		pText = AkelPad.MemRead(lpText, _TSTR);
 		AkelPad.MemFree(lpText);
 		return pText;
+	}
+	function setWindowFont(hWnd, hFont) {
+		var hGuiFont = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
+		setWindowFont = function(hWnd, hFont) {
+			AkelPad.SendMessage(hWnd, 48 /*WM_SETFONT*/, hFont || hGuiFont, true);
+		};
+		setWindowFont(hWnd, hFont);
+	}
+	function setWindowFontAndText(hWnd, pText, hFont) {
+		setWindowFont(hWnd, hFont);
+		windowText(hWnd, pText);
+	}
+	function fillCombobox(hWndCombobox, labels, selected) {
+		var c = AkelPad.SendMessage(hWndCombobox, 0x146 /*CB_GETCOUNT*/, 0, 0);
+		while(--c >= 0)
+			AkelPad.SendMessage(hWndCombobox, 0x144 /*CB_DELETESTRING*/, c, 0);
+
+		for(var i = 0, l = labels.length; i < l; ++i)
+			oSys.Call("user32::SendMessage" + _TCHAR, hWndCombobox, 0x143 /*CB_ADDSTRING*/, 0, labels[i]);
+
+		if(selected) {
+			oSys.Call("user32::SendMessage" + _TCHAR, hWndCombobox, 0x14D /*CB_SELECTSTRING*/, -1, selected);
+		}
+	}
+	function fillComboboxes(idc, selected) {
+		if(selected) {
+			var s1 = selected[0];
+			var s2 = selected[1];
+			var s3 = selected[2];
+		}
+		else {
+			var s1 = windowText(hWndCombobox1);
+			var s2 = windowText(hWndCombobox2);
+			var s3 = windowText(hWndCombobox3);
+		}
+
+		var dis3 = s2 == cryptorsLabels[0];
+		if(dis3)
+			s3 = cryptorsLabels[0];
+
+		var l = cryptorsLabels.length;
+
+		if(idc != IDC_COMBOBOX_1) {
+			var labels = [];
+			for(var i = 1; i < l; ++i) {
+				var s = cryptorsLabels[i];
+				if(s != s2 && s != s3)
+					labels.push(s);
+			}
+			fillCombobox(hWndCombobox1, labels, s1);
+		}
+
+		if(idc != IDC_COMBOBOX_2) {
+			var labels = [];
+			for(var i = 0; i < l; ++i) {
+				var s = cryptorsLabels[i];
+				if(s != s1 && s != s3 || i == 0 && s3 == cryptorsLabels[0])
+					labels.push(s);
+			}
+			fillCombobox(hWndCombobox2, labels, s2);
+		}
+
+		if(idc != IDC_COMBOBOX_3) {
+			var labels = [];
+			for(var i = 0; i < l; ++i) {
+				var s = cryptorsLabels[i];
+				if(s != s1 && s != s2 || i == 0)
+					labels.push(s);
+			}
+			fillCombobox(hWndCombobox3, labels, s3);
+		}
+
+		enabled(hWndCombobox3, !dis3);
 	}
 	function readRadiosState() {
 		if(decryptObj) {
