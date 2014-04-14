@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
 
 // (c) Infocatcher 2010-2012
-// version 0.5.0a5 - 2012-06-18
+// version 0.5.0a6 - 2012-06-18
 
 // !!!WARNING!!!
 // In version 0.5.0 changed the method of double encryption!
@@ -43,6 +43,8 @@
 //   Enter                    - Ok
 //   Ctrl+Enter, Shift+Enter  - Apply
 //   Escape                   - Cancel
+//   F3                       - Select direction (encrypt/decrypt)
+//   F4                       - Select cryptor
 //   Ctrl+Z                   - Undo
 //   Ctrl+Shift+Z             - Redo
 //   Ctrl+C, Ctrl+Insert      - Copy
@@ -62,6 +64,7 @@
 //   -showPassword=true  - force show or hide password
 //   -onlySelected=true  - use only selected text
 //   -warningTime=4000   - show warning for slow calculations
+//   -focusPass=true     - focus password field instead of radio buttons
 //   -test=true          - run tests
 //   -saveOptions=0      - don't store options
 //               =1      - (default) save options after encrypt/decrypt
@@ -174,6 +177,7 @@ var maxLineWidth = getArg("maxLineWidth", 75);
 var showPassword = getArg("showPassword");
 var onlySelected = getArg("onlySelected", false);
 var warningTime  = getArg("warningTime", 4000);
+var focusPass    = getArg("focusPass", true);
 var test         = getArg("test");
 var saveOptions  = getArg("saveOptions", 1);
 var savePosition = getArg("savePosition", true);
@@ -1787,6 +1791,9 @@ function packHex(hex) {
 		out += String.fromCharCode(Number("0x" + hex.substr(i, n)));
 	return out;
 }
+function feedback(msg) {
+	_feedback && _feedback(msg);
+}
 
 var cryptors = {
 	// speed: symbols/ms [encryptSpeed, decryptSpeed]
@@ -1810,13 +1817,19 @@ var cryptors = {
 		prettyName: "AES-256 + Blowfish",
 		speed: [14.3, 31.5],
 		encrypt: function(text, pass) {
+			feedback("1/2");
 			text = Aes.Ctr.encrypt(text, pass, 256, true);
+			feedback("2/2");
 			text = blowfishEncrypt(text, hash(pass));
+			feedback();
 			return text;
 		},
 		decrypt: function(text, pass) {
+			feedback("1/2");
 			text = blowfishDecrypt(text, hash(pass));
+			feedback("2/2");
 			text = Aes.Ctr.decrypt(text, pass, 256, true);
+			feedback();
 			return text;
 		}
 	},
@@ -1824,13 +1837,19 @@ var cryptors = {
 		prettyName: "Blowfish + AES-256",
 		speed: [11.1, 24.4],
 		encrypt: function(text, pass) {
+			feedback("1/2");
 			text = blowfishEncrypt(text, pass, true);
+			feedback("2/2");
 			text = Aes.Ctr.encrypt(text, hash(pass), 256);
+			feedback();
 			return text;
 		},
 		decrypt: function(text, pass) {
+			feedback("1/2");
 			text = Aes.Ctr.decrypt(text, hash(pass), 256);
+			feedback("2/2");
 			text = blowfishDecrypt(text, pass, true);
+			feedback();
 			return text;
 		}
 	}
@@ -1839,7 +1858,8 @@ var cryptors = {
 
 var hMainWnd = AkelPad.GetMainWnd();
 var hWndEdit = AkelPad.GetEditWnd();
-var hWndDialog;
+var hWndDialog, _feedback;
+var _testMode = false;
 var oSys = AkelPad.SystemFunction();
 var oSet = AkelPad.ScriptSettings();
 var dialogTitle = WScript.ScriptName.replace(/^[!-\-_]+/, "");
@@ -1924,13 +1944,17 @@ function encryptOrDecrypt(pass) {
 		var speed = cryptorData.speed[decrypt ? 1 : 0];
 		//var remTime = text.length/speed;
 
+		hash(pass); // Cache it!
+
 		var part = text.substr(0, Math.max(500, 60*speed));
 		var t = new Date().getTime();
+		_testMode = true;
 		try {
 			cryptorData[decrypt ? "decrypt" : "encrypt"](part, pass);
 		}
 		catch(e) {
 		}
+		_testMode = false;
 		t = new Date().getTime() - t;
 		var remTime = text.length/(part.length/t);
 
@@ -2073,6 +2097,16 @@ function passwordPrompt(decryptObj, cryptorObj) {
 function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	var hInstanceDLL = AkelPad.GetInstanceDll();
 	var dialogClass = "AkelPad::Scripts::" + WScript.ScriptName + "::" + oSys.Call("kernel32::GetCurrentProcessId");
+
+	_feedback = function(msg) {
+		if(_testMode)
+			return;
+		windowText(
+			hWndDialog,
+			windowText(hWndDialog).replace(/\s+\[.*\]$/, "")
+			+ (msg ? " [" + msg + "]" : "")
+		);
+	}
 
 	hWndDialog = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, dialogClass, 0);
 	if(hWndDialog) {
@@ -2514,9 +2548,17 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 			break;
 			case 7: //WM_SETFOCUS
 				var hWndFocus = hWndPass;
-				if(decryptObj) {
-					if(checked(hWndEncrypt))      hWndFocus = hWndEncrypt;
-					else if(checked(hWndDecrypt)) hWndFocus = hWndDecrypt;
+				if(!focusPass) {
+					if(decryptObj) {
+						if(checked(hWndEncrypt))      hWndFocus = hWndEncrypt;
+						else if(checked(hWndDecrypt)) hWndFocus = hWndDecrypt;
+					}
+					else if(cryptorObj) {
+						if(checked(hWndAES256))           hWndFocus = hWndAES256;
+						else if(checked(hWndBlowfish))    hWndFocus = hWndBlowfish;
+						else if(checked(hWndAESBlowfish)) hWndFocus = hWndAESBlowfish;
+						else if(checked(hWndBlowfishAES)) hWndFocus = hWndBlowfishAES;
+					}
 				}
 				oSys.Call("user32::SetFocus", hWndFocus);
 			break;
@@ -2556,6 +2598,10 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 				}
 				else if(ctrl && wParam == 83 /*S*/) // Ctrl+S
 					AkelPad.Command(4105); // IDM_FILE_SAVE
+				else if(wParam == 114 /*VK_F3*/) // F3
+					switchDirection();
+				else if(wParam == 115 /*VK_F4*/) // F4
+					switchCryptor();
 			break;
 			case 273: //WM_COMMAND
 				var idc = wParam & 0xffff;
@@ -2776,6 +2822,31 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	}
 	function showWindow(hWnd, val) {
 		oSys.Call("user32::ShowWindow", hWnd, val);
+	}
+	function switchDirection() {
+		if(decryptObj)
+			switchRadio(hWndEncrypt, hWndDecrypt);
+	}
+	function switchCryptor() {
+		if(cryptorObj)
+			switchRadio(hWndAES256, hWndBlowfish, hWndAESBlowfish, hWndBlowfishAES);
+	}
+	function switchRadio() {
+		var hWndChecked = arguments[0];
+		for(var i = 0, l = arguments.length; i < l; ++i) {
+			if(checked(arguments[i])) {
+				checked(arguments[i], false);
+				hWndChecked = arguments[++i == l ? 0 : i];
+				break;
+			}
+		}
+		oSys.Call(
+			"user32::PostMessage" + _TCHAR,
+			hWndDialog,
+			273 /*WM_COMMAND*/,
+			oSys.Call("user32::GetDlgCtrlID", hWndChecked),
+			0
+		);
 	}
 	function cmdApply() {
 		oSys.Call("user32::PostMessage" + _TCHAR, hWndDialog, 273 /*WM_COMMAND*/, hWndApply ? IDC_APPLY : IDC_OK, 0);
