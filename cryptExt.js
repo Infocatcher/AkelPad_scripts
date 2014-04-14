@@ -3500,7 +3500,8 @@ function packHex(hex) {
 	return out;
 }
 function feedback(msg) {
-	_feedback && _feedback(msg);
+	if(new Date().getTime() - feedback._start > 150)
+		_feedback && _feedback(msg);
 }
 function encrypt(text, pass, encrypters) {
 	//var encrypters = Array.prototype.slice.call(arguments, 3);
@@ -3510,6 +3511,7 @@ function encrypt(text, pass, encrypters) {
 	var s = "/" + n + ": ";
 	var i = 0;
 
+	feedback._start = new Date().getTime();
 	feedback(++i + s + _localize("Unicode ⇒ UTF-8"));
 	text = Utf8.encode(text);
 	pass = Utf8.encode(pass);
@@ -3551,7 +3553,7 @@ function decrypt(text, pass, decrypters) {
 	var s = "/" + n + ": ";
 	var i = 0;
 
-	//~ todo: remove stats?
+	feedback._start = new Date().getTime();
 	feedback(++i + s + _localize("Unicode ⇒ UTF-8"));
 	pass = Utf8.encode(pass);
 
