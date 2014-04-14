@@ -4048,7 +4048,6 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	var IDC_CANCEL       = 1016;
 
 	var hWndGroupDir, hWndEncrypt, hWndDecrypt;
-	var hWndGroupCryptor, hWndAES256, hWndBlowfish, hWndAESBlowfish, hWndBlowfishAES;
 	var hWndGroupCryptor, hWndCombobox1, hWndCombobox2, hWndCombobox3;
 	var hWndGroupPass, hWndPassLabel, hWndPass, hWndPass2Label, hWndPass2, hWndShowPass;
 	var hWndOK, hWndApply, hWndCancel;
@@ -4397,10 +4396,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						else if(checked(hWndDecrypt)) hWndFocus = hWndDecrypt;
 					}
 					else if(cryptorObj) {
-						if(checked(hWndAES256))           hWndFocus = hWndAES256;
-						else if(checked(hWndBlowfish))    hWndFocus = hWndBlowfish;
-						else if(checked(hWndAESBlowfish)) hWndFocus = hWndAESBlowfish;
-						else if(checked(hWndBlowfishAES)) hWndFocus = hWndBlowfishAES;
+						hWndFocus = hWndCombobox1;
 					}
 				}
 				oSys.Call("user32::SetFocus", hWndFocus);
@@ -4504,19 +4500,6 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						if(wParam >> 16 == 1 /*CBN_SELCHANGE*/) {
 							fillComboboxes(idc);
 						}
-					break;
-
-					//~ todo: remove:
-					case IDC_AES256:
-					case IDC_BLOWFISH:
-					case IDC_AES_BLOWFISH:
-					case IDC_BLOWFISH_AES:
-						checked(hWndAES256,      idc == IDC_AES256);
-						checked(hWndBlowfish,    idc == IDC_BLOWFISH);
-						checked(hWndAESBlowfish, idc == IDC_AES_BLOWFISH);
-						checked(hWndBlowfishAES, idc == IDC_BLOWFISH_AES);
-						if((wParam >> 16 & 0xFFFF) == 5 /*BN_DOUBLECLICKED*/)
-							cmdApply();
 					break;
 					case IDC_PASS:
 					case IDC_PASS2:
@@ -4758,8 +4741,6 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 			switchRadio(hWndEncrypt, hWndDecrypt);
 	}
 	function switchCryptor() {
-		//if(cryptorObj)
-		//	switchRadio(hWndAES256, hWndBlowfish, hWndAESBlowfish, hWndBlowfishAES);
 		var hWndFocused = oSys.Call("user32::GetFocus");
 		var candidates;
 		if(hWndFocused == hWndCombobox1)
