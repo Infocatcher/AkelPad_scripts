@@ -99,8 +99,8 @@ var commentsSets = {
 	ahk: [ null, null, [";"] ],
 	py: [ null, null, ["#"] ],
 	pyw: "py",
-	1s: [ null, null, ["//"] ],
-	1c: "1s",
+	"1s": [ null, null, ["//"] ],
+	"1c": "1s",
 	nsi: [ null, null, [";", "#"] ]
 };
 var commentsRegions = {
