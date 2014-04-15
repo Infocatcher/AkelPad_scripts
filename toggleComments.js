@@ -98,7 +98,10 @@ var commentsSets = {
 	//ahk: [ ["\r/*"], ["\r*/"], [";"] ],
 	ahk: [ null, null, [";"] ],
 	py: [ null, null, ["#"] ],
-	pyw: "py"
+	pyw: "py",
+	1s: [ null, null, ["//"] ],
+	1c: "1s",
+	nsi: [ null, null, [";", "#"] ]
 };
 var commentsRegions = {
 	// Example:
