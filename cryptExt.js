@@ -56,8 +56,8 @@
 //   -modal=true              - use modal dialog
 //   -cryptor="AES256"        - encryption algorithm: "AES256", "Blowfish", "Twofish" or "Serpent"
 //                              (or combination like "AES256+Twofish")
-//   -PBKDF2IterationsMin=50
-//   -PBKDF2IterationsMax=100 - iterations for PBKDF2, 33 ... 65535 (due to encode method)
+//   -PBKDF2IterationsMin=600
+//   -PBKDF2IterationsMax=850 - iterations for PBKDF2, 33 ... 65535 (due to encode method)
 //   -saltLengthMin=8
 //   -saltLengthMax=16        - length of "salt" string
 //   -maxLineWidth=75         - allow split output to lines with fixed width
@@ -203,8 +203,8 @@ var MODE_DECRYPT     = 2;
 var mode                = getArg("mode", MODE_USER_SELECT);
 var modalDlg            = getArg("modal", false);
 var cryptor             = getArg("cryptor", "").toLowerCase();
-var pbkdf2IterationsMin = getArg("pbkdf2IterationsMin", 33); //~~~~~~~~~~~~~~~~~~~~~
-var pbkdf2IterationsMax = getArg("pbkdf2IterationsMax", 45); //~~~~~~~~~~~~~~~~~~~~~
+var pbkdf2IterationsMin = getArg("pbkdf2IterationsMin", 600);
+var pbkdf2IterationsMax = getArg("pbkdf2IterationsMax", 850);
 var saltLengthMin       = getArg("saltLengthMin", 8);
 var saltLengthMax       = getArg("saltLengthMax", 16);
 var maxLineWidth        = getArg("maxLineWidth", 75);
@@ -3420,15 +3420,16 @@ function _createCipher(directionName, cipherAlgorithm) {
 }
 function _encrypt(text, pass, algo) {
 	var cipher = _createCipher("ENCRYPT", algo);
+	//~ todo: don't convert to utf-8 again
 	text = scope.str2utf8(text);
 	pass = scope.str2utf8(pass);
 	text = cipher.execute(pass, text);
+	//return scope.base64_encode(text);
 	return _toString(text);
-	return scope.base64_encode(text); //~
 }
 function _decrypt(text, pass, algo) {
 	var cipher = _createCipher("DECRYPT", algo);
-	//text = scope.base64_decode(text); //~
+	//text = scope.base64_decode(text);
 	text = _toArray(text);
 	pass = scope.str2utf8(pass);
 	text = cipher.execute(pass, text);
