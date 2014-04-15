@@ -83,6 +83,7 @@ var commentsSets = {
 	rdf:   "html",
 	dtd:   "html",
 	css: [ ["/*"], ["*/"], null ],
+	less: [ ["/*"], ["*/"], ["//"] ],
 	asm: [ null, null, [";"] ],
 	ini: [ null, null, [";", "#"] ],
 	bat: [ null, null, ["::", "rem "] ],
