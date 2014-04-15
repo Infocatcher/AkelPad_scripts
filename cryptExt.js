@@ -66,6 +66,7 @@
 //   -warningTime=4000        - show warning for slow calculations
 //   -focusPass=true          - focus password field instead of radio buttons
 //   -test=true               - run tests
+//   -testSpeed=true          - test performance
 //   -saveOptions=0           - don't store options
 //               =1           - (default) save options after encrypt/decrypt
 //               =2           - save options on exit
@@ -212,6 +213,7 @@ var onlySelected        = getArg("onlySelected", false);
 var warningTime         = getArg("warningTime", 4000);
 var focusPass           = getArg("focusPass", true);
 var test                = getArg("test");
+var testSpeed           = getArg("testSpeed");
 var saveOptions         = getArg("saveOptions", 1);
 var savePosition        = getArg("savePosition", true);
 
@@ -3450,7 +3452,7 @@ var serpentRawDecrypt = _scope.serpentRawDecrypt;
 var _cache = {};
 function getHash(pass, salt, iterations) {
 	var key = pass + "\x00" + salt + "\x00" + iterations;
-	return _cache[key] || (
+	return !testSpeed && _cache[key] || (
 		_cache[key] = packHex(
 			sjcl.codec.hex.fromBits(
 				sjcl.misc.pbkdf2(pass, salt, iterations, 64*4)
@@ -3635,7 +3637,7 @@ var cryptors = {
 	// speed: symbols/ms [encryptSpeed, decryptSpeed]
 	aes256: {
 		prettyName: "AES-256",
-		speed: [19.3, 28.3],
+		speed: [14.5, 58],
 		encrypt: function(text, pass) {
 			return encrypt(text, pass, [aesRawEncrypt]);
 		},
@@ -3818,7 +3820,8 @@ function encryptOrDecrypt(pass) {
 		}
 	}
 
-	//var t = new Date().getTime();
+	if(testSpeed)
+		var t = new Date().getTime();
 	try {
 		var res = isDecrypt
 			? decrypt(text, pass, getCryptors(cryptorsArr, getDecryptor))
@@ -3837,7 +3840,10 @@ function encryptOrDecrypt(pass) {
 	}
 	if(!isDecrypt && maxLineWidth > 0)
 		res = res.replace(new RegExp(".{" + maxLineWidth + "}", "g"), "$&\n");
-	//WScript.Echo(text.length/(new Date().getTime() - t));
+	if(testSpeed) {
+		var speed = text.length/(new Date().getTime() - t);
+		AkelPad.MessageBox(hWndDialog || hMainWnd, "Speed: " + speed + " chars/s", dialogTitle, 0 /*MB_OK*/);
+	}
 
 	insertNoScroll(res, selectAll);
 }
