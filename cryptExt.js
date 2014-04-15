@@ -102,8 +102,8 @@ function _localize(s) {
 		"Impossible to decrypt: invalid format!": {
 			ru: "Невозможно расшифровать: некорректный формат!"
 		},
-		"Required time: %S (estimate)\nContinue?": {
-			ru: "Требуется времени: %S (оценочно)\n Продолжить?"
+		"Required time: %S (estimate)\nContinue?\n\nNote: hashing time isn't included.": {
+			ru: "Требуется времени: %S (оценочно)\n Продолжить?\n\nПримечание: время хэширования не учитывалось."
 		},
 		"Passwords do not match!": {
 			ru: "Пароли не совпадают!"
@@ -3451,6 +3451,8 @@ var serpentRawDecrypt = _scope.serpentRawDecrypt;
 
 var _cache = {};
 function getHash(pass, salt, iterations) {
+	if(_testMode)
+		return "<test mode>";
 	if(testSpeed) {
 		_cache = {};
 		var t = new Date().getTime();
@@ -3609,6 +3611,11 @@ function decrypt(text, pass, decrypters) {
 
 	feedback();
 	return text;
+}
+function crypt(text, pass, isDecrypt, cryptorsArr) {
+	return isDecrypt
+		? decrypt(text, pass, getCryptors(cryptorsArr, getDecryptor))
+		: encrypt(text, pass, getCryptors(cryptorsArr, getEncryptor));
 }
 
 var validCryptors = ["AES-256", "Blowfish", "Twofish", "Serpent"];
@@ -3796,30 +3803,33 @@ function encryptOrDecrypt(pass) {
 	//	cryptorsArr.reverse();
 
 	var cryptorsCount = cryptorsArr.length;
-	if(warningTime > 0 && false) { //~~~~~ disabled
+	if(warningTime > 0) {
+		/*
 		var iterationsSpeed = 2.5; // per ms
 		var hashingTime = (pbkdf2IterationsMin + pbkdf2IterationsMax)/2
 			/iterationsSpeed*cryptorsCount;
 
-		var speed = cryptorData.speed[isDecrypt ? 1 : 0];
-		//var remTime = text.length/speed;
+		for(var i = 0; i < cryptorsCount; ++i) {
+			var name = cryptorsArr[i];
+			var crData = cryptors[normalizeName(name)];
+			var crSpeed = crData.speed[isDecrypt ? 1 : 0];
+		}
+		*/
 
-		//hash(pass); // Cache it!
-
-		var len = Math.max(500, 60*speed);
+		var len = 400;
 		if(isDecrypt && len % 4 != 0)
 			len += 4 - len % 4;
 		var part = text.substr(0, len);
 		var t = new Date().getTime();
 		_testMode = true;
 		try {
-			cryptorData[isDecrypt ? "decrypt" : "encrypt"](part, pass);
+			crypt(part, pass, isDecrypt, cryptorsArr);
 		}
 		catch(e) {
 		}
 		_testMode = false;
-		t = new Date().getTime() - t;
-		var remTime = text.length/(part.length/t);
+		var dt = new Date().getTime() - t;
+		var remTime = text.length/(part.length/dt);
 
 		if(remTime >= warningTime) {
 			var s = Math.round(remTime/1000);
@@ -3830,8 +3840,9 @@ function encryptOrDecrypt(pass) {
 			if(
 				AkelPad.MessageBox(
 					hMainWnd,
-					_localize("Required time: %S (estimate)\nContinue?").replace("%S", m + ":" + s),
-					dialogTitle + " :: " + cryptorData.prettyName,
+					_localize("Required time: %S (estimate)\nContinue?\n\nNote: hashing time isn't included.")
+						.replace("%S", m + ":" + s),
+					dialogTitle + " :: " + prettyName,
 					33 /*MB_OKCANCEL|MB_ICONQUESTION*/
 				) == 2 /*IDCANCEL*/
 			)
@@ -3842,9 +3853,7 @@ function encryptOrDecrypt(pass) {
 	if(testSpeed)
 		var t = new Date().getTime();
 	try {
-		var res = isDecrypt
-			? decrypt(text, pass, getCryptors(cryptorsArr, getDecryptor))
-			: encrypt(text, pass, getCryptors(cryptorsArr, getEncryptor));
+		var res = crypt(text, pass, isDecrypt, cryptorsArr);
 	}
 	catch(e) {
 		if(e.name)
