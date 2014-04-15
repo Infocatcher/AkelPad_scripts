@@ -3451,8 +3451,22 @@ var serpentRawDecrypt = _scope.serpentRawDecrypt;
 
 var _cache = {};
 function getHash(pass, salt, iterations) {
+	if(testSpeed) {
+		_cache = {};
+		var t = new Date().getTime();
+	}
+	var hash = _getHash(pass, salt, iterations);
+	if(testSpeed) {
+		var dt = new Date().getTime() - t;
+		getHash._time = getHash._time
+			? (getHash._time + dt)/2
+			: dt;
+	}
+	return hash;
+}
+function _getHash(pass, salt, iterations) {
 	var key = pass + "\x00" + salt + "\x00" + iterations;
-	return !testSpeed && _cache[key] || (
+	return _cache[key] || (
 		_cache[key] = packHex(
 			sjcl.codec.hex.fromBits(
 				sjcl.misc.pbkdf2(pass, salt, iterations, 64*4)
@@ -3781,6 +3795,7 @@ function encryptOrDecrypt(pass) {
 	//if(isDecrypt)
 	//	cryptorsArr.reverse();
 
+	var cryptorsCount = cryptorsArr.length;
 	if(warningTime > 0 && false) { //~~~~~ disabled
 		var speed = cryptorData.speed[isDecrypt ? 1 : 0];
 		//var remTime = text.length/speed;
@@ -3841,8 +3856,22 @@ function encryptOrDecrypt(pass) {
 	if(!isDecrypt && maxLineWidth > 0)
 		res = res.replace(new RegExp(".{" + maxLineWidth + "}", "g"), "$&\n");
 	if(testSpeed) {
-		var speed = text.length/(new Date().getTime() - t);
-		AkelPad.MessageBox(hWndDialog || hMainWnd, "Speed: " + speed + " chars/s", dialogTitle, 0 /*MB_OK*/);
+		var _r = function(n) {
+			if(n.toFixed)
+				return n.toFixed(1).replace(/\.0$/, "");
+			return Math.round(n);
+		};
+		var dt = new Date().getTime() - t;
+		var dtReal = dt - getHash._time*cryptorsCount;
+		var speed = text.length/dtReal;
+		AkelPad.MessageBox(
+			hWndDialog || hMainWnd,
+			"Encryption speed: " + _r(speed) + " chars/ms"
+			+ "\nElapsed time: " + _r(dt) + " ms"
+			+ " (hashing: " + _r(getHash._time) + (cryptorsCount > 1 ? "*" + cryptorsCount : "") + " ms)",
+			dialogTitle,
+			0 /*MB_OK*/
+		);
 	}
 
 	insertNoScroll(res, selectAll);
