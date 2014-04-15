@@ -3651,7 +3651,7 @@ var cryptors = {
 	// speed: symbols/ms [encryptSpeed, decryptSpeed]
 	aes256: {
 		prettyName: "AES-256",
-		speed: [14.5, 58],
+		speed: [15.6, 59],
 		encrypt: function(text, pass) {
 			return encrypt(text, pass, [aesRawEncrypt]);
 		},
@@ -3663,7 +3663,7 @@ var cryptors = {
 	},
 	blowfish: {
 		prettyName: "Blowfish",
-		speed: [78.5, 113.2],
+		speed: [63, 120],
 		encrypt: function(text, pass) {
 			return encrypt(text, pass, [blowfishRawEncrypt]);
 		},
@@ -3675,7 +3675,7 @@ var cryptors = {
 	},
 	twofish: {
 		prettyName: "Twofish",
-		speed: [19.3, 28.3],
+		speed: [54, 104],
 		encrypt: function(text, pass) {
 			return encrypt(text, pass, [twofishRawEncrypt]);
 		},
@@ -3687,7 +3687,7 @@ var cryptors = {
 	},
 	serpent: {
 		prettyName: "Serpent",
-		speed: [19.3, 28.3],
+		speed: [26, 49],
 		encrypt: function(text, pass) {
 			return encrypt(text, pass, [serpentRawEncrypt]);
 		},
@@ -3797,6 +3797,10 @@ function encryptOrDecrypt(pass) {
 
 	var cryptorsCount = cryptorsArr.length;
 	if(warningTime > 0 && false) { //~~~~~ disabled
+		var iterationsSpeed = 2.5; // per ms
+		var hashingTime = (pbkdf2IterationsMin + pbkdf2IterationsMax)/2
+			/iterationsSpeed*cryptorsCount;
+
 		var speed = cryptorData.speed[isDecrypt ? 1 : 0];
 		//var remTime = text.length/speed;
 
