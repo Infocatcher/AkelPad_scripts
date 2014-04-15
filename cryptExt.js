@@ -3,10 +3,10 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/cryptExt.js
 
 // (c) Infocatcher 2010-2012, 2014
-// version 0.5.0a12 - 2014-04-14
+// version 0.5.0a13 - 2014-04-15
 
 //===================
-// AES-256/Blowfish/Twofish/Serpent encrypt/decrypt
+// AES-256/Blowfish/Twofish/Serpent encryption/decryption
 // Based on scripts from
 // http://www.movable-type.co.uk/scripts/aes.html
 // http://www.farfarfar.com/scripts/encrypt/
@@ -28,7 +28,7 @@
 // PBKDF2 configuration:
 //   hash algorithm:   SHA-256
 //   iterations count: random between -PBKDF2IterationsMin and -PBKDF2IterationsMax
-//   salt:             random string with -saltLengthMin .. -saltLengthMax length
+//   salt:             random string with [-saltLengthMin ... -saltLengthMax] length
 
 // Raw data after each encryption:
 //   <salt><iterations><separator><encrypted data>
@@ -58,19 +58,20 @@
 //                              (or combination like "AES256+Twofish")
 //   -PBKDF2IterationsMin=600
 //   -PBKDF2IterationsMax=850 - iterations for PBKDF2, 33 ... 65535 (due to encode method)
+//                              (more == better, but JScript implementation is very slow)
 //   -saltLengthMin=8
 //   -saltLengthMax=16        - length of "salt" string
-//   -maxLineWidth=75         - allow split output to lines with fixed width
+//   -maxLineWidth=75         - split output to lines with fixed width (0 to disable)
 //   -showPassword=true       - force show or hide password
 //   -onlySelected=true       - use only selected text
-//   -warningTime=4000        - show warning for slow calculations
-//   -focusPass=true          - focus password field instead of radio buttons
+//   -warningTime=4000        - show warning for slow calculations (0 to disable)
+//   -focusPass=true          - focus password field instead of radio buttons/comboboxes
 //   -test=true               - run tests
 //   -testSpeed=true          - test performance
 //   -saveOptions=0           - don't store options
-//               =1           - (default) save options after encrypt/decrypt
+//               =1           - (default) save options after encryption/decryption
 //               =2           - save options on exit
-//   -savePosition=true       - allow store last window position
+//   -savePosition=true       - store last window position
 
 // Usage:
 //   Call("Scripts::Main", 1, "crypt.js")
