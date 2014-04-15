@@ -3538,7 +3538,7 @@ function encrypt(text, pass, encrypters) {
 	text = Utf8.encode(text);
 	pass = Utf8.encode(pass);
 
-	feedback(++i + s + _localize("hashing" + (encryptersCount > 1 ? "-1" : "")));
+	feedback(++i + s + _localize("hashing" + (encryptersCount > 1 ? "-%S" : "")).replace("%S", 1));
 	var salt = getSalt();
 	var iterations = getRandomInt(pbkdf2IterationsMin, pbkdf2IterationsMax);
 	var hash = getHash(pass, salt, iterations);
@@ -3549,7 +3549,7 @@ function encrypt(text, pass, encrypters) {
 	text = getHeader(iterations, salt) + encrypters[0](text, hash);
 
 	for(var j = 1; j < encryptersCount; ++j) {
-		feedback(++i + s + _localize("hashing-" + (j + 1)));
+		feedback(++i + s + _localize("hashing-%S").replace("%S", j + 1));
 		var salt2 = getSalt();
 		var iterations2 = getRandomInt(pbkdf2IterationsMin, pbkdf2IterationsMax);
 		var hash2 = getHash(pass, salt2, iterations2);
