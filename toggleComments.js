@@ -393,7 +393,7 @@ Comments.prototype = {
 	isArray: function(a) {
 		return a instanceof Array;
 	},
-	exclude: function(str) {
+	exclude: function(str, excludeLineComments) {
 		if(!checkSyntax)
 			return str;
 		var ex = this.cmmExcludes;
@@ -402,6 +402,18 @@ Comments.prototype = {
 		var esc = this.getParams(ex, this.currentExt);
 		if(esc)
 			str = esc(str);
+		if(excludeLineComments)
+			str = this.excludeLineComments(str);
+		return str;
+	},
+	excludeLineComments: function(str) {
+		if(!checkSyntax || oldRegExp)
+			return str;
+		for(var i = 0, len = this.cmmLine.length; i < len; i++) {
+			var cmmLine = this.cmmLine[i];
+			var pattern = new RegExp(this.escapeRegExp(cmmLine) + "[^\\n\\r]+", "g");
+			str = str.replace(pattern, escaper);
+		}
 		return str;
 	},
 	delLineComments: function() {
@@ -563,7 +575,7 @@ Comments.prototype = {
 			var cmmLen = Math.max(cmmBlockStart.length, cmmBlockEnd.length);
 			var add = cmmLen - 1;
 
-			var fullText = this.exclude(this.fullText);
+			var fullText = this.exclude(this.fullText, true);
 
 			var ss = this.selStart;
 			var se = this.selEnd;
