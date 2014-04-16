@@ -4745,19 +4745,18 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 		}
 
 		if(cryptorObj) {
-			var names = [];
+			var s1 = windowText(hWndCombobox1).replace(/^\*/, "");
+			var s2 = windowText(hWndCombobox2).replace(/^\*/, "");
+			var s3 = windowText(hWndCombobox3).replace(/^\*/, "");
 			var sNone = cryptorsLabels[0];
-			var s1 = windowText(hWndCombobox1);
-			if(s1 != sNone)
-				names.push(s1.toLowerCase());
-			var s2 = windowText(hWndCombobox2);
+			if(s1 == s2 || s1 == s3 || s2 == s3 && s2 != sNone)
+				return false;
+			var names = [s1.toLowerCase()];
 			if(s2 != sNone)
 				names.push(s2.toLowerCase());
-			var s3 = windowText(hWndCombobox3);
 			if(s3 != sNone)
 				names.push(s3.toLowerCase());
 			cryptorObj.value = names;
-			return names.length > 0;
 		}
 
 		return true;
