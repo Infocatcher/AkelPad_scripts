@@ -4089,10 +4089,6 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	var IDC_COMBOBOX_1   = 1003;
 	var IDC_COMBOBOX_2   = 1004;
 	var IDC_COMBOBOX_3   = 1005;
-	var IDC_AES256       = 1006;
-	var IDC_BLOWFISH     = 1007;
-	var IDC_AES_BLOWFISH = 1008;
-	var IDC_BLOWFISH_AES = 1009;
 	var IDC_PASS         = 1010;
 	var IDC_PASS2        = 1011;
 	var IDC_PASS2_LABEL  = 1012;
