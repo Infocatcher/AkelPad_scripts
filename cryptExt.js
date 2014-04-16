@@ -3621,6 +3621,12 @@ function crypt(text, pass, isDecrypt, cryptorsArr) {
 }
 
 var validCryptors = ["AES-256", "Blowfish", "Twofish", "Serpent"];
+function isValidName(name) {
+	for(var i = 0, l = validCryptors.length; i < l; ++i)
+		if(name == validCryptors[i])
+			return true;
+	return false;
+}
 function normalizeName(name) {
 	return name.toLowerCase().replace(/-/, "");
 }
@@ -4691,54 +4697,42 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 		}
 	}
 	function fillComboboxes(idc, selected) {
-		if(selected) {
-			var s1 = selected[0] || cryptorsLabels[0];
-			var s2 = selected[1] || cryptorsLabels[0];
-			var s3 = selected[2] || cryptorsLabels[0];
+		selected = selected || [
+			windowText(hWndCombobox1).replace(/^\*/, ""),
+			windowText(hWndCombobox2).replace(/^\*/, ""),
+			windowText(hWndCombobox3).replace(/^\*/, "")
+		];
+		if(!isValidName(selected[0]))
+			selected[0] = cryptorsLabels[1];
+		if(!isValidName(selected[1]))
+			selected[1] = selected[2] = cryptorsLabels[0];
+		if(!isValidName(selected[2]))
+			selected[2] = cryptorsLabels[0];
+		function isUsed(s, n) {
+			for(var i = 0; i <= 2; ++i)
+				if(i != n && s == selected[i] && s != cryptorsLabels[0])
+					return "*";
+			return "";
 		}
-		else {
-			var s1 = windowText(hWndCombobox1);
-			var s2 = windowText(hWndCombobox2);
-			var s3 = windowText(hWndCombobox3);
-		}
-
-		var dis3 = s2 == cryptorsLabels[0];
-		if(dis3)
-			s3 = cryptorsLabels[0];
-
-		var l = cryptorsLabels.length;
-
-		if(idc != IDC_COMBOBOX_1) {
+		function fill(n, hWndCombobox) {
+			var baseLabels = n ? cryptorsLabels : validCryptors;
 			var labels = [];
-			for(var i = 1; i < l; ++i) {
-				var s = cryptorsLabels[i];
-				if(s != s2 && s != s3)
-					labels.push(s);
+			var sel = selected[n];
+			for(var i = 0, l = baseLabels.length; i < l; ++i) {
+				var s = baseLabels[i];
+				var used = isUsed(s, n);
+				if(s == sel)
+					sel = used + s;
+				labels.push(used + s);
 			}
-			fillCombobox(hWndCombobox1, labels, s1);
+			fillCombobox(hWndCombobox, labels, sel);
 		}
-
-		if(idc != IDC_COMBOBOX_2) {
-			var labels = [];
-			for(var i = 0; i < l; ++i) {
-				var s = cryptorsLabels[i];
-				if(s != s1 && s != s3 || i == 0 && s3 == cryptorsLabels[0])
-					labels.push(s);
-			}
-			fillCombobox(hWndCombobox2, labels, s2);
-		}
-
-		if(idc != IDC_COMBOBOX_3) {
-			var labels = [];
-			for(var i = 0; i < l; ++i) {
-				var s = cryptorsLabels[i];
-				if(s != s1 && s != s2 || i == 0)
-					labels.push(s);
-			}
-			fillCombobox(hWndCombobox3, labels, s3);
-		}
-
-		enabled(hWndCombobox3, !dis3);
+		if(idc != IDC_COMBOBOX_1)
+			fill(0, hWndCombobox1);
+		if(idc != IDC_COMBOBOX_2)
+			fill(1, hWndCombobox2);
+		if(idc != IDC_COMBOBOX_3)
+			fill(2, hWndCombobox3);
 	}
 	function readControlsState() {
 		if(decryptObj) {
