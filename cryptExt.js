@@ -4555,14 +4555,12 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 					case IDC_COMBOBOX_3:
 						if(wParam >> 16 == 1 /*CBN_SELCHANGE*/) {
 							fillComboboxes(idc);
+							updateControls();
 						}
 					break;
 					case IDC_PASS:
 					case IDC_PASS2:
-						var hasPass = oSys.Call("user32::GetWindowTextLength" + _TCHAR, hWndPass) > 0;
-						enabled(hWndOK, hasPass);
-						hWndApply && enabled(hWndApply, hasPass);
-						enabled(hWndPass2, hasPass);
+						updateControls();
 				}
 			break;
 			case 16: //WM_CLOSE
@@ -4773,8 +4771,15 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	}
 	function controlsEnabled(val) {
 		enabled(hWndOK, val);
-		enabled(hWndApply, val);
+		hWndApply && enabled(hWndApply, val);
 		!modal && enabled(hMainWnd, val);
+	}
+	function updateControls() {
+		var hasPass = oSys.Call("user32::GetWindowTextLength" + _TCHAR, hWndPass) > 0;
+		var ok = readControlsState();
+		enabled(hWndOK, hasPass && ok);
+		hWndApply && enabled(hWndApply, hasPass && ok);
+		enabled(hWndPass2, hasPass);
 	}
 	function showWindow(hWnd, val) {
 		oSys.Call("user32::ShowWindow", hWnd, val);
