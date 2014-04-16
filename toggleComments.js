@@ -344,7 +344,7 @@ Comments.prototype = {
 		var mParam;
 		for(var ext in mParams) {
 			mParam = mParams[ext];
-			for(var i = 0, len = mParam.length; i < len; i++) {
+			for(var i = 0, len = mParam.length; i < len; ++i) {
 				start = mParam[i][0];
 				end = mParam[i][1];
 				startIndx = endText.indexOf(start);
@@ -409,7 +409,7 @@ Comments.prototype = {
 	excludeLineComments: function(str) {
 		if(!checkSyntax || oldRegExp)
 			return str;
-		for(var i = 0, len = this.cmmLine.length; i < len; i++) {
+		for(var i = 0, len = this.cmmLine.length; i < len; ++i) {
 			var cmmLine = this.cmmLine[i];
 			var pattern = new RegExp(this.escapeRegExp(cmmLine) + "[^\\n\\r]+", "g");
 			str = str.replace(pattern, escaper);
@@ -420,7 +420,7 @@ Comments.prototype = {
 		if(this.noCmmLine || this.isMultiline)
 			return null;
 
-		for(var i = 0, len = this.cmmLine.length; i < len; i++) {
+		for(var i = 0, len = this.cmmLine.length; i < len; ++i) {
 			var cmmLine = this.cmmLine[i];
 
 			var linePos = this.getBlockByIndex(this.selStart, this.selEnd);
@@ -494,7 +494,7 @@ Comments.prototype = {
 			return null;
 
 		cmmLoop:
-		for(var i = 0, len = this.cmmLine.length; i < len; i++) {
+		for(var i = 0, len = this.cmmLine.length; i < len; ++i) {
 			var cmmLine = this.cmmLine[i];
 
 			var blockPos = this.getBlockByIndex(this.selStart, this.selEnd);
@@ -512,7 +512,7 @@ Comments.prototype = {
 			var hasLineCmmPattern = new RegExp("^[\\t ]*(" + cmmLineEscFixed + ")");
 			var lines = this.exclude(block).split(/[\r\n]+/);
 			var cmmLineLen = cmmLine.length;
-			for(var j = 0, l = lines.length; j < l; j++) {
+			for(var j = 0, l = lines.length; j < l; ++j) {
 				if(!hasLineCmmPattern.test(lines[j]))
 					continue cmmLoop;
 				var cmmChrs = RegExp.$1;
@@ -551,7 +551,7 @@ Comments.prototype = {
 		if(this.noCmmBlock)
 			return null;
 
-		for(var i = 0, len = this.cmmBlockStart.length; i < len; i++) {
+		for(var i = 0, len = this.cmmBlockStart.length; i < len; ++i) {
 			var cmmBlockStart = this.cmmBlockStart[i];
 			var cmmBlockEnd = this.cmmBlockEnd[i];
 
@@ -855,7 +855,7 @@ Comments.prototype = {
 
 		if(!this.lineCmmAtStart) {
 			var minSpLen = Infinity;
-			for(var i = 0; i < linesCnt; i++) {
+			for(var i = 0; i < linesCnt; ++i) {
 				var line = lines[i];
 				if(/^[ \t]*$/.test(line))
 					continue;
@@ -871,7 +871,7 @@ Comments.prototype = {
 			}
 			if(spacePrefix) {
 				spacePrefixLen = spacePrefix.length;
-				for(var i = 0; i < linesCnt; i++) {
+				for(var i = 0; i < linesCnt; ++i) {
 					var line = lines[i];
 					if(!line)
 						continue;
@@ -890,7 +890,7 @@ Comments.prototype = {
 
 		var cmmAdd = cmmLine + (/ $/.test(cmmLine) ? "" : this.space);
 
-		for(var i = 0; i < linesCnt; i++)
+		for(var i = 0; i < linesCnt; ++i)
 			lines[i] = spacePrefix + cmmAdd + lines[i].substr(spacePrefixLen);
 
 		block = lines.join("\n");
@@ -1278,7 +1278,7 @@ function getCoderAlias() {
 
 function getArg(argName, defaultVal) {
 	var args = {};
-	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
+	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; ++i)
 		if(/^[-\/](\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
 			args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
 	getArg = function(argName, defaultVal) {
