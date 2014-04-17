@@ -3908,8 +3908,13 @@ function encryptOrDecrypt(pass) {
 }
 
 function cryptTest() {
-	//~ todo: detect "base" title, see http://akelpad.sourceforge.net/forum/viewtopic.php?p=24677#24677
-	var origTitle = AkelPad.IsMDI() == 1 /*WMD_MDI*/ ? "AkelPad" : windowText(hMainWnd);
+	var isMDI = AkelPad.IsMDI() == 1 /*WMD_MDI*/;
+	if(isMDI) {
+		var hWndFrame = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, 0 /*current frame*/);
+		var origFrameTitle = windowText(hWndFrame);
+		windowText(hWndFrame, "");
+	}
+	var origTitle = windowText(hMainWnd);
 	function feedback(s) {
 		windowText(hMainWnd, WScript.ScriptName + ": test " + s);
 	}
@@ -3984,6 +3989,7 @@ function cryptTest() {
 	pbkdf2IterationsMin = piMin;
 	pbkdf2IterationsMax = piMax;
 	windowText(hMainWnd, origTitle);
+	isMDI && windowText(hWndFrame, origFrameTitle);
 	var elapsedTime = "\nElapsed time: " + (new Date().getTime() - t) + " ms";
 	AkelPad.MessageBox(
 		hMainWnd,
