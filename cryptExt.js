@@ -4582,7 +4582,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						}
 					break;
 					case IDC_PASS:
-					case IDC_PASS2:
+					//case IDC_PASS2:
 						updateControls();
 				}
 			break;
