@@ -3511,8 +3511,11 @@ function parseHeader(str) {
 		text: RegExp.rightContext
 	};
 }
-function packHex(hex) {
-	var n = 4;
+function packHex(hex, n) {
+	// May be 2..4
+	// Note: there is too huge output with 4
+	if(n === undefined)
+		n = 2;
 	var len = hex.length;
 	var r = len % n;
 	if(r) {
