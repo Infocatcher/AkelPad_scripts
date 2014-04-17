@@ -3905,6 +3905,12 @@ function encryptOrDecrypt(pass) {
 }
 
 function cryptTest() {
+	//~ todo: detect "base" title, see http://akelpad.sourceforge.net/forum/viewtopic.php?p=24677#24677
+	var origTitle = AkelPad.IsMDI() == 1 /*WMD_MDI*/ ? "AkelPad" : windowText(hMainWnd);
+	function feedback(s) {
+		windowText(hMainWnd, WScript.ScriptName + ": test " + s);
+	}
+
 	var piMin = pbkdf2IterationsMin;
 	var piMax = pbkdf2IterationsMax;
 	pbkdf2IterationsMin = 33;
@@ -3932,12 +3938,15 @@ function cryptTest() {
 
 	var ok = 0;
 	var fail = [];
+	var i = 0;
+	var count = texts.length*passwords.length*cryptorNames.length;
 	var t = new Date().getTime();
 	for(var it = 0, lt = texts.length; it < lt; ++it) {
 		var text = texts[it];
 		for(var ip = 0, lp = passwords.length; ip < lp; ++ip) {
 			var pass = passwords[ip];
 			for(var ic = 0, lc = cryptorNames.length; ic < lc; ++ic) {
+				feedback(++i + "/" + count);
 				var crNames = cryptorNames[ic];
 
 				var err = function(e) {
@@ -3971,6 +3980,7 @@ function cryptTest() {
 	}
 	pbkdf2IterationsMin = piMin;
 	pbkdf2IterationsMax = piMax;
+	windowText(hMainWnd, origTitle);
 	var elapsedTime = "\nElapsed time: " + (new Date().getTime() - t) + " ms";
 	AkelPad.MessageBox(
 		hMainWnd,
@@ -4665,18 +4675,6 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 			bottom: AkelPad.MemRead(lpRect + 12, 3 /*DT_DWORD*/)
 		};
 	}
-	function windowText(hWnd, pText) {
-		if(arguments.length > 1)
-			return oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, pText);
-		var len = oSys.Call("user32::GetWindowTextLength" + _TCHAR, hWnd);
-		var lpText = AkelPad.MemAlloc((len + 1)*_TSIZE);
-		if(!lpText)
-			return "";
-		oSys.Call("user32::GetWindowText" + _TCHAR, hWnd, lpText, len + 1);
-		pText = AkelPad.MemRead(lpText, _TSTR);
-		AkelPad.MemFree(lpText);
-		return pText;
-	}
 	function setWindowFont(hWnd, hFont) {
 		var hGuiFont = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
 		setWindowFont = function(hWnd, hFont) {
@@ -4904,6 +4902,18 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 
 	AkelPad.WindowUnregisterClass(dialogClass);
 	return pass;
+}
+function windowText(hWnd, pText) {
+	if(arguments.length > 1)
+		return oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, pText);
+	var len = oSys.Call("user32::GetWindowTextLength" + _TCHAR, hWnd);
+	var lpText = AkelPad.MemAlloc((len + 1)*_TSIZE);
+	if(!lpText)
+		return "";
+	oSys.Call("user32::GetWindowText" + _TCHAR, hWnd, lpText, len + 1);
+	pText = AkelPad.MemRead(lpText, _TSTR);
+	AkelPad.MemFree(lpText);
+	return pText;
 }
 
 function getAllText() {
