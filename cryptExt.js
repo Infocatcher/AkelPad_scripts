@@ -3451,6 +3451,8 @@ var serpentRawDecrypt = _scope.serpentRawDecrypt;
 
 //===================
 
+var ITR_MIN = 0x21;
+var ITR_MAX = 0xffff;
 var _cache = {};
 function getHash(pass, salt, iterations) {
 	if(_testMode)
@@ -3469,6 +3471,10 @@ function getHash(pass, salt, iterations) {
 	return hash;
 }
 function _getHash(pass, salt, iterations) {
+	if(iterations < ITR_MIN)
+		throw "Too small iterations count!\nShould be [" + ITR_MIN + " ... " + ITR_MAX + "]";
+	if(iterations > ITR_MAX)
+		throw "Too lerge iterations count!\nShould be [" + ITR_MIN + " ... " + ITR_MAX + "]";
 	var key = pass + "\x00" + salt + "\x00" + iterations;
 	return _cache[key] || (
 		_cache[key] = packHex(
@@ -3482,18 +3488,16 @@ function getSalt() {
 	var num = getRandomInt(saltLengthMin, saltLengthMax);
 	var rnd = "";
 	for(var i = 0; i < num; ++i)
-		rnd += String.fromCharCode(getRandomInt(0x21, 0xffff));
+		rnd += String.fromCharCode(getRandomInt(ITR_MIN, ITR_MAX));
 	return rnd;
 }
 function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 function getHeader(iterations, salt) {
-	if(iterations <= 0x20)
-		throw "Too small iterations count!";
 	return salt
 		+ String.fromCharCode(iterations)
-		+ String.fromCharCode(getRandomInt(0, 0x20));
+		+ String.fromCharCode(getRandomInt(0, ITR_MIN - 1));
 }
 function parseHeader(str) {
 	if(!/^([^\x00-\x20]{2,})[\x00-\x20]/.test(str))
