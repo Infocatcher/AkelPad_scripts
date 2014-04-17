@@ -27,8 +27,8 @@
 
 // PBKDF2 configuration:
 //   hash algorithm:   SHA-256
-//   iterations count: random between -PBKDF2IterationsMin and -PBKDF2IterationsMax
-//   salt:             random string with [-saltLengthMin ... -saltLengthMax] length
+//   iterations count: random from -iterations="min-max" range
+//   salt:             random string with -saltLength="min-max" length
 
 // Raw data after each encryption:
 //   <salt><iterations><separator><encrypted data>
@@ -56,11 +56,9 @@
 //   -modal=true              - use modal dialog
 //   -cryptor="AES256"        - encryption algorithm: "AES256", "Blowfish", "Twofish" or "Serpent"
 //                              (or combination like "AES256+Twofish")
-//   -PBKDF2IterationsMin=600
-//   -PBKDF2IterationsMax=850 - iterations for PBKDF2, 33 ... 65535 (due to encode method)
+//   -iterations="600-850"    - iterations for PBKDF2, 33 ... 65535 (due to encode method)
 //                              (more == better, but JScript implementation is very slow)
-//   -saltLengthMin=8
-//   -saltLengthMax=16        - length of "salt" string
+//   -saltLength="8-16"       - length of "salt" string
 //   -maxLineWidth=75         - split output to lines with fixed width (0 to disable)
 //   -showPassword=true       - force show or hide password
 //   -onlySelected=true       - use only selected text
@@ -204,10 +202,8 @@ var MODE_DECRYPT     = 2;
 var mode                = getArg("mode", MODE_USER_SELECT);
 var modalDlg            = getArg("modal", false);
 var cryptor             = getArg("cryptor", "").toLowerCase();
-var pbkdf2IterationsMin = getArg("pbkdf2IterationsMin", 600);
-var pbkdf2IterationsMax = getArg("pbkdf2IterationsMax", 850);
-var saltLengthMin       = getArg("saltLengthMin", 8);
-var saltLengthMax       = getArg("saltLengthMax", 16);
+var iterations          = getArg("iterations", "600-850");
+var saltLength          = getArg("saltLength", "8-16");
 var maxLineWidth        = getArg("maxLineWidth", 75);
 var showPassword        = getArg("showPassword");
 var onlySelected        = getArg("onlySelected", false);
@@ -219,6 +215,12 @@ var saveOptions         = getArg("saveOptions", 1);
 var savePosition        = getArg("savePosition", true);
 
 var isDecrypt = mode == MODE_DECRYPT;
+iterations = ("" + iterations).split("-");
+var pbkdf2IterationsMin = +iterations[0];
+var pbkdf2IterationsMax = +iterations[1] || pbkdf2IterationsMin;
+saltLength = ("" + saltLength).split("-");
+var saltLengthMin = +saltLength[0];
+var saltLengthMax = +saltLength[1] || saltLengthMin;
 
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
