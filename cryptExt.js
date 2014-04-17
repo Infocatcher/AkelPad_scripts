@@ -4783,6 +4783,8 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 	function controlsEnabled(val) {
 		enabled(hWndOK, val);
 		hWndApply && enabled(hWndApply, val);
+		// Note: main window will be inaccessible anyway
+		// (and all user actions will be applied after all our operations)
 		!modal && enabled(hMainWnd, val);
 	}
 	function updateControls() {
