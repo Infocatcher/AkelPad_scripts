@@ -3922,7 +3922,7 @@ function cryptTest() {
 	];
 	var passwords = [
 		"Qw987-_=+\\|%^$;:'\t !~ *",
-		"Rt\u041a\u0435\u043d\x00 \r\n\u4e5b\u75bb\ufb44"
+		"RtКен\x00 \r\n乛疻פּ"
 	];
 
 	var cryptorNames = [];
