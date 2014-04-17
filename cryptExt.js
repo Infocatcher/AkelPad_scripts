@@ -4550,9 +4550,13 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 								isDecrypt = decryptObj.value;
 							if(cryptorObj)
 								cryptor = cryptorObj.value.join("+");
+							var hWndFocused = oSys.Call("user32::GetFocus");
 							controlsEnabled(false);
+							var restoreFocus = !oSys.Call("user32::GetFocus");
+							restoreFocus && AkelPad.SendMessage(hWnd, 7 /*WM_SETFOCUS*/, 0, 0);
 							encryptOrDecrypt(pass);
 							controlsEnabled(true);
+							restoreFocus && oSys.Call("user32::SetFocus", hWndFocused);
 						}
 						if(idc == IDC_OK)
 							closeDialog();
