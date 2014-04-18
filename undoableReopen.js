@@ -25,12 +25,17 @@ function undoableReopen() {
 	var lpPoint64 = AkelPad.MemAlloc(_X64 ? 16 : 8 /*sizeof(POINT64)*/);
 	if(!lpPoint64)
 		return;
+	function cleanup() {
+		AkelPad.MemFree(lpPoint64);
+		lpSel     && AkelPad.MemFree(lpSel);
+		lpCaret   && AkelPad.MemFree(lpCaret);
+	}
 	var lpSel = AkelPad.MemAlloc(_X64 ? 56 : 32 /*sizeof(AESELECTION)*/);
 	if(!lpSel)
-		return;
+		return cleanup();
 	var lpCaret = AkelPad.MemAlloc(_X64 ? 24 : 12 /*sizeof(AECHARINDEX)*/);
 	if(!lpCaret)
-		return;
+		return cleanup();
 	AkelPad.SendMessage(hWndEdit, 3179 /*AEM_GETSCROLLPOS*/, 0, lpPoint64);
 	AkelPad.SendMessage(hWndEdit, 3125 /*AEM_GETSEL*/, lpCaret, lpSel);
 
@@ -45,4 +50,5 @@ function undoableReopen() {
 	AkelPad.MemCopy(lpSel + (_X64 ? 48 : 24) /*AESELECTION.dwFlags*/, dwFlags | 0x808 /*AESELT_LOCKSCROLL|AESELT_INDEXUPDATE*/, 3 /*DT_DWORD*/);
 	AkelPad.SendMessage(hWndEdit, 3126 /*AEM_SETSEL*/, lpCaret, lpSel);
 	AkelPad.SendMessage(hWndEdit, 3180 /*AEM_SETSCROLLPOS*/, 0, lpPoint64);
+	cleanup();
 }
