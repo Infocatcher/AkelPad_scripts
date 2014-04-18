@@ -3911,8 +3911,10 @@ function cryptTest() {
 	var isMDI = AkelPad.IsMDI() == 1 /*WMD_MDI*/;
 	if(isMDI) {
 		var hWndFrame = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, 0 /*current frame*/);
-		var origFrameTitle = windowText(hWndFrame);
-		windowText(hWndFrame, "");
+		if(oSys.Call("User32::IsZoomed", hWndFrame)) {
+			var origFrameTitle = windowText(hWndFrame);
+			windowText(hWndFrame, "");
+		}
 	}
 	var origTitle = windowText(hMainWnd);
 	function feedback(s) {
@@ -3989,7 +3991,7 @@ function cryptTest() {
 	pbkdf2IterationsMin = piMin;
 	pbkdf2IterationsMax = piMax;
 	windowText(hMainWnd, origTitle);
-	isMDI && windowText(hWndFrame, origFrameTitle);
+	origFrameTitle && windowText(hWndFrame, origFrameTitle);
 	var elapsedTime = "\nElapsed time: " + (new Date().getTime() - t) + " ms";
 	AkelPad.MessageBox(
 		hMainWnd,
