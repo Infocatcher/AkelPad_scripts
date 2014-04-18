@@ -1,7 +1,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/undoableReopen.js
 
 // (c) Infocatcher 2012, 2014
-// version 0.1.0pre2 - 2014-03-14
+// version 0.1.0pre3 - 2014-04-18
 
 // Reopen file and preserve undo/redo buffer (just replace all text, if it was changed)
 
@@ -21,44 +21,28 @@ function undoableReopen() {
 		return;
 	}
 
-	// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=13296#13296
-	var lpSel = AkelPad.MemAlloc(_X64 ? 56 : 28 /*sizeof(AESELECTION)*/);
+	// Based on code from built-in RenameFile.js
+	var lpPoint64 = AkelPad.MemAlloc(_X64 ? 16 : 8 /*sizeof(POINT64)*/);
+	if(!lpPoint64)
+		return;
+	var lpSel = AkelPad.MemAlloc(_X64 ? 56 : 32 /*sizeof(AESELECTION)*/);
 	if(!lpSel)
 		return;
 	var lpCaret = AkelPad.MemAlloc(_X64 ? 24 : 12 /*sizeof(AECHARINDEX)*/);
 	if(!lpCaret)
 		return;
-	AkelPad.SendMessage(hWndEdit, 3185 /*AEM_LOCKSCROLL*/, 3 /*SB_BOTH*/, true);
+	AkelPad.SendMessage(hWndEdit, 3179 /*AEM_GETSCROLLPOS*/, 0, lpPoint64);
 	AkelPad.SendMessage(hWndEdit, 3125 /*AEM_GETSEL*/, lpCaret, lpSel);
 
-	noScroll(function() {
-		AkelPad.SetSel(0, -1);
-		AkelPad.ReplaceSel(text);
-		AkelPad.SendMessage(hMainWnd, 1229 /*AKD_SETMODIFY*/, hWndEdit, false);
+	AkelPad.SendMessage(hWndEdit, 11 /*WM_SETREDRAW*/, false, 0);
+	AkelPad.SetSel(0, -1);
+	AkelPad.ReplaceSel(text);
+	AkelPad.SendMessage(hMainWnd, 1229 /*AKD_SETMODIFY*/, hWndEdit, false);
+	AkelPad.SendMessage(hWndEdit, 11 /*WM_SETREDRAW*/, true, 0);
+	oSys.Call("user32::InvalidateRect", hWndEdit, 0, true);
 
-		var dwFlags = AkelPad.MemRead(lpSel + (_X64 ? 48 : 24) /*AESELECTION.dwFlags*/, 3 /*DT_DWORD*/);
-		AkelPad.MemCopy(lpSel + (_X64 ? 48 : 24) /*AESELECTION.dwFlags*/, dwFlags | 0x808 /*AESELT_LOCKSCROLL|AESELT_INDEXUPDATE*/, 3 /*DT_DWORD*/);
-		AkelPad.SendMessage(hWndEdit, 3126 /*AEM_SETSEL*/, lpCaret, lpSel);
-		AkelPad.SendMessage(hWndEdit, 3185 /*AEM_LOCKSCROLL*/, 3 /*SB_BOTH*/, false);
-	});
-	AkelPad.SendMessage(hWndEdit, 3126 /*AEM_SETSEL*/, lpCaret, lpSel); // Needed for show caret
-}
-function noScroll(func, hWndEdit) {
-	if(!hWndEdit)
-		hWndEdit = AkelPad.GetEditWnd();
-	var lpPoint = AkelPad.MemAlloc(8 /*sizeof(POINT)*/);
-	if(!lpPoint)
-		return;
-	setRedraw(hWndEdit, false);
-	AkelPad.SendMessage(hWndEdit, 1245 /*EM_GETSCROLLPOS*/, 0, lpPoint);
-
-	func();
-
-	AkelPad.SendMessage(hWndEdit, 1246 /*EM_SETSCROLLPOS*/, 0, lpPoint);
-	setRedraw(hWndEdit, true);
-	AkelPad.MemFree(lpPoint);
-}
-function setRedraw(hWnd, bRedraw) {
-	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
-	bRedraw && oSys.Call("user32::InvalidateRect", hWnd, 0, true);
+	var dwFlags = AkelPad.MemRead(lpSel + (_X64 ? 48 : 24) /*AESELECTION.dwFlags*/, 3 /*DT_DWORD*/);
+	AkelPad.MemCopy(lpSel + (_X64 ? 48 : 24) /*AESELECTION.dwFlags*/, dwFlags | 0x808 /*AESELT_LOCKSCROLL|AESELT_INDEXUPDATE*/, 3 /*DT_DWORD*/);
+	AkelPad.SendMessage(hWndEdit, 3126 /*AEM_SETSEL*/, lpCaret, lpSel);
+	AkelPad.SendMessage(hWndEdit, 3180 /*AEM_SETSCROLLPOS*/, 0, lpPoint64);
 }
