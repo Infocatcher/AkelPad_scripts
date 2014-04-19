@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/cryptExt.js
 
 // (c) Infocatcher 2010-2012, 2014
-// version 0.5.0a14 - 2014-04-17
+// version 0.5.0a15 - 2014-04-19
 
 //===================
 // AES-256/Blowfish/Twofish/Serpent encryption/decryption
