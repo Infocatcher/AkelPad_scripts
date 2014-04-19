@@ -3758,13 +3758,7 @@ function encryptOrDecrypt(pass) {
 	}
 
 	var cryptorsArr = (cryptor || "").split(/\s*\+\s*/);
-	var wrongCryptors = [];
-	for(var i = 0, l = cryptorsArr.length; i < l; ++i)
-		if(!cryptors[normalizeName(cryptorsArr[i])])
-			wrongCryptors.push(cryptorsArr[i]);
-	if(!pass && cryptor && wrongCryptors.length) {
-		var msg = _localize("Cryptor “%S” not found!").replace("%S", getPrettyName(cryptorsArr));
-		AkelPad.MessageBox(hMainWnd, msg, dialogTitle, 48 /*MB_ICONEXCLAMATION*/);
+	if(checkForWrongCryptors(cryptor)) {
 		cryptor = "";
 		cryptorsArr = [];
 	}
@@ -3906,6 +3900,21 @@ function encryptOrDecrypt(pass) {
 
 	insertNoScroll(res, selectAll);
 }
+function checkForWrongCryptors(names) {
+	if(!names)
+		return false;
+	var cryptorsArr = names.split(/\s*\+\s*/);
+	var wrongCryptors = [];
+	for(var i = 0, l = cryptorsArr.length; i < l; ++i)
+		if(!cryptors[normalizeName(cryptorsArr[i])])
+			wrongCryptors.push(cryptorsArr[i]);
+	if(wrongCryptors.length) {
+		var msg = _localize("Cryptor “%S” not found!").replace("%S", getPrettyName(wrongCryptors));
+		AkelPad.MessageBox(hMainWnd, msg, dialogTitle, 48 /*MB_ICONEXCLAMATION*/);
+		return true;
+	}
+	return false;
+}
 
 function cryptTest() {
 	var isMDI = AkelPad.IsMDI() == 1 /*WMD_MDI*/;
@@ -4011,6 +4020,8 @@ function cryptTest() {
 }
 
 function cryptDialog() {
+	if(checkForWrongCryptors(cryptor))
+		cryptor = "";
 	var decryptObj = mode != MODE_USER_SELECT
 		? null
 		: {
