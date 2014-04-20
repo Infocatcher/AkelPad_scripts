@@ -407,7 +407,7 @@ Comments.prototype = {
 		return str;
 	},
 	excludeLineComments: function(str) {
-		if(!checkSyntax || oldRegExp)
+		if(!checkSyntax || oldRegExp || this.noCmmLine)
 			return str;
 		for(var i = 0, len = this.cmmLine.length; i < len; ++i) {
 			var cmmLine = this.cmmLine[i];
