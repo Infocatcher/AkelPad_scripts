@@ -1,8 +1,9 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19810#19810
 // http://infocatcher.ucoz.net/js/akelpad_scripts/forgetAboutTab.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/forgetAboutTab.js
 
-// (c) Infocatcher 2012
-// version 0.1.0 - 2012-09-17
+// (c) Infocatcher 2012, 2014
+// version 0.1.0.1 - 2014-04-20
 
 // Close current tab and remove information about it from recent files
 
@@ -21,7 +22,9 @@
 var file = AkelPad.GetArgValue("file", "") || AkelPad.GetEditFile(0);
 var ask  = AkelPad.GetArgValue("confirm", true);
 if(file && (!ask || confirm())) {
+	WScript.Sleep(50);
 	AkelPad.Command(4318 /*IDM_WINDOW_FRAMECLOSE*/);
+	//WScript.Sleep(50);
 	AkelPad.Call("Scripts::Main", 1, "DeleteRecentFile.js", file);
 }
 
