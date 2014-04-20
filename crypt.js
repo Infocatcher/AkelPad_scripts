@@ -1822,6 +1822,19 @@ function isBase64(str) {
 }
 
 function cryptTest() {
+	var isMDI = AkelPad.IsMDI() == 1 /*WMD_MDI*/;
+	if(isMDI) {
+		var hWndFrame = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, 0 /*current frame*/);
+		if(oSys.Call("User32::IsZoomed", hWndFrame)) {
+			var origFrameTitle = windowText(hWndFrame);
+			windowText(hWndFrame, "");
+		}
+	}
+	var origTitle = windowText(hMainWnd);
+	function feedback(s) {
+		windowText(hMainWnd, WScript.ScriptName + ": test " + s);
+	}
+
 	//var u = "";
 	//for(var i = 0; i <= 0xffff; i++)
 	//	u += String.fromCharCode(i);
@@ -1838,12 +1851,18 @@ function cryptTest() {
 	];
 	var ok = 0;
 	var fail = [];
+	var i = 0;
+	var cryptorsCount = 0;
+	for(var cr in cryptors)
+		++cryptorsCount;
+	var count = texts.length*passwords.length*cryptorsCount;
 	var t = new Date().getTime();
 	for(var it = 0, lt = texts.length; it < lt; it++) {
 		var text = texts[it];
 		for(var ip = 0, lp = passwords.length; ip < lp; ip++) {
 			var pass = passwords[ip];
 			for(var cr in cryptors) {
+				feedback(++i + "/" + count);
 				var crData = cryptors[cr];
 				var enc = crData.encrypt(text, pass);
 				var dec = crData.decrypt(enc, pass);
@@ -1858,6 +1877,8 @@ function cryptTest() {
 			}
 		}
 	}
+	windowText(hMainWnd, origTitle);
+	origFrameTitle && windowText(hWndFrame, origFrameTitle);
 	var elapsedTime = "\nElapsed time: " + (new Date().getTime() - t) + " ms";
 	AkelPad.MessageBox(
 		hMainWnd,
@@ -2548,18 +2569,6 @@ function passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 			bottom: AkelPad.MemRead(lpRect + 12, 3 /*DT_DWORD*/)
 		};
 	}
-	function windowText(hWnd, pText) {
-		if(arguments.length > 1)
-			return oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, pText);
-		var len = oSys.Call("user32::GetWindowTextLength" + _TCHAR, hWnd);
-		var lpText = AkelPad.MemAlloc((len + 1)*_TSIZE);
-		if(!lpText)
-			return "";
-		oSys.Call("user32::GetWindowText" + _TCHAR, hWnd, lpText, len + 1);
-		pText = AkelPad.MemRead(lpText, _TSTR);
-		AkelPad.MemFree(lpText);
-		return pText;
-	}
 	function readRadiosState() {
 		if(decryptObj) {
 			if(checked(hWndEncrypt))
@@ -2677,6 +2686,18 @@ function passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 
 	AkelPad.WindowUnregisterClass(dialogClass);
 	return pass;
+}
+function windowText(hWnd, pText) {
+	if(arguments.length > 1)
+		return oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, pText);
+	var len = oSys.Call("user32::GetWindowTextLength" + _TCHAR, hWnd);
+	var lpText = AkelPad.MemAlloc((len + 1)*_TSIZE);
+	if(!lpText)
+		return "";
+	oSys.Call("user32::GetWindowText" + _TCHAR, hWnd, lpText, len + 1);
+	pText = AkelPad.MemRead(lpText, _TSTR);
+	AkelPad.MemFree(lpText);
+	return pText;
 }
 
 function getAllText() {
