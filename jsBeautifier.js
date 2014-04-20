@@ -2051,11 +2051,8 @@ function detectXMLType(str) {
         options = options || {};
         var indentSize = options.indent_size || 4;
         var indentCharacter = options.indent_char || ' ';
-        var selectorSeparatorNewline = true;
-        if (options.selector_separator_newline !== undefined) {
-            selectorSeparatorNewline = options.selector_separator_newline;
-        }
-        var endWithNewline = options.end_with_newline || false;
+        var selectorSeparatorNewline = (options.selector_separator_newline === undefined) ? true : options.selector_separator_newline;
+        var endWithNewline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
 
         // compatibility
         if (typeof indentSize === "string") {
@@ -2474,15 +2471,15 @@ function detectXMLType(str) {
             options.wrap_line_length = options.max_char;
         }
 
-        indent_inner_html = options.indent_inner_html || false;
-        indent_size = parseInt(options.indent_size || 4, 10);
-        indent_character = options.indent_char || ' ';
-        brace_style = options.brace_style || 'collapse';
+        indent_inner_html = (options.indent_inner_html === undefined) ? false : options.indent_inner_html;
+        indent_size = (options.indent_size === undefined) ? 4 : parseInt(options.indent_size, 10);
+        indent_character = (options.indent_char === undefined) ? ' ' : options.indent_char;
+        brace_style = (options.brace_style === undefined) ? 'collapse' : options.brace_style;
         wrap_line_length =  parseInt(options.wrap_line_length, 10) === 0 ? 32786 : parseInt(options.wrap_line_length || 250, 10);
         unformatted = options.unformatted || ['a', 'span', 'bdo', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym', 'q', 'sub', 'sup', 'tt', 'i', 'b', 'big', 'small', 'u', 's', 'strike', 'font', 'ins', 'del', 'pre', 'address', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
-        preserve_newlines = options.preserve_newlines || true;
+        preserve_newlines = (options.preserve_newlines === undefined) ? true : options.preserve_newlines;
         max_preserve_newlines = preserve_newlines ? parseInt(options.max_preserve_newlines || 32786, 10) : 0;
-        indent_handlebars = options.indent_handlebars || false;
+        indent_handlebars = (options.indent_handlebars === undefined) ? false : options.indent_handlebars;
 
         function Parser() {
 
@@ -5432,6 +5429,16 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             /* expected */
             '<div>Some test text that should wrap_inside_this\n' +
             '    section here.</div>');
+
+        opts.indent_size = 1;
+        opts.indent_char = '\t';
+        opts.preserve_newlines = false;
+        bth('<div>\n\tfoo\n</div>', '<div>foo</div>');
+
+        opts.preserve_newlines = true;
+        bth('<div>\n\tfoo\n</div>');
+
+
 
         // css beautifier
         opts.indent_size = 1;
