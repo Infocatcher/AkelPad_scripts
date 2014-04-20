@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
-// (c) Infocatcher 2011-2013
-// version 0.2.5 - 2013-10-12
+// (c) Infocatcher 2011-2014
+// version 0.2.6 - 2014-04-20
 // Based on scripts from http://jsbeautifier.org/ [2014-04-05 20:50:00 UTC]
 
 //===================
