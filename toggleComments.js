@@ -101,7 +101,8 @@ var commentsSets = {
 	pyw: "py",
 	"1s": [ null, null, ["//"] ],
 	"1c": "1s",
-	nsi: [ null, null, [";", "#"] ]
+	nsi: [ null, null, [";", "#"] ],
+	au3: [ ["#comments-start", "#cs"], ["#comments-end", "#ce"], [";"] ]
 };
 var commentsRegions = {
 	// Example:
@@ -193,6 +194,7 @@ var commentsExcludes = { // Now used only in delLineComments()
 	java: "c",
 	php:  "c",
 	dpr:  "c",
+	au3:  "c",
 	coder: function(str) {
 		if(oldRegExp)
 			return str;
