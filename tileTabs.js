@@ -11,6 +11,13 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
 // (or use -noBlink=true argument to work without timer.js)
 
+// Arguments:
+//   h                      - tile horizontal
+//   o                      - preserve tabs order
+//   -noBlink=true          - disable blink in status bar (and just show "Select tab!" text)
+//   -item="toolbar:%m:%i"  - check toolbar button
+//        ="menu:%m:%i"     - check menu item
+
 // Usage:
 //   Call("Scripts::Main", 1, "tileTabs.js")         - tile vertical
 //   Call("Scripts::Main", 1, "tileTabs.js", "o")    - tile vertical and preserve tabs order

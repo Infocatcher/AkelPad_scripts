@@ -21,6 +21,8 @@
 //   -temp="%AkelScripts%\temp"                   - path to temporary directory
 //   -useTabsOrder=true                           - always compare left tab with right tab
 //   -noBlink=true                                - disable blink in status bar (and just show "Select tab!" text)
+//   -item="toolbar:%m:%i"                        - check toolbar button
+//        ="menu:%m:%i"                           - check menu item
 
 // Usage:
 //   Call("Scripts::Main", 1, "winMergeTabs.js")
