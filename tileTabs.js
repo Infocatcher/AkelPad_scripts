@@ -68,6 +68,9 @@ if(
 		WScript.Quit();
 	}
 
+	var item = new Item();
+	item.check(true);
+
 	var statusbar = new Statusbar();
 	statusbar.save();
 	var statusMsg = _localize("Select tab!");
@@ -127,6 +130,7 @@ if(
 		statusbar && statusbar.restore();
 		AkelPad.MessageBox(hMainWnd, "AkelPad.WindowSubClass(WSC_MAINPROC) failed!", WScript.ScriptName, 16 /*MB_ICONERROR*/);
 	}
+	item.check(false);
 }
 else {
 	AkelPad.MessageBox(hMainWnd, _localize("MDI window mode required!"), WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
@@ -197,6 +201,27 @@ function parseRect(lpRect) {
 	};
 }
 
+function Item() {
+	this.check = function() {};
+	// "menu:%m:%i" or "toolbar:%m:%i"
+	var itemData = AkelPad.GetArgValue("item", "").split(":");
+	if(itemData.length != 3)
+		return;
+	var type = itemData[0];
+	var hHandle = +itemData[1];
+	var nItemID = +itemData[2];
+	if(!type || !hHandle || !nItemID)
+		return;
+	this.check = function(checked) {
+		if(type == "menu") {
+			var cmd = checked ? 0x8 /*MF_BYCOMMAND|MF_CHECKED*/ : 0 /*MF_BYCOMMAND|MF_UNCHECKED*/;
+			oSys.call("user32::CheckMenuItem", hHandle, nItemID, cmd);
+		}
+		else if(type == "toolbar") {
+			AkelPad.SendMessage(hHandle, 1026 /*TB_CHECKBUTTON*/, nItemID, checked);
+		}
+	};
+}
 function Statusbar() {
 	this.get = this.set = this.save = this.restore = function() {};
 
