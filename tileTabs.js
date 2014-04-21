@@ -57,42 +57,47 @@ if(
 	&& AkelPad.IsMDI() == 1 /*WMD_MDI*/
 ) {
 	var hMdiClient = AkelPad.SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 12 /*MI_WNDMDICLIENT*/, 0);
+	if(!hMdiClient) {
+		AkelPad.MessageBox(hMainWnd, "Can't get hMdiClient!", WScript.ScriptName, 16 /*MB_ICONERROR*/);
+		WScript.Quit();
+	}
 	var lpFrame = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
 	var lpFrame2;
+	if(!lpFrame) {
+		AkelPad.MessageBox(hMainWnd, _localize("No tabs!"), WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
+		WScript.Quit();
+	}
 
-	if(hMdiClient && lpFrame) {
-		var statusbar = new Statusbar();
-		statusbar.save();
-		var statusMsg = _localize("Select tab!");
-		statusbar.set(statusMsg);
+	var statusbar = new Statusbar();
+	statusbar.save();
+	var statusMsg = _localize("Select tab!");
+	statusbar.set(statusMsg);
 
-		if(
-			!AkelPad.GetArgValue("noBlink", false)
-			&& AkelPad.Include("timer.js")
-		) {
-			var showDelay = 600;
-			var hideDelay = 150;
-			// show -> [showDelay] -> hide -> [hideDelay] -> show -> [showDelay] -> hide
-			var timerHide = setTimeout(function() {
+	if(
+		!AkelPad.GetArgValue("noBlink", false)
+		&& AkelPad.Include("timer.js")
+	) {
+		var showDelay = 600;
+		var hideDelay = 150;
+		// show -> [showDelay] -> hide -> [hideDelay] -> show -> [showDelay] -> hide
+		var timerHide = setTimeout(function() {
+			statusbar.set("");
+			clearTimeout(timerHide);
+			timerHide = setInterval(function() {
 				statusbar.set("");
-				clearTimeout(timerHide);
-				timerHide = setInterval(function() {
-					statusbar.set("");
-				}, showDelay + hideDelay, timerHide);
-			}, showDelay);
-			var timerShow = setInterval(function() {
-				statusbar.set(statusMsg);
-			}, showDelay + hideDelay);
-			var stopTimers = function() {
-				clearInterval(timerHide);
-				clearInterval(timerShow);
-			};
-		}
+			}, showDelay + hideDelay, timerHide);
+		}, showDelay);
+		var timerShow = setInterval(function() {
+			statusbar.set(statusMsg);
+		}, showDelay + hideDelay);
+		var stopTimers = function() {
+			clearInterval(timerHide);
+			clearInterval(timerShow);
+		};
 	}
 
 	if(
-		hMdiClient && lpFrame
-		&& AkelPad.WindowSubClass(
+		AkelPad.WindowSubClass(
 			1 /*WSC_MAINPROC*/,
 			mainCallback,
 			0x416 /*AKDN_FRAME_ACTIVATE*/,
@@ -120,7 +125,7 @@ if(
 	else {
 		stopTimers && stopTimers();
 		statusbar && statusbar.restore();
-		AkelPad.MessageBox(hMainWnd, _localize("No tabs!"), WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
+		AkelPad.MessageBox(hMainWnd, "AkelPad.WindowSubClass(WSC_MAINPROC) failed!", WScript.ScriptName, 16 /*MB_ICONERROR*/);
 	}
 }
 else {
