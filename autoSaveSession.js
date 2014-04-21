@@ -38,7 +38,7 @@ var timer = 0;
 var lastSave = 0;
 
 var lpTimerCallback = 0;
-var nIDEvent = AkelPad.SendMessage(hMainWnd, 1319 /*AKD_UNIQUEID*/, 0, 0) || 10;
+var nIDEvent;
 var error = "";
 
 debug && _log("start");
@@ -143,6 +143,7 @@ function saveSessionDelayed(delay) {
 		oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
 		return 0;
 	}
+	nIDEvent = AkelPad.SendMessage(hMainWnd, 1319 /*AKD_UNIQUEID*/, 0, 0) || 10;
 	saveSessionDelayed = function(delay) {
 		return oSys.Call("user32::SetTimer", hMainWnd, nIDEvent, delay, lpTimerCallback);
 	};
