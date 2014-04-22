@@ -5018,6 +5018,9 @@ if(AkelPad.IsInclude()) {
 	// But declarations without "var" becomes global
 	var _exports = {
 		cryptors: cryptors,
+		encrypt: encrypt,
+		decrypt: decrypt,
+		getHash: getHash,
 		passwordPrompt: passwordPrompt,
 		packHex: packHex,
 		utf8: Utf8,
