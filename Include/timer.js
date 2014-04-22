@@ -100,8 +100,21 @@ var timers = {
 		delete this.funcs[id];
 		delete this.timeouts[id];
 	},
+	_prev: [],
 	_log: function(s) {
-		//oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, WScript.ScriptName + ": " + s);
+		return; // disable logs
+		var prev = this._prev;
+		var last = prev[prev.length - 1];
+		RegExp.$1 = 0;
+		if(last && s == last.replace(/ #(\d+)$/, ""))
+			prev[prev.length - 1] = s + " #" + ((+RegExp.$1 || 1) + 1);
+		else {
+			while(prev.length > 8)
+				prev.shift();
+			prev.push(s);
+		}
+		s = prev.join(" -> ");
+		oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, WScript.ScriptName + ": " + s);
 	}
 };
 
