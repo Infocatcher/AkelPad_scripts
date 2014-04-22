@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
 
 // (c) Infocatcher 2014
-// version 0.1.0 - 2014-04-06
+// version 0.1.1 - 2014-04-22
 
 // Helper functions for user32::SetTimer()
 // Usage example:
