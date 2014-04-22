@@ -58,6 +58,7 @@ var timers = {
 		catch(e) {
 			this.lpTimerCallback = oSys.RegisterCallback("", timerProc, timerProc.length);
 		}
+		this.hWndTimer = AkelPad.ScriptHandle(0, 17 /*SH_GETSERVICEWINDOW*/) || hMainWnd;
 		return this.lpTimerCallback;
 	},
 	destroy: function() {
@@ -85,7 +86,7 @@ var timers = {
 		if(isSingle)
 			this.timeouts[id] = true;
 		this._log("set(" + isSingle + ") " + id);
-		oSys.Call("user32::SetTimer", hMainWnd, id, delay, this.lpTimerCallback);
+		oSys.Call("user32::SetTimer", this.hWndTimer, id, delay, this.lpTimerCallback);
 		return id;
 	},
 	clear: function(id, isSingle) {
@@ -95,12 +96,25 @@ var timers = {
 	},
 	_clear: function(id) {
 		this._log("_clear(" + id + ")");
-		oSys.Call("user32::KillTimer", hMainWnd, id);
+		oSys.Call("user32::KillTimer", this.hWndTimer, id);
 		delete this.funcs[id];
 		delete this.timeouts[id];
 	},
+	_prev: [],
 	_log: function(s) {
-		//oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, WScript.ScriptName + ": " + s);
+		return; // disable logs
+		var prev = this._prev;
+		var last = prev[prev.length - 1];
+		RegExp.$1 = 0;
+		if(last && s == last.replace(/ #(\d+)$/, ""))
+			prev[prev.length - 1] = s + " #" + ((+RegExp.$1 || 1) + 1);
+		else {
+			while(prev.length > 8)
+				prev.shift();
+			prev.push(s);
+		}
+		s = prev.join(" -> ");
+		oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, WScript.ScriptName + ": " + s);
 	}
 };
 

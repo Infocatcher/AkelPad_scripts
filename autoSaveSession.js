@@ -39,6 +39,7 @@ var lastSave = 0;
 
 var lpTimerCallback = 0;
 var nIDEvent;
+var hWndTimer;
 var error = "";
 
 debug && _log("start");
@@ -144,18 +145,19 @@ function saveSessionDelayed(delay) {
 		return 0;
 	}
 	nIDEvent = AkelPad.SendMessage(hMainWnd, 1319 /*AKD_UNIQUEID*/, 0, 0) || 10;
+	hWndTimer = AkelPad.ScriptHandle(0, 17 /*SH_GETSERVICEWINDOW*/) || hMainWnd;
 	saveSessionDelayed = function(delay) {
-		return oSys.Call("user32::SetTimer", hMainWnd, nIDEvent, delay, lpTimerCallback);
+		return oSys.Call("user32::SetTimer", hWndTimer, nIDEvent, delay, lpTimerCallback);
 	};
 	return saveSessionDelayed(delay);
 }
 function saveSessionTimerProc(hWnd, uMsg, nIDEvent, dwTime) {
-	oSys.Call("user32::KillTimer", hMainWnd, nIDEvent);
+	oSys.Call("user32::KillTimer", hWndTimer, nIDEvent);
 	saveSession();
 }
 function destroyTimer() {
 	if(lpTimerCallback) {
-		oSys.Call("user32::KillTimer", hMainWnd, nIDEvent);
+		oSys.Call("user32::KillTimer", hWndTimer, nIDEvent);
 		oSys.UnregisterCallback(lpTimerCallback);
 		lpTimerCallback = 0;
 	}
