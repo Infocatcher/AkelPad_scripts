@@ -5802,8 +5802,8 @@ function convertSource(file, text) {
 }
 function selfUpdate() {
 	var baseUrl = update == 2
-		? "https://raw.github.com/einars/js-beautify/gh-pages/"
-		: "https://raw.github.com/einars/js-beautify/master/";
+		? "https://raw.githubusercontent.com/einars/js-beautify/gh-pages/"
+		: "https://raw.githubusercontent.com/einars/js-beautify/master/";
 	var data = {
 		"js/lib/beautify.js": "",
 		"js/lib/beautify-css.js": "",
