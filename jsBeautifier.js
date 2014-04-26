@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2014
 // version 0.2.6 - 2014-04-20
-// Based on scripts from http://jsbeautifier.org/ [2014-04-05 20:50:00 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-04-26 01:26:20 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -506,6 +506,7 @@ function detectXMLType(str) {
                 in_html_comment: false,
                 multiline_frame: false,
                 if_block: false,
+                else_block: false,
                 do_block: false,
                 do_while: false,
                 in_case_statement: false, // switch(..){ INSIDE HERE }
@@ -1590,11 +1591,14 @@ function detectXMLType(str) {
             // Bare/inline ifs are tricky
             // Need to unwind the modes correctly: if (a) if (b) c(); else d(); else e();
             if (flags.if_block) {
-                if (!(token_type === 'TK_RESERVED' && token_text === 'else')) {
+                if (!flags.else_block && (token_type === 'TK_RESERVED' && token_text === 'else')) {
+                    flags.else_block = true;
+                } else {
                     while (flags.mode === MODE.Statement) {
                         restore_mode();
                     }
                     flags.if_block = false;
+                    flags.else_block = false;
                 }
             }
 
@@ -1965,9 +1969,9 @@ function detectXMLType(str) {
 
 
     if (typeof define === "function" && define.amd) {
-        // Add support for require.js
+        // Add support for AMD ( https://github.com/amdjs/amdjs-api/wiki/AMD#defineamd-property- )
         define([], function() {
-            return js_beautify;
+            return { js_beautify: js_beautify };
         });
     } else if (typeof exports !== "undefined") {
         // Add support for CommonJS. Just put this file somewhere on your require.paths
@@ -2348,9 +2352,9 @@ function detectXMLType(str) {
 
     /*global define */
     if (typeof define === "function" && define.amd) {
-        // Add support for require.js
+        // Add support for AMD ( https://github.com/amdjs/amdjs-api/wiki/AMD#defineamd-property- )
         define([], function () {
-            return css_beautify;
+            return { css_beautify: css_beautify };
         });
     } else if (typeof exports !== "undefined") {
         // Add support for CommonJS. Just put this file somewhere on your require.paths
@@ -2478,7 +2482,9 @@ function detectXMLType(str) {
         wrap_line_length =  parseInt(options.wrap_line_length, 10) === 0 ? 32786 : parseInt(options.wrap_line_length || 250, 10);
         unformatted = options.unformatted || ['a', 'span', 'bdo', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym', 'q', 'sub', 'sup', 'tt', 'i', 'b', 'big', 'small', 'u', 's', 'strike', 'font', 'ins', 'del', 'pre', 'address', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
         preserve_newlines = (options.preserve_newlines === undefined) ? true : options.preserve_newlines;
-        max_preserve_newlines = preserve_newlines ? parseInt(options.max_preserve_newlines || 32786, 10) : 0;
+        max_preserve_newlines = preserve_newlines ?
+            (isNaN(parseInt(options.max_preserve_newlines, 10)) ? 32786 : parseInt(options.max_preserve_newlines, 10))
+            : 0;
         indent_handlebars = (options.indent_handlebars === undefined) ? false : options.indent_handlebars;
 
         function Parser() {
@@ -3179,22 +3185,25 @@ function detectXMLType(str) {
     }
 
     if (typeof define === "function" && define.amd) {
-        // Add support for require.js
-        define(["./beautify", "./beautify-css"], function(js_beautify, css_beautify) {
+        // Add support for AMD ( https://github.com/amdjs/amdjs-api/wiki/AMD#defineamd-property- )
+        define(["require", "./beautify", "./beautify-css"], function(requireamd) {
+            var js_beautify =  requireamd("./beautify");
+            var css_beautify =  requireamd("./beautify-css");
+
             return {
               html_beautify: function(html_source, options) {
-                return style_html(html_source, options, js_beautify, css_beautify);
+                return style_html(html_source, options, js_beautify.js_beautify, css_beautify.css_beautify);
               }
             };
         });
     } else if (typeof exports !== "undefined") {
         // Add support for CommonJS. Just put this file somewhere on your require.paths
         // and you will be able to `var html_beautify = require("beautify").html_beautify`.
-        var js_beautify = require('./beautify.js').js_beautify;
-        var css_beautify = require('./beautify-css.js').css_beautify;
+        var js_beautify = require('./beautify.js');
+        var css_beautify = require('./beautify-css.js');
 
         exports.html_beautify = function(html_source, options) {
-            return style_html(html_source, options, js_beautify, css_beautify);
+            return style_html(html_source, options, js_beautify.js_beautify, css_beautify.css_beautify);
         };
     } else if (typeof window !== "undefined") {
         // If we're running a web page and don't have either of the above, add our one global
@@ -4250,6 +4259,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             "try\n{\n    a();\n}\ncatch (b)\n{\n    c();\n}\ncatch (d)\n{}\nfinally\n{\n    e();\n}");
         bt('if(a){b();}else if(c) foo();',
             "if (a)\n{\n    b();\n}\nelse if (c) foo();");
+        bt('if(X)if(Y)a();else b();else c();',
+            "if (X)\n    if (Y) a();\n    else b();\nelse c();");
         bt("if (a) {\n// comment\n}else{\n// comment\n}",
             "if (a)\n{\n    // comment\n}\nelse\n{\n    // comment\n}"); // if/else statement with empty body
         bt('if (x) {y} else { if (x) {y}}',
@@ -5440,6 +5451,31 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
 
 
+        // test preserve_newlines and max_preserve_newlines
+        opts.preserve_newlines = false;
+        test_fragment('<div>Should not</div>\n\n\n' +
+                      '<div>preserve newlines</div>',
+                      '<div>Should not</div>\n' +
+                      '<div>preserve newlines</div>');
+
+        opts.preserve_newlines = true;
+        opts.max_preserve_newlines  = 0;
+        test_fragment('<div>Should</div>\n\n\n' +
+                      '<div>preserve zero newlines</div>',
+                      '<div>Should</div>\n' +
+                      '<div>preserve zero newlines</div>');
+
+        opts.max_preserve_newlines  = 1;
+        test_fragment('<div>Should</div>\n\n\n' +
+                      '<div>preserve one newline</div>',
+                      '<div>Should</div>\n\n' +
+                      '<div>preserve one newline</div>');
+
+        opts.max_preserve_newlines  = null;
+        test_fragment('<div>Should</div>\n\n\n' +
+                      '<div>preserve one newline</div>',
+                      '<div>Should</div>\n\n\n' +
+                      '<div>preserve one newline</div>');
         // css beautifier
         opts.indent_size = 1;
         opts.indent_char = '\t';
