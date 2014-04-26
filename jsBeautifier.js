@@ -5777,20 +5777,21 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 			if(action == ACT_INSERT) {
 				if(lpFrameTarget && lpFrameTarget != AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0))
 					AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrameTarget);
-				setSyntax(syntax.value);
 			}
 			if(res) {
 				if(action == ACT_INSERT && res != src) {
 					if(AkelPad.GetEditReadOnly(hWndEdit))
 						action = ACT_INSERT_NEW_DOC;
-					else
+					else {
 						insertNoScroll(res, selectAll, getCaretPos(res, selStart));
+						setSyntax(syntax.value);
+					}
 				}
 				if(action == ACT_INSERT_NEW_DOC) {
 					AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
-					setSyntax(syntax.value);
 					AkelPad.SetSel(0, 0);
 					insertNoScroll(res, true, getCaretPos(res, selStart));
+					setSyntax(syntax.value);
 				}
 				if(action == ACT_COPY && res != AkelPad.GetClipboardText())
 					AkelPad.SetClipboardText(res);
