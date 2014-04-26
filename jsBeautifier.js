@@ -6035,7 +6035,7 @@ function insertNoScroll(str, selectAll, caretPos) {
 
 	if(selectAll)
 		AkelPad.SetSel(0, -1);
-	AkelPad.ReplaceSel(str, true);
+	AkelPad.ReplaceSel(str, saveScrollPos);
 
 	if(saveScrollPos)
 		restoreLineScroll(hWndEdit, nFirstLine);
