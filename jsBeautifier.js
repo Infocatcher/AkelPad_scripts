@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2014
 // version 0.2.6 - 2014-04-20
-// Based on scripts from http://jsbeautifier.org/ [2014-04-26 01:26:20 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-04-29 17:48:02 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -437,7 +437,7 @@ function detectXMLType(str) {
         var whitespace, wordchar, punct, parser_pos, line_starters, reserved_words, digits;
         var prefix;
         var input_wanted_newline;
-        var output_wrapped, output_space_before_token;
+        var output_space_before_token;
         var input_length, n_newlines, whitespace_before_token;
         var handlers, MODE, opt;
         var preindent_string = '';
@@ -585,7 +585,6 @@ function detectXMLType(str) {
         last_type = 'TK_START_BLOCK'; // last token type
         last_last_text = ''; // pre-last token text
         output_lines = [create_output_line()];
-        output_wrapped = false;
         output_space_before_token = false;
         whitespace_before_token = [];
 
@@ -748,15 +747,10 @@ function detectXMLType(str) {
             if (((opt.preserve_newlines && input_wanted_newline) || force_linewrap) && !just_added_newline()) {
                 print_newline(false, true);
 
-                // Expressions and array literals already indent their contents.
-                if (!(is_array(flags.mode) || is_expression(flags.mode) || flags.mode === MODE.Statement)) {
-                    output_wrapped = true;
-                }
             }
         }
 
         function print_newline(force_newline, preserve_statement_flags) {
-            output_wrapped = false;
             output_space_before_token = false;
 
             if (!preserve_statement_flags) {
@@ -791,8 +785,7 @@ function detectXMLType(str) {
                         line.text.push(preindent_string);
                     }
 
-                    print_indent_string(flags.indentation_level +
-                        (output_wrapped ? 1 : 0));
+                    print_indent_string(flags.indentation_level);
                 }
             }
         }
@@ -822,7 +815,6 @@ function detectXMLType(str) {
         function print_token(printable_token) {
             printable_token = printable_token || token_text;
             print_token_line_indentation();
-            output_wrapped = false;
             print_token_space_before();
             output_space_before_token = false;
             output_lines[output_lines.length - 1].text.push(printable_token);
@@ -905,7 +897,7 @@ function detectXMLType(str) {
         }
 
         function start_of_object_property() {
-            return flags.mode === MODE.ObjectLiteral && flags.last_text === ':' &&
+            return flags.parent.mode === MODE.ObjectLiteral && flags.mode === MODE.Statement && flags.last_text === ':' &&
                 flags.ternary_depth === 0;
         }
 
@@ -915,7 +907,14 @@ function detectXMLType(str) {
                     (last_type === 'TK_RESERVED' && flags.last_text === 'do') ||
                     (last_type === 'TK_RESERVED' && flags.last_text === 'return' && !input_wanted_newline) ||
                     (last_type === 'TK_RESERVED' && flags.last_text === 'else' && !(token_type === 'TK_RESERVED' && token_text === 'if')) ||
-                    (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional))) {
+                    (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)) ||
+                    (last_type === 'TK_WORD' && flags.mode === MODE.BlockStatement
+                        && !flags.in_case
+                        && !(token_text === '--' || token_text === '++')
+                        && token_type !== 'TK_WORD' && token_type !== 'TK_RESERVED') ||
+                    (flags.mode === MODE.ObjectLiteral && flags.last_text === ':' && flags.ternary_depth === 0)
+
+                ) {
 
                 set_mode(MODE.Statement);
                 indent();
@@ -927,10 +926,10 @@ function detectXMLType(str) {
                 // Issue #276:
                 // If starting a new statement with [if, for, while, do], push to a new line.
                 // if (a) if (b) if(c) d(); else e(); else f();
-                allow_wrap_or_preserved_newline(
-                    token_type === 'TK_RESERVED' && in_array(token_text, ['do', 'for', 'if', 'while']));
-
-                output_wrapped = false;
+                if (!start_of_object_property()) {
+                    allow_wrap_or_preserved_newline(
+                        token_type === 'TK_RESERVED' && in_array(token_text, ['do', 'for', 'if', 'while']));
+                }
 
                 return true;
             }
@@ -1417,7 +1416,6 @@ function detectXMLType(str) {
             } else if (last_type === 'TK_END_EXPR' || last_type === 'TK_START_EXPR' || last_type === 'TK_END_BLOCK' || flags.last_text === '.') {
                 // TODO: Consider whether forcing this is required.  Review failing tests when removed.
                 allow_wrap_or_preserved_newline(input_wanted_newline);
-                output_wrapped = false;
                 // do nothing on (( and )( and ][ and ]( and .(
             } else if (!(last_type === 'TK_RESERVED' && token_text === '(') && last_type !== 'TK_WORD' && last_type !== 'TK_OPERATOR') {
                 output_space_before_token = true;
@@ -1462,7 +1460,6 @@ function detectXMLType(str) {
 
             if (flags.multiline_frame) {
                 allow_wrap_or_preserved_newline(token_text === ']' && is_array(flags.mode) && !opt.keep_array_indentation);
-                output_wrapped = false;
             }
 
             if (opt.space_in_paren) {
@@ -1772,6 +1769,10 @@ function detectXMLType(str) {
         }
 
         function handle_equals() {
+            if (start_of_statement()) {
+                // The conditional starts the statement if appropriate.
+            }
+
             if (flags.declaration_statement) {
                 // just got an '=' in a var-line, different formatting/line-breaking, etc will now be done
                 flags.declaration_assignment = true;
@@ -1807,7 +1808,11 @@ function detectXMLType(str) {
                     output_space_before_token = true;
                 }
             } else {
-                if (flags.mode === MODE.ObjectLiteral) {
+                if (flags.mode === MODE.ObjectLiteral ||
+                    (flags.mode === MODE.Statement && flags.parent.mode === MODE.ObjectLiteral)) {
+                    if (flags.mode === MODE.Statement) {
+                        restore_mode();
+                    }
                     print_token();
                     print_newline();
                 } else {
@@ -1819,6 +1824,17 @@ function detectXMLType(str) {
         }
 
         function handle_operator() {
+            // Check if this is a BlockStatement that should be treated as a ObjectLiteral
+            if (token_text === ':' && flags.mode === MODE.BlockStatement &&
+                    last_last_text === '{' &&
+                    (last_type === 'TK_WORD' || last_type === 'TK_RESERVED')){
+                flags.mode = MODE.ObjectLiteral;
+            }
+
+            if (start_of_statement()) {
+                // The conditional starts the statement if appropriate.
+            }
+
             var space_before = true;
             var space_after = true;
             if (last_type === 'TK_RESERVED' && is_special_word(flags.last_text)) {
@@ -1947,6 +1963,10 @@ function detectXMLType(str) {
         }
 
         function handle_dot() {
+            if (start_of_statement()) {
+                // The conditional starts the statement if appropriate.
+            }
+
             if (last_type === 'TK_RESERVED' && is_special_word(flags.last_text)) {
                 output_space_before_token = true;
             } else {
@@ -4243,7 +4263,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.keep_array_indentation = false;
 
 
-        bt('a = //comment\n/regex/;');
+        bt('a = //comment\n    /regex/;');
 
         test_fragment('/*\n * X\n */');
         test_fragment('/*\r\n * X\r\n */', '/*\n * X\n */');
@@ -4886,6 +4906,10 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
            'this.oa = new OAuth(_requestToken, _accessToken, consumer_key);');
         bt('foo = {\n    x: y, // #44\n    w: z // #44\n}');
         bt('switch (x) {\n    case "a":\n        // comment on newline\n        break;\n    case "b": // comment on same line\n        break;\n}');
+        bt('this.type =\n    this.options =\n    // comment\n    this.enabled null;',
+           'this.type = this.options =\n    // comment\n    this.enabled null;');
+        bt('someObj\n    .someFunc1()\n    // This comment should not break the indent\n    .someFunc2();',
+           'someObj.someFunc1()\n    // This comment should not break the indent\n    .someFunc2();');
 
         bt('if (true ||\n!true) return;', 'if (true || !true) return;');
 
@@ -4958,6 +4982,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('if (foo) // comment\n    /asdf/;');
         bt('foo = {\n    x: y, // #44\n    w: z // #44\n}');
         bt('switch (x) {\n    case "a":\n        // comment on newline\n        break;\n    case "b": // comment on same line\n        break;\n}');
+        bt('this.type =\n    this.options =\n    // comment\n    this.enabled null;');
+        bt('someObj\n    .someFunc1()\n    // This comment should not break the indent\n    .someFunc2();');
 
         bt('if (true ||\n!true) return;', 'if (true ||\n    !true) return;');
 
