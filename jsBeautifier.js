@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2014
 // version 0.2.6 - 2014-04-20
-// Based on scripts from http://jsbeautifier.org/ [2014-04-30 22:19:14 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-05-02 00:47:19 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -432,7 +432,6 @@ function detectXMLType(str) {
     function Beautifier(js_source_text, options) {
         "use strict";
         var input, output_lines;
-        var tokens = [], token_pos;
         var token_text, token_type, last_type, last_last_text, indent_string;
         var flags, previous_flags, flag_store;
         var whitespace, wordchar, punct, parser_pos, line_starters, reserved_words, digits;
@@ -1803,27 +1802,18 @@ function detectXMLType(str) {
                 return;
             }
 
-            if (last_type === 'TK_END_BLOCK' && flags.mode !== MODE.Expression) {
-                print_token();
-                if (flags.mode === MODE.ObjectLiteral && flags.last_text === '}') {
-                    print_newline();
-                } else {
-                    output_space_before_token = true;
+            print_token();
+            if (flags.mode === MODE.ObjectLiteral ||
+                (flags.mode === MODE.Statement && flags.parent.mode === MODE.ObjectLiteral)) {
+                if (flags.mode === MODE.Statement) {
+                    restore_mode();
                 }
+                print_newline();
             } else {
-                if (flags.mode === MODE.ObjectLiteral ||
-                    (flags.mode === MODE.Statement && flags.parent.mode === MODE.ObjectLiteral)) {
-                    if (flags.mode === MODE.Statement) {
-                        restore_mode();
-                    }
-                    print_token();
-                    print_newline();
-                } else {
-                    // EXPR or DO_BLOCK
-                    print_token();
-                    output_space_before_token = true;
-                }
+                // EXPR or DO_BLOCK
+                output_space_before_token = true;
             }
+
         }
 
         function handle_operator() {
@@ -1879,7 +1869,7 @@ function detectXMLType(str) {
                 allow_wrap_or_preserved_newline();
             }
 
-            if (in_array(token_text, ['--', '++', '!']) || (in_array(token_text, ['-', '+']) && (in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) || in_array(flags.last_text, line_starters) || flags.last_text === ','))) {
+            if (in_array(token_text, ['--', '++', '!', '~']) || (in_array(token_text, ['-', '+']) && (in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) || in_array(flags.last_text, line_starters) || flags.last_text === ','))) {
                 // unary operators (and binary +/- pretending to be unary) special cases
 
                 space_before = false;
@@ -5225,6 +5215,17 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
            '        });\n' +
            '    });');
         // END tests for issue 281
+
+        // START tests for issue 459
+        bt( '(function() {\n' +
+            '    return {\n' +
+            '        foo: function() {\n' +
+            '            return "bar";\n' +
+            '        },\n' +
+            '        bar: ["bar"]\n' +
+            '    };\n' +
+            '}());');
+        // END tests for issue 459
 
         bt('var a=1,b={bang:2},c=3;',
             'var a = 1,\n    b = {\n        bang: 2\n    },\n    c = 3;');
