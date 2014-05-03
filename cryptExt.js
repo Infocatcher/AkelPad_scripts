@@ -129,7 +129,7 @@ function _localize(s) {
 		"decryption-%S": {
 			ru: "расшифровывание-%S"
 		},
-		"Text ⇒ base64": {
+		"text ⇒ base64": {
 			ru: "Текст ⇒ base64"
 		},
 		"base64 ⇒ text": {
@@ -153,12 +153,6 @@ function _localize(s) {
 		},
 		"Encryption algorithm": {
 			ru: "Алгоритм шифрования"
-		},
-		"AES-&256": {
-			ru: "AES-&256"
-		},
-		"&Blowfish": {
-			ru: "&Blowfish"
 		},
 		"Password": {
 			ru: "Пароль"
@@ -3570,7 +3564,7 @@ function encrypt(text, pass, encrypters) {
 		text = getHeader(iterations2, salt2) + encrypters[j](text, hash2);
 	}
 
-	feedback(++i + s + _localize("Text ⇒ base64"));
+	feedback(++i + s + _localize("text ⇒ base64"));
 	text = base64.encode(text);
 
 	feedback();
