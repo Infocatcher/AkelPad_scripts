@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/converter.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/converter.js
 
-// (c) Infocatcher 2010-2013
-// version 0.2.4.1 - 2013-08-14
+// (c) Infocatcher 2010-2014
+// version 0.2.4.2 - 2014-05-06
 
 //===================
 // Hotkeys:
@@ -2506,8 +2506,8 @@ function converterDialog(modal) {
 			this._y = oSys.Call("gdi32::GetDeviceCaps", hNewDC, 90 /*LOGPIXELSY*/);
 
 			//Align to 16 pixel
-			this._x += this._x % 16;
-			this._y += this._y % 16;
+			this._x += (16 - this._x % 16) % 16;
+			this._y += (16 - this._y % 16) % 16;
 
 			!hDC && oSys.Call("user32::ReleaseDC", hWnd, hNewDC);
 
