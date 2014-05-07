@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/measuresConverter.js
 
 // (c) Infocatcher 2011-2014
-// version 0.2.7 - 2014-02-21
+// version 0.2.7.1 - 2014-05-06
 
 //===================
 // Convert measures (internal) and currency (used cached data from exchange-rates.org, fxexchangerate.com and bitcoincharts.com)
@@ -3656,8 +3656,8 @@ function converterDialog(modal) {
 			this._y = oSys.Call("gdi32::GetDeviceCaps", hNewDC, 90 /*LOGPIXELSY*/);
 
 			//Align to 16 pixel
-			this._x += this._x % 16;
-			this._y += this._y % 16;
+			this._x += (16 - this._x % 16) % 16;
+			this._y += (16 - this._y % 16) % 16;
 
 			!hDC && oSys.Call("user32::ReleaseDC", hWnd, hNewDC);
 
