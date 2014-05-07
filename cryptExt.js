@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/cryptExt.js
 
 // (c) Infocatcher 2010-2012, 2014
-// version 0.5.0a15 - 2014-04-19
+// version 0.5.0a16 - 2014-05-06
 
 //===================
 // AES-256/Blowfish/Twofish/Serpent encryption/decryption
@@ -4877,8 +4877,8 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 			this._y = oSys.Call("gdi32::GetDeviceCaps", hNewDC, 90 /*LOGPIXELSY*/);
 
 			//Align to 16 pixel
-			this._x += this._x % 16;
-			this._y += this._y % 16;
+			this._x += (16 - this._x % 16) % 16;
+			this._y += (16 - this._y % 16) % 16;
 
 			!hDC && oSys.Call("user32::ReleaseDC", hWnd, hNewDC);
 
