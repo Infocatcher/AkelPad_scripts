@@ -1,8 +1,9 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=10403#10403
 // http://infocatcher.ucoz.net/js/akelpad_scripts/goToLongestLine.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/goToLongestLine.js
 
-// (c) Infocatcher 2010-2011
-// version 0.3.9 - 2011-12-20
+// (c) Infocatcher 2010-2011, 2014
+// version 0.3.9.1 - 2014-05-06
 
 //===================
 // Go to longest line below or above current
@@ -853,8 +854,8 @@ function goToLongestLineDialog(modal) {
 			this._y = oSys.Call("gdi32::GetDeviceCaps", hNewDC, 90 /*LOGPIXELSY*/);
 
 			//Align to 16 pixel
-			this._x += this._x % 16;
-			this._y += this._y % 16;
+			this._x += (16 - this._x % 16) % 16;
+			this._y += (16 - this._y % 16) % 16;
 
 			!hDC && oSys.Call("user32::ReleaseDC", hWnd, hNewDC);
 
