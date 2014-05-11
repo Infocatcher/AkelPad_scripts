@@ -2323,7 +2323,12 @@ function detectXMLType(str) {
                 }
             } else if (ch === ']') {
                 output.push(ch);
-            } else if (ch === '[' || ch === '=') { // no whitespace before or after
+            } else if (ch === '[') {
+                if (isAfterSpace) {
+                    print.singleSpace();
+                }
+                output.push(ch);
+            } else if (ch === '=') { // no whitespace before or after
                 eatWhitespace();
                 output.push(ch);
             } else {
@@ -5593,6 +5598,9 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         // particular edge case with braces and semicolons inside tags that allows custom text
         btc("a:not(\"foobar\\\";{}omg\"){\ncontent: 'example\\';{} text';\ncontent: \"example\\\";{} text\";}",
             "a:not(\"foobar\\\";{}omg\") {\n  content: 'example\\';{} text';\n  content: \"example\\\";{} text\";\n}\n");
+
+        btc('html.js [data-custom="123"] {\n  opacity: 1.00;\n}\n'); // may not eat the space before "["
+        btc('html.js *[data-custom="123"] {\n  opacity: 1.00;\n}\n');
 
         return sanitytest;
     }
