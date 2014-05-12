@@ -163,6 +163,9 @@ function _localize(s) {
 		"Reenter p&assword:": {
 			ru: "Повторите п&ароль:"
 		},
+		"Reenter p&assword: [passwords do not match!]": {
+			ru: "Повторите п&ароль: [пароли не совпадают!]"
+		},
 		"&Show password": {
 			ru: "По&казывать пароль"
 		},
@@ -4337,7 +4340,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 					0x50000000,   //WS_VISIBLE|WS_CHILD
 					32,           //x
 					35 + addY,    //y
-					211,          //nWidth
+					223,          //nWidth
 					13,           //nHeight
 					hWnd,         //hWndParent
 					IDC_STATIC,   //ID
@@ -4372,7 +4375,7 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						0x50000000,      //WS_VISIBLE|WS_CHILD
 						32,              //x
 						86 + addY,       //y
-						211,             //nWidth
+						223,             //nWidth
 						13,              //nHeight
 						hWnd,            //hWndParent
 						IDC_PASS2_LABEL, //ID
@@ -4595,8 +4598,17 @@ function _passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 						}
 					break;
 					case IDC_PASS:
-					//case IDC_PASS2:
 						updateControls();
+					case IDC_PASS2:
+						var pass1 = windowText(hWndPass);
+						var pass2 = windowText(hWndPass2);
+						// Note: we don't show (probably annoying) warning while user types
+						// correct password, e.g. no warning for "abc123" and "abc"
+						var label = pass2 && pass2 != pass1.substr(0, pass2.length)
+							? _localize("Reenter p&assword: [passwords do not match!]")
+							: _localize("Reenter p&assword:");
+						if(label != windowText(hWndPass2Label))
+							windowText(hWndPass2Label, label);
 				}
 			break;
 			case 16: //WM_CLOSE
