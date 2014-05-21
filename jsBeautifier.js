@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2014
 // version 0.2.6 - 2014-04-20
-// Based on scripts from http://jsbeautifier.org/ [2014-05-02 00:47:19 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-05-21 18:35:58 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -2801,12 +2801,16 @@ function detectXMLType(str) {
                         this.indent_content = true;
                         this.traverse_whitespace();
                     }
-                } else if (tag_check === 'script') { //for later script handling
+                } else if (tag_check === 'script' &&
+                    (tag_complete.search('type') === -1 ||
+                    (tag_complete.search('type') > -1 && tag_complete.search('text/javascript') > -1))) {
                     if (!peek) {
                         this.record_tag(tag_check);
                         this.tag_type = 'SCRIPT';
                     }
-                } else if (tag_check === 'style') { //for future style handling (for now it justs uses get_content)
+                } else if (tag_check === 'style' &&
+                    (tag_complete.search('type') === -1 ||
+                    (tag_complete.search('type') > -1 && tag_complete.search('text/css') > -1))) {
                     if (!peek) {
                         this.record_tag(tag_check);
                         this.tag_type = 'STYLE';
@@ -5299,6 +5303,54 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '<li>\n' +
             '    content\n' +
             '</li>');
+
+		// START tests for issue 453
+		bth('<script type="text/unknown"><div></div></script>',
+			'<script type="text/unknown">\n' +
+			'    <div></div>\n' +
+			'</script>');
+		bth('<script type="text/javascript"><div></div></script>',
+			'<script type="text/javascript">\n' +
+			'    < div > < /div>\n' +
+			'</script>');
+		bth('<script><div></div></script>',
+			'<script>\n' +
+			'    < div > < /div>\n' +
+			'</script>');
+		bth('<script type="text/javascript">var foo = "bar";</script>',
+			'<script type="text/javascript">\n' +
+			'    var foo = "bar";\n' +
+			'</script>');
+		bth('<script>var foo = "bar";</script>',
+			'<script>\n' +
+			'    var foo = "bar";\n' +
+			'</script>');
+
+		bth('<style type="text/unknown"><tag></tag></style>',
+			'<style type="text/unknown">\n' +
+			'    <tag></tag>\n' +
+			'</style>');
+		bth('<style type="text/css"><tag></tag></style>',
+			'<style type="text/css">\n' +
+			'    <tag></tag>\n' +
+			'</style>');
+		bth('<style><tag></tag></style>',
+			'<style>\n' +
+			'    <tag></tag>\n' +
+			'</style>');
+		bth('<style type="text/css">.selector {font-size:12px;}</style>',
+			'<style type="text/css">\n' +
+			'    .selector {\n' +
+			'        font-size: 12px;\n' +
+			'    }\n'+
+			'</style>');
+		bth('<style>.selector {font-size:12px;}</style>',
+			'<style>\n' +
+			'    .selector {\n' +
+			'        font-size: 12px;\n' +
+			'    }\n'+
+			'</style>');
+		// END tests for issue 453
 
         // Tests that don't pass, but probably should.
         // bth('<div><span>content</span></div>');
