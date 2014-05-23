@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2014
 // version 0.2.6 - 2014-04-20
-// Based on scripts from http://jsbeautifier.org/ [2014-05-21 18:35:58 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-05-22 17:21:01 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -2803,7 +2803,8 @@ function detectXMLType(str) {
                     }
                 } else if (tag_check === 'script' &&
                     (tag_complete.search('type') === -1 ||
-                    (tag_complete.search('type') > -1 && tag_complete.search('text/javascript') > -1))) {
+                    (tag_complete.search('type') > -1 &&
+                    tag_complete.search(/\b(text|application)\/(x-)?(javascript|ecmascript|jscript|livescript)/) > -1))) {
                     if (!peek) {
                         this.record_tag(tag_check);
                         this.tag_type = 'SCRIPT';
@@ -5319,6 +5320,26 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 			'</script>');
 		bth('<script type="text/javascript">var foo = "bar";</script>',
 			'<script type="text/javascript">\n' +
+			'    var foo = "bar";\n' +
+			'</script>');
+		bth('<script type="application/javascript">var foo = "bar";</script>',
+			'<script type="application/javascript">\n' +
+			'    var foo = "bar";\n' +
+			'</script>');
+		bth('<script type="application/javascript;version=1.8">var foo = "bar";</script>',
+			'<script type="application/javascript;version=1.8">\n' +
+			'    var foo = "bar";\n' +
+			'</script>');
+		bth('<script type="application/x-javascript">var foo = "bar";</script>',
+			'<script type="application/x-javascript">\n' +
+			'    var foo = "bar";\n' +
+			'</script>');
+		bth('<script type="application/ecmascript">var foo = "bar";</script>',
+			'<script type="application/ecmascript">\n' +
+			'    var foo = "bar";\n' +
+			'</script>');
+		bth('<script type="text/javascript1.5">var foo = "bar";</script>',
+			'<script type="text/javascript1.5">\n' +
 			'    var foo = "bar";\n' +
 			'</script>');
 		bth('<script>var foo = "bar";</script>',
