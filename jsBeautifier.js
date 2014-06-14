@@ -4,7 +4,8 @@
 
 // (c) Infocatcher 2011-2014
 // version 0.2.6 - 2014-04-20
-// Based on scripts from http://jsbeautifier.org/ [2014-06-11 20:24:21 UTC]
+// Based on scripts from http://jsbeautifier.org/
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-06-11 20:24:21 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -5960,6 +5961,12 @@ function selfUpdate() {
 	var baseUrl = update == 2
 		? "https://raw.githubusercontent.com/beautify-web/js-beautify/gh-pages/"
 		: "https://raw.githubusercontent.com/beautify-web/js-beautify/master/";
+	var sourceUrl = update == 2
+		? "https://github.com/beautify-web/js-beautify/tree/gh-pages"
+		: "https://github.com/beautify-web/js-beautify/tree/master";
+	var rssUrl = update == 2
+		? "https://github.com/beautify-web/js-beautify/commits/gh-pages.atom"
+		: "https://github.com/beautify-web/js-beautify/commits/master.atom";
 	var data = {
 		"js/lib/beautify.js": "",
 		"js/lib/beautify-css.js": "",
@@ -6015,11 +6022,14 @@ function selfUpdate() {
 				+ data[file]
 				+ selfCode.substring(indexEnd);
 		}
+		selfCode = selfCode.replace(
+			/(\r\n?|\n)\/\/+ *\[built from http\S+ [^\n\r]+\](\r\n?|\n)/,
+			"$1// [built from " + sourceUrl + " " + date() + "]$2"
+		);
 		if(selfCode == selfCodeOld) {
 			AkelPad.MessageBox(hMainWnd, _localize("Already updated!"), WScript.ScriptBaseName, 64 /*MB_ICONINFORMATION*/);
 			return;
 		}
-		selfCode = selfCode.replace(/(\shttp:\/\/jsbeautifier\.org\/)[^\n\r]*([\n\r])/, "$1 [" + date() + "]$2");
 
 		// Create backup
 		var fso = new ActiveXObject("Scripting.FileSystemObject");
@@ -6039,9 +6049,6 @@ function selfUpdate() {
 		     + "_" + pad(d.getHours()) + "-" + pad(d.getMinutes())   + "-" + pad(d.getSeconds());
 	}
 	function date() {
-		var rssUrl = update == 2
-			? "https://github.com/beautify-web/js-beautify/commits/gh-pages.atom"
-			: "https://github.com/beautify-web/js-beautify/commits/master.atom";
 		request.open("GET", rssUrl + noCache, false);
 		request.send(null);
 		var text = request.responseText;
