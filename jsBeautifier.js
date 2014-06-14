@@ -4,7 +4,7 @@
 
 // (c) Infocatcher 2011-2014
 // version 0.2.6 - 2014-04-20
-// Based on scripts from http://jsbeautifier.org/ [2014-05-22 17:21:01 UTC]
+// Based on scripts from http://jsbeautifier.org/ [2014-06-11 20:24:21 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -339,9 +339,9 @@ function detectXMLType(str) {
 
     jslint_happy (default false) - if true, then jslint-stricter mode is enforced.
 
-            jslint_happy   !jslint_happy
+            jslint_happy       !jslint_happy
             ---------------------------------
-             function ()      function()
+            function ()        function()
 
     brace_style (default "collapse") - "collapse" | "expand" | "end-expand"
             put braces on the same line as control statements (default), or put braces on own line (Allman / ANSI style), or just put end braces on own line.
