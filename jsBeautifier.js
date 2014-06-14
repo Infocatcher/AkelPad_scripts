@@ -72,6 +72,9 @@ function _localize(s) {
 		},
 		"Already updated!": {
 			ru: "Уже обновлено!"
+		},
+		"No real changes, only updated header information": {
+			ru: "Нет реальных изменений, только обновлена информация в заголовке"
 		}
 	};
 	var lng = "en";
@@ -6022,6 +6025,7 @@ function selfUpdate() {
 				+ data[file]
 				+ selfCode.substring(indexEnd);
 		}
+		var noRealChanges = selfCode == selfCodeOld;
 		selfCode = selfCode.replace(
 			/(\r\n?|\n)\/\/+ *\[built from http\S+ [^\n\r]+\](\r\n?|\n)/,
 			"$1// [built from " + sourceUrl + " " + date() + "]$2"
@@ -6030,6 +6034,8 @@ function selfUpdate() {
 			AkelPad.MessageBox(hMainWnd, _localize("Already updated!"), WScript.ScriptBaseName, 64 /*MB_ICONINFORMATION*/);
 			return;
 		}
+		if(noRealChanges)
+			AkelPad.MessageBox(hMainWnd, _localize("No real changes, only updated header information"), WScript.ScriptBaseName, 64 /*MB_ICONINFORMATION*/);
 
 		// Create backup
 		var fso = new ActiveXObject("Scripting.FileSystemObject");
