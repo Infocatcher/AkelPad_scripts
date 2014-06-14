@@ -6039,7 +6039,9 @@ function selfUpdate() {
 		     + "_" + pad(d.getHours()) + "-" + pad(d.getMinutes())   + "-" + pad(d.getSeconds());
 	}
 	function date() {
-		var rssUrl = "https://github.com/beautify-web/js-beautify/commits/master.atom";
+		var rssUrl = update == 2
+			? "https://github.com/beautify-web/js-beautify/commits/gh-pages.atom"
+			: "https://github.com/beautify-web/js-beautify/commits/master.atom";
 		request.open("GET", rssUrl + noCache, false);
 		request.send(null);
 		var text = request.responseText;
