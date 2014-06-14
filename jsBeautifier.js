@@ -41,8 +41,8 @@
 //   -indentInnerHTML=true        - indent <head> and <body> sections (only for HTML)
 //   -detectPackers=true          - detect packers
 //   -css=true                    - force beautify CSS (just automatically wrap code into <style>...</style>)
-//   -update=1                    - update source from https://github.com/einars/js-beautify/
-//          =2                    - update source from https://github.com/einars/js-beautify/tree/gh-pages
+//   -update=1                    - update source from https://github.com/beautify-web/js-beautify/
+//          =2                    - update source from https://github.com/beautify-web/js-beautify/tree/gh-pages
 //   -forceNoCache                - prevent caching during update
 //   -test                        - force run the tests
 
@@ -5958,8 +5958,8 @@ function convertSource(file, text) {
 }
 function selfUpdate() {
 	var baseUrl = update == 2
-		? "https://raw.githubusercontent.com/einars/js-beautify/gh-pages/"
-		: "https://raw.githubusercontent.com/einars/js-beautify/master/";
+		? "https://raw.githubusercontent.com/beautify-web/js-beautify/gh-pages/"
+		: "https://raw.githubusercontent.com/beautify-web/js-beautify/master/";
 	var data = {
 		"js/lib/beautify.js": "",
 		"js/lib/beautify-css.js": "",
@@ -6039,7 +6039,7 @@ function selfUpdate() {
 		     + "_" + pad(d.getHours()) + "-" + pad(d.getMinutes())   + "-" + pad(d.getSeconds());
 	}
 	function date() {
-		var rssUrl = "https://github.com/einars/js-beautify/commits/master.atom";
+		var rssUrl = "https://github.com/beautify-web/js-beautify/commits/master.atom";
 		request.open("GET", rssUrl + noCache, false);
 		request.send(null);
 		var text = request.responseText;
