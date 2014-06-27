@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2014
 // version 0.2.6 - 2014-04-20
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-06-11 20:24:21 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-06-25 00:42:24 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -944,6 +944,20 @@ function detectXMLType(str) {
             for (var i = 0; i < lines.length; i++) {
                 var line = trim(lines[i]);
                 if (line.charAt(0) !== c) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function each_line_matches_indent(lines, indent) {
+            var i = 0,
+                len = lines.length,
+                line;
+            for (; i < len; i++) {
+                line = lines[i];
+                // allow empty lines to pass through
+                if (line && line.indexOf(indent) !== 0) {
                     return false;
                 }
             }
@@ -1918,12 +1932,18 @@ function detectXMLType(str) {
             var lines = split_newlines(token_text);
             var j; // iterator for this case
             var javadoc = false;
+            var starless = false;
+            var lastIndent = whitespace_before_token.join('');
+            var lastIndentLength = lastIndent.length;
 
             // block comment starts with a new line
             print_newline(false, true);
             if (lines.length > 1) {
                 if (all_lines_start_with(lines.slice(1), '*')) {
                     javadoc = true;
+                }
+                else if (each_line_matches_indent(lines.slice(1), lastIndent)) {
+                    starless = true;
                 }
             }
 
@@ -1934,6 +1954,9 @@ function detectXMLType(str) {
                 if (javadoc) {
                     // javadoc: reformat and re-indent
                     print_token(' ' + trim(lines[j]));
+                } else if (starless && lines[j].length > lastIndentLength) {
+                    // starless: re-indent non-empty content, avoiding trim
+                    print_token(lines[j].substring(lastIndentLength));
                 } else {
                     // normal comments output raw
                     output_lines[output_lines.length - 1].text.push(lines[j]);
@@ -3606,7 +3629,6 @@ if (isNode) {
 
 //== js/test/beautify-tests.js
 /*global js_beautify: true */
-/*jshint */
 
 function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_beautify)
 {
@@ -4018,8 +4040,22 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('/**\n* foo\n*/', '/**\n * foo\n */');
         bt('{\n/**\n* foo\n*/\n}', '{\n    /**\n     * foo\n     */\n}');
 
+        // starless block comment
+        bt('/**\nfoo\n*/');
+        bt('/**\nfoo\n**/');
+        bt('/**\nfoo\nbar\n**/');
+        bt('/**\nfoo\n\nbar\n**/');
+        bt('/**\nfoo\n    bar\n**/');
+        bt('{\n/**\nfoo\n*/\n}', '{\n    /**\n    foo\n    */\n}');
+        bt('{\n/**\nfoo\n**/\n}', '{\n    /**\n    foo\n    **/\n}');
+        bt('{\n/**\nfoo\nbar\n**/\n}', '{\n    /**\n    foo\n    bar\n    **/\n}');
+        bt('{\n/**\nfoo\n\nbar\n**/\n}', '{\n    /**\n    foo\n\n    bar\n    **/\n}');
+        bt('{\n/**\nfoo\n    bar\n**/\n}', '{\n    /**\n    foo\n        bar\n    **/\n}');
+        bt('{\n    /**\n    foo\nbar\n    **/\n}');
+
         bt('var a,b,c=1,d,e,f=2;', 'var a, b, c = 1,\n    d, e, f = 2;');
         bt('var a,b,c=[],d,e,f=2;', 'var a, b, c = [],\n    d, e, f = 2;');
+        bt('function() {\n    var a, b, c, d, e = [],\n        f;\n}');
 
         bt('do/regexp/;\nwhile(1);', 'do /regexp/;\nwhile (1);'); // hmmm
 
@@ -4697,7 +4733,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '    property: first_token_should_never_wrap + but_this_can,\n' +
                       '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
                       '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
-                      '}')
+                      '}');
 
         //.............---------1---------2---------3---------4---------5---------6---------7
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
@@ -4710,7 +4746,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '        propertz: first_token_should_never_wrap + !but_this_can,\n' +
                       '        proper: "first_token_should_never_wrap" + "but_this_can"\n' +
                       '    }' +
-                      '}')
+                      '}');
 
         opts.preserve_newlines = false;
         opts.wrap_line_length = 0;
