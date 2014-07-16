@@ -172,7 +172,7 @@ Adds/removes comments
 Reopen file and preserve undo/redo buffer (just replace all text, if it was changed)
 
 ##### [undoRedoAll.js](undoRedoAll.js)
-Undo/redo all shanges (or undo/redo to saved state)
+Undo/redo all changes (or undo/redo to saved state)
 
 ##### [unixTime.js](unixTime.js)
 Convert <a href="http://en.wikipedia.org/wiki/Unix_time">Unix time</a>
