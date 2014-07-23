@@ -133,7 +133,10 @@ function openRelativeFile() {
 	if(fso.FileExists(tmp))
 		path = tmp;
 	else {
-		if(/^(chrome|resource):\/\//.test(relPath)) {
+		tmp = wsh.ExpandEnvironmentStrings(relPath);
+		if(fso.FileExists(tmp))
+			path = tmp;
+		if(!path && /^(chrome|resource):\/\//.test(relPath)) {
 			tmp = parseChromePath(curDir, relPath);
 			if(tmp)
 				path = tmp;
