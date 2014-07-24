@@ -95,8 +95,6 @@ function openRelative() {
 		}
 		if(chr in delimitersStop)
 			break;
-		//if(ss == 0) // Start of file
-		//	break;
 		if(++cnt > maxLength)
 			break;
 	}
@@ -125,8 +123,6 @@ function openRelative() {
 		}
 		if(chr in delimitersStop)
 			break;
-		//if(!chr) // End of file
-		//	break;
 		if(++cnt > maxLength)
 			break;
 	}
