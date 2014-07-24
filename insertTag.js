@@ -40,7 +40,7 @@
 function _localize(s) {
 	var strings = {
 		"Tag or template:": {
-			ru: "Тэг или шаблон:"
+			ru: "пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ:"
 		}
 	};
 	var lng = "en";
@@ -166,8 +166,17 @@ function insertTag() {
 	insertNoScroll(txt, ss, se);
 }
 function detectBBCode() {
+	return !extPattern(xmlExts).test(getFileType());
+}
+function extPattern(exts) {
+	return new RegExp("\\.(" + exts + ")$", "i");
+}
+function getFileType() {
 	var fileType = getCoderAlias() || AkelPad.GetEditFile(0);
-	return !new RegExp("\\.(" + xmlExts + ")$", "i").test(fileType);
+	getFileType = function() {
+		return fileType;
+	};
+	return fileType;
 }
 function getCoderAlias() {
 	if(
