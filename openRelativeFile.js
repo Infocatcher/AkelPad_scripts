@@ -82,6 +82,7 @@ function openRelative() {
 	var se = AkelPad.GetSelEnd();
 
 	if(ss != se) {
+		checkPrefix(ss);
 		var relPath = decodePathURI(AkelPad.GetSelText());
 		if(openRelativePath(relPath))
 			return true;
@@ -105,16 +106,9 @@ function openRelative() {
 	if(!pathStarts.length)
 		return false;
 
-	for(var i = 0, l = pathStarts.length; i < l; ++i) {
-		var pathStart = pathStarts[i];
-		if(pathStart > 0) { // Detect AkelPad.Include()
-			var before = AkelPad.GetTextRange(Math.max(0, pathStart - 40), pathStart);
-			if(/\bAkelPad\s*\.\s*Include\s*\(\s*["']$/.test(before)) {
-				paths.push(AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/));
-				break;
-			}
-		}
-	}
+	for(var i = 0, l = pathStarts.length; i < l; ++i)
+		if(checkPrefix(pathStarts[i]))
+			break;
 
 	cnt = 0;
 	for(;;) {
@@ -143,6 +137,24 @@ function openRelative() {
 			return true;
 	}
 	return false;
+}
+function checkPrefix(pathStart) {
+	if(pathStart > 0) { // Detect AkelPad.Include()
+		var before = AkelPad.GetTextRange(Math.max(0, pathStart - 40), pathStart);
+		if(/\bAkelPad\s*\.\s*Include\s*\(\s*["']$/.test(before)) {
+			var includeDir = AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/);
+			if(arrayIndexOf(paths, includeDir) == -1)
+				paths.push(includeDir);
+			return true;
+		}
+	}
+	return false;
+}
+function arrayIndexOf(arr, item) {
+	for(var i = 0, l = arr.length; i < l; ++i)
+		if(arr[i] === item)
+			return i;
+	return -1;
 }
 function openRelativePath(relPath, pathStart, pathEnd) {
 	var path;
