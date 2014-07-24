@@ -26,7 +26,10 @@ var delimitersStart = {
 	"[": true,
 	"(": true,
 	">": true,
-	"=": true
+	"=": true,
+	"\n": true,
+	"\r": true,
+	"": true
 };
 var delimitersEnd = {
 	'"': true,
@@ -34,7 +37,10 @@ var delimitersEnd = {
 	">": true,
 	"]": true,
 	")": true,
-	"<": true
+	"<": true,
+	"\n": true,
+	"\r": true,
+	"": true
 };
 var delimitersSpaces = {
 	" ": true,
