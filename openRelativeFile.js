@@ -72,10 +72,11 @@ var fso = new ActiveXObject("Scripting.FileSystemObject");
 var wsh = new ActiveXObject("WScript.Shell");
 
 if(hMainWnd)
-	openRelativeFile();
+	openRelative();
 
-function openRelativeFile() {
-	var pathStart, pathEnd;
+function openRelative() {
+	var pathStarts = [];
+	var pathEnds = [];
 
 	var ss = AkelPad.GetSelStart();
 	var se = AkelPad.GetSelEnd();
@@ -83,17 +84,13 @@ function openRelativeFile() {
 	if(ss != se)
 		++ss, --se;
 
-	var startsWithSpace = false;
 	var cnt = 0;
 	for(;;) {
 		var chr = --ss < 0 ? "" : AkelPad.GetTextRange(ss, ss + 1);
-		if(chr in delimitersSpaces && pathStart == undefined) {
-			startsWithSpace = true;
-			pathStart = ss + 1;
-		}
+		if(chr in delimitersSpaces && !pathStarts.length)
+			pathStarts.push(ss + 1);
 		else if(chr in delimitersStart) {
-			startsWithSpace = false;
-			pathStart = ss + 1;
+			pathStarts.push(ss + 1);
 			break;
 		}
 		if(chr in delimitersStop)
@@ -103,24 +100,26 @@ function openRelativeFile() {
 		if(++cnt > maxLength)
 			break;
 	}
-	if(pathStart == undefined)
+	if(!pathStarts.length)
 		return false;
 
-	if(pathStart > 0) { // Detect AkelPad.Include()
-		var before = AkelPad.GetTextRange(Math.max(0, pathStart - 40), pathStart);
-		if(/\bAkelPad\s*\.\s*Include\s*\(\s*["']$/.test(before))
-			paths.push(AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/));
+	for(var i = 0, l = pathStarts.length; i < l; ++i) {
+		var pathStart = pathStarts[i];
+		if(pathStart > 0) { // Detect AkelPad.Include()
+			var before = AkelPad.GetTextRange(Math.max(0, pathStart - 40), pathStart);
+			if(/\bAkelPad\s*\.\s*Include\s*\(\s*["']$/.test(before)) {
+				paths.push(AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/));
+				break;
+			}
+		}
 	}
 
 	for(;;) {
 		var chr = AkelPad.GetTextRange(se, ++se);
-		if(chr in delimitersSpaces && pathEnd == undefined) {
-			pathEnd = se - 1;
-			if(startsWithSpace)
-				break;
-		}
+		if(chr in delimitersSpaces && !pathEnds.length)
+			pathEnds.push(se - 1);
 		else if(chr in delimitersEnd) {
-			pathEnd = se - 1;
+			pathEnds.push(se - 1);
 			break;
 		}
 		if(chr in delimitersStop)
@@ -130,18 +129,21 @@ function openRelativeFile() {
 		if(++cnt > maxLength)
 			break;
 	}
-	if(pathEnd == undefined)
+	if(!pathEnds.length)
 		return false;
 
-	var relPath = AkelPad.GetTextRange(pathStart, pathEnd)
-		.replace(/#.*$/, "")
-		.replace(/\?.*$/, "");
-	try {
-		relPath = decodeURIComponent(relPath);
+	for(var i = Math.max(pathStarts.length, pathEnds.length) - 1; i >= 0; --i) {
+		// Use corresponding points: 1 - delimitersStart/End, 0 - delimitersSpaces
+		var pathStart = pathStarts[i] || pathStarts[pathStarts.length - 1];
+		var pathEnd = pathEnds[i] || pathEnds[pathEnds.length - 1];
+		var relPathRaw = AkelPad.GetTextRange(pathStart, pathEnd);
+		var relPath = decodePathURI(relPathRaw);
+		if(openRelativePath(relPath, pathStart, pathEnd))
+			return true;
 	}
-	catch(e) {
-	}
-
+	return false;
+}
+function openRelativePath(relPath, pathStart, pathEnd) {
 	var path;
 
 	var curPath = AkelPad.GetEditFile(0);
@@ -192,6 +194,17 @@ function openRelativeFile() {
 		AkelPad.OpenFile(path);
 
 	return true;
+}
+function decodePathURI(path) {
+	path = path
+		.replace(/#.*$/, "")
+		.replace(/\?.*$/, "");
+	try {
+		path = decodeURIComponent(path);
+	}
+	catch(e) {
+	}
+	return path;
 }
 function parseChromePath(curDir, chromePath) {
 	if(/^(resource):\/+([^\/]+)(\/.*)?/.test(chromePath)) {
