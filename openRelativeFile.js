@@ -41,7 +41,11 @@ var delimitersSpaces = {
 	"\t": true,
 	"\n": true,
 	"\r": true,
-	"\0": true
+	"\0": true,
+	"\u00a0": true, // &nbsp;
+	"\u2002": true, // &ensp;
+	"\u2003": true, // &emsp;
+	"\u2009": true // &thinsp;
 };
 var delimitersStop = {
 	"\n": true,
