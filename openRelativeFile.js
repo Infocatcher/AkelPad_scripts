@@ -106,6 +106,12 @@ function openRelativeFile() {
 	if(pathStart == undefined)
 		return false;
 
+	if(pathStart > 0) { // Detect AkelPad.Include()
+		var before = AkelPad.GetTextRange(Math.max(0, pathStart - 40), pathStart);
+		if(/\bAkelPad\s*\.\s*Include\s*\(\s*["']$/.test(before))
+			paths.push(AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/));
+	}
+
 	for(;;) {
 		var chr = AkelPad.GetTextRange(se, ++se);
 		if(chr in delimitersSpaces && pathEnd == undefined) {
