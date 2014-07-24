@@ -50,7 +50,8 @@ var delimitersSpaces = {
 var delimitersStop = {
 	"\n": true,
 	"\r": true,
-	"\0": true
+	"\0": true,
+	"" : true
 };
 
 var maxLength = 2000;
@@ -79,7 +80,7 @@ function openRelativeFile() {
 	var startsWithSpace = false;
 	var cnt = 0;
 	for(;;) {
-		var chr = AkelPad.GetTextRange(--ss, ss + 1);
+		var chr = --ss < 0 ? "" : AkelPad.GetTextRange(ss, ss + 1);
 		if(chr in delimitersSpaces && pathStart == undefined) {
 			startsWithSpace = true;
 			pathStart = ss + 1;
@@ -91,8 +92,8 @@ function openRelativeFile() {
 		}
 		if(chr in delimitersStop)
 			break;
-		if(ss == 0) // Start of file
-			break;
+		//if(ss == 0) // Start of file
+		//	break;
 		if(++cnt > maxLength)
 			break;
 	}
@@ -101,8 +102,6 @@ function openRelativeFile() {
 
 	for(;;) {
 		var chr = AkelPad.GetTextRange(se, ++se);
-		if(!chr) // End of file
-			break;
 		if(chr in delimitersSpaces && pathEnd == undefined) {
 			pathEnd = se - 1;
 			if(startsWithSpace)
@@ -114,6 +113,8 @@ function openRelativeFile() {
 		}
 		if(chr in delimitersStop)
 			break;
+		//if(!chr) // End of file
+		//	break;
 		if(++cnt > maxLength)
 			break;
 	}
