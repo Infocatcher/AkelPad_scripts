@@ -193,7 +193,9 @@ function openRelativePath(relPath, pathStart, pathEnd) {
 	return true;
 }
 function decodePathURI(path) {
-	path = path.replace(/[?#].*$/, "");
+	path = path
+		.replace(/^file:\/+/i, "")
+		.replace(/[?#].*$/, "");
 	try {
 		path = decodeURIComponent(path);
 	}
