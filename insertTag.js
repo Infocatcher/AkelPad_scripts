@@ -15,10 +15,13 @@
 //          =1                            - Use [tag]
 //          =-1                           - Autodetection
 //   -xmlExts="[sx]html?|mht(ml)?|xml"    - Detect <html>, mask for Coder plugin alias or file extension (for -bbcode=-1)
+//   -tagExts='{"": "i", "fb2": "em"}'    - Detect tag by Coder plugin alias or file extension, for %T variable
+//                                          "": "i"            - default tag
+//                                          "fb2|xhtml?": "em" - regular expression for special files
 //   -clip=true                           - Use text from clipboard instead of selected text
 //   -selectMode=0                        - Select all inserted text: [<tag>text</tag>]
 //              =1                        - Select text inside tags:  <tag>[text]</tag>
-//   -tag="div"                           - Don't ask tag
+//   -tag="div"                           - Don't ask tag, you also can use %T with -tagExts
 //   -template='<a href="%%|">%%S</a>'    - Use template (and ignore all other arguments)
 //   -saveLastTag=0                       - don't save last used tag
 //               =1                       - save only typed (default)
@@ -30,11 +33,13 @@
 //   %C  - clipboard text
 //   %SC - selected text or clipboard text
 //   %CS - clipboard text or selected text
+//   %T  - tag (detected using -tagExts)
 
 // Usage:
 //   Call("Scripts::Main", 1, "insertTag.js")
 //   Call("Scripts::Main", 1, "insertTag.js", `-bbcode=1 -tag="quote"`)
 //   Call("Scripts::Main", 1, "insertTag.js", `-template='<a href="%%C">%%|%%S%%|</a>'`)
+//   Call("Scripts::Main", 1, "insertTag.js", `-bbcode=-1 -tag="%%T" -tagExts='{"": "i", "fb2|xhtml?": "em"}'`)
 //===================
 
 function _localize(s) {
@@ -57,6 +62,7 @@ function _localize(s) {
 // getArg(argName, defaultValue)
 var useBBCode    = getArg("bbcode", -1);
 var xmlExts      = getArg("xmlExts", "[xs]?html?|mht(ml)?|hta|asp|jsm?|css|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|resx|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst");
+var tagExts      = getArg("tagExts", "");
 var useClipboard = getArg("clip", false);
 var selectMode   = getArg("selectMode", 0);
 var tag          = getArg("tag"); // Override tag prompt
@@ -89,6 +95,7 @@ function insertTag() {
 
 		var sel  = /%C?S/.test(template) && AkelPad.GetSelText();
 		var clip = /%S?C/.test(template) && AkelPad.GetClipboardText();
+		var autoTag = /%T/.test(template) && detectTag();
 
 		txt = template
 			.replace(/%%/g, percent)
@@ -97,6 +104,7 @@ function insertTag() {
 			.replace(/%CS/g, clip || sel)
 			.replace(/%S/g, sel)
 			.replace(/%C/g, clip)
+			.replace(/%T/g, autoTag)
 			.replace(new RegExp(percent, "g"), "%");
 
 		var posMarkerRe = new RegExp(posMarker);
@@ -153,6 +161,9 @@ function insertTag() {
 		if(attrs)
 			tag = RegExp.$1;
 
+		if(/%T/.test(tag))
+			tag = tag.replace(/%T/g, detectTag());
+
 		var sTag = (useBBCode ? "["  : "<")  + tag + attrs + (useBBCode ? "]" : ">");
 		var eTag = (useBBCode ? "[/" : "</") + tag         + (useBBCode ? "]" : ">");
 		txt = sTag + txt + eTag;
@@ -167,6 +178,16 @@ function insertTag() {
 }
 function detectBBCode() {
 	return !extPattern(xmlExts).test(getFileType());
+}
+function detectTag() {
+	if(!tagExts)
+		return undefined;
+	var fileType = getFileType();
+	var patterns = eval("(" + tagExts + ")");
+	for(var exts in patterns)
+		if(extPattern(exts).test(fileType))
+			return patterns[exts];
+	return patterns[""] || undefined;
 }
 function extPattern(exts) {
 	return new RegExp("\\.(" + exts + ")$", "i");
