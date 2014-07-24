@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/openRelativeFile.js
 
 // (c) Infocatcher 2011, 2014
-// version 0.1.7pre - 2014-07-24
+// version 0.1.7pre2 - 2014-07-24
 
 //===================
 // Tries to open file with relative path
