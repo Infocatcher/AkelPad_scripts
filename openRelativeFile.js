@@ -81,8 +81,12 @@ function openRelative() {
 	var ss = AkelPad.GetSelStart();
 	var se = AkelPad.GetSelEnd();
 
-	if(ss != se)
+	if(ss != se) {
+		var relPath = decodePathURI(AkelPad.GetSelText());
+		if(openRelativePath(relPath))
+			return true;
 		++ss, --se;
+	}
 
 	var cnt = 0;
 	for(;;) {
@@ -184,7 +188,8 @@ function openRelativePath(relPath, pathStart, pathEnd) {
 	if(!path)
 		return false;
 
-	AkelPad.SetSel(pathStart, pathEnd);
+	if(pathStart && pathEnd)
+		AkelPad.SetSel(pathStart, pathEnd);
 	if(isFileBinary(path)) // Use system association for binary files
 		wsh.Exec('rundll32.exe shell32.dll,ShellExec_RunDLL "' + path + '"');
 	else
