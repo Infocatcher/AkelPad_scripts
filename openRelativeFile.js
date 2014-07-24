@@ -114,6 +114,7 @@ function openRelative() {
 		}
 	}
 
+	cnt = 0;
 	for(;;) {
 		var chr = AkelPad.GetTextRange(se, ++se);
 		if(chr in delimitersSpaces && !pathEnds.length)
