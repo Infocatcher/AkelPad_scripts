@@ -19,7 +19,7 @@
 //   -selectMode=0                        - Select all inserted text: [<tag>text</tag>]
 //              =1                        - Select text inside tags:  <tag>[text]</tag>
 //   -tag="div"                           - Don't ask tag
-//   -template="<a href=\"%%|\">%%S</a>"  - Use template (and ignore all other arguments)
+//   -template='<a href="%%|">%%S</a>'    - Use template (and ignore all other arguments)
 //   -saveLastTag=0                       - don't save last used tag
 //               =1                       - save only typed (default)
 //               =2                       - always save
@@ -34,13 +34,13 @@
 // Usage:
 //   Call("Scripts::Main", 1, "insertTag.js")
 //   Call("Scripts::Main", 1, "insertTag.js", `-bbcode=1 -tag="quote"`)
-//   Call("Scripts::Main", 1, "insertTag.js", `'-template="<a href=\"%%C\">%%|%%S%%|</a>"'`)
+//   Call("Scripts::Main", 1, "insertTag.js", `-template='<a href="%%C">%%|%%S%%|</a>'`)
 //===================
 
 function _localize(s) {
 	var strings = {
 		"Tag or template:": {
-			ru: "пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ:"
+			ru: "Тэг или шаблон:"
 		}
 	};
 	var lng = "en";
