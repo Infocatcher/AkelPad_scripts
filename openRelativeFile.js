@@ -56,7 +56,7 @@ var optionsPath = WScript.ScriptFullName.replace(/(\.[^.]+)?$/, "-options$&");
 if(new ActiveXObject("Scripting.FileSystemObject").FileExists(optionsPath))
 	eval(AkelPad.ReadFile(optionsPath));
 
-var hMainWnd=AkelPad.GetMainWnd();
+var hMainWnd = AkelPad.GetMainWnd();
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var wsh = new ActiveXObject("WScript.Shell");
 
@@ -70,7 +70,7 @@ function openRelativeFile() {
 	var se = AkelPad.GetSelEnd();
 
 	if(ss != se)
-		ss++, se--;
+		++ss, --se;
 
 	var startsWithSpace = false;
 	var cnt = 0;
@@ -156,7 +156,7 @@ function openRelativeFile() {
 			}
 		}
 		if(!path) {
-			for(var i = 0, l = paths.length; i < l; i++) {
+			for(var i = 0, l = paths.length; i < l; ++i) {
 				tmp = wsh.ExpandEnvironmentStrings(paths[i]) + "\\" + relPath;
 				if(fso.FileExists(tmp)) {
 					path = tmp;
@@ -236,7 +236,7 @@ function parseChromePath(curDir, chromePath) {
 
 	// https://developer.mozilla.org/en/chrome_registration#manifest
 	var lines = manifest.split(/[\n\r]+/);
-	for(var i = 0, l = lines.length; i < l; i++) {
+	for(var i = 0, l = lines.length; i < l; ++i) {
 		var line = lines[i];
 		if(!/^manifest[ \t]+(\S+)/.test(line))
 			continue;
