@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11213#11213
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11213#11213
 // http://infocatcher.ucoz.net/js/akelpad_scripts/insertTag.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/insertTag.js
 
@@ -40,7 +40,7 @@
 function _localize(s) {
 	var strings = {
 		"Tag or template:": {
-			ru: "Тэг или шаблон:"
+			ru: "РўСЌРі РёР»Рё С€Р°Р±Р»РѕРЅ:"
 		}
 	};
 	var lng = "en";
