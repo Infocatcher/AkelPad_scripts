@@ -14,7 +14,7 @@
 //   -bbcode=0                            - Use <tag>
 //          =1                            - Use [tag]
 //          =-1                           - Autodetection
-//   -xmlExts="[sx]html?|mht(ml)?|xml"    - Mask for file extension or Coder plugin alias (for -bbcode=-1)
+//   -xmlExts="[sx]html?|mht(ml)?|xml"    - Detect <html>, mask for Coder plugin alias or file extension (for -bbcode=-1)
 //   -clip=true                           - Use text from clipboard instead of selected text
 //   -selectMode=0                        - Select all inserted text: [<tag>text</tag>]
 //              =1                        - Select text inside tags:  <tag>[text]</tag>
