@@ -181,7 +181,7 @@ function openRelativePath(relPath, pathStart, pathEnd) {
 					path = tmp;
 					break;
 				}
-				var newDir = curDir.replace(/[\\\/]+[^\\\/]+$/, "");
+				var newDir = getParentDir(curDir);
 				if(!newDir || newDir == curDir)
 					break;
 				curDir = newDir;
@@ -241,7 +241,7 @@ function parseChromePath(curDir, chromePath) {
 			var manifest = AkelPad.ReadFile(tmp);
 			break;
 		}
-		var newDir = curDir.replace(/[\\\/]+[^\\\/]+$/, "");
+		var newDir = getParentDir(curDir);
 		if(!newDir || newDir == curDir)
 			return false;
 		curDir = newDir;
@@ -322,6 +322,9 @@ function getFile(curDir, tokens) {
 			break;
 	}
 	return null;
+}
+function getParentDir(dir) {
+	return dir.replace(/[\\\/]+[^\\\/]+$/, "");
 }
 function isFileBinary(pFile) {
 	// Thanks to Instructor
