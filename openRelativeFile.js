@@ -315,7 +315,7 @@ function getFile(curDir, tokens) {
 	var parts = [];
 	for(;;) {
 		parts.unshift(tokens.pop());
-		tmp = curDir + "\\" + parts.join("\\");
+		var tmp = curDir + "\\" + parts.join("\\");
 		if(fso.FileExists(tmp))
 			return tmp;
 		if(!tokens.length)
