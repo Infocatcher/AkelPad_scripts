@@ -544,7 +544,11 @@ function aesRawDecrypt(text, pass) {
 //===================
 
 function trimBase64String(str) {
-	return str.replace(/^\s+|[\n\r]+|[\s\x00]+$/g, "");
+	// Note: 1) single ^a|b|c$ RegExp is very slow, 2) [\n\r] faster than \n|\r
+	return str
+		.replace(/^\s+/, "")
+		.replace(/[\n\r]/g, "")
+		.replace(/[\s\x00]+$/, "");
 }
 function isBase64(str) {
 	return str.length % 4 == 0 && !/[^a-zA-Z0-9+\/]/.test(str.replace(/=+$/, ""));
