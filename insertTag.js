@@ -46,6 +46,12 @@ function _localize(s) {
 	var strings = {
 		"Tag or template:": {
 			ru: "Тэг или шаблон:"
+		},
+		"Tag %T not supported!": {
+			ru: "Тэг %T не поддерживается!"
+		},
+		"Tags %T not supported!": {
+			ru: "Тэги %T не поддерживаются!"
 		}
 	};
 	var lng = "en";
@@ -198,6 +204,20 @@ function detectTag() {
 	return patterns[""] || undefined;
 }
 function tagNotSupported(tag) {
+	if(!tag) {
+		var tags = [];
+		var patterns = eval("(" + tagExts + ")");
+		for(var exts in patterns)
+			if(patterns[exts])
+				tags.push(patterns[exts]);
+		AkelPad.MessageBox(
+			hMainWnd,
+			_localize(tags.length > 1 ? "Tags %T not supported!" : "Tag %T not supported!")
+				.replace("%T", tags.join(", ")),
+			WScript.ScriptName,
+			48 /*MB_ICONEXCLAMATION*/
+		);
+	}
 	return !tag;
 }
 function extPattern(exts) {
