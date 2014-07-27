@@ -95,7 +95,11 @@ function insertTag() {
 
 		var sel  = /%C?S/.test(template) && AkelPad.GetSelText();
 		var clip = /%S?C/.test(template) && AkelPad.GetClipboardText();
-		var autoTag = /%T/.test(template) && detectTag();
+		if(/%T/.test(template)) {
+			var autoTag = detectTag();
+			if(tagNotSupported(autoTag))
+				return;
+		}
 
 		txt = template
 			.replace(/%%/g, percent)
@@ -161,8 +165,12 @@ function insertTag() {
 		if(attrs)
 			tag = RegExp.$1;
 
-		if(/%T/.test(tag))
-			tag = tag.replace(/%T/g, detectTag());
+		if(/%T/.test(tag)) {
+			var autoTag = detectTag();
+			if(tagNotSupported(autoTag))
+				return;
+			tag = tag.replace(/%T/g, autoTag);
+		}
 
 		var sTag = (useBBCode ? "["  : "<")  + tag + attrs + (useBBCode ? "]" : ">");
 		var eTag = (useBBCode ? "[/" : "</") + tag         + (useBBCode ? "]" : ">");
@@ -188,6 +196,9 @@ function detectTag() {
 		if(extPattern(exts).test(fileType))
 			return patterns[exts];
 	return patterns[""] || undefined;
+}
+function tagNotSupported(tag) {
+	return !tag;
 }
 function extPattern(exts) {
 	return new RegExp("\\.(" + exts + ")$", "i");
