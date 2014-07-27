@@ -18,6 +18,7 @@
 //   -tagExts='{"": "i", "fb2": "em"}'    - Detect tag by Coder plugin alias or file extension, for %T variable
 //                                          "": "i"            - default tag
 //                                          "fb2|xhtml?": "em" - regular expression for special files
+//                                          "ext": ""          - tag not supported in *.ext files
 //   -clip=true                           - Use text from clipboard instead of selected text
 //   -selectMode=0                        - Select all inserted text: [<tag>text</tag>]
 //              =1                        - Select text inside tags:  <tag>[text]</tag>
