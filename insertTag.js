@@ -68,7 +68,7 @@ function _localize(s) {
 // Read arguments:
 // getArg(argName, defaultValue)
 var useBBCode    = getArg("bbcode", -1);
-var xmlExts      = getArg("xmlExts", "[xs]?html?|mht(ml)?|hta|asp|jsm?|css|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|resx|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst");
+var xmlExts      = getArg("xmlExts", "[xs]?html?|mht(ml)?|hta|asp|jsm?|css|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|xbl|resx|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst");
 var tagExts      = getArg("tagExts", "");
 var useClipboard = getArg("clip", false);
 var selectMode   = getArg("selectMode", 0);
