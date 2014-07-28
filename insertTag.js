@@ -195,20 +195,27 @@ function detectBBCode() {
 	return !extPattern(xmlExts).test(getFileType());
 }
 function detectTag() {
-	if(!tagExts)
+	var patterns = getTagData();
+	if(!patterns)
 		return undefined;
 	var fileType = getFileType();
-	var patterns = eval("(" + tagExts + ")");
 	for(var exts in patterns)
 		if(extPattern(exts).test(fileType))
 			return patterns[exts];
 	return patterns[""] || undefined;
 }
+function getTagData() {
+	var patterns = tagExts && eval("(" + tagExts + ")");
+	getTagData = function() {
+		return patterns;
+	};
+	return patterns;
+}
 function tagNotSupported(tag) {
 	if(!tag) {
 		var tags = [];
-		var patterns = eval("(" + tagExts + ")");
-		for(var exts in patterns)
+		var patterns = getTagData();
+		if(patterns) for(var exts in patterns)
 			if(patterns[exts])
 				tags.push(patterns[exts]);
 		AkelPad.MessageBox(
