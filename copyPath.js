@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/copyPath.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/copyPath.js
 
-// (c) Infocatcher 2010
-// version 0.1.0 - 2010-06-22
+// (c) Infocatcher 2010, 2014
+// version 0.1.0.1 - 2014-07-30
 
 // Usage:
 //   -"Copy path to file"                Call("Scripts::Main", 1, "copyPath.js", `"%f"`)
