@@ -1,3 +1,7 @@
+// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
+// http://infocatcher.ucoz.net/js/akelpad_scripts/copyPath.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/copyPath.js
+
 // (c) Infocatcher 2010
 // version 0.1.0 - 2010-06-22
 
