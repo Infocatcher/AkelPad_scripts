@@ -10,8 +10,10 @@
 //   -"Copy file name without extension" Call("Scripts::Main", 1, "copyPath.js", `"%f" "<file>"`)
 
 var argsCount = WScript.Arguments.length;
-if(argsCount) {
-	var arg = WScript.Arguments(0);
+var arg = argsCount
+	? WScript.Arguments(0)
+	: AkelPad.GetEditFile(0);
+if(arg) {
 	if(argsCount > 1) {
 		var path = arg, sep = "", file = "", dot ="", ext = "";
 		if(/([\\/])?([^\\/]*)$/.test(path)) {
@@ -31,6 +33,5 @@ if(argsCount) {
 			.replace(".", dot)
 			.replace("<ext>", ext);
 	}
-	//var AkelPad = new ActiveXObject("AkelPad.document");
 	AkelPad.SetClipboardText(arg);
 }
