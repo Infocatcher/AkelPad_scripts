@@ -12,6 +12,8 @@
 
 // Usage:
 //   Call("Scripts::Main", 1, "openRelativeFile.js")
+// Also you can use -showPath argument for debug purposes:
+//   Call("Scripts::Main", 1, "openRelativeFile.js", "-showPath=true")
 //===================
 
 //== Settings begin
@@ -67,6 +69,8 @@ var maxLength = 2000;
 var optionsPath = WScript.ScriptFullName.replace(/(\.[^.]+)?$/, "-options$&");
 if(new ActiveXObject("Scripting.FileSystemObject").FileExists(optionsPath))
 	eval(AkelPad.ReadFile(optionsPath));
+
+var showPath = AkelPad.GetArgValue("showPath", false);
 
 var hMainWnd = AkelPad.GetMainWnd();
 var fso = new ActiveXObject("Scripting.FileSystemObject");
@@ -200,6 +204,12 @@ function openRelativePath(relPath, pathStart, pathEnd) {
 	}
 	if(!path)
 		return false;
+
+	if(showPath) {
+		path = AkelPad.InputBox(hMainWnd, WScript.ScriptName, "Path:", path);
+		if(!path)
+			return false;
+	}
 
 	if(pathStart && pathEnd)
 		AkelPad.SetSel(pathStart, pathEnd);
