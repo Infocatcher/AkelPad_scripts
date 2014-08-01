@@ -1,5 +1,6 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=11346#11346
 // http://infocatcher.ucoz.net/js/akelpad_scripts/openRelativeFile.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/openRelativeFile.js
 
 // (c) Infocatcher 2011, 2014
 // version 0.1.7 - 2014-08-01
