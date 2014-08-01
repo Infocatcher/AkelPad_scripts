@@ -123,8 +123,7 @@ Move or/and align AkelPad's main window
 Example for open file in other application
 
 ##### [openRelativeFile.js](openRelativeFile.js)
-Tries to open file with relative path.
-<br>System association is used for opening binary files.
+Tries to open file with relative path (will be used system association to open binary files).
 <br>Supports <a href="https://developer.mozilla.org/en/chrome_registration">Mozilla's chrome.manifest files</a>.
 
 ##### [punctuationFixer.js](punctuationFixer.js)
