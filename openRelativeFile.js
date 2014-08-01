@@ -206,7 +206,9 @@ function openRelativePath(relPath, pathStart, pathEnd) {
 		return false;
 
 	if(showPath) {
-		path = AkelPad.InputBox(hMainWnd, WScript.ScriptName, "Path:", path);
+		var msg = "Relative path:\n" + relPath
+			+ "\nDetected path:";
+		path = AkelPad.InputBox(hMainWnd, WScript.ScriptName, msg, path);
 		if(!path)
 			return false;
 	}
