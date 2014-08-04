@@ -99,6 +99,19 @@ function isVbsFile(path) {
 function isScript(path) {
 	return isJsFile(path) || isVbsFile(path);
 }
+function expandArgs(args) {
+	var wsh = new ActiveXObject("WScript.Shell");
+	expandArgs = function(args) {
+		var file = AkelPad.GetEditFile(0);
+		return wsh.ExpandEnvironmentStrings(args)
+			.replace(/%f/ig, file)
+			.replace(/%d/ig, fso.GetParentFolderName(file))
+			.replace(/%a/ig, AkelPad.GetAkelDir())
+			.replace(/%([^%]|$)/g, "$1")
+			.replace(/%%/g, "%");
+	};
+	return expandArgs(args);
+}
 
 function saveArgs(name, args) {
 	var prefName = getPrefName(name);
@@ -431,7 +444,7 @@ function selectScriptDialog(modal) {
 						if(isSelf)
 							selfRun = true;
 						else
-							AkelPad.Call("Scripts::Main", 1, curName, argsObj[curName] || "");
+							AkelPad.Call("Scripts::Main", 1, curName, expandArgs(argsObj[curName] || ""));
 						if(idc == IDC_OK)
 							closeDialog();
 						else
@@ -859,7 +872,7 @@ function selectScriptDialog(modal) {
 
 	AkelPad.WindowUnregisterClass(dialogClass);
 
-	selfRun && AkelPad.Call("Scripts::Main", 1, WScript.ScriptName, argsObj[curName] || "");
+	selfRun && AkelPad.Call("Scripts::Main", 1, WScript.ScriptName, expandArgs(argsObj[curName] || ""));
 }
 
 function getArg(argName, defaultVal) {
