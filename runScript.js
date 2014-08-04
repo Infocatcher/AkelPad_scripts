@@ -545,7 +545,7 @@ function selectScriptDialog(modal) {
 		var read = oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/);
 
 		var indx = 0;
-		for(var i = 0, l = files.length; i < l; i++) {
+		for(var i = 0, l = files.length; i < l; ++i) {
 			var name = files[i];
 
 			if(read) {
@@ -575,7 +575,7 @@ function selectScriptDialog(modal) {
 		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
 
 		var maxIndx = AkelPad.SendMessage(hWndListBox,  0x18B /*LB_GETCOUNT*/, 0, 0) - 1;
-		for(var i = maxIndx; i >= 0; i--)
+		for(var i = maxIndx; i >= 0; --i)
 			AkelPad.SendMessage(hWndListBox,  0x182 /*LB_DELETESTRING*/, i, 0);
 		fillListBox();
 
@@ -777,7 +777,7 @@ function selectScriptDialog(modal) {
 		return str;
 	}
 	function getIndexFromString(str) {
-		for(var i = 0, l = AkelPad.SendMessage(hWndListBox, 0x18B /*LB_GETCOUNT*/, 0, 0); i < l; i++) {
+		for(var i = 0, l = AkelPad.SendMessage(hWndListBox, 0x18B /*LB_GETCOUNT*/, 0, 0); i < l; ++i) {
 			var s = getStringFromIndex(i);
 			if(s == str)
 				return i;
