@@ -23,7 +23,7 @@
 //               =2               - always save options
 //   -savePosition=true           - allow store last window position
 //   -saveSize=true               - allow store last window size
-//   -scriptName="someScript.js"
+//   -script="someScript.js"      - select someScript.js in the list
 
 // Usage:
 //   Call("Scripts::Main", 1, "runScript.js")
