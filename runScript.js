@@ -87,17 +87,8 @@ if(!scriptName && fso.GetParentFolderName(filePath).toLowerCase() == scriptsDir.
 
 selectScriptDialog();
 
-function getExt(path) {
-	return /\.([^.]+)$/.test(path) ? RegExp.$1 : "";;
-}
-function isJsFile(path) {
-	return /^js(m|on)?$/.test(getExt(path));
-}
-function isVbsFile(path) {
-	return /^(bas|vb[s5]?|wbt|frm)$/.test(getExt(path));
-}
 function isScript(path) {
-	return isJsFile(path) || isVbsFile(path);
+	return /\.(js|vbs)$/i.test(path);
 }
 function expandArgs(args) {
 	var wsh = new ActiveXObject("WScript.Shell");
