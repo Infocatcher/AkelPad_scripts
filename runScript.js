@@ -75,11 +75,10 @@ function getPrefName(scriptName) {
 }
 
 // Read arguments:
-// getArg(argName, defaultValue)
-var scriptName   = getArg("script");
-var saveOptions  = getArg("saveOptions", 1);
-var savePosition = getArg("savePosition", true);
-var saveSize     = getArg("saveSize", true);
+var scriptName   = AkelPad.GetArgValue("script", "");
+var saveOptions  = AkelPad.GetArgValue("saveOptions", 1);
+var savePosition = AkelPad.GetArgValue("savePosition", true);
+var saveSize     = AkelPad.GetArgValue("saveSize", true);
 
 var filePath = AkelPad.GetEditFile(0);
 if(!scriptName && fso.GetParentFolderName(filePath).toLowerCase() == scriptsDir.toLowerCase())
@@ -864,18 +863,4 @@ function selectScriptDialog(modal) {
 	AkelPad.WindowUnregisterClass(dialogClass);
 
 	selfRun && AkelPad.Call("Scripts::Main", 1, WScript.ScriptName, expandArgs(argsObj[curName] || ""));
-}
-
-function getArg(argName, defaultVal) {
-	var args = {};
-	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
-		if(/^[-\/](\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
-			args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
-	getArg = function(argName, defaultVal) {
-		argName = argName.toLowerCase();
-		return typeof args[argName] == "undefined" // argName in args
-			? defaultVal
-			: args[argName];
-	};
-	return getArg(argName, defaultVal);
 }
