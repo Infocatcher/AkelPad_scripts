@@ -1879,7 +1879,7 @@ function detectXMLType(str) {
             // http://www.ecma-international.org/ecma-262/5.1/#sec-7.9.1
             // if there is a newline between -- or ++ and anything else we should preserve it.
             if (input_wanted_newline && (token_text === '--' || token_text === '++')) {
-                print_newline();
+                print_newline(false, true);
             }
 
             // Allow line wrapping between operators
@@ -1899,7 +1899,7 @@ function detectXMLType(str) {
                     space_before = true;
                 }
 
-                if (last_type === 'TK_RESERVED') {
+                if (last_type === 'TK_RESERVED' || last_type === 'TK_END_EXPR') {
                     space_before = true;
                 }
 
@@ -3993,6 +3993,10 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('{foo();++bar;}', '{\n    foo();\n    ++bar;\n}');
         bt('{--bar;}', '{\n    --bar;\n}');
         bt('{++bar;}', '{\n    ++bar;\n}');
+        bt('if(true)++a;','if (true) ++a;');
+        bt('if(true)\n++a;','if (true)\n    ++a;');
+        bt('if(true)--a;','if (true) --a;');
+        bt('if(true)\n--a;','if (true)\n    --a;');
 
         // Handling of newlines around unary ++ and -- operators
         bt('{foo\n++bar;}', '{\n    foo\n    ++bar;\n}');
