@@ -211,7 +211,7 @@ function goToLongestLine(reverse) {
 
 	if(longestLine != undefined) {
 		var gotoStr = (longestLine + 1) + ":" + (longestLineLength + 1);
-		AkelPad.SendMessage(hMainWnd, 1206 /*AKD_GOTOW*/, 0x1 /*GT_LINE*/, AkelPad.MemStrPtr(gotoStr));
+		AkelPad.SendMessage(hMainWnd, 1204 /*AKD_GOTO*/, 0x1 /*GT_LINE*/, AkelPad.MemStrPtr(gotoStr));
 	}
 	return {
 		line:        (longestLine == undefined ? line : longestLine) + 1,

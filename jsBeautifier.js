@@ -6226,7 +6226,7 @@ function insertNoScroll(str, selectAll, caretPos) {
 	else {
 		setRedraw(hWndEdit, true); // Should be here to correctly redraw caret
 		//AkelPad.SetSel(caretPos, caretPos);
-		AkelPad.SendMessage(hMainWnd, 1206 /*AKD_GOTOW*/, 0x1 /*GT_LINE*/, AkelPad.MemStrPtr(caretPos));
+		AkelPad.SendMessage(hMainWnd, 1204 /*AKD_GOTO*/, 0x1 /*GT_LINE*/, AkelPad.MemStrPtr(caretPos));
 	}
 }
 function setRedraw(hWnd, bRedraw) {
