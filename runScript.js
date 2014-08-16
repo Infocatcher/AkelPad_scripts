@@ -103,14 +103,6 @@ function expandArgs(args) {
 	return expandArgs(args);
 }
 
-function saveArgs(name, args) {
-	var prefName = getPrefName(name);
-	if(args)
-		oSet.Write(prefName, 3 /*PO_STRING*/, args);
-	else
-		oSet.Delete(prefName);
-}
-
 function selectScriptDialog(modal) {
 	var hInstanceDLL = AkelPad.GetInstanceDll();
 	var dialogClass = "AkelPad::Scripts::" + WScript.ScriptName + "::" + oSys.Call("kernel32::GetCurrentProcessId");
@@ -180,6 +172,13 @@ function selectScriptDialog(modal) {
 			}
 		}
 		oSet.End();
+	}
+	function saveArgs(name, args) {
+		var prefName = getPrefName(name);
+		if(args)
+			oSet.Write(prefName, 3 /*PO_STRING*/, args);
+		else
+			oSet.Delete(prefName);
 	}
 
 	var IDC_STATIC  = -1;
