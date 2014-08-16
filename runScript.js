@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/runScript.js
 
 // (c) Infocatcher 2011, 2013-2014
-// version 0.2.7.1 - 2014-05-06
+// version 0.2.8 - 2014-08-16
 
 //===================
 // Run script from AkelFiles\Plugs\Scripts\ directory
