@@ -1632,7 +1632,7 @@ function detectXMLType(str) {
             }
 
             if (token_type === 'TK_RESERVED' && token_text === 'function') {
-                if (in_array(flags.last_text, ['}', ';']) || (just_added_newline() && ! in_array(flags.last_text, ['{', ':', '=', ',']))) {
+                if (in_array(flags.last_text, ['}', ';']) || (just_added_newline() && ! in_array(flags.last_text, ['[', '{', ':', '=', ',']))) {
                     // make sure there is a nice clean space of at least one blank line
                     // before a new function definition
                     if ( ! just_added_blankline() && ! flags.had_comment) {
@@ -5102,6 +5102,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('function foo() {}\nfunction foo() {}',
             'function foo() {}\n\nfunction foo() {}'
         );
+
+        bt('[\n    function() {}\n]');
 
 
 
