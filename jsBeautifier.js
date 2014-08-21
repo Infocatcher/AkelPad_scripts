@@ -5902,76 +5902,81 @@ for(var p in window) {
 	eval(p + " = _new;");
 }
 
-if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())) {
+if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude()))
+	handleArgs();
+
+function handleArgs() {
 	if(update)
 		selfUpdate();
-	else {
-		var res;
-		if(!test) {
-			var newLine = 2; //"\n"
-			var src = AkelPad.GetSelText(newLine);
-			if(!src && !onlySelected) {
-				var selectAll = true;
-				src = AkelPad.GetTextRange(0, -1, newLine);
-			}
-			if(!AkelPad.IsAkelEdit())
-				src = src.replace(/\r/g, "\n");
+	else
+		beautifyAkelEdit();
+}
+function beautifyAkelEdit() {
+	var res;
+	if(!test) {
+		var newLine = 2; //"\n"
+		var src = AkelPad.GetSelText(newLine);
+		if(!src && !onlySelected) {
+			var selectAll = true;
+			src = AkelPad.GetTextRange(0, -1, newLine);
 		}
-		if(test || !src) {
-			res = runTests();
-			var icon = /tests failed/.test(res) ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/;
-			AkelPad.MessageBox(hMainWnd, res, WScript.ScriptName, icon);
+		if(!AkelPad.IsAkelEdit())
+			src = src.replace(/\r/g, "\n");
+	}
+	if(test || !src) {
+		res = runTests();
+		var icon = /tests failed/.test(res) ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/;
+		AkelPad.MessageBox(hMainWnd, res, WScript.ScriptName, icon);
+	}
+	else {
+		if(action == ACT_INSERT)
+			var lpFrameTarget = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
+
+		if(
+			selectAll
+			&& (action == ACT_INSERT || action == ACT_INSERT_NEW_DOC)
+			&& restoreCaretPos
+		) {
+			var selStart = AkelPad.GetTextRange(0, AkelPad.GetSelStart())
+				.replace(/\s+/g, "");
+		}
+
+		if(beautifyCSS) {
+			var srcCSS = "<style>\n" + src + "\n</style>";
+			indentScripts = "separate";
+			var syntax = { value: "css" };
+			res = (beautify(srcCSS) || "")
+				.replace(/^\s*<style>\n?/, "")
+				.replace(/\n?<\/style>\s*$/, "");
 		}
 		else {
-			if(action == ACT_INSERT)
-				var lpFrameTarget = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
+			var syntax = { value: undefined };
+			res = beautify(src, syntax);
+		}
 
-			if(
-				selectAll
-				&& (action == ACT_INSERT || action == ACT_INSERT_NEW_DOC)
-				&& restoreCaretPos
-			) {
-				var selStart = AkelPad.GetTextRange(0, AkelPad.GetSelStart())
-					.replace(/\s+/g, "");
-			}
-
-			if(beautifyCSS) {
-				var srcCSS = "<style>\n" + src + "\n</style>";
-				indentScripts = "separate";
-				var syntax = { value: "css" };
-				res = (beautify(srcCSS) || "")
-					.replace(/^\s*<style>\n?/, "")
-					.replace(/\n?<\/style>\s*$/, "");
-			}
-			else {
-				var syntax = { value: undefined };
-				res = beautify(src, syntax);
-			}
-
-			if(action == ACT_INSERT) {
-				if(lpFrameTarget && lpFrameTarget != AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0))
-					AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrameTarget);
-			}
-			if(res) {
-				if(action == ACT_INSERT && res != src) {
-					if(AkelPad.GetEditReadOnly(hWndEdit))
-						action = ACT_INSERT_NEW_DOC;
-					else {
-						insertNoScroll(res, selectAll, getCaretPos(res, selStart));
-						setSyntax(syntax.value);
-					}
-				}
-				if(action == ACT_INSERT_NEW_DOC) {
-					AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
-					AkelPad.SetSel(0, 0);
-					insertNoScroll(res, true, getCaretPos(res, selStart));
+		if(action == ACT_INSERT) {
+			if(lpFrameTarget && lpFrameTarget != AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0))
+				AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrameTarget);
+		}
+		if(res) {
+			if(action == ACT_INSERT && res != src) {
+				if(AkelPad.GetEditReadOnly(hWndEdit))
+					action = ACT_INSERT_NEW_DOC;
+				else {
+					insertNoScroll(res, selectAll, getCaretPos(res, selStart));
 					setSyntax(syntax.value);
 				}
-				if(action == ACT_COPY && res != AkelPad.GetClipboardText())
-					AkelPad.SetClipboardText(res);
-				if(action == ACT_SHOW)
-					AkelPad.MessageBox(hMainWnd, res.substr(0, 3000), WScript.ScriptName, 64 /*MB_ICONINFORMATION*/);
 			}
+			if(action == ACT_INSERT_NEW_DOC) {
+				AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+				AkelPad.SetSel(0, 0);
+				insertNoScroll(res, true, getCaretPos(res, selStart));
+				setSyntax(syntax.value);
+			}
+			if(action == ACT_COPY && res != AkelPad.GetClipboardText())
+				AkelPad.SetClipboardText(res);
+			if(action == ACT_SHOW)
+				AkelPad.MessageBox(hMainWnd, res.substr(0, 3000), WScript.ScriptName, 64 /*MB_ICONINFORMATION*/);
 		}
 	}
 }
