@@ -5902,10 +5902,12 @@ for(var p in window) {
 	eval(p + " = _new;");
 }
 
-if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude()))
+if(typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 	handleArgs();
 
 function handleArgs() {
+	if(!hMainWnd)
+		return;
 	if(update)
 		selfUpdate();
 	else
