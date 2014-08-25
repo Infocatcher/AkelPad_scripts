@@ -6208,10 +6208,10 @@ function getCaretPos(newStr, oldSelStart) {
 		}
 		if(/^\s$/.test(chr))
 			continue;
-		var oldChr = oldSelStart.charAt(pos++);
+		var oldChr = oldSelStart.charAt(pos);
 		if(chr != oldChr)
 			break;
-		if(pos == posStop)
+		if(++pos == posStop)
 			//return i + 1;
 			return line + ":" + col;
 	}
