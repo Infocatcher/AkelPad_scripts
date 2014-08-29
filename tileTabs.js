@@ -15,8 +15,7 @@
 //   h                      - tile horizontal
 //   o                      - preserve tabs order
 //   -noBlink=true          - disable blink in status bar (and just show "Select tab!" text)
-//   -item="toolbar:%m:%i"  - check toolbar button
-//        ="menu:%m:%i"     - check menu item
+//   -item="%m:%i"          - check toolbar button or menu item
 
 // Usage:
 //   Call("Scripts::Main", 1, "tileTabs.js")         - tile vertical
@@ -210,21 +209,22 @@ function parseRect(lpRect) {
 
 function Item() {
 	this.check = function() {};
-	// "menu:%m:%i" or "toolbar:%m:%i"
+	// "%m:%i" (legacy: "menu:%m:%i" or "toolbar:%m:%i")
 	var itemData = AkelPad.GetArgValue("item", "").split(":");
-	if(itemData.length != 3)
+	if(itemData[0] == "menu" || itemData[0] == "toolbar") // Legacy
+		itemData.shift();
+	if(itemData.length != 2)
 		return;
-	var type = itemData[0];
-	var hHandle = +itemData[1];
-	var nItemID = +itemData[2];
-	if(!type || !hHandle || !nItemID)
+	var hHandle = +itemData[0];
+	var nItemID = +itemData[1];
+	if(!hHandle || !nItemID)
 		return;
 	this.check = function(checked) {
-		if(type == "menu") {
+		if(oSys.Call("User32::IsMenu", hHandle)) {
 			var cmd = checked ? 0x8 /*MF_BYCOMMAND|MF_CHECKED*/ : 0 /*MF_BYCOMMAND|MF_UNCHECKED*/;
 			oSys.call("user32::CheckMenuItem", hHandle, nItemID, cmd);
 		}
-		else if(type == "toolbar") {
+		else {
 			AkelPad.SendMessage(hHandle, 1026 /*TB_CHECKBUTTON*/, nItemID, checked);
 		}
 	};
