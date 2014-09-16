@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2014
 // version 0.2.6 - 2014-04-20
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-06-25 00:42:24 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-09-15 19:24:17 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -2828,6 +2828,18 @@ function detectXMLType(str) {
                         this.indent_content = true;
                         this.traverse_whitespace();
                     }
+                } else if (this.is_unformatted(tag_check, unformatted)) { // do not reformat the "unformatted" tags
+                    comment = this.get_unformatted('</' + tag_check + '>', tag_complete); //...delegate to get_unformatted function
+                    content.push(comment);
+                    // Preserve collapsed whitespace either before or after this tag.
+                    if (tag_start > 0 && this.Utils.in_array(this.input.charAt(tag_start - 1), this.Utils.whitespace)) {
+                        content.splice(0, 0, this.input.charAt(tag_start - 1));
+                    }
+                    tag_end = this.pos - 1;
+                    if (this.Utils.in_array(this.input.charAt(tag_end + 1), this.Utils.whitespace)) {
+                        content.push(this.input.charAt(tag_end + 1));
+                    }
+                    this.tag_type = 'SINGLE';
                 } else if (tag_check === 'script' &&
                     (tag_complete.search('type') === -1 ||
                     (tag_complete.search('type') > -1 &&
@@ -2843,18 +2855,6 @@ function detectXMLType(str) {
                         this.record_tag(tag_check);
                         this.tag_type = 'STYLE';
                     }
-                } else if (this.is_unformatted(tag_check, unformatted)) { // do not reformat the "unformatted" tags
-                    comment = this.get_unformatted('</' + tag_check + '>', tag_complete); //...delegate to get_unformatted function
-                    content.push(comment);
-                    // Preserve collapsed whitespace either before or after this tag.
-                    if (tag_start > 0 && this.Utils.in_array(this.input.charAt(tag_start - 1), this.Utils.whitespace)) {
-                        content.splice(0, 0, this.input.charAt(tag_start - 1));
-                    }
-                    tag_end = this.pos - 1;
-                    if (this.Utils.in_array(this.input.charAt(tag_end + 1), this.Utils.whitespace)) {
-                        content.push(this.input.charAt(tag_end + 1));
-                    }
-                    this.tag_type = 'SINGLE';
                 } else if (tag_check.charAt(0) === '!') { //peek for <! comment
                     // for comments content is already correct.
                     if (!peek) {
@@ -5427,6 +5427,21 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 			'    }\n'+
 			'</style>');
 		// END tests for issue 453
+
+        var unformatted = opts.unformatted;
+        opts.unformatted = ['script', 'style'];
+        bth('<script id="javascriptTemplate" type="text/x-kendo-template">\n' +
+            '  <ul>\n' +
+            '  # for (var i = 0; i < data.length; i++) { #\n' +
+            '    <li>#= data[i] #</li>\n' +
+            '  # } #\n' +
+            '  </ul>\n' +
+            '</script>');
+        bth('<style>\n' +
+            '  body {background-color:lightgrey}\n' +
+            '  h1   {color:blue}\n' +
+            '</style>');
+        opts.unformatted = unformatted;
 
         // Tests that don't pass, but probably should.
         // bth('<div><span>content</span></div>');
