@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2014
 // version 0.2.7pre - 2014-09-19
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-09-25 01:51:33 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-09-27 08:41:06 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -405,7 +405,7 @@ function detectXMLType(str) {
 
       // Whether a single character denotes a newline.
 
-      var newline = /[\n\r\u2028\u2029]/;
+      var newline = exports.newline = /[\n\r\u2028\u2029]/;
 
       // Matches a whole line break (where CRLF is considered a single
       // line break). Used to count lines.
@@ -465,7 +465,7 @@ function detectXMLType(str) {
         var prefix;
 
         var handlers, MODE, opt;
-        var preindent_string = '';
+        var baseIndentString = '';
 
 
         MODE = {
@@ -583,7 +583,7 @@ function detectXMLType(str) {
         if(js_source_text && js_source_text.length) {
             while ( (js_source_text.charAt(preindent_index) === ' ' ||
                     js_source_text.charAt(preindent_index) === '\t')) {
-                preindent_string += js_source_text.charAt(preindent_index);
+                baseIndentString += js_source_text.charAt(preindent_index);
                 preindent_index += 1;
             }
             js_source_text = js_source_text.substring(preindent_index);
@@ -591,7 +591,7 @@ function detectXMLType(str) {
 
         last_type = 'TK_START_BLOCK'; // last token type
         last_last_text = ''; // pre-last token text
-        output = new Output(indent_string, preindent_string);
+        output = new Output(indent_string, baseIndentString);
 
 
         // Stack of parsing/formatting states, including MODE.
@@ -1121,7 +1121,7 @@ function detectXMLType(str) {
                 } else if (last_type === 'TK_OPERATOR' || flags.last_text === '=') {
                     // foo = function
                     output.space_before_token = true;
-                } else if (is_expression(flags.mode)) {
+                } else if (!flags.multiline_frame && (is_expression(flags.mode) || is_array(flags.mode))) {
                     // (function
                 } else {
                     print_newline();
@@ -1209,7 +1209,7 @@ function detectXMLType(str) {
                 } else if (current_token.type === 'TK_RESERVED' && in_array(current_token.text, Tokenizer.line_starters) && flags.last_text !== ')') {
                     print_newline();
                 }
-            } else if (is_array(flags.mode) && flags.last_text === ',' && last_last_text === '}') {
+            } else if (flags.multiline_frame && is_array(flags.mode) && flags.last_text === ',' && last_last_text === '}') {
                 print_newline(); // }, in lists get a newline treatment
             } else if (prefix === 'SPACE') {
                 output.space_before_token = true;
@@ -1306,8 +1306,6 @@ function detectXMLType(str) {
                 // The conditional starts the statement if appropriate.
             }
 
-            var space_before = true;
-            var space_after = true;
             if (last_type === 'TK_RESERVED' && is_special_word(flags.last_text)) {
                 // "return" had a special handling in TK_WORD. Now we need to return the favor
                 output.space_before_token = true;
@@ -1316,7 +1314,7 @@ function detectXMLType(str) {
             }
 
             // hack for actionscript's import .*;
-            if (current_token.text === '*' && last_type === 'TK_DOT' && !last_last_text.match(/^\d+$/)) {
+            if (current_token.text === '*' && last_type === 'TK_DOT') {
                 print_token();
                 return;
             }
@@ -1347,6 +1345,9 @@ function detectXMLType(str) {
                 allow_wrap_or_preserved_newline();
             }
 
+            var space_before = true;
+            var space_after = true;
+
             if (in_array(current_token.text, ['--', '++', '!', '~']) || (in_array(current_token.text, ['-', '+']) && (in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) || in_array(flags.last_text, Tokenizer.line_starters) || flags.last_text === ','))) {
                 // unary operators (and binary +/- pretending to be unary) special cases
 
@@ -1361,6 +1362,10 @@ function detectXMLType(str) {
 
                 if (last_type === 'TK_RESERVED' || last_type === 'TK_END_EXPR') {
                     space_before = true;
+                } else if (last_type === 'TK_OPERATOR') {
+                    space_before =
+                        (in_array(current_token.text, ['--', '-']) && in_array(flags.last_text, ['--', '-'])) ||
+                        (in_array(current_token.text, ['++', '+']) && in_array(flags.last_text, ['++', '+']));
                 }
 
                 if ((flags.mode === MODE.BlockStatement || flags.mode === MODE.Statement) && (flags.last_text === '{' || flags.last_text === ';')) {
@@ -1504,7 +1509,7 @@ function detectXMLType(str) {
             character_count += input.length;
         }
 
-        this.remove_indent = function(indent_string, preindent_string) {
+        this.remove_indent = function(indent_string, baseIndentString) {
             var splice_index = 0;
 
             // skip empty lines
@@ -1513,7 +1518,7 @@ function detectXMLType(str) {
             }
 
             // skip the preindent string if present
-            if (preindent_string && line_items[0] === preindent_string) {
+            if (baseIndentString && line_items[0] === baseIndentString) {
                 splice_index = 1;
             }
 
@@ -1524,20 +1529,20 @@ function detectXMLType(str) {
             }
         }
 
-        this.trim = function(indent_string, preindent_string) {
+        this.trim = function(indent_string, baseIndentString) {
             while (this.get_item_count() &&
                 (this.last() === ' ' ||
                     this.last() === indent_string ||
-                    this.last() === preindent_string)) {
+                    this.last() === baseIndentString)) {
                 var item = line_items.pop();
                 character_count -= item.length;
             }
         }
     }
 
-    function Output(indent_string, preindent_string) {
+    function Output(indent_string, baseIndentString) {
         var lines =[];
-        this.preindent_string = preindent_string;
+        this.baseIndentString = baseIndentString;
         this.current_line = null;
         this.space_before_token = false;
 
@@ -1568,13 +1573,13 @@ function detectXMLType(str) {
             for (var line_index = 1; line_index < lines.length; line_index++) {
                 sweet_code += '\n' + lines[line_index].get_output();
             }
-            sweet_code = sweet_code.replace(/[\r\n ]+$/, '');
+            sweet_code = sweet_code.replace(/[\r\n\t ]+$/, '');
             return sweet_code;
         }
 
         this.add_indent_string = function(indentation_level) {
-            if (preindent_string) {
-                this.current_line.push(preindent_string);
+            if (baseIndentString) {
+                this.current_line.push(baseIndentString);
             }
 
             // Never indent your first output indent at the start of the file
@@ -1617,7 +1622,7 @@ function detectXMLType(str) {
 
             var output_length = lines.length;
             while (index < output_length) {
-                lines[index].remove_indent(indent_string, preindent_string);
+                lines[index].remove_indent(indent_string, baseIndentString);
                 index++;
             }
         }
@@ -1625,13 +1630,13 @@ function detectXMLType(str) {
         this.trim = function(eat_newlines) {
             eat_newlines = (eat_newlines === undefined) ? false : eat_newlines;
 
-            this.current_line.trim(indent_string, preindent_string);
+            this.current_line.trim(indent_string, baseIndentString);
 
             while (eat_newlines && lines.length > 1 &&
                 this.current_line.get_item_count() === 0) {
                 lines.pop();
                 this.current_line = lines[lines.length - 1]
-                this.current_line.trim(indent_string, preindent_string);
+                this.current_line.trim(indent_string, baseIndentString);
             }
         }
 
@@ -1666,8 +1671,7 @@ function detectXMLType(str) {
     function tokenizer(input, opts, indent_string) {
 
         var whitespace = "\n\r\t ".split('');
-        var wordchar = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$'.split('');
-        var digits = '0123456789'.split('');
+        var digit = /[0-9]/;
 
         var punct = ('+ - * / % & ++ -- = += -= *= /= %= == === != !== > < >= <= >> << >>> >>>= >>= <<= && &= | || ! ~ , : ? ^ ^= |= :: =>'
                 +' <%= <% %> <?= <? ?>').split(' '); // try to be a good boy and try not to break the markup language identifiers
@@ -1773,9 +1777,53 @@ function detectXMLType(str) {
                 parser_pos += 1;
             }
 
-            // NOTE: because beautifier doesn't fully parse, it doesn't use acorn.isIdentifierStart.
-            // It just treats all identifiers and numbers and such the same.
-            if (acorn.isIdentifierChar(input.charCodeAt(parser_pos-1))) {
+            if (digit.test(c)) {
+                var allow_decimal = true;
+                var allow_e = true;
+                var local_digit = digit;
+
+                if (c === '0' && parser_pos < input_length && /[Xx]/.test(input.charAt(parser_pos))) {
+                    // switch to hex number, no decimal or e, just hex digits
+                    allow_decimal = false;
+                    allow_e = false;
+                    c += input.charAt(parser_pos);
+                    parser_pos += 1;
+                    local_digit = /[0123456789abcdefABCDEF]/
+                } else {
+                    // we know this first loop will run.  It keeps the logic simpler.
+                    c = '';
+                    parser_pos -= 1
+                }
+
+                // Add the digits
+                while (parser_pos < input_length && local_digit.test(input.charAt(parser_pos))) {
+                    c += input.charAt(parser_pos);
+                    parser_pos += 1;
+
+                    if (allow_decimal && parser_pos < input_length && input.charAt(parser_pos) === '.') {
+                        c += input.charAt(parser_pos);
+                        parser_pos += 1;
+                        allow_decimal = false;
+                    }
+
+                    if (allow_e && parser_pos < input_length && /[Ee]/.test(input.charAt(parser_pos))) {
+                        c += input.charAt(parser_pos);
+                        parser_pos += 1;
+
+                        if (parser_pos < input_length && /[+-]/.test(input.charAt(parser_pos))) {
+                            c += input.charAt(parser_pos);
+                            parser_pos += 1;
+                        }
+
+                        allow_e = false;
+                        allow_decimal = false;
+                    }
+                }
+
+                return [c, 'TK_WORD'];
+            }
+
+            if (acorn.isIdentifierStart(input.charCodeAt(parser_pos-1))) {
                 if (parser_pos < input_length) {
                     while (acorn.isIdentifierChar(input.charCodeAt(parser_pos))) {
                         c += input.charAt(parser_pos);
@@ -1786,17 +1834,6 @@ function detectXMLType(str) {
                     }
                 }
 
-                // small and surprisingly unugly hack for 1E-10 representation
-                if (parser_pos !== input_length && c.match(/^[0-9]+[Ee]$/) && (input.charAt(parser_pos) === '-' || input.charAt(parser_pos) === '+')) {
-
-                    var sign = input.charAt(parser_pos);
-                    parser_pos += 1;
-
-                    var t = tokenize_next();
-                    c += sign + t[0];
-                    return [c, 'TK_WORD'];
-                }
-
                 if (!(last_type === 'TK_DOT' ||
                         (last_type === 'TK_RESERVED' && in_array(last_text, ['set', 'get'])))
                     && in_array(c, reserved_words)) {
@@ -1805,6 +1842,7 @@ function detectXMLType(str) {
                     }
                     return [c, 'TK_RESERVED'];
                 }
+
                 return [c, 'TK_WORD'];
             }
 
@@ -1888,98 +1926,95 @@ function detectXMLType(str) {
 
                 resulting_string = c;
 
-                if (parser_pos < input_length) {
-                    if (sep === '/') {
-                        //
-                        // handle regexp
-                        //
-                        var in_char_class = false;
-                        while (esc || in_char_class || input.charAt(parser_pos) !== sep) {
-                            resulting_string += input.charAt(parser_pos);
-                            if (!esc) {
-                                esc = input.charAt(parser_pos) === '\\';
-                                if (input.charAt(parser_pos) === '[') {
-                                    in_char_class = true;
-                                } else if (input.charAt(parser_pos) === ']') {
-                                    in_char_class = false;
-                                }
-                            } else {
-                                esc = false;
+                if (sep === '/') {
+                    //
+                    // handle regexp
+                    //
+                    var in_char_class = false;
+                    while (parser_pos < input_length &&
+                            ((esc || in_char_class || input.charAt(parser_pos) !== sep) &&
+                            !acorn.newline.test(input.charAt(parser_pos)))) {
+                        resulting_string += input.charAt(parser_pos);
+                        if (!esc) {
+                            esc = input.charAt(parser_pos) === '\\';
+                            if (input.charAt(parser_pos) === '[') {
+                                in_char_class = true;
+                            } else if (input.charAt(parser_pos) === ']') {
+                                in_char_class = false;
                             }
-                            parser_pos += 1;
-                            if (parser_pos >= input_length) {
-                                // incomplete string/rexp when end-of-file reached.
-                                // bail out with what had been received so far.
-                                return [resulting_string, 'TK_STRING'];
-                            }
+                        } else {
+                            esc = false;
                         }
-                    } else if (opts.e4x && sep === '<') {
-                        //
-                        // handle e4x xml literals
-                        //
-                        var xmlRegExp = /<(\/?)([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([-a-zA-Z:0-9_.]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*(\/?)\s*>/g;
-                        var xmlStr = input.slice(parser_pos - 1);
-                        var match = xmlRegExp.exec(xmlStr);
-                        if (match && match.index === 0) {
-                            var rootTag = match[2];
-                            var depth = 0;
-                            while (match) {
-                                var isEndTag = !! match[1];
-                                var tagName = match[2];
-                                var isSingletonTag = ( !! match[match.length - 1]) || (tagName.slice(0, 8) === "![CDATA[");
-                                if (tagName === rootTag && !isSingletonTag) {
-                                    if (isEndTag) {
-                                        --depth;
-                                    } else {
-                                        ++depth;
-                                    }
-                                }
-                                if (depth <= 0) {
-                                    break;
-                                }
-                                match = xmlRegExp.exec(xmlStr);
-                            }
-                            var xmlLength = match ? match.index + match[0].length : xmlStr.length;
-                            parser_pos += xmlLength - 1;
-                            return [xmlStr.slice(0, xmlLength), "TK_STRING"];
-                        }
-                    } else {
-                        //
-                        // handle string
-                        //
-                        while (esc || input.charAt(parser_pos) !== sep) {
-                            resulting_string += input.charAt(parser_pos);
-                            if (esc) {
-                                if (input.charAt(parser_pos) === 'x' || input.charAt(parser_pos) === 'u') {
-                                    has_char_escapes = true;
-                                }
-                                esc = false;
-                            } else {
-                                esc = input.charAt(parser_pos) === '\\';
-                            }
-                            parser_pos += 1;
-                            if (parser_pos >= input_length) {
-                                // incomplete string/rexp when end-of-file reached.
-                                // bail out with what had been received so far.
-                                return [resulting_string, 'TK_STRING'];
-                            }
-                        }
-
+                        parser_pos += 1;
                     }
-                }
+                } else if (opts.e4x && sep === '<') {
+                    //
+                    // handle e4x xml literals
+                    //
+                    var xmlRegExp = /<(\/?)([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([-a-zA-Z:0-9_.]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*(\/?)\s*>/g;
+                    var xmlStr = input.slice(parser_pos - 1);
+                    var match = xmlRegExp.exec(xmlStr);
+                    if (match && match.index === 0) {
+                        var rootTag = match[2];
+                        var depth = 0;
+                        while (match) {
+                            var isEndTag = !! match[1];
+                            var tagName = match[2];
+                            var isSingletonTag = ( !! match[match.length - 1]) || (tagName.slice(0, 8) === "![CDATA[");
+                            if (tagName === rootTag && !isSingletonTag) {
+                                if (isEndTag) {
+                                    --depth;
+                                } else {
+                                    ++depth;
+                                }
+                            }
+                            if (depth <= 0) {
+                                break;
+                            }
+                            match = xmlRegExp.exec(xmlStr);
+                        }
+                        var xmlLength = match ? match.index + match[0].length : xmlStr.length;
+                        parser_pos += xmlLength - 1;
+                        return [xmlStr.slice(0, xmlLength), "TK_STRING"];
+                    }
+                } else {
+                    //
+                    // handle string
+                    //
+                    // Template strings can travers lines without escape characters.
+                    // Other strings cannot
+                    while (parser_pos < input_length &&
+                            (esc || (input.charAt(parser_pos) !== sep &&
+                            (sep === '`' || !acorn.newline.test(input.charAt(parser_pos)))))) {
+                        resulting_string += input.charAt(parser_pos);
+                        if (esc) {
+                            if (input.charAt(parser_pos) === 'x' || input.charAt(parser_pos) === 'u') {
+                                has_char_escapes = true;
+                            }
+                            esc = false;
+                        } else {
+                            esc = input.charAt(parser_pos) === '\\';
+                        }
+                        parser_pos += 1;
+                    }
 
-                parser_pos += 1;
-                resulting_string += sep;
+                }
 
                 if (has_char_escapes && opts.unescape_strings) {
                     resulting_string = unescape_string(resulting_string);
                 }
 
-                if (sep === '/') {
-                    // regexps may have modifiers /regexp/MOD , so fetch those, too
-                    while (parser_pos < input_length && in_array(input.charAt(parser_pos), wordchar)) {
-                        resulting_string += input.charAt(parser_pos);
-                        parser_pos += 1;
+                if (parser_pos < input_length && input.charAt(parser_pos) === sep) {
+                    resulting_string += sep;
+                    parser_pos += 1;
+
+                    if (sep === '/') {
+                        // regexps may have modifiers /regexp/MOD , so fetch those, too
+                        // Only [gim] are valid, but if the user puts in garbage, do what we can to take it.
+                        while (parser_pos < input_length && acorn.isIdentifierStart(input.charCodeAt(parser_pos))) {
+                            resulting_string += input.charAt(parser_pos);
+                            parser_pos += 1;
+                        }
                     }
                 }
                 return [resulting_string, 'TK_STRING'];
@@ -2004,7 +2039,7 @@ function detectXMLType(str) {
                 // https://developer.mozilla.org/En/Sharp_variables_in_JavaScript
                 // http://mxr.mozilla.org/mozilla-central/source/js/src/jsscan.cpp around line 1935
                 var sharp = '#';
-                if (parser_pos < input_length && in_array(input.charAt(parser_pos), digits)) {
+                if (parser_pos < input_length && digit.test(input.charAt(parser_pos))) {
                     do {
                         c = input.charAt(parser_pos);
                         sharp += c;
@@ -2305,19 +2340,19 @@ function detectXMLType(str) {
         }
 
         // printer
-        var indentString = source_text.match(/^[\r\n]*[\t ]*/)[0];
+        var basebaseIndentString = source_text.match(/^[\t ]*/)[0];
         var singleIndent = new Array(indentSize + 1).join(indentCharacter);
         var indentLevel = 0;
         var nestedLevel = 0;
 
         function indent() {
             indentLevel++;
-            indentString += singleIndent;
+            basebaseIndentString += singleIndent;
         }
 
         function outdent() {
             indentLevel--;
-            indentString = indentString.slice(0, -indentSize);
+            basebaseIndentString = basebaseIndentString.slice(0, -indentSize);
         }
 
         var print = {};
@@ -2346,8 +2381,8 @@ function detectXMLType(str) {
             if (output.length) {
                 output.push('\n');
             }
-            if (indentString) {
-                output.push(indentString);
+            if (basebaseIndentString) {
+                output.push(basebaseIndentString);
             }
         };
         print.singleSpace = function () {
@@ -2356,8 +2391,8 @@ function detectXMLType(str) {
             }
         };
         var output = [];
-        if (indentString) {
-            output.push(indentString);
+        if (basebaseIndentString) {
+            output.push(basebaseIndentString);
         }
         /*_____________________--------------------_____________________*/
 
@@ -2371,13 +2406,13 @@ function detectXMLType(str) {
                 break;
             } else if (ch === '/' && peek() === '*') { /* css comment */
                 print.newLine();
-                output.push(eatComment(), "\n", indentString);
+                output.push(eatComment(), "\n", basebaseIndentString);
                 var header = lookBack("");
                 if (header) {
                     print.newLine();
                 }
             } else if (ch === '/' && peek() === '/') { // single line comment
-                output.push(eatComment(true), indentString);
+                output.push(eatComment(true), basebaseIndentString);
             } else if (ch === '@') {
                 // strip trailing space, if present, for hash property checks
                 var atRule = eatString(" ").replace(/ $/, '');
@@ -2438,9 +2473,9 @@ function detectXMLType(str) {
                 if (isCommentOnLine()) {
                     var beforeComment = eatString('/');
                     var comment = eatComment(true);
-                    output.push(beforeComment, comment.substring(1, comment.length - 1), '\n', indentString);
+                    output.push(beforeComment, comment.substring(1, comment.length - 1), '\n', basebaseIndentString);
                 } else {
-                    output.push(ch, '\n', indentString);
+                    output.push(ch, '\n', basebaseIndentString);
                 }
             } else if (ch === '(') { // may be a url
                 if (lookBack("url")) {
@@ -2490,15 +2525,12 @@ function detectXMLType(str) {
         }
 
 
-        var sweetCode = output.join('').replace(/[\n ]+$/, '');
+        var sweetCode = output.join('').replace(/[\r\n\t ]+$/, '');
 
         // establish end_with_newline
         var should = endWithNewline;
-        var actually = /\n$/.test(sweetCode);
-        if (should && !actually) {
+        if (should) {
             sweetCode += "\n";
-        } else if (!should && actually) {
-            sweetCode = sweetCode.slice(0, -1);
         }
 
         return sweetCode;
@@ -4144,6 +4176,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a=[[1,2],[4,5],function(){},[7,8]]',
             "a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    [7, 8]\n]");
         bt('a=[b,c,function(){},function(){},d]',
+            "a = [b, c, function() {}, function() {}, d]");
+        bt('a=[b,c,\nfunction(){},function(){},d]',
             "a = [b, c,\n    function() {},\n    function() {},\n    d\n]");
         bt('a=[a[1],b[4],c[d[7]]]', "a = [a[1], b[4], c[d[7]]]");
         bt('[1,2,[3,4,[5,6],7],8]', "[1, 2, [3, 4, [5, 6], 7], 8]");
@@ -4260,7 +4294,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         bt('function* x() {\n    yield 1;\n}');
 
-        bt('{"x":[{"a":1,"b":3},7,8,8,8,8,{"b":99},{"a":11}]}', '{\n    "x": [{\n            "a": 1,\n            "b": 3\n        },\n        7, 8, 8, 8, 8, {\n            "b": 99\n        }, {\n            "a": 11\n        }\n    ]\n}');
+        bt('{"x":[{"a":1,"b":3},\n7,8,8,8,8,{"b":99},{"a":11}]}', '{\n    "x": [{\n            "a": 1,\n            "b": 3\n        },\n        7, 8, 8, 8, 8, {\n            "b": 99\n        }, {\n            "a": 11\n        }\n    ]\n}');
+        bt('{"x":[{"a":1,"b":3},7,8,8,8,8,{"b":99},{"a":11}]}', '{\n    "x": [{\n        "a": 1,\n        "b": 3\n    }, 7, 8, 8, 8, 8, {\n        "b": 99\n    }, {\n        "a": 11\n    }]\n}');
 
         bt('{"1":{"1a":"1b"},"2"}', '{\n    "1": {\n        "1a": "1b"\n    },\n    "2"\n}');
         bt('{a:{a:b},c}', '{\n    a: {\n        a: b\n    },\n    c\n}');
@@ -4883,6 +4918,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
                       'object_literal = {\n' +
+                      '    propertx: first_token + 12345678.99999E-6,\n' +
                       '    property: first_token_should_never_wrap + but_this_can,\n' +
                       '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
                       '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
@@ -4895,6 +4931,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '    Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
                       '    if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
                       '    object_literal = {\n' +
+                      '        propertx: first_token + 12345678.99999E-6,\n' +
                       '        property: first_token_should_never_wrap + but_this_can,\n' +
                       '        propertz: first_token_should_never_wrap + !but_this_can,\n' +
                       '        proper: "first_token_should_never_wrap" + "but_this_can"\n' +
@@ -4911,6 +4948,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
                       'object_literal = {\n' +
+                      '    propertx: first_token + 12345678.99999E-6,\n' +
                       '    property: first_token_should_never_wrap + but_this_can,\n' +
                       '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
                       '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
@@ -4925,6 +4963,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
                       'object_literal = {\n' +
+                      '    propertx: first_token + 12345678.99999E-6,\n' +
                       '    property: first_token_should_never_wrap + but_this_can,\n' +
                       '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
                       '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
@@ -4942,6 +4981,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'if (wraps_can_occur &&\n' +
                       '    inside_an_if_block) that_is_.okay();\n' +
                       'object_literal = {\n' +
+                      '    propertx: first_token +\n' +
+                      '        12345678.99999E-6,\n' +
                       '    property: first_token_should_never_wrap +\n' +
                       '        but_this_can,\n' +
                       '    propertz: first_token_should_never_wrap +\n' +
@@ -4963,6 +5004,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'if (wraps_can_occur &&\n' +
                       '    inside_an_if_block) that_is_.okay();\n' +
                       'object_literal = {\n' +
+                      '    propertx: first_token +\n' +
+                      '        12345678.99999E-6,\n' +
                       '    property: first_token_should_never_wrap +\n' +
                       '        but_this_can,\n' +
                       '    propertz: first_token_should_never_wrap +\n' +
@@ -4985,6 +5028,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '    if (wraps_can_occur &&\n' +
                       '        inside_an_if_block) that_is_.okay();\n' +
                       '    object_literal = {\n' +
+                      '        propertx: first_token +\n' +
+                      '            12345678.99999E-6,\n' +
                       '        property: first_token_should_never_wrap +\n' +
                       '            but_this_can,\n' +
                       '        propertz: first_token_should_never_wrap +\n' +
@@ -5006,6 +5051,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
                       '    .okay();\n' +
                       'object_literal = {\n' +
+                      '    propertx: first_token + 12345678.99999E-6,\n' +
                       '    property: first_token_should_never_wrap + but_this_can,\n' +
                       '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
                       '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
@@ -5022,6 +5068,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
                       '    .okay();\n' +
                       'object_literal = {\n' +
+                      '    propertx: first_token + 12345678.99999E-6,\n' +
                       '    property: first_token_should_never_wrap + but_this_can,\n' +
                       '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
                       '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
@@ -5041,6 +5088,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '    inside_an_if_block) that_is_\n' +
                       '    .okay();\n' +
                       'object_literal = {\n' +
+                      '    propertx: first_token +\n' +
+                      '        12345678.99999E-6,\n' +
                       '    property: first_token_should_never_wrap +\n' +
                       '        but_this_can,\n' +
                       '    propertz: first_token_should_never_wrap +\n' +
@@ -5063,6 +5112,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '    inside_an_if_block) that_is_\n' +
                       '    .okay();\n' +
                       'object_literal = {\n' +
+                      '    propertx: first_token +\n' +
+                      '        12345678.99999E-6,\n' +
                       '    property: first_token_should_never_wrap +\n' +
                       '        but_this_can,\n' +
                       '    propertz: first_token_should_never_wrap +\n' +
@@ -5086,6 +5137,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '        inside_an_if_block) that_is_\n' +
                       '        .okay();\n' +
                       '    object_literal = {\n' +
+                      '        propertx: first_token +\n' +
+                      '            12345678.99999E-6,\n' +
                       '        property: first_token_should_never_wrap +\n' +
                       '            but_this_can,\n' +
                       '        propertz: first_token_should_never_wrap +\n' +
@@ -5431,6 +5484,36 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    };\n' +
             '}());');
         // END tests for issue 459
+
+        // START tests for issue 505
+        // strings should end at newline unless continued by backslash
+        bt( 'var name = "a;\n' +
+            'name = "b";');
+        bt( 'var name = "a; \\\n' +
+            '    name = b";');
+        // END tests for issue 505
+
+        // START tests for issue 514
+        // some operators require spaces to distinguish them
+        bt('var c = "_ACTION_TO_NATIVEAPI_" + ++g++ + +new Date;');
+        bt('var c = "_ACTION_TO_NATIVEAPI_" - --g-- - -new Date;');
+        // END tests for issue 514
+
+        // START tests for issue 485
+        // ensure function declarations behave the same in arrays as elsewhere
+        bt( 'var v = ["a",\n' +
+            '    function() {\n' +
+            '        return;\n' +
+            '    }, {\n' +
+            '        id: 1\n' +
+            '    }\n' +
+            '];');
+        bt( 'var v = ["a", function() {\n' +
+            '    return;\n' +
+            '}, {\n' +
+            '    id: 1\n' +
+            '}];');
+        // END tests for issue 485
 
         bt('var a=1,b={bang:2},c=3;',
             'var a = 1,\n    b = {\n        bang: 2\n    },\n    c = 3;');
@@ -5818,6 +5901,13 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         btc("@media print {.tab{}}", "@media print {\n\t.tab {}\n}\n");
         btc("@media print {.tab{background-image:url(foo@2x.png)}}", "@media print {\n\t.tab {\n\t\tbackground-image: url(foo@2x.png)\n\t}\n}\n");
 
+        //lead-in whitespace determines base-indent.
+        // lead-in newlines are stripped.
+        btc("\n\na, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}\n");
+        btc("   a, img {padding: 0.2px}", "   a,\n   img {\n   \tpadding: 0.2px\n   }\n");
+        btc(" \t \na, img {padding: 0.2px}", " \t a,\n \t img {\n \t \tpadding: 0.2px\n \t }\n");
+        btc("\n\n     a, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}\n");
+
         // comments
         btc("/* test */", "/* test */\n");
         btc(".tabs{/* test */}", ".tabs {\n\t/* test */\n}\n");
@@ -5882,7 +5972,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         btc("a:not(\"foobar\\\";{}omg\"){\ncontent: 'example\\';{} text';\ncontent: \"example\\\";{} text\";}",
             "a:not(\"foobar\\\";{}omg\") {\n  content: 'example\\';{} text';\n  content: \"example\\\";{} text\";\n}\n");
 
-        btc('html.js [data-custom="123"] {\n  opacity: 1.00;\n}\n'); // may not eat the space before "["
+        // may not eat the space before "["
+        btc('html.js [data-custom="123"] {\n  opacity: 1.00;\n}\n');
         btc('html.js *[data-custom="123"] {\n  opacity: 1.00;\n}\n');
 
         return sanitytest;
