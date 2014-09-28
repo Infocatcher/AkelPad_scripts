@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2014
 // version 0.2.7pre - 2014-09-19
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-09-27 08:41:06 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-09-28 05:44:35 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -776,8 +776,8 @@ function detectXMLType(str) {
         }
 
         function start_of_object_property() {
-            return flags.parent.mode === MODE.ObjectLiteral && flags.mode === MODE.Statement && flags.last_text === ':' &&
-                flags.ternary_depth === 0;
+            return flags.parent.mode === MODE.ObjectLiteral && flags.mode === MODE.Statement && (
+                (flags.last_text === ':' && flags.ternary_depth === 0) || (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['get', 'set'])));
         }
 
         function start_of_statement() {
@@ -791,8 +791,8 @@ function detectXMLType(str) {
                         && !flags.in_case
                         && !(current_token.text === '--' || current_token.text === '++')
                         && current_token.type !== 'TK_WORD' && current_token.type !== 'TK_RESERVED') ||
-                    (flags.mode === MODE.ObjectLiteral && flags.last_text === ':' && flags.ternary_depth === 0)
-
+                    (flags.mode === MODE.ObjectLiteral && (
+                        (flags.last_text === ':' && flags.ternary_depth === 0) || (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['get', 'set']))))
                 ) {
 
                 set_mode(MODE.Statement);
@@ -976,8 +976,10 @@ function detectXMLType(str) {
             // Check if this is should be treated as a ObjectLiteral
             var next_token = get_token(1)
             var second_token = get_token(2)
-            if (second_token  && second_token.text == ':' &&
-                        (next_token.type === 'TK_STRING' || next_token.type == 'TK_WORD' || next_token.type == 'TK_RESERVED')) {
+            if (second_token && (
+                    (second_token.text === ':' && in_array(next_token.type, ['TK_STRING', 'TK_WORD', 'TK_RESERVED']))
+                    || (in_array(next_token.text, ['get', 'set']) && in_array(second_token.type, ['TK_WORD', 'TK_RESERVED']))
+                )) {
                 set_mode(MODE.ObjectLiteral);
             } else {
                 set_mode(MODE.BlockStatement);
@@ -1049,6 +1051,11 @@ function detectXMLType(str) {
         }
 
         function handle_word() {
+            if (current_token.type === 'TK_RESERVED' && flags.mode !== MODE.ObjectLiteral &&
+                in_array(current_token.text, ['set', 'get'])) {
+                current_token.type = 'TK_WORD';
+            }
+
             if (start_of_statement()) {
                 // The conditional starts the statement if appropriate.
             } else if (current_token.wanted_newline && !is_expression(flags.mode) &&
@@ -1134,7 +1141,7 @@ function detectXMLType(str) {
                 }
             }
 
-            if (current_token.type === 'TK_RESERVED' && current_token.text === 'function') {
+            if (current_token.type === 'TK_RESERVED' &&  in_array(current_token.text, ['function', 'get', 'set'])) {
                 print_token();
                 flags.last_word = current_token.text;
                 return;
@@ -4817,8 +4824,10 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt("{\n    var a = set\n    foo();\n}");
         bt("var x = {\n    get function()\n}");
         bt("var x = {\n    set function()\n}");
-        bt("var x = set\n\na() {}", "var x = set\n\n    a() {}");
-        bt("var x = set\n\nfunction() {}", "var x = set\n\n    function() {}");
+
+        // According to my current research get/set have no special meaning outside of an object literal
+        bt("var x = set\n\na() {}", "var x = set\n\na() {}");
+        bt("var x = set\n\nfunction() {}", "var x = set\n\nfunction() {}");
 
         bt('<!-- foo\nbar();\n-->');
         bt('<!-- dont crash');
@@ -5514,6 +5523,25 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    id: 1\n' +
             '}];');
         // END tests for issue 485
+
+        // START tests for issue 508
+        bt('set["name"]');
+        bt('get["name"]');
+        test_fragment(
+            'a = {\n' +
+            '    set b(x) {},\n' +
+            '    c: 1,\n' +
+            '    d: function() {}\n' +
+            '};');
+        test_fragment(
+            'a = {\n' +
+            '    get b() {\n' +
+            '        retun 0;\n' +
+            '    },\n' +
+            '    c: 1,\n' +
+            '    d: function() {}\n' +
+            '};');
+        // END tests for issue 508
 
         bt('var a=1,b={bang:2},c=3;',
             'var a = 1,\n    b = {\n        bang: 2\n    },\n    c = 3;');
