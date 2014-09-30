@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2014
 // version 0.2.7pre - 2014-09-19
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-09-28 05:44:35 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-09-29 22:31:33 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -366,6 +366,9 @@ function detectXMLType(str) {
           NOTE: This is not a hard limit. Lines will continue until a point where a newline would
                 be preserved if it were present.
 
+    end_with_newline (default false)  - end output with a newline
+
+
     e.g
 
     js_beautify(js_source_text, {
@@ -561,6 +564,8 @@ function detectXMLType(str) {
         opt.unescape_strings = (options.unescape_strings === undefined) ? false : options.unescape_strings;
         opt.wrap_line_length = (options.wrap_line_length === undefined) ? 0 : parseInt(options.wrap_line_length, 10);
         opt.e4x = (options.e4x === undefined) ? false : options.e4x;
+        opt.end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
+
 
         // force opt.space_after_anon_function to true if opt.jslint_happy
         if(opt.jslint_happy) {
@@ -632,6 +637,10 @@ function detectXMLType(str) {
             }
 
             sweet_code = output.get_code();
+            if (opt.end_with_newline) {
+                sweet_code += '\n';
+            }
+
             return sweet_code;
         };
 
@@ -1056,6 +1065,13 @@ function detectXMLType(str) {
                 current_token.type = 'TK_WORD';
             }
 
+            if (current_token.type === 'TK_RESERVED' && flags.mode === MODE.ObjectLiteral) {
+                var next_token = get_token(1);
+                if (next_token.text == ':') {
+                    current_token.type = 'TK_WORD';
+                }
+            }
+
             if (start_of_statement()) {
                 // The conditional starts the statement if appropriate.
             } else if (current_token.wanted_newline && !is_expression(flags.mode) &&
@@ -1206,7 +1222,7 @@ function detectXMLType(str) {
                 } else if (last_type !== 'TK_END_EXPR') {
                     if ((last_type !== 'TK_START_EXPR' || !(current_token.type === 'TK_RESERVED' && in_array(current_token.text, ['var', 'let', 'const']))) && flags.last_text !== ':') {
                         // no need to force newline on 'var': for (var x = 0...)
-                        if (current_token.type === 'TK_RESERVED' && current_token.text === 'if' && flags.last_word === 'else' && flags.last_text !== '{') {
+                        if (current_token.type === 'TK_RESERVED' && current_token.text === 'if' && flags.last_text === 'else') {
                             // no newline for } else if {
                             output.space_before_token = true;
                         } else {
@@ -1607,7 +1623,7 @@ function detectXMLType(str) {
         this.add_space_before_token = function() {
             if (this.space_before_token && this.current_line.get_item_count()) {
                 var last_output = this.current_line.last();
-                if (last_output !== ' ' && last_output !== indent_string) { // prevent occassional duplicate space
+                if (last_output !== ' ' && last_output !== indent_string && last_output !== baseIndentString) { // prevent occassional duplicate space
                     this.current_line.push(' ');
                 }
             }
@@ -2263,7 +2279,7 @@ function detectXMLType(str) {
         var indentSize = options.indent_size || 4;
         var indentCharacter = options.indent_char || ' ';
         var selectorSeparatorNewline = (options.selector_separator_newline === undefined) ? true : options.selector_separator_newline;
-        var endWithNewline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
+        var end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
 
         // compatibility
         if (typeof indentSize === "string") {
@@ -2535,8 +2551,7 @@ function detectXMLType(str) {
         var sweetCode = output.join('').replace(/[\r\n\t ]+$/, '');
 
         // establish end_with_newline
-        var should = endWithNewline;
-        if (should) {
+        if (end_with_newline) {
             sweetCode += "\n";
         }
 
@@ -2636,6 +2651,8 @@ function detectXMLType(str) {
                                         Only works before elements, not inside tags or for text.
     max_preserve_newlines (default unlimited) - maximum number of line breaks to be preserved in one chunk
     indent_handlebars (default false) - format and indent {{#foo}} and {{/foo}}
+    end_with_newline (false)          - end with a newline
+
 
     e.g.
 
@@ -2674,7 +2691,8 @@ function detectXMLType(str) {
             unformatted,
             preserve_newlines,
             max_preserve_newlines,
-            indent_handlebars;
+            indent_handlebars,
+            end_with_newline;
 
         options = options || {};
 
@@ -2695,6 +2713,7 @@ function detectXMLType(str) {
             (isNaN(parseInt(options.max_preserve_newlines, 10)) ? 32786 : parseInt(options.max_preserve_newlines, 10))
             : 0;
         indent_handlebars = (options.indent_handlebars === undefined) ? false : options.indent_handlebars;
+        end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
 
         function Parser() {
 
@@ -3333,7 +3352,7 @@ function detectXMLType(str) {
                     break;
                 case 'TK_TAG_SINGLE':
                     // Don't add a newline before elements that should remain unformatted.
-                    var tag_check = multi_parser.token_text.match(/^\s*<([a-z]+)/i);
+                    var tag_check = multi_parser.token_text.match(/^\s*<([a-z-]+)/i);
                     if (!tag_check || !multi_parser.Utils.in_array(tag_check[1], unformatted)) {
                         multi_parser.print_newline(false, multi_parser.output);
                     }
@@ -3385,8 +3404,8 @@ function detectXMLType(str) {
                                 .replace(/\s+$/, '');
                         }
                         if (text) {
-                            multi_parser.print_token_raw(indentation + trim(text));
-                            multi_parser.print_newline(false, multi_parser.output);
+                            multi_parser.print_token_raw(text);
+                            multi_parser.print_newline(true, multi_parser.output);
                         }
                     }
                     multi_parser.current_mode = 'TAG';
@@ -3395,7 +3414,11 @@ function detectXMLType(str) {
             multi_parser.last_token = multi_parser.token_type;
             multi_parser.last_text = multi_parser.token_text;
         }
-        return multi_parser.output.join('');
+        var sweet_code = multi_parser.output.join('').replace(/[\r\n\t ]+$/, '');
+        if (end_with_newline) {
+            sweet_code += '\n';
+        }
+        return sweet_code;
     }
 
     if (typeof define === "function" && define.amd) {
@@ -3813,7 +3836,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         space_before_conditional: true,
         break_chained_methods: false,
         selector_separator: '\n',
-        end_with_newline: true
+        end_with_newline: false
     };
 
     function test_js_beautifier(input)
@@ -3837,11 +3860,11 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
     // does not check the indentation / surroundings as bt() does
     function test_fragment(input, expected)
     {
-        expected = expected || input;
+        expected = expected || expected === '' ? expected : input;
         sanitytest.expect(input, expected);
         // if the expected is different from input, run it again
         // expected output should be unchanged when run twice.
-        if (expected != input) {
+        if (expected !== input) {
             sanitytest.expect(expected, expected);
         }
     }
@@ -3854,7 +3877,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
     {
         var wrapped_input, wrapped_expectation;
 
-        expectation = expectation || input;
+        expectation = expectation || expectation === '' ? expectation : input;
         sanitytest.test_function(test_js_beautifier, 'js_beautify');
         test_fragment(input, expectation);
 
@@ -3879,13 +3902,16 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
     {
         var wrapped_input, wrapped_expectation, field_input, field_expectation;
 
-        expectation = expectation || input;
+        expectation = expectation || expectation === '' ? expectation : input;
         sanitytest.test_function(test_html_beautifier, 'html_beautify');
         test_fragment(input, expectation);
 
         if (opts.indent_size === 4 && input) {
             wrapped_input = '<div>\n' + input.replace(/^(.+)$/mg, '    $1') + '\n    <span>inline</span>\n</div>';
             wrapped_expectation = '<div>\n' + expectation.replace(/^(.+)$/mg, '    $1') + '\n    <span>inline</span>\n</div>';
+            if (opts.end_with_newline) {
+                wrapped_expectation += '\n';
+            }
             test_fragment(wrapped_input, wrapped_expectation);
         }
 
@@ -3914,7 +3940,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
     {
         var wrapped_input, wrapped_expectation;
 
-        expectation = expectation || input;
+        expectation = expectation || expectation === '' ? expectation : input;
         sanitytest.test_function(test_css_beautifier, 'css_beautify');
         test_fragment(input, expectation);
     }
@@ -3940,15 +3966,23 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.keep_array_indentation = false;
         opts.brace_style       = "collapse";
 
-
         // unicode support
         bt('var ' + String.fromCharCode(3232) + '_' + String.fromCharCode(3232) + ' = "hi";');
         bt('var ' + String.fromCharCode(228) + 'x = {\n    ' + String.fromCharCode(228) + 'rgerlich: true\n};');
 
+        opts.end_with_newline = true;
+        test_fragment('', '\n');
+        test_fragment('   return .5','   return .5\n');
+        test_fragment('   \n\nreturn .5\n\n\n\n','   return .5\n');
+        test_fragment('\n', '\n');
+
+        opts.end_with_newline = false;
         bt('');
+        test_fragment('\n', '');
         bt('return .5');
         test_fragment('   return .5');
         test_fragment('   return .5;\n   a();');
+        test_fragment('   < div');
         bt('a        =          1', 'a = 1');
         bt('a=1', 'a = 1');
         bt("a();\n\nb();", "a();\n\nb();");
@@ -4871,6 +4905,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('var a = 5 + function();');
 
         bt('3.*7;', '3. * 7;');
+        bt('a = 1.e-64 * 0.5e+4 / 6e-23;');
         bt('import foo.*;', 'import foo.*;'); // actionscript's import
         test_fragment('function f(a: a, b: b)'); // actionscript
 
@@ -5508,6 +5543,42 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('var c = "_ACTION_TO_NATIVEAPI_" - --g-- - -new Date;');
         // END tests for issue 514
 
+        // START tests for issue 440
+        // reserved words can be used as object property names
+        bt( 'a = {\n' +
+            '    function: {},\n' +
+            '    "function": {},\n' +
+            '    throw: {},\n' +
+            '    "throw": {},\n' +
+            '    var: {},\n' +
+            '    "var": {},\n' +
+            '    set: {},\n' +
+            '    "set": {},\n' +
+            '    get: {},\n' +
+            '    "get": {},\n' +
+            '    if: {},\n' +
+            '    "if": {},\n' +
+            '    then: {},\n' +
+            '    "then": {},\n' +
+            '    else: {},\n' +
+            '    "else": {},\n' +
+            '    yay: {}\n' +
+            '};');
+        // END tests for issue 440
+
+        // START tests for issue 311
+        // if-else with braces edge case
+        bt('if(x){a();}else{b();}if(y){c();}',
+            'if (x) {\n' +
+            '    a();\n' +
+            '} else {\n' +
+            '    b();\n' +
+            '}\n' +
+            'if (y) {\n' +
+            '    c();\n' +
+            '}');
+        // END tests for issue 311
+
         // START tests for issue 485
         // ensure function declarations behave the same in arrays as elsewhere
         bt( 'var v = ["a",\n' +
@@ -5549,7 +5620,29 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var a = {\n        bing: 1\n    },\n    b = 2,\n    c = 3;');
         Urlencoded.run_tests(sanitytest);
 
+
         bth('');
+
+        opts.end_with_newline = true;
+        test_fragment('', '\n');
+        test_fragment('<div></div>\n');
+        test_fragment('<div></div>\n\n\n', '<div></div>\n');
+        test_fragment('<head>\n' +
+            '    <script>\n' +
+            '        mocha.setup("bdd");\n' +
+            '\n' +
+            '    </script>\n' +
+            '</head>\n');
+
+
+        opts.end_with_newline = false;
+        test_fragment('<head>\n' +
+            '    <script>\n' +
+            '        mocha.setup("bdd");\n' +
+            '    </script>\n' +
+            '</head>');
+
+        test_fragment('<div></div>\n', '<div></div>');
         bth('<div></div>');
         bth('<div>content</div>');
         bth('<div><div></div></div>',
@@ -5692,6 +5785,14 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '  body {background-color:lightgrey}\n' +
             '  h1   {color:blue}\n' +
             '</style>');
+        opts.unformatted = unformatted;
+
+        unformatted = opts.unformatted;
+        opts.unformatted = ['custom-element'];
+        test_fragment('<div>should <custom-element>not</custom-element>' +
+                      ' insert newlines</div>',
+                      '<div>should <custom-element>not</custom-element>' +
+                      ' insert newlines</div>');
         opts.unformatted = unformatted;
 
         // Tests that don't pass, but probably should.
@@ -5913,50 +6014,59 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '<div>preserve one newline</div>',
                       '<div>Should</div>\n\n\n' +
                       '<div>preserve one newline</div>');
+
         // css beautifier
         opts.indent_size = 1;
         opts.indent_char = '\t';
         opts.selector_separator_newline = true;
         opts.end_with_newline = true;
+        btc('', '\n');
+        btc('\n', '\n');
+        btc(".tabs{}\n", ".tabs {}\n");
+        btc(".tabs{}", ".tabs {}\n");
+
+        opts.end_with_newline = false;
+        btc('', '');
+        btc('\n', '');
+        btc(".tabs{}\n", ".tabs {}");
 
         // test basic css beautifier
-        btc('', '\n');
-        btc(".tabs{}", ".tabs {}\n");
-        btc(".tabs{color:red;}", ".tabs {\n\tcolor: red;\n}\n");
-        btc(".tabs{color:rgb(255, 255, 0)}", ".tabs {\n\tcolor: rgb(255, 255, 0)\n}\n");
-        btc(".tabs{background:url('back.jpg')}", ".tabs {\n\tbackground: url('back.jpg')\n}\n");
-        btc("#bla, #foo{color:red}", "#bla,\n#foo {\n\tcolor: red\n}\n");
-        btc("@media print {.tab{}}", "@media print {\n\t.tab {}\n}\n");
-        btc("@media print {.tab{background-image:url(foo@2x.png)}}", "@media print {\n\t.tab {\n\t\tbackground-image: url(foo@2x.png)\n\t}\n}\n");
+        btc(".tabs {}");
+        btc(".tabs{color:red;}", ".tabs {\n\tcolor: red;\n}");
+        btc(".tabs{color:rgb(255, 255, 0)}", ".tabs {\n\tcolor: rgb(255, 255, 0)\n}");
+        btc(".tabs{background:url('back.jpg')}", ".tabs {\n\tbackground: url('back.jpg')\n}");
+        btc("#bla, #foo{color:red}", "#bla,\n#foo {\n\tcolor: red\n}");
+        btc("@media print {.tab{}}", "@media print {\n\t.tab {}\n}");
+        btc("@media print {.tab{background-image:url(foo@2x.png)}}", "@media print {\n\t.tab {\n\t\tbackground-image: url(foo@2x.png)\n\t}\n}");
 
         //lead-in whitespace determines base-indent.
         // lead-in newlines are stripped.
-        btc("\n\na, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}\n");
-        btc("   a, img {padding: 0.2px}", "   a,\n   img {\n   \tpadding: 0.2px\n   }\n");
-        btc(" \t \na, img {padding: 0.2px}", " \t a,\n \t img {\n \t \tpadding: 0.2px\n \t }\n");
-        btc("\n\n     a, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}\n");
+        btc("\n\na, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}");
+        btc("   a, img {padding: 0.2px}", "   a,\n   img {\n   \tpadding: 0.2px\n   }");
+        btc(" \t \na, img {padding: 0.2px}", " \t a,\n \t img {\n \t \tpadding: 0.2px\n \t }");
+        btc("\n\n     a, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}");
 
         // comments
-        btc("/* test */", "/* test */\n");
-        btc(".tabs{/* test */}", ".tabs {\n\t/* test */\n}\n");
-        btc("/* header */.tabs {}", "/* header */\n\n.tabs {}\n");
+        btc("/* test */", "/* test */");
+        btc(".tabs{/* test */}", ".tabs {\n\t/* test */\n}");
+        btc("/* header */.tabs {}", "/* header */\n\n.tabs {}");
 
         //single line comment support (less/sass)
-        btc(".tabs{\n// comment\nwidth:10px;\n}", ".tabs {\n\t// comment\n\twidth: 10px;\n}\n");
-        btc(".tabs{// comment\nwidth:10px;\n}", ".tabs {\n\t// comment\n\twidth: 10px;\n}\n");
-        btc("//comment\n.tabs{width:10px;}", "//comment\n.tabs {\n\twidth: 10px;\n}\n");
-        btc(".tabs{//comment\n//2nd single line comment\nwidth:10px;}", ".tabs {\n\t//comment\n\t//2nd single line comment\n\twidth: 10px;\n}\n");
-        btc(".tabs{width:10px;//end of line comment\n}", ".tabs {\n\twidth: 10px;//end of line comment\n}\n");
-        btc(".tabs{width:10px;//end of line comment\nheight:10px;}", ".tabs {\n\twidth: 10px;//end of line comment\n\theight: 10px;\n}\n");
-        btc(".tabs{width:10px;//end of line comment\nheight:10px;//another\n}", ".tabs {\n\twidth: 10px;//end of line comment\n\theight: 10px;//another\n}\n");
+        btc(".tabs{\n// comment\nwidth:10px;\n}", ".tabs {\n\t// comment\n\twidth: 10px;\n}");
+        btc(".tabs{// comment\nwidth:10px;\n}", ".tabs {\n\t// comment\n\twidth: 10px;\n}");
+        btc("//comment\n.tabs{width:10px;}", "//comment\n.tabs {\n\twidth: 10px;\n}");
+        btc(".tabs{//comment\n//2nd single line comment\nwidth:10px;}", ".tabs {\n\t//comment\n\t//2nd single line comment\n\twidth: 10px;\n}");
+        btc(".tabs{width:10px;//end of line comment\n}", ".tabs {\n\twidth: 10px;//end of line comment\n}");
+        btc(".tabs{width:10px;//end of line comment\nheight:10px;}", ".tabs {\n\twidth: 10px;//end of line comment\n\theight: 10px;\n}");
+        btc(".tabs{width:10px;//end of line comment\nheight:10px;//another\n}", ".tabs {\n\twidth: 10px;//end of line comment\n\theight: 10px;//another\n}");
 
         // separate selectors
-        btc("#bla, #foo{color:red}", "#bla,\n#foo {\n\tcolor: red\n}\n");
-        btc("a, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}\n");
+        btc("#bla, #foo{color:red}", "#bla,\n#foo {\n\tcolor: red\n}");
+        btc("a, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}");
 
         // block nesting
-        btc("#foo {\n\tbackground-image: url(foo@2x.png);\n\t@font-face {\n\t\tfont-family: 'Bitstream Vera Serif Bold';\n\t\tsrc: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n\t}\n}\n");
-        btc("@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: 'Bitstream Vera Serif Bold';\n\t\tsrc: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n\t}\n}\n");
+        btc("#foo {\n\tbackground-image: url(foo@2x.png);\n\t@font-face {\n\t\tfont-family: 'Bitstream Vera Serif Bold';\n\t\tsrc: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n\t}\n}");
+        btc("@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: 'Bitstream Vera Serif Bold';\n\t\tsrc: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n\t}\n}");
 /*
 @font-face {
     font-family: 'Bitstream Vera Serif Bold';
@@ -5976,33 +6086,33 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
     }
 }
 */
-        btc("@font-face {\n\tfont-family: 'Bitstream Vera Serif Bold';\n\tsrc: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n}\n@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo.png);\n\t}\n\t@media screen and (min-device-pixel-ratio: 2) {\n\t\t@font-face {\n\t\t\tfont-family: 'Helvetica Neue'\n\t\t}\n\t\t#foo:hover {\n\t\t\tbackground-image: url(foo@2x.png);\n\t\t}\n\t}\n}\n");
+        btc("@font-face {\n\tfont-family: 'Bitstream Vera Serif Bold';\n\tsrc: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n}\n@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo.png);\n\t}\n\t@media screen and (min-device-pixel-ratio: 2) {\n\t\t@font-face {\n\t\t\tfont-family: 'Helvetica Neue'\n\t\t}\n\t\t#foo:hover {\n\t\t\tbackground-image: url(foo@2x.png);\n\t\t}\n\t}\n}");
 
         // test options
         opts.indent_size = 2;
         opts.indent_char = ' ';
         opts.selector_separator_newline = false;
 
-        btc("#bla, #foo{color:green}", "#bla, #foo {\n  color: green\n}\n");
-        btc("@media print {.tab{}}", "@media print {\n  .tab {}\n}\n");
-        btc("@media print {.tab,.bat{}}", "@media print {\n  .tab, .bat {}\n}\n");
-        btc("#bla, #foo{color:black}", "#bla, #foo {\n  color: black\n}\n");
+        btc("#bla, #foo{color:green}", "#bla, #foo {\n  color: green\n}");
+        btc("@media print {.tab{}}", "@media print {\n  .tab {}\n}");
+        btc("@media print {.tab,.bat{}}", "@media print {\n  .tab, .bat {}\n}");
+        btc("#bla, #foo{color:black}", "#bla, #foo {\n  color: black\n}");
 
         // pseudo-classes and pseudo-elements
-        btc("#foo:hover {\n  background-image: url(foo@2x.png)\n}\n");
-        btc("#foo *:hover {\n  color: purple\n}\n");
-        btc("::selection {\n  color: #ff0000;\n}\n");
+        btc("#foo:hover {\n  background-image: url(foo@2x.png)\n}");
+        btc("#foo *:hover {\n  color: purple\n}");
+        btc("::selection {\n  color: #ff0000;\n}");
 
         // TODO: don't break nested pseduo-classes
-        btc("@media screen {.tab,.bat:hover {color:red}}", "@media screen {\n  .tab, .bat:hover {\n    color: red\n  }\n}\n");
+        btc("@media screen {.tab,.bat:hover {color:red}}", "@media screen {\n  .tab, .bat:hover {\n    color: red\n  }\n}");
 
         // particular edge case with braces and semicolons inside tags that allows custom text
         btc("a:not(\"foobar\\\";{}omg\"){\ncontent: 'example\\';{} text';\ncontent: \"example\\\";{} text\";}",
-            "a:not(\"foobar\\\";{}omg\") {\n  content: 'example\\';{} text';\n  content: \"example\\\";{} text\";\n}\n");
+            "a:not(\"foobar\\\";{}omg\") {\n  content: 'example\\';{} text';\n  content: \"example\\\";{} text\";\n}");
 
         // may not eat the space before "["
-        btc('html.js [data-custom="123"] {\n  opacity: 1.00;\n}\n');
-        btc('html.js *[data-custom="123"] {\n  opacity: 1.00;\n}\n');
+        btc('html.js [data-custom="123"] {\n  opacity: 1.00;\n}');
+        btc('html.js *[data-custom="123"] {\n  opacity: 1.00;\n}');
 
         return sanitytest;
     }
