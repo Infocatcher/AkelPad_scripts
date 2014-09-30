@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2014
 // version 0.2.7pre - 2014-09-19
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-09-29 22:31:33 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-09-30 07:48:45 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1139,7 +1139,9 @@ function detectXMLType(str) {
                     }
                 }
                 if (last_type === 'TK_RESERVED' || last_type === 'TK_WORD') {
-                    if (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['get', 'set', 'new', 'return'])) {
+                    if (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['get', 'set', 'new', 'return', 'export'])) {
+                        output.space_before_token = true;
+                    } else if (last_type === 'TK_RESERVED' && flags.last_text === 'default' && last_last_text === 'export') {
                         output.space_before_token = true;
                     } else {
                         print_newline();
@@ -1197,7 +1199,7 @@ function detectXMLType(str) {
             }
 
             if (current_token.type === 'TK_RESERVED' && in_array(current_token.text, Tokenizer.line_starters) && flags.last_text !== ')') {
-                if (flags.last_text === 'else') {
+                if (flags.last_text === 'else' || flags.last_text === 'export') {
                     prefix = 'SPACE';
                 } else {
                     prefix = 'NEWLINE';
@@ -1703,7 +1705,7 @@ function detectXMLType(str) {
                 +' <%= <% %> <?= <? ?>').split(' '); // try to be a good boy and try not to break the markup language identifiers
 
         // words which should always start on new line.
-        this.line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function,yield'.split(',');
+        this.line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function,yield,import,export'.split(',');
         var reserved_words = this.line_starters.concat(['do', 'in', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof']);
 
         var n_newlines, whitespace_before_token, in_html_comment, tokens, parser_pos;
@@ -5597,6 +5599,21 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    id: 1\n' +
             '}];');
         // END tests for issue 485
+
+        // START tests for issue 382
+        // initial totally cursor support for es6 module export
+        bt( 'module "Even" {\n' +
+            '    import odd from "Odd";\n' +
+            '    export function sum(x, y) {\n' +
+            '        return x + y;\n' +
+            '    }\n' +
+            '    export var pi = 3.141593;\n' +
+            '    export default moduleName;\n' +
+            '}');
+        bt( 'module "Even" {\n' +
+            '    export default function div(x, y) {}\n' +
+            '}');
+        // END tests for issue 382
 
         // START tests for issue 508
         bt('set["name"]');
