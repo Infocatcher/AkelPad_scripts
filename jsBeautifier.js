@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2014
 // version 0.2.7pre - 2014-09-19
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-09-30 07:48:45 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-10-01 18:12:21 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -1769,15 +1769,12 @@ function detectXMLType(str) {
                 return ['', 'TK_EOF'];
             }
 
-            var last_token, last_type, last_text;
+            var last_token;
             if (tokens.length) {
                 last_token = tokens[tokens.length-1];
-                last_type = last_token.type;
-                last_text = last_token.text;
             } else {
-                last_token = null;
-                last_type = 'TK_START_BLOCK';
-                last_text = '';
+                // For the sake of tokenizing we can pretend that there was on open brace to start
+                last_token = new Token('TK_START_BLOCK', '{');
             }
 
 
@@ -1862,8 +1859,8 @@ function detectXMLType(str) {
                     }
                 }
 
-                if (!(last_type === 'TK_DOT' ||
-                        (last_type === 'TK_RESERVED' && in_array(last_text, ['set', 'get'])))
+                if (!(last_token.type === 'TK_DOT' ||
+                        (last_token.type === 'TK_RESERVED' && in_array(last_token.text, ['set', 'get'])))
                     && in_array(c, reserved_words)) {
                     if (c === 'in') { // hack for 'in' operator
                         return [c, 'TK_OPERATOR'];
@@ -1940,10 +1937,10 @@ function detectXMLType(str) {
                     (c === '/') || // regexp
                     (opts.e4x && c === "<" && input.slice(parser_pos - 1).match(/^<([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([-a-zA-Z:0-9_.]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*\/?\s*>/)) // xml
                 ) && ( // regex and xml can only appear in specific locations during parsing
-                    (last_type === 'TK_RESERVED' && in_array(last_text , ['return', 'case', 'throw', 'else', 'do'])) ||
-                    (last_type === 'TK_END_EXPR' && last_text === ')' &&
-                        last_token.parent.type === 'TK_RESERVED' && in_array(last_token.parent.text, ['if', 'while', 'for'])) ||
-                    (in_array(last_type, ['TK_COMMENT', 'TK_START_EXPR', 'TK_START_BLOCK',
+                    (last_token.type === 'TK_RESERVED' && in_array(last_token.text , ['return', 'case', 'throw', 'else', 'do'])) ||
+                    (last_token.type === 'TK_END_EXPR' && last_token.text === ')' &&
+                        last_token.parent && last_token.parent.type === 'TK_RESERVED' && in_array(last_token.parent.text, ['if', 'while', 'for'])) ||
+                    (in_array(last_token.type, ['TK_COMMENT', 'TK_START_EXPR', 'TK_START_BLOCK',
                         'TK_END_BLOCK', 'TK_OPERATOR', 'TK_EQUALS', 'TK_EOF', 'TK_SEMICOLON', 'TK_COMMA'
                     ]))
                 )) {
@@ -3990,6 +3987,8 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         test_fragment('   < div');
         bt('a        =          1', 'a = 1');
         bt('a=1', 'a = 1');
+        bt('(3) / 2');
+        bt('["a", "b"].join("")');
         bt("a();\n\nb();", "a();\n\nb();");
         bt('var a = 1 var b = 2', "var a = 1\nvar b = 2");
         bt('var a=1, b=c[d], e=6;', 'var a = 1,\n    b = c[d],\n    e = 6;');
