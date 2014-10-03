@@ -6589,8 +6589,7 @@ function convertSource(file, text) {
 		text = text
 			.replace(".substr(-esc2)", ".slice(-esc2)")
 			.replace("token_text[token_text.length - 1]", "token_text.charAt(token_text.length - 1)")
-			.replace("&& flags.whitespace_before.length", "&& flags.whitespace_before && flags.whitespace_before.length")
-			.replace(/('TK_UNKNOWN': handle_unknown),(\s*\};)/, "$1$2");
+			.replace("&& flags.whitespace_before.length", "&& flags.whitespace_before && flags.whitespace_before.length");
 	}
 	else if(file == "js/lib/beautify-html.js") {
 		text = text
