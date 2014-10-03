@@ -184,8 +184,21 @@ function insertTag() {
 		var makeTag = function(tagData) {
 			return (useBBCode ? "["  : "<")  + tagData + (useBBCode ? "]" : ">");
 		};
+
+		var closeTags = [];
+		var openedTagPattern = new RegExp((useBBCode ? "\\[" : "<") + "([^/\\s=\"'<>\\[\\]]+)");
+		for(var part = attrs; part; ) {
+			if(openedTagPattern.test(part)) {
+				var openedTag = RegExp.$1;
+				part = RegExp.rightContext;
+				closeTags.push(makeTag("/" + openedTag));
+				continue;
+			}
+			break;
+		}
+
 		var sTag = makeTag(tag + attrs);
-		var eTag = makeTag("/" + tag);
+		var eTag = closeTags.reverse().join("") + makeTag("/" + tag);
 
 		txt = sTag + txt + eTag;
 
