@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2014
 // version 0.2.7pre - 2014-09-19
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-10-02 08:02:05 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-10-03 01:44:10 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -2379,6 +2379,21 @@ function detectXMLType(str) {
                 str;
         }
 
+        // Nested pseudo-class if we are insideRule
+        // and the next special character found opens
+        // a new block
+        function foundNestedPseudoClass() {
+            for (var i = pos + 1; i < source_text.length; i++){
+                var ch = source_text.charAt(i);
+                if (ch === "{"){
+                    return true;
+                } else if (ch === ";" || ch === "}" || ch === ")") {
+                    return false;
+                }
+            }
+            return false;
+        }
+
         // printer
         var basebaseIndentString = source_text.match(/^[\t ]*/)[0];
         var singleIndent = new Array(indentSize + 1).join(indentCharacter);
@@ -2487,13 +2502,12 @@ function detectXMLType(str) {
                     if (variableOrRule in css_beautify.CONDITIONAL_GROUP_RULE) {
                         enteringConditionalGroup = true;
                     }
-                } else if (variableOrRule.indexOf(':') > 0) {
+                } else if (': '.indexOf(variableOrRule[variableOrRule.length -1]) >= 0) {
                     //we have a variable, add it and insert one space before continuing
                     next();
-                    variableOrRule = eatString(":").replace(/\s$/, '');
+                    variableOrRule = eatString(": ").replace(/\s$/, '');
                     output.push(variableOrRule);
                     print.singleSpace();
-                    eatWhitespace();
                 }
             } else if (ch === '{') {
                 if (peek(true) === '}') {
@@ -2522,12 +2536,15 @@ function detectXMLType(str) {
                 }
             } else if (ch === ":") {
                 eatWhitespace();
-                if ((insideRule || enteringConditionalGroup) && !lookBack("&")) {
+                if ((insideRule || enteringConditionalGroup) &&
+                        !(lookBack("&") || foundNestedPseudoClass())) {
                     // 'property: value' delimiter
                     // which could be in a conditional group query
                     output.push(':');
                     print.singleSpace();
                 } else {
+                    // sass/less parent reference don't use a space
+                    // sass nested pseudo-class don't use a space
                     if (peek() === ":") {
                         // pseudo-element
                         next();
@@ -2538,6 +2555,9 @@ function detectXMLType(str) {
                     }
                 }
             } else if (ch === '"' || ch === '\'') {
+                if (isAfterSpace) {
+                    print.singleSpace();
+                }
                 output.push(eatString(ch));
             } else if (ch === ';') {
                 output.push(ch);
@@ -2723,6 +2743,10 @@ function detectXMLType(str) {
         return s.replace(/^\s+/g, '');
     }
 
+    function rtrim(s) {
+        return s.replace(/\s+$/g,'');
+    }
+
     function style_html(html_source, options, js_beautify, css_beautify) {
         //Wrapper function to invoke all the necessary constructors and deal with the output.
 
@@ -2751,7 +2775,7 @@ function detectXMLType(str) {
         indent_character = (options.indent_char === undefined) ? ' ' : options.indent_char;
         brace_style = (options.brace_style === undefined) ? 'collapse' : options.brace_style;
         wrap_line_length =  parseInt(options.wrap_line_length, 10) === 0 ? 32786 : parseInt(options.wrap_line_length || 250, 10);
-        unformatted = options.unformatted || ['a', 'span', 'bdo', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym', 'q', 'sub', 'sup', 'tt', 'i', 'b', 'big', 'small', 'u', 's', 'strike', 'font', 'ins', 'del', 'pre', 'address', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+        unformatted = options.unformatted || ['a', 'span', 'img', 'bdo', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym', 'q', 'sub', 'sup', 'tt', 'i', 'b', 'big', 'small', 'u', 's', 'strike', 'font', 'ins', 'del', 'pre', 'address', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
         preserve_newlines = (options.preserve_newlines === undefined) ? true : options.preserve_newlines;
         max_preserve_newlines = preserve_newlines ?
             (isNaN(parseInt(options.max_preserve_newlines, 10)) ? 32786 : parseInt(options.max_preserve_newlines, 10))
@@ -2788,6 +2812,17 @@ function detectXMLType(str) {
                 }
             };
 
+            // Return true iff the given text is composed entirely of
+            // whitespace.
+            this.is_whitespace = function(text) {
+                for (var n = 0; n < text.length; text++) {
+                    if (!this.Utils.in_array(text.charAt(n), this.Utils.whitespace)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
             this.traverse_whitespace = function() {
                 var input_char = '';
 
@@ -2807,8 +2842,19 @@ function detectXMLType(str) {
                 return false;
             };
 
-            this.get_content = function() { //function to capture regular content between tags
+            // Append a space to the given content (string array) or, if we are
+            // at the wrap_line_length, append a newline/indentation.
+            this.space_or_wrap = function(content) {
+                if (this.line_char_count >= this.wrap_line_length) { //insert a line when the wrap_line_length is reached
+                    this.print_newline(false, content);
+                    this.print_indentation(content);
+                } else {
+                    this.line_char_count++;
+                    content.push(' ');
+                }
+            };
 
+            this.get_content = function() { //function to capture regular content between tags
                 var input_char = '',
                     content = [],
                     space = false; //if a space is needed
@@ -2819,10 +2865,8 @@ function detectXMLType(str) {
                     }
 
                     if (this.traverse_whitespace()) {
-                        if (content.length) {
-                            space = true;
-                        }
-                        continue; //don't want to insert unnecessary space
+                        this.space_or_wrap(content);
+                        continue;
                     }
 
                     if (indent_handlebars) {
@@ -2843,17 +2887,6 @@ function detectXMLType(str) {
 
                     input_char = this.input.charAt(this.pos);
                     this.pos++;
-
-                    if (space) {
-                        if (this.line_char_count >= this.wrap_line_length) { //insert a line when the wrap_line_length is reached
-                            this.print_newline(false, content);
-                            this.print_indentation(content);
-                        } else {
-                            this.line_char_count++;
-                            content.push(' ');
-                        }
-                        space = false;
-                    }
                     this.line_char_count++;
                     content.push(input_char); //letter at-a-time (or string) inserted to an array
                 }
@@ -2970,13 +3003,7 @@ function detectXMLType(str) {
 
                     if (content.length && content[content.length - 1] !== '=' && input_char !== '>' && space) {
                         //no space after = or before >
-                        if (this.line_char_count >= this.wrap_line_length) {
-                            this.print_newline(false, content);
-                            this.print_indentation(content);
-                        } else {
-                            content.push(' ');
-                            this.line_char_count++;
-                        }
+                        this.space_or_wrap(content);
                         space = false;
                     }
 
@@ -3055,14 +3082,7 @@ function detectXMLType(str) {
                 } else if (this.is_unformatted(tag_check, unformatted)) { // do not reformat the "unformatted" tags
                     comment = this.get_unformatted('</' + tag_check + '>', tag_complete); //...delegate to get_unformatted function
                     content.push(comment);
-                    // Preserve collapsed whitespace either before or after this tag.
-                    if (tag_start > 0 && this.Utils.in_array(this.input.charAt(tag_start - 1), this.Utils.whitespace)) {
-                        content.splice(0, 0, this.input.charAt(tag_start - 1));
-                    }
                     tag_end = this.pos - 1;
-                    if (this.Utils.in_array(this.input.charAt(tag_end + 1), this.Utils.whitespace)) {
-                        content.push(this.input.charAt(tag_end + 1));
-                    }
                     this.tag_type = 'SINGLE';
                 } else if (tag_check === 'script' &&
                     (tag_complete.search('type') === -1 ||
@@ -3089,17 +3109,19 @@ function detectXMLType(str) {
                     if (tag_check.charAt(0) === '/') { //this tag is a double tag so check for tag-ending
                         this.retrieve_tag(tag_check.substring(1)); //remove it and all ancestors
                         this.tag_type = 'END';
-                        this.traverse_whitespace();
                     } else { //otherwise it's a start-tag
                         this.record_tag(tag_check); //push it on the tag stack
                         if (tag_check.toLowerCase() !== 'html') {
                             this.indent_content = true;
                         }
                         this.tag_type = 'START';
-
-                        // Allow preserving of newlines after a start tag
-                        this.traverse_whitespace();
                     }
+
+                    // Allow preserving of newlines after a start or end tag
+                    if (this.traverse_whitespace()) {
+                        this.space_or_wrap(content);
+                    }
+
                     if (this.Utils.in_array(tag_check, this.Utils.extra_liners)) { //check if this double needs an extra line
                         this.print_newline(false, this.output);
                         if (this.output.length && this.output[this.output.length - 2] !== '\n') {
@@ -3297,6 +3319,9 @@ function detectXMLType(str) {
                         return;
                     }
                     if (force || (arr[arr.length - 1] !== '\n')) { //we might want the extra line
+                        if ((arr[arr.length - 1] !== '\n')) {
+                            arr[arr.length - 1] = rtrim(arr[arr.length - 1]);
+                        }
                         arr.push('\n');
                     }
                 };
@@ -3309,6 +3334,10 @@ function detectXMLType(str) {
                 };
 
                 this.print_token = function(text) {
+                    // Avoid printing initial whitespace.
+                    if (this.is_whitespace(text) && !this.output.length) {
+                        return;
+                    }
                     if (text || text !== '') {
                         if (this.output.length && this.output[this.output.length - 1] === '\n') {
                             this.print_indentation(this.output);
@@ -3319,6 +3348,12 @@ function detectXMLType(str) {
                 };
 
                 this.print_token_raw = function(text) {
+                    // If we are going to print newlines, truncate trailing
+                    // whitespace, as the newlines will represent the space.
+                    if (this.newlines > 0) {
+                        text = rtrim(text);
+                    }
+
                     if (text && text !== '') {
                         if (text.length > 1 && text.charAt(text.length - 1) === '\n') {
                             // unformatted tags can grab newlines as their last character
@@ -5760,6 +5795,14 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    </div>',
             '<div>\n' +
             '</div>');
+        bth('<div>\n' +
+            '</div>\n' +
+            '    <div>\n' +
+            '    </div>',
+            '<div>\n' +
+            '</div>\n' +
+            '<div>\n' +
+            '</div>');
         bth('    <div>\n' +
             '</div>',
             '<div>\n' +
@@ -5794,6 +5837,25 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '<li>\n' +
             '    content\n' +
             '</li>');
+
+        bth('<img>content');
+        bth('<img> content');
+        bth('<img>   content', '<img> content');
+
+        bth('<img><img>content');
+        bth('<img> <img>content');
+        bth('<img>   <img>content', '<img> <img>content');
+
+        bth('<img><b>content</b>');
+        bth('<img> <b>content</b>');
+        bth('<img>   <b>content</b>', '<img> <b>content</b>');
+
+        bth('<div>content<img>content</div>');
+        bth('<div> content <img> content</div>');
+        bth('<div>    content <img>    content </div>',
+            '<div> content <img> content </div>');
+        bth('Text <a href="#">Link</a> Text');
+
 
 		// START tests for issue 453
 		bth('<script type="text/unknown"><div></div></script>',
@@ -6073,7 +6135,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.indent_size = 1;
         opts.indent_char = '\t';
         opts.preserve_newlines = false;
-        bth('<div>\n\tfoo\n</div>', '<div>foo</div>');
+        bth('<div>\n\tfoo\n</div>', '<div> foo </div>');
 
         opts.preserve_newlines = true;
         bth('<div>\n\tfoo\n</div>');
@@ -6082,29 +6144,29 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         // test preserve_newlines and max_preserve_newlines
         opts.preserve_newlines = false;
-        test_fragment('<div>Should not</div>\n\n\n' +
-                      '<div>preserve newlines</div>',
-                      '<div>Should not</div>\n' +
-                      '<div>preserve newlines</div>');
+        bth('<div>Should not</div>\n\n\n' +
+            '<div>preserve newlines</div>',
+            '<div>Should not</div>\n' +
+            '<div>preserve newlines</div>');
 
         opts.preserve_newlines = true;
         opts.max_preserve_newlines  = 0;
-        test_fragment('<div>Should</div>\n\n\n' +
-                      '<div>preserve zero newlines</div>',
-                      '<div>Should</div>\n' +
-                      '<div>preserve zero newlines</div>');
+        bth('<div>Should</div>\n\n\n' +
+            '<div>preserve zero newlines</div>',
+            '<div>Should</div>\n' +
+            '<div>preserve zero newlines</div>');
 
         opts.max_preserve_newlines  = 1;
-        test_fragment('<div>Should</div>\n\n\n' +
-                      '<div>preserve one newline</div>',
-                      '<div>Should</div>\n\n' +
-                      '<div>preserve one newline</div>');
+        bth('<div>Should</div>\n\n\n' +
+            '<div>preserve one newline</div>',
+            '<div>Should</div>\n\n' +
+            '<div>preserve one newline</div>');
 
         opts.max_preserve_newlines  = null;
-        test_fragment('<div>Should</div>\n\n\n' +
-                      '<div>preserve one newline</div>',
-                      '<div>Should</div>\n\n\n' +
-                      '<div>preserve one newline</div>');
+        bth('<div>Should</div>\n\n\n' +
+            '<div>preserve one newline</div>',
+            '<div>Should</div>\n\n\n' +
+            '<div>preserve one newline</div>');
 
         // css beautifier
         opts.indent_size = 1;
@@ -6212,6 +6274,20 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '\t\tcolor: green;\n' +
             '\t}\n' +
             '}');
+
+        // import
+        btc('@import "test";');
+
+        // don't break nested pseudo-classes
+        btc("a:first-child{color:red;div:first-child{color:black;}}",
+            "a:first-child {\n\tcolor: red;\n\tdiv:first-child {\n\t\tcolor: black;\n\t}\n}");
+
+        btc("a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}",
+            "a:first-child,\na:first-child {\n\tcolor: red;\n\tdiv:first-child, div:hover {\n\t\tcolor: black;\n\t}\n}");
+
+        // handle SASS/LESS parent reference
+        btc("div{&:first-letter {text-transform: uppercase;}}",
+            "div {\n\t&:first-letter {\n\t\ttext-transform: uppercase;\n\t}\n}");
 
         //nested modifiers (&:hover etc)
         btc(".tabs{&:hover{width:10px;}}", ".tabs {\n\t&:hover {\n\t\twidth: 10px;\n\t}\n}");
@@ -6350,7 +6426,7 @@ function SanityTest (func, name_of_test) {
             if (quote_strings) {
                 return "'" + something.replace("'", "\\'") + "'";
             } else {
-                return something;
+                return something.replace("\n", "\\n\n");
             }
         case 'number':
             return '' + something;
