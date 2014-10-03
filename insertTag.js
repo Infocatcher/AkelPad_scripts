@@ -168,9 +168,11 @@ function insertTag() {
 		if(useBBCode == -1)
 			useBBCode = detectBBCode();
 
-		var attrs = /^([^\s=]+)([\s=].*)$/.test(tag) ? RegExp.$2 : "";
-		if(attrs)
-			tag = RegExp.$1;
+		var attrs = "";
+		if(/^[<\[]?[^\s="'<>\[\]]+/.test(tag)) {
+			tag = RegExp.lastMatch;
+			attrs = RegExp.rightContext;
+		}
 
 		if(/%T/.test(tag)) {
 			var autoTag = detectTag();
