@@ -6646,7 +6646,7 @@ function selfUpdate() {
 	var startTime = new Date().getTime();
 
 	var errors = [];
-	var noCache = forceNoCache ? "?" + new Date().getTime() : "";
+	var noCache = forceNoCache ? "?" + startTime : "";
 	var request = new ActiveXObject("Microsoft.XMLHTTP");
 	for(var file in data) {
 		var url = baseUrl + file;
