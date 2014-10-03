@@ -6682,9 +6682,9 @@ function selfUpdate() {
 				AkelPad.MessageBox(hMainWnd, _localize("Not found:\n") + start + end, WScript.ScriptBaseName, 48 /*MB_ICONEXCLAMATION*/);
 				continue;
 			}
-			selfCode = selfCode.substring(0, indexStart + start.length)
+			selfCode = selfCode.substr(0, indexStart + start.length)
 				+ data[file]
-				+ selfCode.substring(indexEnd);
+				+ selfCode.substr(indexEnd);
 		}
 		var noRealChanges = selfCode == selfCodeOld;
 		selfCode = selfCode.replace(
