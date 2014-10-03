@@ -179,8 +179,12 @@ function insertTag() {
 			tag = tag.replace(/%T/g, autoTag);
 		}
 
-		var sTag = (useBBCode ? "["  : "<")  + tag + attrs + (useBBCode ? "]" : ">");
-		var eTag = (useBBCode ? "[/" : "</") + tag         + (useBBCode ? "]" : ">");
+		var makeTag = function(tagData) {
+			return (useBBCode ? "["  : "<")  + tagData + (useBBCode ? "]" : ">");
+		};
+		var sTag = makeTag(tag + attrs);
+		var eTag = makeTag("/" + tag);
+
 		txt = sTag + txt + eTag;
 
 		if(!hasTxt || selectMode == 1) {
