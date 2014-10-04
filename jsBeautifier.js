@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2014
 // version 0.2.7pre - 2014-09-19
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-10-03 01:44:10 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-10-04 06:17:16 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -991,7 +991,13 @@ function detectXMLType(str) {
                     (second_token.text === ':' && in_array(next_token.type, ['TK_STRING', 'TK_WORD', 'TK_RESERVED']))
                     || (in_array(next_token.text, ['get', 'set']) && in_array(second_token.type, ['TK_WORD', 'TK_RESERVED']))
                 )) {
-                set_mode(MODE.ObjectLiteral);
+                // We don't support TypeScript,but we didn't break it for a very long time.
+                // We'll try to keep not breaking it.
+                if (!in_array(last_last_text, ['class','interface'])) {
+                    set_mode(MODE.ObjectLiteral);
+                } else {
+                    set_mode(MODE.BlockStatement);
+                }
             } else {
                 set_mode(MODE.BlockStatement);
             }
@@ -5727,6 +5733,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         // END tests for issue 508
 
         // START tests for issue 298
+        // do not under indent if/while/for condtionals experesions
         bt("'use strict';\n" +
             "if ([].some(function() {\n" +
             "        return false;\n" +
@@ -5734,6 +5741,20 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             "    console.log('hello');\n" +
             "}");
         // END tests for issue 298
+
+        // START tests for issue 552
+        // Typescript?  Okay... we didn't break it before try not to now.
+        bt( "class Test {\n" +
+            "    blah: string[];\n" +
+            "    foo(): number {\n" +
+            "        return 0;\n" +
+            "    }\n" +
+            "    bar(): number {\n" +
+            "        return 0;\n" +
+            "    }\n" +
+            "}");
+        // END tests for issue 552
+
 
         bt('var a=1,b={bang:2},c=3;',
             'var a = 1,\n    b = {\n        bang: 2\n    },\n    c = 3;');
@@ -6426,7 +6447,7 @@ function SanityTest (func, name_of_test) {
             if (quote_strings) {
                 return "'" + something.replace("'", "\\'") + "'";
             } else {
-                return something.replace("\n", "\\n\n");
+                return something;
             }
         case 'number':
             return '' + something;
