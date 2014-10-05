@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2014
 // version 0.2.7pre - 2014-09-19
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-10-04 06:17:16 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-10-04 20:35:23 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -5745,6 +5745,15 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         // START tests for issue 552
         // Typescript?  Okay... we didn't break it before try not to now.
         bt( "class Test {\n" +
+            "    blah: string[];\n" +
+            "    foo(): number {\n" +
+            "        return 0;\n" +
+            "    }\n" +
+            "    bar(): number {\n" +
+            "        return 0;\n" +
+            "    }\n" +
+            "}");
+        bt( "interface Test {\n" +
             "    blah: string[];\n" +
             "    foo(): number {\n" +
             "        return 0;\n" +
