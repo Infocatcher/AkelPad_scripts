@@ -25,6 +25,7 @@
 //   -braceStyle="collapse"       - braces with control statement
 //              ="expand"         - braces on own line
 //              ="end-expand"     - end braces on own line
+//              ="none"           - attempt to keep braces where they are
 //   -keepArrayIndentation=true   - keep array indentation
 //   -breakChainedMethods=false   - break lines on chained methods
 //   -spaceInParen=true           - add padding spaces within paren, i.e. f( a, b )
