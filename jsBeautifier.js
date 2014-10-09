@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2014
 // version 0.2.7pre - 2014-09-19
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-10-07 22:20:33 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-10-08 22:00:06 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -4194,55 +4194,69 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.brace_style = ex_brace_style;
     }
 
+    function unicode_char(value) {
+        return String.fromCharCode(value)
+    }
+
     function beautifier_tests()
     {
         sanitytest = test_obj;
 
-        opts.indent_size       = 4;
-        opts.indent_char       = ' ';
+        opts.indent_size = 4;
+        opts.indent_char = ' ';
         opts.preserve_newlines = true;
-        opts.jslint_happy      = false;
+        opts.jslint_happy = false;
         opts.keep_array_indentation = false;
-        opts.brace_style       = "collapse";
+        opts.brace_style = 'collapse';
 
-        // unicode support
-        bt('var ' + String.fromCharCode(3232) + '_' + String.fromCharCode(3232) + ' = "hi";');
-        bt('var ' + String.fromCharCode(228) + 'x = {\n    ' + String.fromCharCode(228) + 'rgerlich: true\n};');
+        // Unicode Support
+        bt('var ' + unicode_char(3232) + '_' + unicode_char(3232) + ' = "hi";');
+        bt('var ' + unicode_char(228) + 'x = {\n    ' + unicode_char(228) + 'rgerlich: true\n};');
 
+        // End With Newline - (eof = "\n")
         opts.end_with_newline = true;
         test_fragment('', '\n');
-        test_fragment('   return .5','   return .5\n');
-        test_fragment('   \n\nreturn .5\n\n\n\n','   return .5\n');
-        test_fragment('\n', '\n');
+        test_fragment('   return .5', '   return .5\n');
+        test_fragment('   \n\nreturn .5\n\n\n\n', '   return .5\n');
+        test_fragment('\n');
 
+        // End With Newline - (eof = "")
         opts.end_with_newline = false;
-        bt('');
+        test_fragment('');
+        test_fragment('   return .5');
+        test_fragment('   \n\nreturn .5\n\n\n\n', '   return .5');
         test_fragment('\n', '');
-        bt('return .5');
+
+        // New Test Suite
+
+        // Old tests
+        bt('');
         test_fragment('   return .5');
         test_fragment('   return .5;\n   a();');
+        test_fragment('    return .5;\n    a();');
+        test_fragment('     return .5;\n     a();');
         test_fragment('   < div');
         bt('a        =          1', 'a = 1');
         bt('a=1', 'a = 1');
         bt('(3) / 2');
         bt('["a", "b"].join("")');
-        bt("a();\n\nb();", "a();\n\nb();");
-        bt('var a = 1 var b = 2', "var a = 1\nvar b = 2");
+        bt('a();\n\nb();');
+        bt('var a = 1 var b = 2', 'var a = 1\nvar b = 2');
         bt('var a=1, b=c[d], e=6;', 'var a = 1,\n    b = c[d],\n    e = 6;');
         bt('var a,\n    b,\n    c;');
-        bt('let a = 1 let b = 2', "let a = 1\nlet b = 2");
+        bt('let a = 1 let b = 2', 'let a = 1\nlet b = 2');
         bt('let a=1, b=c[d], e=6;', 'let a = 1,\n    b = c[d],\n    e = 6;');
         bt('let a,\n    b,\n    c;');
-        bt('const a = 1 const b = 2', "const a = 1\nconst b = 2");
+        bt('const a = 1 const b = 2', 'const a = 1\nconst b = 2');
         bt('const a=1, b=c[d], e=6;', 'const a = 1,\n    b = c[d],\n    e = 6;');
         bt('const a,\n    b,\n    c;');
         bt('a = " 12345 "');
-        bt("a = ' 12345 '");
-        bt('if (a == 1) b = 2;', "if (a == 1) b = 2;");
-        bt('if(1){2}else{3}', "if (1) {\n    2\n} else {\n    3\n}");
+        bt('a = \' 12345 \'');
+        bt('if (a == 1) b = 2;');
+        bt('if(1){2}else{3}', 'if (1) {\n    2\n} else {\n    3\n}');
         bt('if(1||2);', 'if (1 || 2);');
         bt('(a==1)||(b==2)', '(a == 1) || (b == 2)');
-        bt('var a = 1 if (2) 3;', "var a = 1\nif (2) 3;");
+        bt('var a = 1 if (2) 3;', 'var a = 1\nif (2) 3;');
         bt('a = a + 1');
         bt('a = a == 1');
         bt('/12345[^678]*9+/.match(a)');
@@ -4834,7 +4848,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt("var x = set\n\nfunction() {}", "var x = set\n\nfunction() {}");
 
         bt('<!-- foo\nbar();\n-->');
-        bt('<!-- dont crash');
+        bt('<!-- dont crash'); // -->
         bt('for () /abc/.test()');
         bt('if (k) /aaa/m.test(v) && l();');
         bt('switch (true) {\n    case /swf/i.test(foo):\n        bar();\n}');
@@ -5656,7 +5670,7 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.end_with_newline = false;
         // error cases need love too
         bth('<img title="Bad food!" src="foo.jpg" alt="Evil" ">');
-        bth("<!-- don't blow up if a comment is not complete");
+        bth("<!-- don't blow up if a comment is not complete"); // -->
 
         test_fragment(
             '<head>\n' +
@@ -5754,73 +5768,73 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bth('Text <a href="#">Link</a> Text');
 
 
-		// START tests for issue 453
-		bth('<script type="text/unknown"><div></div></script>',
-			'<script type="text/unknown">\n' +
-			'    <div></div>\n' +
-			'</script>');
-		bth('<script type="text/javascript"><div></div></script>',
-			'<script type="text/javascript">\n' +
-			'    < div > < /div>\n' +
-			'</script>');
-		bth('<script><div></div></script>',
-			'<script>\n' +
-			'    < div > < /div>\n' +
-			'</script>');
-		bth('<script type="text/javascript">var foo = "bar";</script>',
-			'<script type="text/javascript">\n' +
-			'    var foo = "bar";\n' +
-			'</script>');
-		bth('<script type="application/javascript">var foo = "bar";</script>',
-			'<script type="application/javascript">\n' +
-			'    var foo = "bar";\n' +
-			'</script>');
-		bth('<script type="application/javascript;version=1.8">var foo = "bar";</script>',
-			'<script type="application/javascript;version=1.8">\n' +
-			'    var foo = "bar";\n' +
-			'</script>');
-		bth('<script type="application/x-javascript">var foo = "bar";</script>',
-			'<script type="application/x-javascript">\n' +
-			'    var foo = "bar";\n' +
-			'</script>');
-		bth('<script type="application/ecmascript">var foo = "bar";</script>',
-			'<script type="application/ecmascript">\n' +
-			'    var foo = "bar";\n' +
-			'</script>');
-		bth('<script type="text/javascript1.5">var foo = "bar";</script>',
-			'<script type="text/javascript1.5">\n' +
-			'    var foo = "bar";\n' +
-			'</script>');
-		bth('<script>var foo = "bar";</script>',
-			'<script>\n' +
-			'    var foo = "bar";\n' +
-			'</script>');
+        // START tests for issue 453
+        bth('<script type="text/unknown"><div></div></script>',
+            '<script type="text/unknown">\n' +
+            '    <div></div>\n' +
+            '</script>');
+        bth('<script type="text/javascript"><div></div></script>',
+            '<script type="text/javascript">\n' +
+            '    < div > < /div>\n' +
+            '</script>');
+        bth('<script><div></div></script>',
+            '<script>\n' +
+            '    < div > < /div>\n' +
+            '</script>');
+        bth('<script type="text/javascript">var foo = "bar";</script>',
+            '<script type="text/javascript">\n' +
+            '    var foo = "bar";\n' +
+            '</script>');
+        bth('<script type="application/javascript">var foo = "bar";</script>',
+            '<script type="application/javascript">\n' +
+            '    var foo = "bar";\n' +
+            '</script>');
+        bth('<script type="application/javascript;version=1.8">var foo = "bar";</script>',
+            '<script type="application/javascript;version=1.8">\n' +
+            '    var foo = "bar";\n' +
+            '</script>');
+        bth('<script type="application/x-javascript">var foo = "bar";</script>',
+            '<script type="application/x-javascript">\n' +
+            '    var foo = "bar";\n' +
+            '</script>');
+        bth('<script type="application/ecmascript">var foo = "bar";</script>',
+            '<script type="application/ecmascript">\n' +
+            '    var foo = "bar";\n' +
+            '</script>');
+        bth('<script type="text/javascript1.5">var foo = "bar";</script>',
+            '<script type="text/javascript1.5">\n' +
+            '    var foo = "bar";\n' +
+            '</script>');
+        bth('<script>var foo = "bar";</script>',
+            '<script>\n' +
+            '    var foo = "bar";\n' +
+            '</script>');
 
-		bth('<style type="text/unknown"><tag></tag></style>',
-			'<style type="text/unknown">\n' +
-			'    <tag></tag>\n' +
-			'</style>');
-		bth('<style type="text/css"><tag></tag></style>',
-			'<style type="text/css">\n' +
-			'    <tag></tag>\n' +
-			'</style>');
-		bth('<style><tag></tag></style>',
-			'<style>\n' +
-			'    <tag></tag>\n' +
-			'</style>');
-		bth('<style type="text/css">.selector {font-size:12px;}</style>',
-			'<style type="text/css">\n' +
-			'    .selector {\n' +
-			'        font-size: 12px;\n' +
-			'    }\n'+
-			'</style>');
-		bth('<style>.selector {font-size:12px;}</style>',
-			'<style>\n' +
-			'    .selector {\n' +
-			'        font-size: 12px;\n' +
-			'    }\n'+
-			'</style>');
-		// END tests for issue 453
+        bth('<style type="text/unknown"><tag></tag></style>',
+            '<style type="text/unknown">\n' +
+            '    <tag></tag>\n' +
+            '</style>');
+        bth('<style type="text/css"><tag></tag></style>',
+            '<style type="text/css">\n' +
+            '    <tag></tag>\n' +
+            '</style>');
+        bth('<style><tag></tag></style>',
+            '<style>\n' +
+            '    <tag></tag>\n' +
+            '</style>');
+        bth('<style type="text/css">.selector {font-size:12px;}</style>',
+            '<style type="text/css">\n' +
+            '    .selector {\n' +
+            '        font-size: 12px;\n' +
+            '    }\n'+
+            '</style>');
+        bth('<style>.selector {font-size:12px;}</style>',
+            '<style>\n' +
+            '    .selector {\n' +
+            '        font-size: 12px;\n' +
+            '    }\n'+
+            '</style>');
+        // END tests for issue 453
 
         var unformatted = opts.unformatted;
         opts.unformatted = ['script', 'style'];
