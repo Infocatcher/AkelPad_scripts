@@ -3920,7 +3920,7 @@ if (isNode) {
 //== js/lib/unpackers/urlencode_unpacker.js end
 
 
-//== js/test/beautify-tests.js
+//== js/test/beautify-javascript-tests.js
 /*global js_beautify: true */
 
 function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_beautify)
@@ -6248,7 +6248,11 @@ function run_beautifier_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 if (typeof exports !== "undefined") {
     exports.run_beautifier_tests = run_beautifier_tests;
 }
-//== js/test/beautify-tests.js end
+//== js/test/beautify-javascript-tests.js end
+
+
+//== js/test/beautify-css-tests.js
+//== js/test/beautify-css-tests.js end
 
 
 //== js/test/sanitytest.js
@@ -6550,7 +6554,8 @@ function selfUpdate() {
 		"js/lib/unpackers/myobfuscate_unpacker.js": "",
 		"js/lib/unpackers/p_a_c_k_e_r_unpacker.js": "",
 		"js/lib/unpackers/urlencode_unpacker.js": "",
-		"js/test/beautify-tests.js": "",
+		"js/test/beautify-javascript-tests.js": "",
+		"js/test/beautify-css-tests.js": "",
 		"js/test/sanitytest.js": ""
 	};
 
