@@ -212,6 +212,7 @@ function runTests() { // Based on run_tests function
 	var st = new SanityTest();
 	run_javascript_tests(st, Urlencoded, js_beautify, html_beautify, css_beautify);
 	run_css_tests(st, Urlencoded, js_beautify, html_beautify, css_beautify);
+	run_html_tests(st, Urlencoded, js_beautify, html_beautify, css_beautify);
 	JavascriptObfuscator.run_tests(st);
 	P_A_C_K_E_R.run_tests(st);
 	Urlencoded.run_tests(st);
