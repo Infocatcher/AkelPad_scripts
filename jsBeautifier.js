@@ -6314,6 +6314,10 @@ if (typeof exports !== "undefined") {
 //== js/test/beautify-css-tests.js end
 
 
+//== js/test/beautify-html-tests.js
+//== js/test/beautify-html-tests.js end
+
+
 //== js/test/sanitytest.js
 //
 // simple testing interface
@@ -6615,6 +6619,7 @@ function selfUpdate() {
 		"js/lib/unpackers/urlencode_unpacker.js": "",
 		"js/test/beautify-javascript-tests.js": "",
 		"js/test/beautify-css-tests.js": "",
+		"js/test/beautify-html-tests.js": "",
 		"js/test/sanitytest.js": ""
 	};
 
