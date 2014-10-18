@@ -10,7 +10,7 @@ var fixerDash = "–";
 var fixerForceUpperCase = true;
 // Use
 // Call("Scripts::Main", 1, "punctuationFixer.js", "-ignorecase", 0)
-// for override this setting
+// to override this setting
 var fixerCommas = ["«", "»"]; // var fixerCommas = null;
 var fixerSaveSelPos = true;
 //== End of settings
@@ -23,7 +23,7 @@ var hMainWnd = AkelPad.GetMainWnd();
 var hWndEdit = AkelPad.GetEditWnd();
 var oSys = AkelPad.SystemFunction();
 
-var PunctuationFixer = function(dash, forceUpper, commas) {
+function PunctuationFixer(dash, forceUpper, commas) {
 	this.dash = dash || "-";
 	this.forceUpper = forceUpper;
 	this.convCommas = commas instanceof Array;
@@ -31,7 +31,7 @@ var PunctuationFixer = function(dash, forceUpper, commas) {
 		this.openComma = commas[0];
 		this.closeComma = commas[1];
 	}
-};
+}
 PunctuationFixer.prototype = {
 	notConv: [],
 	subst: "",
