@@ -32,7 +32,9 @@ PunctuationFixer.prototype = {
 	notConv: [],
 	subst: "",
 	init: function() { // Get random string for replacing exclusions
-		function rnd() { return Math.random().toString().substr(2); }
+		function rnd() {
+			return Math.random().toString().substr(2);
+		}
 		this.subst = "_" + rnd() + rnd() + "_";
 	},
 	getSubst: function(n) {
@@ -146,11 +148,12 @@ PunctuationFixer.prototype = {
 			.replace(/[\t ]*\)[\t ]*([^.!?:;,()])/g, ") $1"); // text)text -> text) text
 
 		// Fix lower case letters:
-		if(this.forceUpper) // end. begin -> end. Begin
+		if(this.forceUpper) { // end. begin -> end. Begin
 			txt = txt.replace(
 				/(^|[^.][.?!] )([а-яёa-z])/mg,
 				function($0, $1, $2) { return $1 + $2.toUpperCase(); }
 			);
+		}
 
 		// Fix dashes:
 		txt = txt // " -", "- " -> " - "
@@ -165,7 +168,7 @@ PunctuationFixer.prototype = {
 			.replace(/ - /g, " " + this.dash + " ");
 
 		// Fix commas:
-		if(this.convCommas)
+		if(this.convCommas) {
 			txt = txt
 				.replace(/^[\t ]*"[\t ]*/mg, this.openComma)  // \n" -> \n«
 				.replace(/[\t ]*"[\t ]*$/mg, this.closeComma) // "\n -> »\n
@@ -175,6 +178,7 @@ PunctuationFixer.prototype = {
 				.replace(/(^|[\s\(\{\[<])"[\t ]*/mg, "$1" + this.openComma)
 				.replace(new RegExp(this.openComma + "[\\t ]+", "g"), this.openComma)
 				.replace(new RegExp("[\\t ]+" + this.closeComma, "g"), this.closeComma);
+		}
 
 		// Fix dashes (end):
 		txt = txt.replace(/- /g, this.dash + " ");
@@ -183,7 +187,9 @@ PunctuationFixer.prototype = {
 		while(excCnt > -1) {
 			txt = txt.replace(
 				new RegExp(this.subst + excCnt + "_", "g"),
-				function() { return _this.notConv[excCnt].shift(); }
+				function() {
+					return _this.notConv[excCnt].shift();
+				}
 			);
 			excCnt--;
 		}
