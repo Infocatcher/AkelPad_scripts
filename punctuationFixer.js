@@ -1,13 +1,13 @@
-// (c) Infocatcher 2008-2009
+ï»¿// (c) Infocatcher 2008-2009
 // version 0.0.3.0+ - 2009-09-24, 2010-07-05
 
 //== Settings
-var fixerDash = "\u2013";
+var fixerDash = "â€“";
 var fixerForceUpperCase = true;
 // Use
 // Call("Scripts::Main", 1, "punctuationFixer.js", "-ignorecase", 0)
 // for override this setting
-var fixerCommas = ["«", "»"]; // var fixerCommas = null;
+var fixerCommas = ["Â«", "Â»"]; // var fixerCommas = null;
 var fixerSaveSelPos = true;
 //== End of settings
 
@@ -111,7 +111,7 @@ PunctuationFixer.prototype = {
 		// Acronyms
 		this.notConv[++excCnt] = [], subst = this.getSubst(excCnt);
 		txt = txt.replace(
-			/([^à-ÿ¸a-z]([à-ÿ¸a-z]\.[ \t]*[à-ÿ¸a-z]\.|[à-ÿ¸a-z]{2}\.))/g,
+			/([^Ð°-ÑÑ‘a-z]([Ð°-ÑÑ‘a-z]\.[ \t]*[Ð°-ÑÑ‘a-z]\.|[Ð°-ÑÑ‘a-z]{2}\.))/g,
 			function() {
 				var a = arguments;
 				_this.notConv[excCnt].push(a[1].replace(/[ \t]+/, " "));
@@ -148,7 +148,7 @@ PunctuationFixer.prototype = {
 		// Fix lower case letters:
 		if(this.forceUpper) // end. begin -> end. Begin
 			txt = txt.replace(
-				/(^|[^.][.?!] )([à-ÿ¸a-z])/mg,
+				/(^|[^.][.?!] )([Ð°-ÑÑ‘a-z])/mg,
 				function($0, $1, $2) { return $1 + $2.toUpperCase(); }
 			);
 
@@ -167,11 +167,11 @@ PunctuationFixer.prototype = {
 		// Fix commas:
 		if(this.convCommas)
 			txt = txt
-				.replace(/^[\t ]*"[\t ]*/mg, this.openComma)  // \n" -> \n«
-				.replace(/[\t ]*"[\t ]*$/mg, this.closeComma) // "\n -> »\n
-				.replace(/([.?!])"(\s)/g, "$1" + this.closeComma + "$2") // 'text!" ' -> 'text!» '
-				.replace(/([à-ÿ¸a-z])"([-+\s.?!,;:\)\}\]\>]|$)/img, "$1" + this.closeComma + "$2") // text". -> text».
-				.replace(/[\t ]*"[\t ]*([-+.?!,;:\)\}\]\>]|$)/mg, this.closeComma + "$1")          // ' " .' -> '».'
+				.replace(/^[\t ]*"[\t ]*/mg, this.openComma)  // \n" -> \nÂ«
+				.replace(/[\t ]*"[\t ]*$/mg, this.closeComma) // "\n -> Â»\n
+				.replace(/([.?!])"(\s)/g, "$1" + this.closeComma + "$2") // 'text!" ' -> 'text!Â» '
+				.replace(/([Ð°-ÑÑ‘a-z])"([-+\s.?!,;:\)\}\]\>]|$)/img, "$1" + this.closeComma + "$2") // text". -> textÂ».
+				.replace(/[\t ]*"[\t ]*([-+.?!,;:\)\}\]\>]|$)/mg, this.closeComma + "$1")          // ' " .' -> 'Â».'
 				.replace(/(^|[\s\(\{\[<])"[\t ]*/mg, "$1" + this.openComma)
 				.replace(new RegExp(this.openComma + "[\\t ]+", "g"), this.openComma)
 				.replace(new RegExp("[\\t ]+" + this.closeComma, "g"), this.closeComma);
