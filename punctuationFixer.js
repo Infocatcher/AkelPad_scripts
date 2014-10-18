@@ -1,4 +1,8 @@
-﻿// (c) Infocatcher 2008-2009
+﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
+// http://infocatcher.ucoz.net/js/akelpad_scripts/punctuationFixer.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/punctuationFixer.js
+
+// (c) Infocatcher 2008-2009
 // version 0.0.3.0+ - 2009-09-24, 2010-07-05
 
 //== Settings
