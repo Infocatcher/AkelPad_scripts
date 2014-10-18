@@ -32,7 +32,7 @@ PunctuationFixer.prototype = {
 	notConv: [],
 	subst: "",
 	init: function() { // Get random string for replacing exclusions
-		function rnd() { return Math.random().toString().replace(/\./, ""); }
+		function rnd() { return Math.random().toString().substr(2); }
 		this.subst = "_" + rnd() + rnd() + "_";
 	},
 	getSubst: function(n) {
