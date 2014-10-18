@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/punctuationFixer.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/punctuationFixer.js
 
-// (c) Infocatcher 2008-2009
-// version 0.0.3.0+ - 2009-09-24, 2010-07-05
+// (c) Infocatcher 2008-2009, 2014
+// version 0.0.3.1 - 2014-10-18
 
 //== Settings
 var fixerDash = "–";
