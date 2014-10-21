@@ -6698,10 +6698,15 @@ function selfUpdate() {
 
 	var startTime = new Date().getTime();
 
+	var tl = new TitleLogger();
 	var errors = [];
 	var noCache = forceNoCache ? "?" + startTime : "";
 	var request = new ActiveXObject("Microsoft.XMLHTTP");
+	var count = 0, i = 0;
+	for(var file in data)
+		++count;
 	for(var file in data) {
+		tl.log("Update [" + ++i + "/" + count + "] " + file);
 		var url = baseUrl + file;
 		request.open("GET", url + noCache, false);
 		request.send(null);
@@ -6721,8 +6726,10 @@ function selfUpdate() {
 		AkelPad.MessageBox(hMainWnd, _localize("Download errors:\n") + errors.join("\n"), WScript.ScriptBaseName, 16 /*MB_ICONERROR*/);
 	else
 		onComplete();
+	tl.restore();
 
 	function onComplete() {
+		tl.log("Update: check data");
 		var selfCode = AkelPad.ReadFile(WScript.ScriptFullName, 0, 65001, 1)
 			.replace(/\r\n?|\n\r?/g, "\r\n");
 		var selfCodeOld = selfCode;
@@ -6751,6 +6758,7 @@ function selfUpdate() {
 		if(noRealChanges)
 			AkelPad.MessageBox(hMainWnd, _localize("No real changes, only updated header information"), WScript.ScriptBaseName, 64 /*MB_ICONINFORMATION*/);
 
+		tl.log("Update: save");
 		// Create backup
 		var fso = new ActiveXObject("Scripting.FileSystemObject");
 		fso.CopyFile(WScript.ScriptFullName, WScript.ScriptFullName.slice(0, -3) + ts() + ".js.bak", true);
@@ -6787,6 +6795,42 @@ function selfUpdate() {
 	function pad(n) {
 		return n > 9 ? n : "0" + n;
 	}
+}
+function TitleLogger() {
+	var origTitle;
+	var hWndFrame, origFrameTitle;
+	function init() {
+		init = function() {};
+		var isMDI = AkelPad.IsMDI() == 1 /*WMD_MDI*/;
+		if(isMDI) {
+			hWndFrame = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, 0 /*current frame*/);
+			if(oSys.Call("User32::IsZoomed", hWndFrame)) {
+				origFrameTitle = windowText(hWndFrame);
+				windowText(hWndFrame, "");
+			}
+		}
+		origTitle = windowText(hMainWnd);
+	}
+	function windowText(hWnd, pText) {
+		if(arguments.length > 1)
+			return oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, pText);
+		var len = oSys.Call("user32::GetWindowTextLength" + _TCHAR, hWnd);
+		var lpText = AkelPad.MemAlloc((len + 1)*_TSIZE);
+		if(!lpText)
+			return "";
+		oSys.Call("user32::GetWindowText" + _TCHAR, hWnd, lpText, len + 1);
+		pText = AkelPad.MemRead(lpText, _TSTR);
+		AkelPad.MemFree(lpText);
+		return pText;
+	}
+	this.log = function(s) {
+		init();
+		windowText(hMainWnd, WScript.ScriptName + ": " + s);
+	};
+	this.restore = function() {
+		windowText(hMainWnd, origTitle);
+		origFrameTitle && windowText(hWndFrame, origFrameTitle);
+	};
 }
 
 function setSyntax(ext) {
