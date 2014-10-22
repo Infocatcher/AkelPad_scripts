@@ -6698,7 +6698,7 @@ function selfUpdate() {
 
 	var startTime = new Date().getTime();
 
-	var tl = new TitleLogger();
+	var tl = new TitleLogger(WScript.ScriptName + ": ");
 	var errors = [];
 	var noCache = forceNoCache ? "?" + startTime : "";
 	var request = new ActiveXObject("Microsoft.XMLHTTP");
@@ -6796,7 +6796,7 @@ function selfUpdate() {
 		return n > 9 ? n : "0" + n;
 	}
 }
-function TitleLogger() {
+function TitleLogger(prefix) {
 	var origTitle;
 	var hWndFrame, origFrameTitle;
 	function init() {
@@ -6825,7 +6825,7 @@ function TitleLogger() {
 	}
 	this.log = function(s) {
 		init();
-		windowText(hMainWnd, WScript.ScriptName + ": " + s);
+		windowText(hMainWnd, prefix + s);
 	};
 	this.restore = function() {
 		windowText(hMainWnd, origTitle);
