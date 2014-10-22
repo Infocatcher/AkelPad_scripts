@@ -3927,7 +3927,9 @@ function cryptTest() {
 	var texts = [
 		"Abcdef0123",
 		"AbefАбвг015@#$%^&*()-_=+/\\\n!\r\t'\" ",
-		"\x00\x01\x02\x05\x00\x00૷ௐغఌØѧ࿛ੜಐྜજࡼࣿܩٚ㩝䢿ૺ୭掇垜淤٘᪏뉹䚮㞽聻昅컝≂❵ꚞ뽲"
+		"\x00\x01\x02\x05\x00\x00\u0af7\u0bd0\u063a\u0c0c\u00d8\u0467\u0fdb\u0086\u0a5c\u0c90\u0f9c"
+			+ "\u0a9c\u087c\u08ff\u0729\u065a\u3a5d\u48bf\u0afa\uedbf\uf122\u0b6d\u6387\u579c\ue8f6\u6de4"
+			+ "\u0658\u1a8f\ub279\u46ae\u37bd\u807b\uf08c\u6605\ue7a6\ucedd\u2242\u2775\ua69e\ubf72"
 	];
 	var passwords = [
 		"Qw987-_=+\\|%^$;:'\t !~ *",
