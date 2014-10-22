@@ -1827,18 +1827,7 @@ function isBase64(str) {
 }
 
 function cryptTest() {
-	var isMDI = AkelPad.IsMDI() == 1 /*WMD_MDI*/;
-	if(isMDI) {
-		var hWndFrame = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, 0 /*current frame*/);
-		if(oSys.Call("User32::IsZoomed", hWndFrame)) {
-			var origFrameTitle = windowText(hWndFrame);
-			windowText(hWndFrame, "");
-		}
-	}
-	var origTitle = windowText(hMainWnd);
-	function feedback(s) {
-		windowText(hMainWnd, WScript.ScriptName + ": test " + s);
-	}
+	var tl = new TitleLogger(WScript.ScriptName + ": test ");
 
 	//var u = "";
 	//for(var i = 0; i <= 0xffff; i++)
@@ -1867,7 +1856,7 @@ function cryptTest() {
 		for(var ip = 0, lp = passwords.length; ip < lp; ip++) {
 			var pass = passwords[ip];
 			for(var cr in cryptors) {
-				feedback(++i + "/" + count);
+				tl.log(++i + "/" + count);
 				var crData = cryptors[cr];
 				var enc = crData.encrypt(text, pass);
 				var dec = crData.decrypt(enc, pass);
@@ -1882,8 +1871,7 @@ function cryptTest() {
 			}
 		}
 	}
-	windowText(hMainWnd, origTitle);
-	origFrameTitle && windowText(hWndFrame, origFrameTitle);
+	tl.restore();
 	var elapsedTime = "\nElapsed time: " + (new Date().getTime() - t) + " ms";
 	AkelPad.MessageBox(
 		hMainWnd,
@@ -1900,6 +1888,30 @@ function cryptTest() {
 			.replace(/\t/g, "\\t")
 			.replace(/\x00/g, "\\0");
 	}
+}
+function TitleLogger(prefix) {
+	var origTitle;
+	var hWndFrame, origFrameTitle;
+	function init() {
+		init = function() {};
+		var isMDI = AkelPad.IsMDI() == 1 /*WMD_MDI*/;
+		if(isMDI) {
+			hWndFrame = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, 0 /*current frame*/);
+			if(oSys.Call("User32::IsZoomed", hWndFrame)) {
+				origFrameTitle = windowText(hWndFrame);
+				windowText(hWndFrame, "");
+			}
+		}
+		origTitle = windowText(hMainWnd);
+	}
+	this.log = function(s) {
+		init();
+		windowText(hMainWnd, prefix + s);
+	};
+	this.restore = function() {
+		windowText(hMainWnd, origTitle);
+		origFrameTitle && windowText(hWndFrame, origFrameTitle);
+	};
 }
 
 function cryptDialog() {

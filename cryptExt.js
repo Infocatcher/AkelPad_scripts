@@ -3918,18 +3918,7 @@ function checkForWrongCryptors(names) {
 }
 
 function cryptTest() {
-	var isMDI = AkelPad.IsMDI() == 1 /*WMD_MDI*/;
-	if(isMDI) {
-		var hWndFrame = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, 0 /*current frame*/);
-		if(oSys.Call("User32::IsZoomed", hWndFrame)) {
-			var origFrameTitle = windowText(hWndFrame);
-			windowText(hWndFrame, "");
-		}
-	}
-	var origTitle = windowText(hMainWnd);
-	function feedback(s) {
-		windowText(hMainWnd, WScript.ScriptName + ": test " + s);
-	}
+	var tl = new TitleLogger(WScript.ScriptName + ": test ");
 
 	var piMin = pbkdf2IterationsMin;
 	var piMax = pbkdf2IterationsMax;
@@ -3966,7 +3955,7 @@ function cryptTest() {
 		for(var ip = 0, lp = passwords.length; ip < lp; ++ip) {
 			var pass = passwords[ip];
 			for(var ic = 0, lc = cryptorNames.length; ic < lc; ++ic) {
-				feedback(++i + "/" + count);
+				tl.log(++i + "/" + count);
 				var crNames = cryptorNames[ic];
 
 				var err = function(e) {
@@ -4000,8 +3989,7 @@ function cryptTest() {
 	}
 	pbkdf2IterationsMin = piMin;
 	pbkdf2IterationsMax = piMax;
-	windowText(hMainWnd, origTitle);
-	origFrameTitle && windowText(hWndFrame, origFrameTitle);
+	tl.restore();
 	var elapsedTime = "\nElapsed time: " + (new Date().getTime() - t) + " ms";
 	AkelPad.MessageBox(
 		hMainWnd,
@@ -4018,6 +4006,30 @@ function cryptTest() {
 			.replace(/\t/g, "\\t")
 			.replace(/\x00/g, "\\0");
 	}
+}
+function TitleLogger(prefix) {
+	var origTitle;
+	var hWndFrame, origFrameTitle;
+	function init() {
+		init = function() {};
+		var isMDI = AkelPad.IsMDI() == 1 /*WMD_MDI*/;
+		if(isMDI) {
+			hWndFrame = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, 0 /*current frame*/);
+			if(oSys.Call("User32::IsZoomed", hWndFrame)) {
+				origFrameTitle = windowText(hWndFrame);
+				windowText(hWndFrame, "");
+			}
+		}
+		origTitle = windowText(hMainWnd);
+	}
+	this.log = function(s) {
+		init();
+		windowText(hMainWnd, prefix + s);
+	};
+	this.restore = function() {
+		windowText(hMainWnd, origTitle);
+		origFrameTitle && windowText(hWndFrame, origFrameTitle);
+	};
 }
 
 function cryptDialog() {
