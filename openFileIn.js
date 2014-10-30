@@ -51,6 +51,7 @@ var appsData = {
 			"?x64?%COMMANDER_PATH%\\TOTALCMD64.EXE",
 			"%AkelDir%\\..\\totalcmd\\TOTALCMD.EXE",
 			"%AkelDir%\\..\\Total Commander\\TOTALCMD.EXE",
+			"%AkelDir%\\..\\..\\TOTALCMD.EXE",
 			"%__portable__%\\totalcmd\\TOTALCMD.EXE",
 			"?x64?<HKCU\\Software\\Ghisler\\Total Commander\\InstallDir>\\TOTALCMD64.EXE",
 			"<HKCU\\Software\\Ghisler\\Total Commander\\InstallDir>\\TOTALCMD.EXE",
