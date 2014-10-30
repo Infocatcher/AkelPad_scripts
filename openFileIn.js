@@ -14,6 +14,8 @@
 //   Call("Scripts::Main", 1, "openFileIn.js", '"appID" "%u"')
 // Disable mappings:
 //   Call("Scripts::Main", 1, "openFileIn.js", '"appID" "%f" -mappings=false')
+// Trick to not open archive-like files in Total Commander:
+//   Call("Scripts::Main", 1, "openFileIn.js", '"Total Commander" "%f\:"')
 //===================
 
 //== Settings begin
