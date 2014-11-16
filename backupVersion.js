@@ -116,7 +116,7 @@ function copyFile() {
 	if(!forceDate)
 		var version = getVersion();
 	if(version)
-		newName = curName.replace(addVersionPattern, getVersionSeparator(version) + version + "$&");
+		newName = addVersion(curName, version);
 	else {
 		var dateType = AkelPad.GetArgValue("dateType", 0);
 
@@ -124,7 +124,7 @@ function copyFile() {
 		var lastMod = new Date(fso.GetFile(curPath).DateLastModified);
 		for(var i = dateType; i < dateTypesCount; ++i) {
 			var lastModStr = dateToString(lastMod, i);
-			var testName = curName.replace(addVersionPattern, getVersionSeparator(lastModStr) + lastModStr + "$&");
+			var testName = addVersion(curName, lastModStr);
 			if(!exists(testName)) {
 				askName = testName;
 				break;
@@ -239,6 +239,9 @@ function getVersion() {
 	}
 
 	return version;
+}
+function addVersion(name, version) {
+	return name.replace(addVersionPattern, getVersionSeparator(version) + version + "$&");
 }
 function setRedraw(hWnd, bRedraw) {
 	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
