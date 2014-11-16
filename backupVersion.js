@@ -12,6 +12,7 @@
 // Arguments:
 //   -forceDate=true  - force use last modification date
 //   -dateType=1      - see dateToString() in settings section
+//   -openBackup=true - open created backup file
 
 // Usage:
 //   Call("Scripts::Main", 1, "backupVersion.js")
@@ -172,6 +173,11 @@ function askFileName(fileName) {
 function _copy(curPath, curDir, newName, overwrite) {
 	try {
 		fso.CopyFile(curPath, curDir + "\\" + newName, overwrite);
+		if(AkelPad.GetArgValue("openBackup", false)) {
+			var lpFrame = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
+			AkelPad.OpenFile(curDir + "\\" + newName, 0, AkelPad.GetEditCodePage(hWndEdit), AkelPad.GetEditBOM(hWndEdit));
+			lpFrame && AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame);
+		}
 	}
 	catch(e) {
 		AkelPad.MessageBox(
