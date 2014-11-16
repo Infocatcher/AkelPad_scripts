@@ -219,6 +219,7 @@ function getVersion() {
 		var lineEnd    = lineStart + lineLength;
 		var lineText   = AkelPad.GetTextRange(lineStart, lineEnd);
 
+		lineText = lineText.replace(/(http|ftp)s?:\/\S+/, "");
 		if(getVersionPattern.test(lineText)) {
 			var tmp = RegExp["$" + versionBracketsNumber];
 			if(testVersionPattern.test(tmp)) {
