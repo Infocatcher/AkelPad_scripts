@@ -13,6 +13,7 @@
 //   -forceDate=true  - force use last modification date
 //   -dateType=1      - see dateToString() in settings section
 //   -openBackup=true - open created backup file
+//   -warnings=false  - skip "Can't detect file version!" warning, just ask for file name
 
 // Usage:
 //   Call("Scripts::Main", 1, "backupVersion.js")
@@ -129,7 +130,7 @@ function copyFile() {
 				break;
 			}
 		}
-		if(!forceDate)
+		if(!forceDate && AkelPad.GetArgValue("warnings", true))
 			AkelPad.MessageBox(hMainWnd, _localize("Can't detect file version!"), dialogTitle, 48 /*MB_ICONEXCLAMATION*/);
 		newName = !forceDate || i > dateType
 			? askFileName(forceDate ? testName || askName : askName)
