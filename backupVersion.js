@@ -130,9 +130,10 @@ function copyFile() {
 				break;
 			}
 		}
+		var forceAsk = i > dateType;
 		if(!forceDate && AkelPad.GetArgValue("warnings", true))
 			AkelPad.MessageBox(hMainWnd, _localize("Can't detect file version!"), dialogTitle, 48 /*MB_ICONEXCLAMATION*/);
-		newName = !forceDate || i > dateType
+		newName = !forceDate || forceAsk
 			? askFileName(forceDate ? testName || askName : askName)
 			: askName;
 		if(!newName)
