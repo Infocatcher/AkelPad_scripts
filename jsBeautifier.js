@@ -5633,7 +5633,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         break_chained_methods: false,
         selector_separator: '\n',
         end_with_newline: false,
-        newline_between_rules: true,
+        newline_between_rules: true
     };
 
     function test_css_beautifier(input)
@@ -6705,6 +6705,9 @@ function convertSource(file, text) {
 			"results = 'All ' + n_succeeded + ' tests passed.';",
 			'results = _localize("All %S tests passed.").replace("%S", n_succeeded);'
 		);
+	}
+	else if(file == "js/test/beautify-css-tests.js") {
+		text = text.replace(/(newline_between_rules: true),(\s*\})/, "$1$2"); // Remove trailing comma
 	}
 	return text;
 }
