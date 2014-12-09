@@ -2522,7 +2522,7 @@ function detectXMLType(str) {
                     if (variableOrRule in css_beautify.CONDITIONAL_GROUP_RULE) {
                         enteringConditionalGroup = true;
                     }
-                } else if (': '.indexOf(variableOrRule[variableOrRule.length - 1]) >= 0) {
+                } else if (': '.indexOf(variableOrRule.charAt(variableOrRule.length - 1)) >= 0) {
                     //we have a variable, add it and insert one space before continuing
                     next();
                     variableOrRule = eatString(": ").replace(/\s$/, '');
@@ -6699,7 +6699,7 @@ function convertSource(file, text) {
 	}
 	else if(file == "js/lib/beautify-css.js") {
 		text = text.replace(
-			"variableOrRule[variableOrRule.length -1]",
+			/variableOrRule\[variableOrRule\.length - ?1\]/,
 			"variableOrRule.charAt(variableOrRule.length - 1)"
 		);
 	}
