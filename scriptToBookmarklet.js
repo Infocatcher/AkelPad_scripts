@@ -71,12 +71,12 @@ function scriptToBookmarklet() {
 		)
 		// Try remove regular expressions like /x*/ and /\/*x/
 		// We search for invalid divisions:
-		// x = /./;            -> =
-		// if(/a/.test(b))     -> (
-		// a = [/a/, /b/]      -> [ ,
-		// x = a && /b/test(c) -> & |
-		// x = a ? /b/ : /c/   -> ? :
-		// x = !/a/.test(b)    -> !
+		// x = /./;             -> =
+		// if(/a/.test(b))      -> (
+		// a = [/a/, /b/]       -> [ ,
+		// x = a && /b/.test(c) -> & |
+		// x = a ? /b/ : /c/    -> ? :
+		// x = !/a/.test(b)     -> !
 		.replace(
 			/([=(\[,&|?:!]\s*((\/\/[^\n\r]*[\n\r]+|\/\*[\s\S]*?\*\/)\s*)*)\/([^*+?\\\/\n\r]|\\[^\n\r])(\\\/|[^\/\n\r])*\//g,
 			// special chars   line comments       block comments         regexp begin                         regexp end
