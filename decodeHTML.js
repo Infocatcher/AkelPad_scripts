@@ -1,5 +1,5 @@
 // (c) Infocatcher 2009-2010
-// version 0.1.5.2 - 2010-07-08
+// Version: 0.1.5.2 - 2010-07-08
 
 // Convert:
 // &amp;  => &

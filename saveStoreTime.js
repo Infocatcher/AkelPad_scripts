@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/saveStoreTime.js
 
 // (c) Infocatcher 2010-2011, 2014
-// version 0.1.4 - 2014-03-03
+// Version: 0.1.4 - 2014-03-03
 
 // Save file and don't update modification time
 // Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#4222

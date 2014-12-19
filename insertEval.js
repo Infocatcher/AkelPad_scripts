@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/insertEval.js
 
 // (c) Infocatcher 2010-2011
-// version 0.1.9 - 2011-12-20
+// Version: 0.1.9 - 2011-12-20
 
 //===================
 // Special expressions:

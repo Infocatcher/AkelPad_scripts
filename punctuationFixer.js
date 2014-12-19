@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/punctuationFixer.js
 
 // (c) Infocatcher 2008-2009, 2014
-// version 0.0.3.1 - 2014-10-18
+// Version: 0.0.3.1 - 2014-10-18
 
 //== Settings
 var fixerDash = "–";

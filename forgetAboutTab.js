@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/forgetAboutTab.js
 
 // (c) Infocatcher 2012, 2014
-// version 0.1.0.1 - 2014-04-20
+// Version: 0.1.0.1 - 2014-04-20
 
 // Close current tab and remove information about it from recent files
 

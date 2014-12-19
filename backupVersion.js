@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/backupVersion.js
 
 // (c) Infocatcher 2011-2012, 2014
-// version 0.1.5pre3 - 2014-11-16
+// Version: 0.1.5pre3 - 2014-11-16
 
 //===================
 // Tries find file version and copy current file to the same directory:

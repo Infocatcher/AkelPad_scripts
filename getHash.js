@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/getHash.js
 
 // (c) Infocatcher 2010-2014
-// version 0.2.4.1 - 2014-05-06
+// Version: 0.2.4.1 - 2014-05-06
 
 //===================
 // Based on following scripts:

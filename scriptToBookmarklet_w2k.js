@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/scriptToBookmarklet_w2k.js
 
 // (c) Infocatcher 2008-2011
-// version 0.3.0 - 2011-12-20
+// Version: 0.3.0 - 2011-12-20
 // Windows 2000 SP2 +
 
 //===================

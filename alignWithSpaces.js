@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/alignWithSpaces.js
 
 // (c) Infocatcher 2011, 2014
-// version 0.2.2.1 - 2014-05-06
+// Version: 0.2.2.1 - 2014-05-06
 
 //===================
 // Align selected code with spaces to user defined string

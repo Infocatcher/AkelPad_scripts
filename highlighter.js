@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/highlighter.js
 
 // (c) Infocatcher 2009-2012
-// version 0.3.4 - 2012-04-06
+// Version: 0.3.4 - 2012-04-06
 
 //===================
 // Set extension manually for Coder plugin

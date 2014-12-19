@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/insertTag.js
 
 // (c) Infocatcher 2009-2012, 2014
-// version 0.2.6 - 2014-07-28
+// Version: 0.2.6 - 2014-07-28
 
 //===================
 // Simplify tags insertion.

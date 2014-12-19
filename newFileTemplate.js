@@ -1,5 +1,5 @@
 // (c) Infocatcher 2009
-// version 0.2.5 - 2010-06-21
+// Version: 0.2.5 - 2010-06-21
 
 // Usage:
 // Call("Scripts::Main", 1, "newFileTemplate.js", "html", 0)

@@ -3,7 +3,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/executeScript.vbs
 
 // (c) Infocatcher 2011
-// version 0.2.2 - 2011-12-20
+// Version: 0.2.2 - 2011-12-20
 
 //===================
 // Execute selected or all code

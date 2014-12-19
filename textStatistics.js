@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/textStatistics.js
 
 // (c) Infocatcher 2008-2011
-// version 0.3.4 - 2011-12-20
+// Version: 0.3.4 - 2011-12-20
 
 // Usage:
 //   Call("Scripts::Main", 1, "textStatistics.js")

@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/colorsConverter.js
 
 // (c) Infocatcher 2010-2011
-// version 0.1.2 - 2011-12-20
+// Version: 0.1.2 - 2011-12-20
 
 function _localize(s) {
 	var strings = {

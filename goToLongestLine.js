@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/goToLongestLine.js
 
 // (c) Infocatcher 2010-2011, 2014
-// version 0.3.9.1 - 2014-05-06
+// Version: 0.3.9.1 - 2014-05-06
 
 //===================
 // Go to longest line below or above current

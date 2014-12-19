@@ -3,7 +3,7 @@
 /// Convert tabulation to space for AkelPad 4.x.x
 
 // Modified by Infocatcher
-// version: 2010-12-29
+// Version: 2010-12-29
 
 var hMainWnd=AkelPad.GetMainWnd();
 var hWndEdit=AkelPad.GetEditWnd();

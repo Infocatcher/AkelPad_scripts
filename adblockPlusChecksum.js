@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/adblockPlusChecksum.js
 
 // (c) Infocatcher 2012
-// version 0.1.1 - 2012-06-09
+// Version: 0.1.1 - 2012-06-09
 
 // Adds checksum to Adblock Plus subscription
 // http://adblockplus.org/en/faq_internal#checksum

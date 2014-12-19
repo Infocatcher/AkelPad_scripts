@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/undoRedoAll.js
 
 // (c) Infocatcher 2010, 2014
-// version 0.1.1 - 2014-04-04
+// Version: 0.1.1 - 2014-04-04
 
 // Arguments:
 //   -mode=0       - undo

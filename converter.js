@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/converter.js
 
 // (c) Infocatcher 2010-2014
-// version 0.2.4.2 - 2014-05-06
+// Version: 0.2.4.2 - 2014-05-06
 
 //===================
 // Hotkeys:

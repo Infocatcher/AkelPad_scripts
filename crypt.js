@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/crypt.js
 
 // (c) Infocatcher 2010-2012, 2014
-// version 0.4.1.1 - 2014-05-06
+// Version: 0.4.1.1 - 2014-05-06
 
 //===================
 // AES-256 and Blowfish encrypt/decrypt

@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/openFileIn.js
 
 // (c) Infocatcher 2010-2013
-// version 0.2.0 - 2013-02-25
+// Version: 0.2.0 - 2013-02-25
 
 //===================
 // Open file in other application

@@ -1,7 +1,7 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
 
 // (c) Infocatcher 2009-2011
-// version 0.3.2 - 2011-12-20
+// Version: 0.3.2 - 2011-12-20
 
 // Works with ShowMenuEx.js http://akelpad.sourceforge.net/forum/viewtopic.php?p=8153#8153
 

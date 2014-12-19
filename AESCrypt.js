@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/AESCrypt.js
 
 // (c) Infocatcher 2010-2011, 2014
-// version 0.2.7.1 - 2014-05-06
+// Version: 0.2.7.1 - 2014-05-06
 
 //===================
 // AES-256 encrypt/decrypt

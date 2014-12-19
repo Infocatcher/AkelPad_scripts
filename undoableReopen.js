@@ -1,7 +1,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/undoableReopen.js
 
 // (c) Infocatcher 2012, 2014
-// version 0.1.0pre3 - 2014-04-18
+// Version: 0.1.0pre3 - 2014-04-18
 
 // Reopen file and preserve undo/redo buffer (just replace all text, if it was changed)
 

@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/restart.js
 
 // (c) Infocatcher 2012-2014
-// version 0.1.1+ - 2014-03-29
+// Version: 0.1.1+ - 2014-03-29
 
 // Restart AkelPad
 

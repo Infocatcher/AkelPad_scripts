@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/unixTime.js
 
 // (c) Infocatcher 2011-2012
-// version 0.1.3 - 2012-12-03
+// Version: 0.1.3 - 2012-12-03
 
 var TU_AUTO = 0;
 var TU_S    = 1;

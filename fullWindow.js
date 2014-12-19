@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/fullWindow.js
 
 // (c) Infocatcher 2014
-// version 0.1.0 - 2014-04-03
+// Version: 0.1.0 - 2014-04-03
 
 // Just like full screen mode, but preserve window size and position
 // Required FullScreen plugin!

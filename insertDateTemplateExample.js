@@ -1,7 +1,7 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=4311#4311
 
 // (c) Infocatcher 2008-2009, 2012
-// version 0.1.2 - 2012-12-03
+// Version: 0.1.2 - 2012-12-03
 
 // Insert current date
 
