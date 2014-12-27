@@ -1,4 +1,6 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=7081#7081
+// http://infocatcher.ucoz.net/js/akelpad_scripts/TabsToSpaces_mod.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/TabsToSpaces_mod.js
 
 /// Convert tabulation to space for AkelPad 4.x.x
 

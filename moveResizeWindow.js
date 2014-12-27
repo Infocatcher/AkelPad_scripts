@@ -1,5 +1,6 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=17270#17270
 // http://infocatcher.ucoz.net/js/akelpad_scripts/moveResizeWindow.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/moveResizeWindow.js
 
 // (c) Infocatcher 2012
 // Version: 0.1.1 - 2012-04-17

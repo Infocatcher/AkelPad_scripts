@@ -1,5 +1,6 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9927#9927
 // http://infocatcher.ucoz.net/js/akelpad_scripts/scriptToBookmarklet.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/scriptToBookmarklet.js
 
 // (c) Infocatcher 2008-2011
 // Version: 0.3.0 - 2011-12-20

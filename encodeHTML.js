@@ -1,3 +1,7 @@
+// http://akelpad.sourceforge.net/forum/viewtopic.php?p=4271#4271
+// http://infocatcher.ucoz.net/js/akelpad_scripts/decodeHTML.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/decodeHTML.js
+
 // (c) Infocatcher 2009-2010
 // Version: 0.1.5.2 - 2010-07-08
 // Author: Infocatcher

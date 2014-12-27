@@ -1,4 +1,6 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
+// http://infocatcher.ucoz.net/js/akelpad_scripts/newFileTemplate-test.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/newFileTemplate-test.js
 
 // (c) Infocatcher 2009-2011
 // Version: 0.3.2 - 2011-12-20

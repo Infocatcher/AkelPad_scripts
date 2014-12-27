@@ -1,3 +1,7 @@
+// http://akelpad.sourceforge.net/forum/viewtopic.php?p=7716#7716
+// http://infocatcher.ucoz.net/js/akelpad_scripts/convertEscapes.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/convertEscapes.js
+
 // (c) Infocatcher 2010
 // Version: 0.1.6 - 2010-12-09
 // Author: Infocatcher

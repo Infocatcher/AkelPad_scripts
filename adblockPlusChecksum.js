@@ -1,5 +1,6 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18306#18306
 // http://infocatcher.ucoz.net/js/akelpad_scripts/adblockPlusChecksum.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/adblockPlusChecksum.js
 
 // (c) Infocatcher 2012
 // Version: 0.1.1 - 2012-06-09

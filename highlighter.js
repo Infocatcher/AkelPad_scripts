@@ -1,5 +1,6 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=4270#4270
 // http://infocatcher.ucoz.net/js/akelpad_scripts/highlighter.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/highlighter.js
 
 // (c) Infocatcher 2009-2012
 // Version: 0.3.4 - 2012-04-06
