@@ -26,7 +26,7 @@ var oSys = AkelPad.SystemFunction();
 var akelDir = AkelPad.GetAkelDir();
 var nirCmdPath = AkelPad.GetArgValue("nirCmd", "%a\\AkelFiles\\Utils\\nircmd.exe");
 var nirCmd = expandEnvironmentVariables(nirCmdPath);
-if(!new ActiveXObject("Scripting.FileSystemObject").FileExists(nirCmd)) {
+if(oSys.Call("kernel32::GetFileAttributes" + _TCHAR, nirCmd) == -1) {
 	error(
 		"NirCmd utility not found!\nYou can download it here: http://www.nirsoft.net/utils/nircmd.html\n\n"
 		+ (nirCmd == nirCmdPath ? nirCmd : nirCmdPath + "\n=> " + nirCmd)
