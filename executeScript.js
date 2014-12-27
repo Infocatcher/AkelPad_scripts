@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11863#11863
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11863#11863
 // http://infocatcher.ucoz.net/js/akelpad_scripts/executeScript.js
 // http://infocatcher.ucoz.net/js/akelpad_scripts/executeScript.vbs
 
@@ -21,8 +21,8 @@
 
 function _localize(s) {
 	var strings = {
-		"Yes – run as JScript\nNo – run as VBScript": {
-			ru: "Да – запустить как JScript\nНет – запустить как VBScript"
+		"Yes вЂ“ run as JScript\nNo вЂ“ run as VBScript": {
+			ru: "Р”Р° вЂ“ Р·Р°РїСѓСЃС‚РёС‚СЊ РєР°Рє JScript\nРќРµС‚ вЂ“ Р·Р°РїСѓСЃС‚РёС‚СЊ РєР°Рє VBScript"
 		}
 	};
 	var lng;
@@ -64,7 +64,7 @@ var isVbs = type ? type == "vbs" : isVbsFile(filePath);
 if(!isJs && !isVbs) {
 	var btn = AkelPad.MessageBox(
 		hMainWnd,
-		_localize("Yes – run as JScript\nNo – run as VBScript"),
+		_localize("Yes вЂ“ run as JScript\nNo вЂ“ run as VBScript"),
 		WScript.ScriptName,
 		35 /*MB_YESNOCANCEL|MB_ICONQUESTION*/
 	);

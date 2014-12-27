@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=4310#4310
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=4310#4310
 // http://infocatcher.ucoz.net/js/akelpad_scripts/convertHTML.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/convertHTML.js
 
@@ -30,17 +30,17 @@
 //   -decodeCharCodes=true                 - (default: true) decode &#code; => char
 //   -encodeChars=false                    - (default: false) encode char => &#code;
 //   -encodeAsHex=false                    - use hex instead of decimal
-//   -charsToEncode=/[^!-~ \t\n\rа-яё]/ig  - (optional) mask for chars to encode
+//   -charsToEncode=/[^!-~ \t\n\rР°-СЏС‘]/ig  - (optional) mask for chars to encode
 
 // Usage:
 //   Call("Scripts::Main", 1, "convertHTML.js", "-mode=0")
-//   Call("Scripts::Main", 1, "convertHTML.js", "-mode=0 -decodeCharCodes=true -encodeChars=true '-charsToEncode=/[^!-~ \t\n\rа-яё]/ig'")
+//   Call("Scripts::Main", 1, "convertHTML.js", "-mode=0 -decodeCharCodes=true -encodeChars=true '-charsToEncode=/[^!-~ \t\n\rР°-СЏС‘]/ig'")
 //===================
 
 function _localize(s) {
 	var strings = {
 		"Nothing to recode!": {
-			ru: "Нечего перекодировать!"
+			ru: "РќРµС‡РµРіРѕ РїРµСЂРµРєРѕРґРёСЂРѕРІР°С‚СЊ!"
 		}
 	};
 	var lng;
@@ -78,10 +78,10 @@ var decode = mode == MODE_DECODE;
 var decodeCharCodes = getArg("decodeCharCodes", true);
 var encodeChars     = getArg("encodeChars", false);
 var encodeAsHex     = getArg("encodeAsHex", false);
-var charsToEncode   = getArg("charsToEncode", /[^!-~ \t\n\rа-яё]/ig);
+var charsToEncode   = getArg("charsToEncode", /[^!-~ \t\n\rР°-СЏС‘]/ig);
 // "!-~"     - latin symbols
 // " \t\n\r" - spaces
-// "а-яё"    - cyrillic symbols
+// "Р°-СЏС‘"    - cyrillic symbols
 
 
 //var AkelPad = new ActiveXObject("AkelPad.document");

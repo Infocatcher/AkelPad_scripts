@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
 // http://infocatcher.ucoz.net/js/akelpad_scripts/newFileTemplate.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/newFileTemplate.js
 
@@ -35,7 +35,7 @@ var locale = {
 	lng: null,
 	strings: {
 		extRequired: {
-			ru: "Расширение нового файла: ",
+			ru: "Р Р°СЃС€РёСЂРµРЅРёРµ РЅРѕРІРѕРіРѕ С„Р°Р№Р»Р°: ",
 			en: "Extension of new file: "
 		}
 	},

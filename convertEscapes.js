@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=7716#7716
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=7716#7716
 // http://infocatcher.ucoz.net/js/akelpad_scripts/convertEscapes.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/convertEscapes.js
 
@@ -21,7 +21,7 @@
 function _localize(s) {
 	var strings = {
 		"Nothing to recode!": {
-			ru: "Нечего перекодировать!"
+			ru: "РќРµС‡РµРіРѕ РїРµСЂРµРєРѕРґРёСЂРѕРІР°С‚СЊ!"
 		}
 	};
 	var lng;

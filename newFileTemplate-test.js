@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
 // http://infocatcher.ucoz.net/js/akelpad_scripts/newFileTemplate-test.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/newFileTemplate-test.js
 
@@ -35,10 +35,10 @@ var selTextFlag = "%s";
 function _localize(s) {
 	var strings = {
 		"Extension of new file:": {
-			ru: "Расширение нового файла:"
+			ru: "Р Р°СЃС€РёСЂРµРЅРёРµ РЅРѕРІРѕРіРѕ С„Р°Р№Р»Р°:"
 		},
 		"Edit template for extension:": {
-			ru: "Редактировать шаблон для расширения:"
+			ru: "Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ С€Р°Р±Р»РѕРЅ РґР»СЏ СЂР°СЃС€РёСЂРµРЅРёСЏ:"
 		}
 	};
 	var lng;

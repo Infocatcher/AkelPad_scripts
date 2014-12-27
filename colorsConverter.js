@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
 // http://infocatcher.ucoz.net/js/akelpad_scripts/colorsConverter.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/colorsConverter.js
 
@@ -11,13 +11,13 @@
 function _localize(s) {
 	var strings = {
 		"Color:": {
-			ru: "Цвет:"
+			ru: "Р¦РІРµС‚:"
 		},
-		"Color from “%S”:": {
-			ru: "Цвет из «%S»:"
+		"Color from вЂњ%SвЂќ:": {
+			ru: "Р¦РІРµС‚ РёР· В«%SВ»:"
 		},
 		"Invalid color format!": {
-			ru: "Некорректный формат цвета!"
+			ru: "РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ С„РѕСЂРјР°С‚ С†РІРµС‚Р°!"
 		}
 	};
 	var lng;
@@ -53,7 +53,7 @@ function convColor(color, forceAsk) {
 		convColor(color, true);
 		return;
 	}
-	newColor = askColor(_localize("Color from “%S”:").replace("%S", color), newColor);
+	newColor = askColor(_localize("Color from вЂњ%SвЂќ:").replace("%S", color), newColor);
 	newColor && convColor(newColor);
 }
 function askColor(caption, defaultValue) {

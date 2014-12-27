@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
 // http://infocatcher.ucoz.net/js/akelpad_scripts/getLinks.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/getLinks.js
 
@@ -16,7 +16,7 @@
 function _localize(s) {
 	var strings = {
 		"Links not found!": {
-			ru: "Ссылки не найдены!"
+			ru: "РЎСЃС‹Р»РєРё РЅРµ РЅР°Р№РґРµРЅС‹!"
 		}
 	};
 	var lng;

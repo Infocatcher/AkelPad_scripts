@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=4270#4270
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=4270#4270
 // http://infocatcher.ucoz.net/js/akelpad_scripts/highlighter.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/highlighter.js
 
@@ -155,28 +155,28 @@ var hlExtRecognize = {
 function _localize(s) {
 	var strings = {
 		"Syntax highlighting:": {
-			ru: "Подсветка синтаксиса:"
+			ru: "РџРѕРґСЃРІРµС‚РєР° СЃРёРЅС‚Р°РєСЃРёСЃР°:"
 		},
 		"Syntax highlighting (%S):": {
-			ru: "Подсветка синтаксиса (%S):"
+			ru: "РџРѕРґСЃРІРµС‚РєР° СЃРёРЅС‚Р°РєСЃРёСЃР° (%S):"
 		},
 		"by file extension": {
-			ru: "по расширению файла"
+			ru: "РїРѕ СЂР°СЃС€РёСЂРµРЅРёСЋ С„Р°Р№Р»Р°"
 		},
 		"special detection": {
-			ru: "специальное определение"
+			ru: "СЃРїРµС†РёР°Р»СЊРЅРѕРµ РѕРїСЂРµРґРµР»РµРЅРёРµ"
 		},
 		"recognition": {
-			ru: "автоопределение"
+			ru: "Р°РІС‚РѕРѕРїСЂРµРґРµР»РµРЅРёРµ"
 		},
 		"region": {
-			ru: "регион"
+			ru: "СЂРµРіРёРѕРЅ"
 		},
 		"recognition + region": {
-			ru: "автоопределение + регион"
+			ru: "Р°РІС‚РѕРѕРїСЂРµРґРµР»РµРЅРёРµ + СЂРµРіРёРѕРЅ"
 		},
 		"history": {
-			ru: "предыдущее значение"
+			ru: "РїСЂРµРґС‹РґСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ"
 		}
 	};
 	var lng;

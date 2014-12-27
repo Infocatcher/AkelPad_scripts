@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
 // http://infocatcher.ucoz.net/js/akelpad_scripts/insertEval.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/insertEval.js
 
@@ -19,10 +19,10 @@
 function _localize(s) {
 	var strings = {
 		"Expression:": {
-			ru: "Выражение:"
+			ru: "Р’С‹СЂР°Р¶РµРЅРёРµ:"
 		},
 		"Result:": {
-			ru: "Результат:"
+			ru: "Р РµР·СѓР»СЊС‚Р°С‚:"
 		}
 	};
 	var lng;

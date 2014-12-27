@@ -1,4 +1,4 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9927#9927
+п»ї// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9927#9927
 // http://infocatcher.ucoz.net/js/akelpad_scripts/textStatistics.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/textStatistics.js
 
@@ -16,73 +16,73 @@
 function _localize(s) {
 	var strings = {
 		"Text missing!": {
-			ru: "Текст отсутствует!"
+			ru: "РўРµРєСЃС‚ РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚!"
 		},
 		"Lines: ": {
-			ru: "Строки: "
+			ru: "РЎС‚СЂРѕРєРё: "
 		},
 		"Only spaces: ": {
-			ru: "Только пробельные символы: "
+			ru: "РўРѕР»СЊРєРѕ РїСЂРѕР±РµР»СЊРЅС‹Рµ СЃРёРјРІРѕР»С‹: "
 		},
 		"Empty: ": {
-			ru: "Пустые: "
+			ru: "РџСѓСЃС‚С‹Рµ: "
 		},
 		"Shortest line: #": {
-			ru: "Самая короткая строка: №"
+			ru: "РЎР°РјР°СЏ РєРѕСЂРѕС‚РєР°СЏ СЃС‚СЂРѕРєР°: в„–"
 		},
 		"Longest line: #": {
-			ru: "Самая длинная строка: №"
+			ru: "РЎР°РјР°СЏ РґР»РёРЅРЅР°СЏ СЃС‚СЂРѕРєР°: в„–"
 		},
 		"Length: ": {
-			ru: "Длина: "
+			ru: "Р”Р»РёРЅР°: "
 		},
-		"Line: “%S”": {
-			ru: "Строка: «%S»"
+		"Line: вЂњ%SвЂќ": {
+			ru: "РЎС‚СЂРѕРєР°: В«%SВ»"
 		},
 		"Symbols: ": {
-			ru: "Символы: "
+			ru: "РЎРёРјРІРѕР»С‹: "
 		},
 		"Cyrillic: ": {
-			ru: "Кириллица: "
+			ru: "РљРёСЂРёР»Р»РёС†Р°: "
 		},
 		"Latin: ": {
-			ru: "Латиница: "
+			ru: "Р›Р°С‚РёРЅРёС†Р°: "
 		},
 		"Digits: ": {
-			ru: "Цифры: "
+			ru: "Р¦РёС„СЂС‹: "
 		},
 		"Space symbols: ": {
-			ru: "Пробельные символы: "
+			ru: "РџСЂРѕР±РµР»СЊРЅС‹Рµ СЃРёРјРІРѕР»С‹: "
 		},
 		"Spaces: ": {
-			ru: "Пробелы: "
+			ru: "РџСЂРѕР±РµР»С‹: "
 		},
 		"Tabs: ": {
-			ru: "Табуляции: "
+			ru: "РўР°Р±СѓР»СЏС†РёРё: "
 		},
 		"Carriage returns (\\r): ": {
-			ru: "Возвраты каретки (\\r): "
+			ru: "Р’РѕР·РІСЂР°С‚С‹ РєР°СЂРµС‚РєРё (\\r): "
 		},
 		"Line feeds (\\n): ": {
-			ru: "Переводы строки (\\n): "
+			ru: "РџРµСЂРµРІРѕРґС‹ СЃС‚СЂРѕРєРё (\\n): "
 		},
 		"Words: ": {
-			ru: "Слова: "
+			ru: "РЎР»РѕРІР°: "
 		},
 		"Cyrillic: ": {
-			ru: "Кириллица: "
+			ru: "РљРёСЂРёР»Р»РёС†Р°: "
 		},
 		"Latin: ": {
-			ru: "Латиница: "
+			ru: "Р›Р°С‚РёРЅРёС†Р°: "
 		},
 		"Numbers: ": {
-			ru: "Числа: "
+			ru: "Р§РёСЃР»Р°: "
 		},
 		"Decimal: ": {
-			ru: "Десятичные: "
+			ru: "Р”РµСЃСЏС‚РёС‡РЅС‹Рµ: "
 		},
 		"Hexadecimal: ": {
-			ru: "Шестнадцатеричные: "
+			ru: "РЁРµСЃС‚РЅР°РґС†Р°С‚РµСЂРёС‡РЅС‹Рµ: "
 		}
 	};
 	var lng;
@@ -117,8 +117,8 @@ function getTextStatistics() {
 	var res = cFile ? cFile + ":\n\n" : "";
 
 	res +=          _localize("Lines: ")       + formatNum(countOf(txt, /\r\n|\n\r|\n|\r/g) + 1) + "\n";
-	res += "  – " + _localize("Only spaces: ") + formatNum(countOf(txt, /^[\t ]+$/mg)) + "\n";
-	res += "  – " + _localize("Empty: ")       + formatNum(countOf(txtn, /^$/mg)) + "\n";
+	res += "  вЂ“ " + _localize("Only spaces: ") + formatNum(countOf(txt, /^[\t ]+$/mg)) + "\n";
+	res += "  вЂ“ " + _localize("Empty: ")       + formatNum(countOf(txtn, /^$/mg)) + "\n";
 
 	res += "\n";
 
@@ -158,19 +158,19 @@ function getTextStatistics() {
 	}
 
 	res +=          _localize("Longest line: #") + formatNum(longestLineNum) + "\n";
-	res += "  – " + _localize("Length: ") + formatNum(longestLine) + "\n";
-	res += "  – " + _localize("Line: “%S”").replace("%S", formatLine(longestLineText)) + "\n";
+	res += "  вЂ“ " + _localize("Length: ") + formatNum(longestLine) + "\n";
+	res += "  вЂ“ " + _localize("Line: вЂњ%SвЂќ").replace("%S", formatLine(longestLineText)) + "\n";
 	res +=          _localize("Shortest line: #") + formatNum(shortestLineNum) + "\n";
-	res += "  – " + _localize("Length: ") + formatNum(shortestLine) + "\n";
-	res += "  – " + _localize("Line: “%S”").replace("%S", formatLine(shortestLineText)) + "\n";
+	res += "  вЂ“ " + _localize("Length: ") + formatNum(shortestLine) + "\n";
+	res += "  вЂ“ " + _localize("Line: вЂњ%SвЂќ").replace("%S", formatLine(shortestLineText)) + "\n";
 
 	res += "\n";
 
 	res +=             _localize("Symbols: ")                + formatNum(txt.length) + "\n";
-	res += "  – "    + _localize("Cyrillic: ")               + formatNum(countOf(txt, /[а-яё]/ig)) + "\n";
-	res += "  – "    + _localize("Latin: ")                  + formatNum(countOf(txt, /[a-z]/ig)) + "\n";
-	res += "  – "    + _localize("Digits: ")                 + formatNum(countOf(txt, /\d/g)) + "\n";
-	res += "  – "    + _localize("Space symbols: ")          + formatNum(countOf(txt, /\s/g)) + "\n";
+	res += "  вЂ“ "    + _localize("Cyrillic: ")               + formatNum(countOf(txt, /[Р°-СЏС‘]/ig)) + "\n";
+	res += "  вЂ“ "    + _localize("Latin: ")                  + formatNum(countOf(txt, /[a-z]/ig)) + "\n";
+	res += "  вЂ“ "    + _localize("Digits: ")                 + formatNum(countOf(txt, /\d/g)) + "\n";
+	res += "  вЂ“ "    + _localize("Space symbols: ")          + formatNum(countOf(txt, /\s/g)) + "\n";
 	res += "     = " + _localize("Spaces: ")                 + formatNum(countOf(txt, / /g)) + "\n";
 	res += "     = " + _localize("Tabs: ")                   + formatNum(countOf(txt, /\t/g)) + "\n";
 	res += "     = " + _localize("Carriage returns (\\r): ") + formatNum(countOf(txt, /\r/g)) + "\n";
@@ -178,19 +178,19 @@ function getTextStatistics() {
 
 	res += "\n";
 
-	var wordsCyr = countOf(txt, /[а-яё]+(-[а-яё]+)*/ig);
+	var wordsCyr = countOf(txt, /[Р°-СЏС‘]+(-[Р°-СЏС‘]+)*/ig);
 	var wordsLat = countOf(txt, /[a-z]+(-[a-z]+)*('[st])?/ig);
 	res +=          _localize("Words: ")    + formatNum(wordsCyr + wordsLat) + "\n";
-	res += "  – " + _localize("Cyrillic: ") + formatNum(wordsCyr) + "\n";
-	res += "  – " + _localize("Latin: ")    + formatNum(wordsLat) + "\n";
+	res += "  вЂ“ " + _localize("Cyrillic: ") + formatNum(wordsCyr) + "\n";
+	res += "  вЂ“ " + _localize("Latin: ")    + formatNum(wordsLat) + "\n";
 
 	res += "\n";
 
 	var numsDec = countOf(txt, /(^|\W)\d+([.,]\d+)?(?=(\W|$))/g); // Be careful with numbers like "0,2"
 	var numsHex = countOf(txt, /(^|\W)0x[\da-f]+(?=(\W|$))/ig);
 	res +=          _localize("Numbers: ")     + formatNum(numsDec + numsHex) + "\n";
-	res += "  – " + _localize("Decimal: ")     + formatNum(numsDec) + "\n";
-	res += "  – " + _localize("Hexadecimal: ") + formatNum(numsHex) + "\n";
+	res += "  вЂ“ " + _localize("Decimal: ")     + formatNum(numsDec) + "\n";
+	res += "  вЂ“ " + _localize("Hexadecimal: ") + formatNum(numsHex) + "\n";
 
 	return res;
 }
