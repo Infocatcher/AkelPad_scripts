@@ -3,6 +3,7 @@
 
 // (c) Infocatcher 2009-2012
 // Version: 0.3.4 - 2012-04-06
+// Author: Infocatcher
 
 //===================
 // Set extension manually for Coder plugin

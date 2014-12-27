@@ -2,6 +2,7 @@
 
 // (c) Infocatcher 2008-2009, 2012
 // Version: 0.1.2 - 2012-12-03
+// Author: Infocatcher
 
 // Insert current date
 

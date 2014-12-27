@@ -3,6 +3,7 @@
 
 // (c) Infocatcher 2008-2011
 // Version: 0.3.4 - 2011-12-20
+// Author: Infocatcher
 
 // Usage:
 //   Call("Scripts::Main", 1, "textStatistics.js")

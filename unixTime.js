@@ -3,6 +3,7 @@
 
 // (c) Infocatcher 2011-2012
 // Version: 0.1.3 - 2012-12-03
+// Author: Infocatcher
 
 var TU_AUTO = 0;
 var TU_S    = 1;

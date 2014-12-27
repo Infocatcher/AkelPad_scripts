@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2011
 // Version: 0.2.2 - 2011-12-20
+// Author: Infocatcher
 
 //===================
 // Execute selected or all code

@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2012, 2014
 // Version: 0.1.0.1 - 2014-04-20
+// Author: Infocatcher
 
 // Close current tab and remove information about it from recent files
 

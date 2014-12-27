@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2010-2012, 2014
 // Version: 0.4.1.1 - 2014-05-06
+// Author: Infocatcher
 
 //===================
 // AES-256 and Blowfish encrypt/decrypt

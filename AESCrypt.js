@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2010-2011, 2014
 // Version: 0.2.7.1 - 2014-05-06
+// Author: Infocatcher
 
 //===================
 // AES-256 encrypt/decrypt

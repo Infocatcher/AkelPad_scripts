@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2010-2013
 // Version: 0.2.0 - 2013-02-25
+// Author: Infocatcher
 
 //===================
 // Open file in other application

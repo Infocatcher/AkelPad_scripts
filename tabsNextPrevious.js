@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2011, 2014
 // Version: 0.1.2 - 2014-03-03
+// Author: Infocatcher
 
 //===================
 // Switch between tabs in order of them usage (temporary check "Switch tabs: next-previous" option)

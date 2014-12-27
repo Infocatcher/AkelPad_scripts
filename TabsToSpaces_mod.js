@@ -4,6 +4,7 @@
 
 // Modified by Infocatcher
 // Version: 2010-12-29
+// Author: Shengalts Aleksander aka Instructor, Infocatcher
 
 var hMainWnd=AkelPad.GetMainWnd();
 var hWndEdit=AkelPad.GetEditWnd();

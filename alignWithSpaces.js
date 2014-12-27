@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2011, 2014
 // Version: 0.2.2.1 - 2014-05-06
+// Author: Infocatcher
 
 //===================
 // Align selected code with spaces to user defined string

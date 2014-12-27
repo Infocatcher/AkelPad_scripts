@@ -3,6 +3,7 @@
 
 // (c) Infocatcher 2012
 // Version: 0.1.1 - 2012-06-09
+// Author: Infocatcher
 
 // Adds checksum to Adblock Plus subscription
 // http://adblockplus.org/en/faq_internal#checksum

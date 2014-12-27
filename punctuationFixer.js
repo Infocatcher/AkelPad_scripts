@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2008-2009, 2014
 // Version: 0.0.3.1 - 2014-10-18
+// Author: Infocatcher
 
 //== Settings
 var fixerDash = "–";

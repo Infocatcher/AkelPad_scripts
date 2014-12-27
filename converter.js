@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2010-2014
 // Version: 0.2.4.2 - 2014-05-06
+// Author: Infocatcher
 
 //===================
 // Hotkeys:

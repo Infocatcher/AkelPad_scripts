@@ -3,6 +3,7 @@
 ' http://infocatcher.ucoz.net/js/akelpad_scripts/executeScript.vbs
 
 ' Version: 0.1.2 - 2011-04-11
+' Author: Infocatcher
 
 ' Supplemental script for runScript.js
 ' Executes selected or all code

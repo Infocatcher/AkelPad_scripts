@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2014
 // Version: 0.1.1 - 2014-03-03
+// Author: Infocatcher
 
 //===================
 // Close tabs to the left or right (temporary check "Switch tabs: right-left" option)

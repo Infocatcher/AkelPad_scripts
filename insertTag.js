@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2009-2012, 2014
 // Version: 0.2.6 - 2014-07-28
+// Author: Infocatcher
 
 //===================
 // Simplify tags insertion.

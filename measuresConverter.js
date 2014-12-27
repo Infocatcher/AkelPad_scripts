@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2011-2014
 // Version: 0.2.7.1 - 2014-05-06
+// Author: Infocatcher
 
 //===================
 // Convert measures (internal) and currency (used cached data from exchange-rates.org, fxexchangerate.com and bitcoincharts.com)

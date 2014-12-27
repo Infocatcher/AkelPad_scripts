@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2012-2014
 // Version: 0.1.1+ - 2014-03-29
+// Author: Infocatcher
 
 // Restart AkelPad
 

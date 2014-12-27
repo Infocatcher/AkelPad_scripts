@@ -2,6 +2,7 @@
 
 // (c) Infocatcher 2012, 2014
 // Version: 0.1.0pre3 - 2014-04-18
+// Author: Infocatcher
 
 // Reopen file and preserve undo/redo buffer (just replace all text, if it was changed)
 

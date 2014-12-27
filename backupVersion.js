@@ -3,6 +3,7 @@
 
 // (c) Infocatcher 2011-2012, 2014
 // Version: 0.1.5pre3 - 2014-11-16
+// Author: Infocatcher
 
 //===================
 // Tries find file version and copy current file to the same directory:

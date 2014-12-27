@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2010, 2014
 // Version: 0.1.1 - 2014-04-04
+// Author: Infocatcher
 
 // Arguments:
 //   -mode=0       - undo

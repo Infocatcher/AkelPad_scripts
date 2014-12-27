@@ -3,6 +3,7 @@
 
 // (c) Infocatcher 2012
 // Version: 0.1.1 - 2012-04-17
+// Author: Infocatcher
 
 // Move or/and align AkelPad's main window
 

@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2011-2014
 // Version: 0.2.7pre - 2014-09-19
+// Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
 // [built from https://github.com/beautify-web/js-beautify/tree/master 2014-12-08 08:36:33 UTC]
 

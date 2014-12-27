@@ -3,6 +3,7 @@
 
 // (c) Infocatcher 2009-2011
 // Version: 0.1.7 - 2011-12-20
+// Author: Infocatcher
 
 //===================
 // Tries to extract links from any text

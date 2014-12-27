@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2013-2014
 // Version: 0.1.2 - 2014-04-13
+// Author: Infocatcher
 
 // Compare contents of current and next selected tab using WinMerge (http://winmerge.org/)
 // or any other compare tool

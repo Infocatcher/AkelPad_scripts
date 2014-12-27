@@ -3,6 +3,7 @@
 
 // (c) Infocatcher 2010-2011
 // Version: 0.1.9 - 2011-12-20
+// Author: Infocatcher
 
 //===================
 // Special expressions:

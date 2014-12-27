@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2010, 2014
 // Version: 0.1.0.1 - 2014-07-30
+// Author: Infocatcher
 
 // Usage:
 //   -"Copy path to file"                Call("Scripts::Main", 1, "copyPath.js", `"%f"`)

@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2012-2014
 // Version: 0.2.1 - 2014-04-22
+// Author: Infocatcher
 
 // Automatically saves current session after selection or scroll changes
 // Required Sessions plugin!

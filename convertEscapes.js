@@ -1,5 +1,6 @@
 // (c) Infocatcher 2010
 // Version: 0.1.6 - 2010-12-09
+// Author: Infocatcher
 
 //===================
 // Convert JavaScript escape sequences like "\u00a9" or "\xa9" ((c) symbol)

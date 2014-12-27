@@ -3,6 +3,7 @@
 
 // (c) Infocatcher 2010-2011
 // Version: 0.1.2 - 2011-12-20
+// Author: Infocatcher
 
 function _localize(s) {
 	var strings = {

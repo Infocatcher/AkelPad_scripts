@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2011, 2014
 // Version: 0.1.7 - 2014-08-01
+// Author: Infocatcher
 
 //===================
 // Tries to open file with relative path

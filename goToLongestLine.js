@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2010-2011, 2014
 // Version: 0.3.9.1 - 2014-05-06
+// Author: Infocatcher
 
 //===================
 // Go to longest line below or above current

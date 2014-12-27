@@ -4,6 +4,7 @@
 
 // (c) Infocatcher 2011, 2013-2014
 // Version: 0.2.8 - 2014-08-16
+// Author: Infocatcher
 
 //===================
 // Run script from AkelFiles\Plugs\Scripts\ directory
