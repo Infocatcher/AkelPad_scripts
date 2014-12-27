@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Go to longest line below or above current
+//// Go to longest line below or above current
 // Hotkeys in dialog:
 //   PageUp/PageDown            - go to longest line below/above current
 //   Ctrl+PageUp/Ctrl+PageDown  - go to start/end of document

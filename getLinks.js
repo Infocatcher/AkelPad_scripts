@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Tries to extract links from any text
+//// Tries to extract links from any text
 
 // Usage:
 //   Call("Scripts::Main", 1, "getLinks.js")

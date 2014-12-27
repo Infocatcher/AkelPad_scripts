@@ -6,7 +6,7 @@
 // Version: 0.1.0 - 2014-04-03
 // Author: Infocatcher
 
-// Just like full screen mode, but preserve window size and position
+//// Just like full screen mode, but preserve window size and position
 // Required FullScreen plugin!
 
 var hMainWnd = AkelPad.GetMainWnd();

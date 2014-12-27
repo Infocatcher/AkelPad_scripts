@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Convert JavaScript escape sequences like "\u00a9" or "\xa9" ((c) symbol)
+//// Convert JavaScript escape sequences like "\u00a9" or "\xa9" ((c) symbol)
 
 // Arguments:
 //   -mode=0  - (default) auto encode or decode

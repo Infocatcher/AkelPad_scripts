@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Switch between tabs in order of them arrangement (temporary check "Switch tabs: right-left" option)
+//// Switch between tabs in order of them arrangement (temporary check "Switch tabs: right-left" option)
 // Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#4222
 // Proposed hotkeys: Ctrl+PageDown and Ctrl+PageUp
 

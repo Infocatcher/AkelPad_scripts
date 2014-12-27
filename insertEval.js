@@ -6,6 +6,8 @@
 // Version: 0.1.9 - 2011-12-20
 // Author: Infocatcher
 
+//// Script like built-in Calculator.js
+
 //===================
 // Special expressions:
 // =someExpression() => "someExpression() = result"

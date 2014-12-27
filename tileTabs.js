@@ -6,7 +6,7 @@
 // Version: 0.1.3 - 2014-04-13
 // Author: Infocatcher
 
-// Tile current tab with next selected:
+//// Tile current tab with next selected
 // select first tab, call script and then select second tab.
 // Required MDI window mode and timer.js library!
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js

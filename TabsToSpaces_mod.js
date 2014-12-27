@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/TabsToSpaces_mod.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/TabsToSpaces_mod.js
 
-/// Convert tabulation to space for AkelPad 4.x.x
+//// Convert tabulation to space for AkelPad 4.x.x
 
 // Modified by Infocatcher
 // Version: 2010-12-29

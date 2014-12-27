@@ -6,6 +6,8 @@
 // Version: 0.1.3 - 2012-12-03
 // Author: Infocatcher
 
+//// Convert Unix time
+
 var TU_AUTO = 0;
 var TU_S    = 1;
 var TU_MS   = 2;

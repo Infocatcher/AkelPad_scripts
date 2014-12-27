@@ -6,6 +6,8 @@
 // Version: 0.4.3 - 2010-12-06
 // Author: Infocatcher
 
+//// Encode/decode HTML entities
+
 //===================
 // Encode HTML entities:
 //   &    => &amp;

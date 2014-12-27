@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Adds/removes comments
+//// Adds/removes comments
 
 // Arguments:
 //   -method=0                          - toggle (default)

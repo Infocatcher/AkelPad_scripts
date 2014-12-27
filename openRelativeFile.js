@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Tries to open file with relative path
+//// Tries to open file with relative path
 // (will be used system association to open binary files)
 // Supports Mozilla's chrome.manifest files (https://developer.mozilla.org/en/chrome_registration)
 // Priorities: selected path (if any) or autodetected path (you can just place caret anywhere inside path)

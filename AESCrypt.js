@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// AES-256 encrypt/decrypt
+//// AES-256 encrypt/decrypt
 // Based on script from http://www.movable-type.co.uk/scripts/aes.html
 
 // Arguments:

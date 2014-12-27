@@ -9,7 +9,7 @@
 // [built from https://github.com/beautify-web/js-beautify/tree/master 2014-12-08 08:36:33 UTC]
 
 //===================
-// JavaScript unpacker and beautifier
+//// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
 
 // Arguments:
 //   -onlySelected=true           - use only selected text

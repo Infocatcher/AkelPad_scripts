@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Set extension manually for Coder plugin
+//// Set extension manually for Coder plugin
 
 // Arguments:
 //   -noRecognize    - don't use recognize mechanism for unsaved files or files without extension

@@ -6,6 +6,8 @@
 // Version: 0.0.3.1 - 2014-10-18
 // Author: Infocatcher
 
+//// Tries to fix some punctuation issues
+
 //== Settings
 var fixerDash = "–";
 var fixerForceUpperCase = true;

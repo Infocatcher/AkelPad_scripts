@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// AES-256 and Blowfish encrypt/decrypt
+//// Encrypt/decrypt using AES-256 and/or Blowfish
 // Based on scripts from http://www.movable-type.co.uk/scripts/aes.html and http://www.farfarfar.com/scripts/encrypt/
 
 // Simple encryption:

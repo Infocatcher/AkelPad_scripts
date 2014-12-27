@@ -6,7 +6,7 @@
 // Version: 0.2.1 - 2014-04-22
 // Author: Infocatcher
 
-// Automatically saves current session after selection or scroll changes
+//// Automatically saves current session after selection or scroll changes
 // Required Sessions plugin!
 
 // Arguments:

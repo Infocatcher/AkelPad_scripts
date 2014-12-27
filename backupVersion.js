@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Tries find file version and copy current file to the same directory:
+//// Tries find file version and copy current file to the same directory
 //   file.js      -> file-%version%.js
 //   file.user.js -> file-%version%.user.js
 

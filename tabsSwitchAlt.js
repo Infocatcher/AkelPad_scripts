@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Switch between tabs using alternative way
+//// Switch between tabs using alternative way
 // (temporary check "Switch tabs: right-left" or "Switch tabs: next-previous" option)
 // Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#4222
 // Proposed hotkeys: Ctrl+PageDown and Ctrl+PageUp

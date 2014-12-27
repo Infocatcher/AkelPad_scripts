@@ -6,6 +6,8 @@
 // Version: 0.3.4 - 2011-12-20
 // Author: Infocatcher
 
+//// Provide some statistic for English and Russian texts
+
 // Usage:
 //   Call("Scripts::Main", 1, "textStatistics.js")
 

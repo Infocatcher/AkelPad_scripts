@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Open file in other application
+//// Open file in other application
 
 // Usage:
 //   Call("Scripts::Main", 1, "openFileIn.js", '"appID" "%f"')

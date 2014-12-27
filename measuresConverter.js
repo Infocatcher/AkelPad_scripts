@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Convert measures (internal) and currency (used cached data from exchange-rates.org, fxexchangerate.com and bitcoincharts.com)
+//// Convert measures (internal) and currency (used cached data from exchange-rates.org, fxexchangerate.com and bitcoincharts.com)
 // Can convert numbers and expressions, pick up selected text
 
 // Hotkeys:

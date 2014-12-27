@@ -6,7 +6,7 @@
 // Version: 0.1.1+ - 2014-03-29
 // Author: Infocatcher
 
-// Restart AkelPad
+//// Restart AkelPad
 
 // Dependencies:
 //   Sessions plugin

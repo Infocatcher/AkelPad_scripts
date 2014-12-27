@@ -6,6 +6,8 @@
 // Version: 0.2.5 - 2010-06-21
 // Author: Infocatcher
 
+//// Create new file from template
+
 // Usage:
 // Call("Scripts::Main", 1, "newFileTemplate.js", "html", 0)
 //   - use template for "html"

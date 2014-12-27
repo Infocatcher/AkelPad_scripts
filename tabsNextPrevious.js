@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Switch between tabs in order of them usage (temporary check "Switch tabs: next-previous" option)
+//// Switch between tabs in order of them usage (temporary check "Switch tabs: next-previous" option)
 // Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#4222
 // Proposed hotkeys: Ctrl+PageDown and Ctrl+PageUp
 

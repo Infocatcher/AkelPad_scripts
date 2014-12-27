@@ -6,6 +6,8 @@
 // Version: 0.1.1 - 2014-04-04
 // Author: Infocatcher
 
+//// Undo/redo all changes
+
 // Arguments:
 //   -mode=0       - undo
 //   -mode=1       - redo

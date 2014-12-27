@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Close tabs to the left or right (temporary check "Switch tabs: right-left" option)
+//// Close tabs to the left or right (temporary check "Switch tabs: right-left" option)
 // Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#4222
 
 // Usage:

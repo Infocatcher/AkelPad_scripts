@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Run script from AkelFiles\Plugs\Scripts\ directory
+//// Run script from AkelFiles\Plugs\Scripts\ directory
 
 // Hotkeys:
 //   Enter                         - Ok

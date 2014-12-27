@@ -6,6 +6,7 @@
 // Version: 0.3.2 - 2011-12-20
 // Author: Infocatcher
 
+//// Create new file from template
 // Works with ShowMenuEx.js http://akelpad.sourceforge.net/forum/viewtopic.php?p=8153#8153
 
 // Usage:

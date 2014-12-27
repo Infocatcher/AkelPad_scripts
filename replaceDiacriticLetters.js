@@ -6,6 +6,8 @@
 // Version: 0.1.2 - 2012-12-11
 // Author: Infocatcher
 
+//// Replace diacritic letters with ASCII equivalents
+
 var map = {
 	"à": "a",
 	"À": "A",

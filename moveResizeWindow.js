@@ -6,7 +6,7 @@
 // Version: 0.1.1 - 2012-04-17
 // Author: Infocatcher
 
-// Move or/and align AkelPad's main window
+//// Move or/and align AkelPad's main window
 
 // Icons for context menu:
 //   http://infocatcher.ucoz.net/js/akelpad_scripts/moveResizeWindow_icons.zip

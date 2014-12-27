@@ -6,6 +6,8 @@
 // Version: 0.1.2 - 2011-12-20
 // Author: Infocatcher
 
+//// Convert color between "#fee" and "rgb(255, 238, 238)" formats
+
 function _localize(s) {
 	var strings = {
 		"Color:": {

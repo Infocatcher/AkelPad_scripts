@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// AES-256/Blowfish/Twofish/Serpent encryption/decryption
+//// Encrypt/decrypt using AES-256/Blowfish/Twofish/Serpent
 // Based on scripts from
 // http://www.movable-type.co.uk/scripts/aes.html
 // http://www.farfarfar.com/scripts/encrypt/

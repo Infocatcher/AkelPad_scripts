@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Simplify tags insertion.
+//// Simplify tags insertion
 // By default ask user for tag and insert
 // <tag>{selected_text}</tag>
 

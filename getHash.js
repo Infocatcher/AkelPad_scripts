@@ -6,6 +6,8 @@
 // Version: 0.2.4.1 - 2014-05-06
 // Author: Infocatcher
 
+//// Calculates hash sum of text
+
 //===================
 // Based on following scripts:
 //   http://phpjs.org/functions/crc32:377

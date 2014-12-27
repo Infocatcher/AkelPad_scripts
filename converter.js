@@ -6,6 +6,8 @@
 // Version: 0.2.4.2 - 2014-05-06
 // Author: Infocatcher
 
+//// Encode/decode miscellaneous things
+
 //===================
 // Hotkeys:
 //   Enter                    - Ok

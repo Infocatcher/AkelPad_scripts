@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Execute selected or all code
+//// Execute selected or all code
 
 // Arguments:
 //   -useTempFile=true   - run script from temp file (useful for tracking errors)

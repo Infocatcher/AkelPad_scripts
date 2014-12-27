@@ -5,7 +5,7 @@
 ' Version: 0.1.2 - 2011-04-11
 ' Author: Infocatcher
 
-' Supplemental script for runScript.js
+'' Supplemental script for runScript.js
 ' Executes selected or all code
 
 option explicit

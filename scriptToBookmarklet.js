@@ -8,7 +8,7 @@
 // Windows XP +
 
 //===================
-// Convert JavaScript code to one line bookmarklet
+//// Convert JavaScript code to one line bookmarklet
 // http://en.wikipedia.org/wiki/Bookmarklet
 // http://ru.wikipedia.org/wiki/Букмарклет
 

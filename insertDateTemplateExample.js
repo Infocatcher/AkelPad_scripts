@@ -6,7 +6,7 @@
 // Version: 0.1.2 - 2012-12-03
 // Author: Infocatcher
 
-// Insert current date
+//// Insert current date
 
 //== User settings:
 var dateTemplate = "<fullYear>-<month>-<date>";

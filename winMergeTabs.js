@@ -6,7 +6,7 @@
 // Version: 0.1.2 - 2014-04-13
 // Author: Infocatcher
 
-// Compare contents of current and next selected tab using WinMerge (http://winmerge.org/)
+//// Compare contents of current and next selected tab using WinMerge (http://winmerge.org/)
 // or any other compare tool
 // Required MDI or PMDI window mode and timer.js library!
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js

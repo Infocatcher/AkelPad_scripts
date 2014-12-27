@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-// Align selected code with spaces to user defined string
+//// Align selected code with spaces to user defined string
 
 // Hotkeys:
 //   Enter                    - Ok
