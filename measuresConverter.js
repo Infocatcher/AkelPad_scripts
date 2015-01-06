@@ -2712,6 +2712,10 @@ function converterDialog(modal) {
 				//oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_VALUE, 0);
 				oSys.Call("user32::SetFocus", hWndValue); // D'oh...
 
+				// Force repaint: our optimizations to redraw only changed parts inside draw() function
+				// doesn't work correctly with AkelPad 4.9.2 + Scripts 16.0
+				oSys.Call("user32::InvalidateRect", hWnd, 0, true);
+
 				//updateOnStartup && update(false, updateOnStartupReport);
 				if(updateOnStartup) try {
 					new ActiveXObject("htmlfile").parentWindow.setTimeout(function() {
