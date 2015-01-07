@@ -46,6 +46,7 @@
 //   -indentInnerHTML=true        - indent <head> and <body> sections (only for HTML)
 //   -detectPackers=true          - detect packers
 //   -css=true                    - force beautify CSS (just automatically wrap code into <style>...</style>)
+//   -keepCSSIndentation=true     - keep initial CSS indentation (only for -css=true)
 //   -update=1                    - update source from https://github.com/beautify-web/js-beautify/
 //          =2                    - update source from https://github.com/beautify-web/js-beautify/tree/gh-pages
 //   -forceNoCache                - prevent caching during update
@@ -123,6 +124,7 @@ var unformattedTags        = getArg("unformattedTags"); // Will use jsBeautifier
 var indentInnerHTML        = getArg("indentInnerHTML"); // Will use jsBeautifier defaults
 var detectPackers          = getArg("detectPackers", true);
 var beautifyCSS            = getArg("css", false);
+var keepCSSIndentation     = getArg("keepCSSIndentation", true);
 var test                   = getArg("test", false);
 var update                 = getArg("update", 0);
 var forceNoCache           = getArg("forceNoCache", true);
@@ -6633,14 +6635,16 @@ function beautifyAkelEdit() {
 		}
 
 		if(beautifyCSS) {
-			var indent = src.match(/^[ \t]*/)[0];
 			var srcCSS = "<style>\n" + src + "\n</style>";
 			indentScripts = "separate";
 			var syntax = { value: "css" };
 			res = (beautify(srcCSS) || "")
 				.replace(/^\s*<style>\n?/, "")
-				.replace(/\n?<\/style>\s*$/, "")
-				.replace(/^/mg, indent);
+				.replace(/\n?<\/style>\s*$/, "");
+			if(keepCSSIndentation) {
+				var indent = src.match(/^[ \t]*/)[0];
+				res = res.replace(/^/mg, indent);
+			}
 		}
 		else {
 			var syntax = { value: undefined };
