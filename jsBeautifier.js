@@ -6633,12 +6633,14 @@ function beautifyAkelEdit() {
 		}
 
 		if(beautifyCSS) {
+			var indent = src.match(/^[ \t]*/)[0];
 			var srcCSS = "<style>\n" + src + "\n</style>";
 			indentScripts = "separate";
 			var syntax = { value: "css" };
 			res = (beautify(srcCSS) || "")
 				.replace(/^\s*<style>\n?/, "")
-				.replace(/\n?<\/style>\s*$/, "");
+				.replace(/\n?<\/style>\s*$/, "")
+				.replace(/^/mg, indent);
 		}
 		else {
 			var syntax = { value: undefined };
