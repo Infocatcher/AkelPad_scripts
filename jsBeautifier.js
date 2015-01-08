@@ -6796,6 +6796,7 @@ function selfUpdate() {
 				+ selfCode.substr(indexEnd);
 		}
 		var noRealChanges = selfCode == selfCodeOld;
+		tl.log("Update: get last modified date");
 		selfCode = selfCode.replace(
 			/(\r\n?|\n)\/\/+ *\[built from http\S+ [^\n\r]+\](\r\n?|\n)/,
 			"$1// [built from " + sourceUrl + " " + date() + "]$2"
