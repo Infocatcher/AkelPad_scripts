@@ -6897,13 +6897,7 @@ function setSyntax(ext) {
 			return;
 	}
 
-	if(
-		ext && (
-			AkelPad.IsPluginRunning("Coder::HighLight")
-			|| AkelPad.IsPluginRunning("Coder::AutoComplete")
-			|| AkelPad.IsPluginRunning("Coder::CodeFold")
-		)
-	)
+	if(ext && isCoderRunning())
 		AkelPad.Call("Coder::Settings", 1, ext);
 }
 function getSyntaxType(alias) {
@@ -6916,11 +6910,7 @@ function getSyntaxType(alias) {
 	return "";
 }
 function getCoderAlias() {
-	if(
-		!AkelPad.IsPluginRunning("Coder::HighLight")
-		&& !AkelPad.IsPluginRunning("Coder::CodeFold")
-		&& !AkelPad.IsPluginRunning("Coder::AutoComplete")
-	)
+	if(!isCoderRunning())
 		return "";
 	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
 	var hWndEdit = AkelPad.GetEditWnd();
@@ -6935,6 +6925,11 @@ function getCoderAlias() {
 		}
 	}
 	return pAlias;
+}
+function isCoderRunning() {
+	return AkelPad.IsPluginRunning("Coder::HighLight")
+		|| AkelPad.IsPluginRunning("Coder::AutoComplete")
+		|| AkelPad.IsPluginRunning("Coder::CodeFold");
 }
 
 function getCaretPos(newStr, oldSelStart) {
