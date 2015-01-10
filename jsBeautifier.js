@@ -6634,10 +6634,11 @@ function beautifyAkelEdit() {
 				.replace(/\s+/g, "");
 		}
 
+		var syntax = { value: undefined };
 		if(beautifyCSS) {
 			var srcCSS = "<style>\n" + src + "\n</style>";
 			indentScripts = "separate";
-			var syntax = { value: "css" };
+			syntax.value = "css";
 			res = (beautify(srcCSS) || "")
 				.replace(/^\s*<style>\n?/, "")
 				.replace(/\n?<\/style>\s*$/, "");
@@ -6647,7 +6648,6 @@ function beautifyAkelEdit() {
 			}
 		}
 		else {
-			var syntax = { value: undefined };
 			res = beautify(src, syntax);
 		}
 
