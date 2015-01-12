@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/backupVersion.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/backupVersion.js
 
-// (c) Infocatcher 2011-2012, 2014
-// Version: 0.1.5pre3 - 2014-11-16
+// (c) Infocatcher 2011-2012, 2014-2015
+// Version: 0.1.5 - 2015-01-12
 // Author: Infocatcher
 
 //===================
