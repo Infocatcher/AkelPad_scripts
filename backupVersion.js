@@ -113,7 +113,8 @@ function copyFile() {
 	var overwrite = false;
 	var exists = function(name) {
 		var path = curDir + "\\" + name;
-		return fso.FileExists(path) || fso.FolderExists(path);
+		//return fso.FileExists(path) || fso.FolderExists(path);
+		return oSys.Call("kernel32::GetFileAttributes" + _TCHAR, path) != -1;
 	};
 	if(!forceDate)
 		var version = getVersion();
