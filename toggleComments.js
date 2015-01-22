@@ -1249,8 +1249,8 @@ function getCurrentExt() {
 }
 function getCoderExt() {
 	var alias = getCoderAlias();
-	if(/^\.[^.]+$/.test(alias)) {
-		var ext = alias.substr(1).toLowerCase();
+	if(/\.([^.]+)$/.test(alias)) {
+		var ext = RegExp.$1.toLowerCase();
 		if(commentsSets[ext])
 			return ext;
 	}
