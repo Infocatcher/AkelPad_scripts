@@ -327,8 +327,8 @@ Comments.prototype = {
 		this.fullText = AkelPad.GetTextRange(0, -1);
 		//this.fullTextLen = this.fullText.length;
 
-		this.startText = this.fullText.substring(0, this.selStart);
-		this.endText = this.fullText.substring(this.selEnd);
+		this.startText = this.fullText.substr(0, this.selStart);
+		this.endText = this.fullText.substr(this.selEnd);
 
 		this.noSel = this.selStart == this.selEnd;
 		this.isMultiline = !this.noSel && /[\n\r]/.test(this.selText);
@@ -443,10 +443,10 @@ Comments.prototype = {
 				)
 				&& (
 					!this.ignoreLineCmmAfterCode
-					|| /^[ \t]*$/.test(line.substring(0, cmmLineIndx)) // Only spaces before before comment
+					|| /^[ \t]*$/.test(line.substr(0, cmmLineIndx)) // Only spaces before before comment
 				)
 			) {
-				var linePart = line.substring(cmmLineIndx);
+				var linePart = line.substr(cmmLineIndx);
 				//var sp = this.removeSpaces ? "[\\t ]?" : "";
 				var sp = this.removeSpaces ? " ?" : "";
 				var cmmLinePattern = this.escapeRegExp(cmmLine) + this.fixCmmLineRegExp(cmmLine);
@@ -480,7 +480,7 @@ Comments.prototype = {
 					selBefore: [lineStart + cmmLineIndx, lineEnd],
 					selAfter: [selAfterStart, selAfterEnd]
 				};
-				//line = line.substring(0, cmmLineIndx) + linePartNew.replace(cmmLinePattern, "");
+				//line = line.substr(0, cmmLineIndx) + linePartNew.replace(cmmLinePattern, "");
 				//AkelPad.SetSel(lineStart, lineEnd);
 				//AkelPad.ReplaceSel(line);
 				//AkelPad.SetSel(lineStart + cmmLineIndx, lineStart + line.length);
@@ -582,11 +582,11 @@ Comments.prototype = {
 			var ss = this.selStart;
 			var se = this.selEnd;
 
-			var startTextAdd    = fullText.substring(0, ss + add);
-			var startSelTextAdd = fullText.substring(0, se + add);
+			var startTextAdd    = fullText.substr(0, ss + add);
+			var startSelTextAdd = fullText.substr(0, se + add);
+			var selEndTextAdd   = fullText.substr(ss - add);
+			var endTextAdd      = fullText.substr(se - add);
 			var selTextAdd      = fullText.substring(ss - add, se + add);
-			var selEndTextAdd   = fullText.substring(ss - add);
-			var endTextAdd      = fullText.substring(se - add);
 
 			var selOpenIndx  = selTextAdd.indexOf(cmmBlockStart);
 			var selCloseLastIndx = selTextAdd.lastIndexOf(cmmBlockEnd);
@@ -1027,10 +1027,10 @@ Comments.prototype = {
 	/***
 	getBlockByIndex: function(startIndx, endIndx) {
 		var middleLen = endIndx - startIndx;
-		var start = this.fullText.substring(0, startIndx);
+		var start = this.fullText.substr(0, startIndx);
 		var lineStart = start.search(/(^|\r\n|\n|\r)[^\n\r]*$/);
 		lineStart += RegExp.$1.length;
-		var end = this.fullText.substring(endIndx);
+		var end = this.fullText.substr(endIndx);
 		var lineEnd = start.length + middleLen + end.search(/\r|\n|$/);
 		return [lineStart, lineEnd];
 	},
