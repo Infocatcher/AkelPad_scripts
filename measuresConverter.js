@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/measuresConverter.js
 
 // (c) Infocatcher 2011-2015
-// Version: 0.2.7.2 - 2015-01-06
+// Version: 0.2.7.3 - 2015-02-03
 // Author: Infocatcher
 
 //===================
