@@ -386,7 +386,6 @@ var measures = {
 		"Rwanda Franc":                  "RWF",
 		"Saudi Riyal":                   "SAR",
 		"Seychelles Rupee":              "SCR",
-		"Sudanese Dinar":                "SDD",
 		"Swedish Krona":                 "SEK",
 		"Singapore Dollar":              "SGD",
 		"Somali Shilling":               "SOS",
@@ -1477,9 +1476,6 @@ function _localize(s) {
 		"Seychelles Rupee": {
 			ru: "Сейшелийская рупия"
 		},
-		"Sudanese Dinar": {
-			ru: "Суданский динар"
-		},
 		"Swedish Krona": {
 			ru: "Шведская крона"
 		},
@@ -1857,7 +1853,7 @@ var missingCurrencies = {
 		"LRD", "MKD", "MNT", "MRO", "MVR", "NAD", "PGK", "SBD", "SDG", "SHP",
 		"SKK", "SLL", "STD", "SVC", "TOP", "UZS", "VUV", "WST", "YER"
 	],
-	"fxexchangerate.com": ["AMD", "RSD", "SDD"]
+	"fxexchangerate.com": ["AMD", "RSD"]
 };
 function available(server, code) {
 	var missing = missingCurrencies[server];
