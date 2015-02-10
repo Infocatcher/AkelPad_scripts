@@ -28,6 +28,7 @@
 //   -offlineExpire=22*60*60*1000  - currency ratio expires after this time (in milliseconds)
 //   -updateOnStartup=true         - asynchronous update currency data on startup
 //   -updateOnStartupReport=1      - 0 - don't show, 1 - only errors, 2 - always
+//   -updateMaxErrors=4            - abort update, if reached many errors (use -1 to ignore errors)
 //   -convertNumbers=true          - convert numbers (1234.5 -> 1 234,5)
 //   -roundMeasures=3              - round measures (number or special ROUND_OFF value)
 //   -roundCurrencies=2            - round currencies (number or special ROUND_OFF value)
@@ -1747,6 +1748,7 @@ var preferFXExchangeRate  = getArg("preferFXExchangeRate", true);
 var offlineExpire         = getArg("offlineExpire", 22*60*60*1000);
 var updateOnStartup       = getArg("updateOnStartup", true);
 var updateOnStartupReport = getArg("updateOnStartupReport", 1);
+var updateMaxErrors       = getArg("updateMaxErrors", 4);
 var convertNumbers        = getArg("convertNumbers", true);
 var sortMeasures          = getArg("sortMeasures");
 var sortByName            = getArg("sortByName");
@@ -1758,6 +1760,9 @@ var showLastUpdate        = getArg("showLastUpdate", 2);
 var from   = getArg("from");
 var to     = getArg("to");
 var dialog = getArg("dialog", true);
+
+if(updateMaxErrors < 0)
+	updateMaxErrors = Infinity;
 
 var curType, curItem, curItem2;
 var selectedItems = {};
@@ -1957,7 +1962,7 @@ function saveOfflineCurrencyData(saveMode) {
 }
 var asyncUpdater = {
 	maxActiveRequests: 4,
-	maxErrors: 4,
+	maxErrors: updateMaxErrors,
 	queue: [],
 	requests: {},
 	init: function(onProgress, onComplete, total) {
