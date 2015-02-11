@@ -34,9 +34,10 @@
 //   -roundCurrencies=2            - round currencies (number or special ROUND_OFF value)
 //   -sortMeasures=true            - sort measures alphabetically
 //   -sortByName=true              - sort currencies by name (otherwise - by code)
-//   -maxHeight=0                  - maximum window height for create listboxes instead of radiobuttons
+//   -maxHeight=0                  - maximum window height for create listboxes instead of radio buttons
 //                                   -1 => no resize window
 //                                    0 => always use listboxes
+//   -disableRadios=true           - (see -maxHeight) forbid to select the same on left and right radio buttons
 //   -showLastUpdate=2             - 0 - don't show, 1 - show only if selected currencies, 2 - always show
 //   -from="Pound"                 - set source measure (you should use English names!)
 //   -to="Kilogram"                - set target measure (you should use English names!)
@@ -1755,6 +1756,7 @@ var sortByName            = getArg("sortByName");
 var roundMeasures         = getArg("roundMeasures");
 var roundCurrencies       = getArg("roundCurrencies");
 var dlgMaxH               = getArg("maxHeight", 0); // -1 => no resize
+var disableRadios         = getArg("disableRadios", false);
 var showLastUpdate        = getArg("showLastUpdate", 2);
 
 var from   = getArg("from");
@@ -3125,8 +3127,10 @@ function converterDialog(modal) {
 				y += dy;
 			}
 
-			enabled(hWndItems[curItem2], false);
-			enabled(hWndItems2[curItem], false);
+			if(disableRadios) {
+				enabled(hWndItems[curItem2], false);
+				enabled(hWndItems2[curItem], false);
+			}
 
 			// GroupBox items
 			hWndGroupItems = createWindowEx(
