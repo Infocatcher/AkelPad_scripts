@@ -88,6 +88,7 @@ var commentsSets = {
 	asm: [ null, null, [";"] ],
 	ini: [ null, null, [";", "#"] ],
 	bat: [ null, null, ["::", "rem "] ],
+	cmd: "bat",
 	vbs: [ null, null, ["'", "rem "] ],
 	lss: [ ["%REM"], ["%END REM"], ["'"] ],
 	manifest: [ null, null, ["#"] ],
