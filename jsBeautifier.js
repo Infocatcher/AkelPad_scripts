@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2014-12-08 08:36:33 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-02-11 01:11:03 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -463,6 +463,14 @@ function detectXMLType(str) {
         return s.replace(/^\s+|\s+$/g, '');
     }
 
+    function ltrim(s) {
+        return s.replace(/^\s+/g, '');
+    }
+
+    function rtrim(s) {
+        return s.replace(/\s+$/g, '');
+    }
+
     function js_beautify(js_source_text, options) {
         "use strict";
         var beautifier = new Beautifier(js_source_text, options);
@@ -684,7 +692,6 @@ function detectXMLType(str) {
 
         // we could use just string.split, but
         // IE doesn't like returning empty strings
-
         function split_newlines(s) {
             //return s.split(/\x0d\x0a|\x0a/);
 
@@ -1460,7 +1467,7 @@ function detectXMLType(str) {
                 print_newline(false, true);
                 if (javadoc) {
                     // javadoc: reformat and re-indent
-                    print_token(' ' + trim(lines[j]));
+                    print_token(' ' + ltrim(lines[j]));
                 } else if (starless && lines[j].length > lastIndentLength) {
                     // starless: re-indent non-empty content, avoiding trim
                     print_token(lines[j].substring(lastIndentLength));
@@ -2286,6 +2293,7 @@ function detectXMLType(str) {
         selector_separator_newline (true) - separate selectors with newline or
                                             not (e.g. "a,\nbr" or "a, br")
         end_with_newline (false)          - end with a newline
+        newline_between_rules (true)      - add a new line after every css rule
 
     e.g
 
@@ -2294,6 +2302,7 @@ function detectXMLType(str) {
       'indent_char': '\t',
       'selector_separator': ' ',
       'end_with_newline': false,
+      'newline_between_rules': true
     });
 */
 
@@ -4454,6 +4463,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('[1,2,[3,4,[5,6],7],8]', '[1, 2, [3, 4, [5, 6], 7], 8]');
         bt('[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]', '[\n    [\n        ["1", "2"],\n        ["3", "4"]\n    ],\n    [\n        ["5", "6", "7"],\n        ["8", "9", "0"]\n    ],\n    [\n        ["1", "2", "3"],\n        ["4", "5", "6", "7"],\n        ["8", "9", "0"]\n    ]\n]');
         bt('{[x()[0]];indent;}', '{\n    [x()[0]];\n    indent;\n}');
+        bt('/*\n foo trailing space    \n * bar trailing space   \n**/');
+        bt('{\n    /*\n    foo    \n    * bar    \n    */\n}');
 
         bt('{{}/z/}', "{\n    {}\n    /z/\n}");
 
