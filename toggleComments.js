@@ -284,7 +284,8 @@ if(searchRegions)
 	commentsSets.php = commentsSets.html;
 
 var optionsPath = WScript.ScriptFullName.replace(/(\.[^.]+)?$/, "-options$&");
-if(new ActiveXObject("Scripting.FileSystemObject").FileExists(optionsPath))
+//if(new ActiveXObject("Scripting.FileSystemObject").FileExists(optionsPath))
+if(oSys.Call("kernel32::GetFileAttributes" + _TCHAR, optionsPath) != -1)
 	eval(AkelPad.ReadFile(optionsPath));
 
 function Comments(opts) {
