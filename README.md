@@ -1,5 +1,6 @@
 ﻿Scripts for <a href="http://akelpad.sf.net/">AkelPad</a> text editor with <a href="http://akelpad.sf.net/en/plugins.php">Scripts plugin</a>.
 <br>Also see <a href="http://akelpad.sf.net/forum/viewtopic.php?t=240">Scripts collection</a> forum thread.
+<br>License for all scripts: <a href="http://opensource.org/licenses/BSD-2-Clause">BSD</a> (like for AkelPad itself).
 
 #### Scripts in alphabetical order
 
