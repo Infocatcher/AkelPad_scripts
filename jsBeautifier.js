@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-02-11 01:11:03 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-02-24 21:58:36 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -3064,7 +3064,7 @@ function detectXMLType(str) {
                     }
 
                     if (indent_handlebars && !tag_start_char) {
-                        if (content.length >= 2 && content[content.length - 1] === '{' && content[content.length - 2] == '{') {
+                        if (content.length >= 2 && content[content.length - 1] === '{' && content[content.length - 2] === '{') {
                             if (input_char === '#' || input_char === '/') {
                                 tag_start = this.pos - 3;
                             } else {
@@ -6484,7 +6484,7 @@ function SanityTest (func, name_of_test) {
         // multi-parameter calls not supported (I don't need them now).
         var result = test_func(parameters);
         // proper array checking is a pain. i'll maybe do it later, compare strings representations instead
-        if ((result === expected_value) || (expected_value instanceof Array && result.join(', ') == expected_value.join(', '))) {
+        if ((result === expected_value) || (expected_value instanceof Array && result.join(', ') === expected_value.join(', '))) {
             n_succeeded += 1;
         } else {
             n_failed += 1;
@@ -6543,7 +6543,7 @@ function SanityTest (func, name_of_test) {
                 var x = [];
                 var expected_index = 0;
                 for (var k in something) {
-                    if (k == expected_index) {
+                    if (k === expected_index) {
                         x.push(this.prettyprint(something[k], true));
                         expected_index += 1;
                     } else {
