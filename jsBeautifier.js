@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-02-24 21:58:36 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-02-25 23:55:10 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -2799,6 +2799,8 @@ function detectXMLType(str) {
             preserve_newlines,
             max_preserve_newlines,
             indent_handlebars,
+            wrap_attributes,
+            wrap_attributes_indent_size,
             end_with_newline;
 
         options = options || {};
@@ -2820,6 +2822,8 @@ function detectXMLType(str) {
             (isNaN(parseInt(options.max_preserve_newlines, 10)) ? 32786 : parseInt(options.max_preserve_newlines, 10))
             : 0;
         indent_handlebars = (options.indent_handlebars === undefined) ? false : options.indent_handlebars;
+        wrap_attributes = (options.wrap_attributes === undefined) ? 'auto' : options.wrap_attributes;
+        wrap_attributes_indent_size = (options.wrap_attributes_indent_size === undefined) ? indent_size : parseInt(options.wrap_attributes_indent_size, 10) || indent_size;
         end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
 
         function Parser() {
@@ -2860,7 +2864,7 @@ function detectXMLType(str) {
                     }
                 }
                 return true;
-            }
+            };
 
             this.traverse_whitespace = function() {
                 var input_char = '';
@@ -3006,6 +3010,7 @@ function detectXMLType(str) {
                     content = [],
                     comment = '',
                     space = false,
+                    first_attr = true,
                     tag_start, tag_end,
                     tag_start_char,
                     orig_pos = this.pos,
@@ -3044,6 +3049,19 @@ function detectXMLType(str) {
                         //no space after = or before >
                         this.space_or_wrap(content);
                         space = false;
+                        if (!first_attr && wrap_attributes === 'force' &&  input_char !== '/') {
+                            this.print_newline(true, content);
+                            this.print_indentation(content);
+                            for (var count = 0; count < wrap_attributes_indent_size; count++) {
+                                content.push(indent_character);
+                            }
+                        }
+                        for (var i = 0; i < content.length; i++) {
+                          if (content[i] === ' ') {
+                            first_attr = false;
+                            break;
+                          }
+                        }
                     }
 
                     if (indent_handlebars && tag_start_char === '<') {
@@ -6007,6 +6025,40 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('');
         test_fragment('<div></div>');
         test_fragment('\n', '');
+
+        // Attribute Wrap - (eof = "\n", indent_attr = "    ", over80 = "\n")
+        opts.wrap_attributes = 'force';
+        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n    attr1="123"\n    data-attr2="hello    t here">This is some text</div>');
+        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n    attr0\n    attr1="123"\n    data-attr2="hello    t here"\n    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n    attr1="123"\n    data-attr2="hello    t here" />');
+
+        // Attribute Wrap - (eof = "\n", indent_attr = "    ", over80 = "\n")
+        opts.wrap_attributes = 'force';
+        opts.wrap_line_length = 80;
+        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n    attr1="123"\n    data-attr2="hello    t here">This is some text</div>');
+        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n    attr0\n    attr1="123"\n    data-attr2="hello    t here"\n    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n    attr1="123"\n    data-attr2="hello    t here" />');
+
+        // Attribute Wrap - (eof = "\n", indent_attr = "        ", over80 = "\n")
+        opts.wrap_attributes = 'force';
+        opts.wrap_attributes_indent_size = 8;
+        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n        attr1="123"\n        data-attr2="hello    t here">This is some text</div>');
+        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n        attr0\n        attr1="123"\n        data-attr2="hello    t here"\n        heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n        attr1="123"\n        data-attr2="hello    t here" />');
+
+        // Attribute Wrap - (eof = " ", indent_attr = "", over80 = "\n")
+        opts.wrap_attributes = 'auto';
+        opts.wrap_line_length = 80;
+        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
+        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here"\nheymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
+
+        // Attribute Wrap - (eof = " ", indent_attr = "", over80 = " ")
+        opts.wrap_attributes = 'auto';
+        opts.wrap_line_length = 0;
+        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
+        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
 
         // New Test Suite
 
