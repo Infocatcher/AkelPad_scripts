@@ -1373,10 +1373,10 @@ function converterDialog(modal) {
 	var IDC_TYPE_STRING   = 1011;
 	var IDC_TYPE_URI      = 1012;
 	var IDC_TYPE_URIC     = 1013;
-	var IDC_TYPE_BASE64   = 1014;
-	var IDC_TYPE_UNESCAPE = 1015;
 	var IDC_TO_DATA_URI   = 1016;
 	var IDC_TO_BASE64     = 1017;
+	var IDC_TYPE_UNESCAPE = 1015;
+	var IDC_TYPE_BASE64   = 1014;
 	var IDC_MODE_AUTO     = 1018;
 	var IDC_MODE_ENCODE   = 1019;
 	var IDC_MODE_DECODE   = 1020;
