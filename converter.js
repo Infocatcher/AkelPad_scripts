@@ -1429,7 +1429,7 @@ function converterDialog(modal) {
 	var sizeNonClientY = oSys.Call("user32::GetSystemMetrics", 33 /*SM_CYSIZEFRAME*/) * 2 + oSys.Call("user32::GetSystemMetrics", 4 /*SM_CYCAPTION*/);
 
 	var dlgMinW = scale.x(410) + sizeNonClientX;
-	var dlgMinH = scale.y(392+19) + sizeNonClientY; // + outputH + 12
+	var dlgMinH = scale.y(411) + sizeNonClientY; // + outputH + 12
 	var outputMinH = 20;
 
 	if(outputH != undefined)
@@ -1485,7 +1485,7 @@ function converterDialog(modal) {
 					12,           //x
 					10,           //y
 					386,          //nWidth
-					233+19,          //nHeight
+					252,          //nHeight
 					hWnd,         //hWndParent
 					IDC_STATIC,   //ID
 					hInstanceDLL, //hInstance
@@ -1814,7 +1814,7 @@ function converterDialog(modal) {
 					0,                //lpWindowName
 					0x50000004,       //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,               //x
-					221+19,              //y
+					240,              //y
 					350,              //nWidth
 					16,               //nHeight
 					hWnd,             //hWndParent
@@ -1833,7 +1833,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50000007,   //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					12,           //x
-					253+19,          //y
+					272,          //y
 					386,          //nWidth
 					42,           //nHeight
 					hWnd,         //hWndParent
@@ -1850,7 +1850,7 @@ function converterDialog(modal) {
 					0,             //lpWindowName
 					0x50000004,    //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,            //x
-					271+19,           //y
+					290,           //y
 					116,           //nWidth
 					16,            //nHeight
 					hWnd,          //hWndParent
@@ -1868,7 +1868,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					148,             //x
-					271+19,             //y
+					290,             //y
 					116,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -1886,7 +1886,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					272,             //x
-					271+19,             //y
+					290,             //y
 					116,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -1905,7 +1905,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50000007,   //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					12,           //x
-					305+19,          //y
+					324,          //y
 					386,          //nWidth
 					42,           //nHeight
 					hWnd,         //hWndParent
@@ -1922,7 +1922,7 @@ function converterDialog(modal) {
 					0,              //lpWindowName
 					0x50010003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					24,             //x
-					323+19,            //y
+					342,            //y
 					116,            //nWidth
 					16,             //nHeight
 					hWnd,           //hWndParent
@@ -1940,7 +1940,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					148,          //x
-					323+19,          //y
+					342,          //y
 					116,          //nWidth
 					16,           //nHeight
 					hWnd,         //hWndParent
@@ -1958,7 +1958,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					272,          //x
-					323+19,          //y
+					342,          //y
 					116,          //nWidth
 					16,           //nHeight
 					hWnd,         //hWndParent
@@ -1976,7 +1976,7 @@ function converterDialog(modal) {
 					0,                     //lpWindowName
 					0x50315904,            //WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_HSCROLL|ES_LEFT|ES_MULTILINE|ES_DISABLENOSCROLL|WS_TABSTOP|ES_SUNKEN|ES_NOHIDESEL|ES_READONLY
 					12,                    //x
-					359+19,                   //y
+					378,                   //y
 					386,                   //nWidth
 					outputH,               //nHeight
 					hWnd,                  //hWndParent
@@ -1998,7 +1998,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010001,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_DEFPUSHBUTTON
 					75,           //x
-					358+19 + dh,     //y
+					377 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -2015,7 +2015,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					187,          //x
-					358+19 + dh,     //y
+					377 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -2032,7 +2032,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					299,          //x
-					358+19 + dh,     //y
+					377 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
