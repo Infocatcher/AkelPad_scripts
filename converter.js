@@ -216,8 +216,8 @@ function _localize(s) {
 		"&Insert": {
 			ru: "&Вставить"
 		},
-		"&Copy": {
-			ru: "&Копировать"
+		"C&opy": {
+			ru: "К&опировать"
 		},
 		"Sho&w": {
 			ru: "Пока&зать"
@@ -1948,7 +1948,7 @@ function converterDialog(modal) {
 					hInstanceDLL, //hInstance
 					0             //lpParam
 				);
-				setWindowFontAndText(hWndActCopy, hGuiFont, _localize("&Copy"));
+				setWindowFontAndText(hWndActCopy, hGuiFont, _localize("C&opy"));
 				checked(hWndActCopy, action & ACT_COPY);
 
 				// Checkbox show
