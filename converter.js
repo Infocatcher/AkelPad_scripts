@@ -62,7 +62,7 @@
 //   Encode: WideCharToMultiByte() http://msdn.microsoft.com/en-us/library/dd374130(v=vs.85).aspx
 //   Decode: MultiByteToWideChar() http://msdn.microsoft.com/en-us/library/dd319072(v=vs.85).aspx
 //   Íå÷òî <=> Нечто (with cp1251 aka windows-1251)
-// -type="Recode" (works like built-in recode command)
+// -type="Recode" (works like built-in recode command, not available from UI)
 //   бНОПНЯ <=> Вопрос (from cp20866 aka KOI8-R to cp1251 aka windows-1251)
 
 // Arguments:
