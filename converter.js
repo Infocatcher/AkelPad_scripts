@@ -195,6 +195,9 @@ function _localize(s) {
 		"Base&64": {
 			ru: "Base&64"
 		},
+		"&Charset (semi-recode)": {
+			ru: "&Кодировка (частичное перекодирование)"
+		},
 		"Direction": {
 			ru: "Направление"
 		},
@@ -1377,6 +1380,7 @@ function converterDialog(modal) {
 	var IDC_TO_BASE64     = 1017;
 	var IDC_TYPE_UNESCAPE = 1015;
 	var IDC_TYPE_BASE64   = 1014;
+	var IDC_TYPE_CHARSET  = 1028;
 	var IDC_MODE_AUTO     = 1018;
 	var IDC_MODE_ENCODE   = 1019;
 	var IDC_MODE_DECODE   = 1020;
@@ -1388,7 +1392,8 @@ function converterDialog(modal) {
 	var IDC_CONVERT       = 1026;
 	var IDC_CANCEL        = 1027;
 
-	var hWndGroupType, hWndTypeHTML, hWndTypeEscapes, hWndTypeRegExp, hWndTypeString, hWndTypeURI, hWndTypeURIC, hWndTypeUnescape, hWndTypeBase64;
+	var hWndGroupType, hWndTypeHTML, hWndTypeEscapes, hWndTypeRegExp, hWndTypeString, hWndTypeURI,
+		hWndTypeURIC, hWndTypeUnescape, hWndTypeBase64, hWndTypeCharset;
 	var hWndDecEnt, hWndEncEnt, hWndDecEntSp, hWndEncEntSp, hWndDecChr, hWndEncChr, hWndEncChrHex;
 	var hWndToDataURI, hWndToBase64;
 	var hWndGroupMode, hWndModeAuto, hWndModeEncode, hWndModeDecode;
@@ -1424,7 +1429,7 @@ function converterDialog(modal) {
 	var sizeNonClientY = oSys.Call("user32::GetSystemMetrics", 33 /*SM_CYSIZEFRAME*/) * 2 + oSys.Call("user32::GetSystemMetrics", 4 /*SM_CYCAPTION*/);
 
 	var dlgMinW = scale.x(410) + sizeNonClientX;
-	var dlgMinH = scale.y(392) + sizeNonClientY; // + outputH + 12
+	var dlgMinH = scale.y(392+19) + sizeNonClientY; // + outputH + 12
 	var outputMinH = 20;
 
 	if(outputH != undefined)
@@ -1480,7 +1485,7 @@ function converterDialog(modal) {
 					12,           //x
 					10,           //y
 					386,          //nWidth
-					233,          //nHeight
+					233+19,          //nHeight
 					hWnd,         //hWndParent
 					IDC_STATIC,   //ID
 					hInstanceDLL, //hInstance
@@ -1802,6 +1807,24 @@ function converterDialog(modal) {
 				setWindowFontAndText(hWndTypeBase64, hGuiFont, _localize("Base&64"));
 				checked(hWndTypeBase64, type == "base64");
 
+				// Radiobutton Charset converter
+				hWndTypeCharset = createWindowEx(
+					0,                //dwExStyle
+					"BUTTON",         //lpClassName
+					0,                //lpWindowName
+					0x50000004,       //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
+					24,               //x
+					221+19,              //y
+					350,              //nWidth
+					16,               //nHeight
+					hWnd,             //hWndParent
+					IDC_TYPE_CHARSET, //ID
+					hInstanceDLL,     //hInstance
+					0                 //lpParam
+				);
+				setWindowFontAndText(hWndTypeCharset, hGuiFont, _localize("&Charset (semi-recode)"));
+				checked(hWndTypeCharset, type == "charset");
+
 
 				// GroupBox mode
 				hWndGroupMode = createWindowEx(
@@ -1810,7 +1833,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50000007,   //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					12,           //x
-					253,          //y
+					253+19,          //y
 					386,          //nWidth
 					42,           //nHeight
 					hWnd,         //hWndParent
@@ -1827,7 +1850,7 @@ function converterDialog(modal) {
 					0,             //lpWindowName
 					0x50000004,    //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,            //x
-					271,           //y
+					271+19,           //y
 					116,           //nWidth
 					16,            //nHeight
 					hWnd,          //hWndParent
@@ -1845,7 +1868,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					148,             //x
-					271,             //y
+					271+19,             //y
 					116,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -1863,7 +1886,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					272,             //x
-					271,             //y
+					271+19,             //y
 					116,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -1882,7 +1905,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50000007,   //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					12,           //x
-					305,          //y
+					305+19,          //y
 					386,          //nWidth
 					42,           //nHeight
 					hWnd,         //hWndParent
@@ -1899,7 +1922,7 @@ function converterDialog(modal) {
 					0,              //lpWindowName
 					0x50010003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					24,             //x
-					323,            //y
+					323+19,            //y
 					116,            //nWidth
 					16,             //nHeight
 					hWnd,           //hWndParent
@@ -1917,7 +1940,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					148,          //x
-					323,          //y
+					323+19,          //y
 					116,          //nWidth
 					16,           //nHeight
 					hWnd,         //hWndParent
@@ -1935,7 +1958,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					272,          //x
-					323,          //y
+					323+19,          //y
 					116,          //nWidth
 					16,           //nHeight
 					hWnd,         //hWndParent
@@ -1953,7 +1976,7 @@ function converterDialog(modal) {
 					0,                     //lpWindowName
 					0x50315904,            //WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_HSCROLL|ES_LEFT|ES_MULTILINE|ES_DISABLENOSCROLL|WS_TABSTOP|ES_SUNKEN|ES_NOHIDESEL|ES_READONLY
 					12,                    //x
-					359,                   //y
+					359+19,                   //y
 					386,                   //nWidth
 					outputH,               //nHeight
 					hWnd,                  //hWndParent
@@ -1975,7 +1998,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010001,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_DEFPUSHBUTTON
 					75,           //x
-					358 + dh,     //y
+					358+19 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -1992,7 +2015,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					187,          //x
-					358 + dh,     //y
+					358+19 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -2009,7 +2032,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					299,          //x
-					358 + dh,     //y
+					358+19 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -2039,6 +2062,7 @@ function converterDialog(modal) {
 				else if(checked(hWndTypeURI))     hWndChecked = hWndTypeURI;
 				else if(checked(hWndTypeURIC))    hWndChecked = hWndTypeURIC;
 				else if(checked(hWndTypeBase64))  hWndChecked = hWndTypeBase64;
+				else if(checked(hWndTypeCharset)) hWndChecked = hWndTypeCharset;
 				oSys.Call("user32::SetFocus", hWndChecked);
 			break;
 			case 256: //WM_KEYDOWN
@@ -2131,6 +2155,7 @@ function converterDialog(modal) {
 					case IDC_TYPE_URIC:
 					case IDC_TYPE_UNESCAPE:
 					case IDC_TYPE_BASE64:
+					case IDC_TYPE_CHARSET:
 						checked(hWndTypeHTML,     idc == IDC_TYPE_HTML);
 						checked(hWndTypeEscapes,  idc == IDC_TYPE_ESCAPES);
 						checked(hWndTypeRegExp,   idc == IDC_TYPE_REGEXP);
@@ -2139,6 +2164,7 @@ function converterDialog(modal) {
 						checked(hWndTypeURIC,     idc == IDC_TYPE_URIC);
 						checked(hWndTypeUnescape, idc == IDC_TYPE_UNESCAPE);
 						checked(hWndTypeBase64,   idc == IDC_TYPE_BASE64);
+						checked(hWndTypeCharset,  idc == IDC_TYPE_CHARSET);
 						setHTMLOptions();
 						setBase64Options();
 
@@ -2433,6 +2459,8 @@ function converterDialog(modal) {
 			type = "unescape";
 		else if(checked(hWndTypeBase64))
 			type = "base64";
+		else if(checked(hWndTypeCharset))
+			type = "charset";
 		else
 			return false;
 
