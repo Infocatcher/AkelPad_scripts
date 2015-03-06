@@ -1376,21 +1376,21 @@ function converterDialog(modal) {
 	var IDC_TYPE_STRING   = 1011;
 	var IDC_TYPE_URI      = 1012;
 	var IDC_TYPE_URIC     = 1013;
-	var IDC_TO_DATA_URI   = 1016;
-	var IDC_TO_BASE64     = 1017;
-	var IDC_TYPE_UNESCAPE = 1015;
-	var IDC_TYPE_BASE64   = 1014;
-	var IDC_TYPE_CHARSET  = 1028;
-	var IDC_MODE_AUTO     = 1018;
-	var IDC_MODE_ENCODE   = 1019;
-	var IDC_MODE_DECODE   = 1020;
-	var IDC_ACT_INSERT    = 1021;
-	var IDC_ACT_COPY      = 1022;
-	var IDC_ACT_SHOW      = 1023;
-	var IDC_OUTPUT        = 1024;
-	var IDC_OK            = 1025;
-	var IDC_CONVERT       = 1026;
-	var IDC_CANCEL        = 1027;
+	var IDC_TO_DATA_URI   = 1014;
+	var IDC_TO_BASE64     = 1015;
+	var IDC_TYPE_UNESCAPE = 1016;
+	var IDC_TYPE_BASE64   = 1017;
+	var IDC_TYPE_CHARSET  = 1018;
+	var IDC_MODE_AUTO     = 1019;
+	var IDC_MODE_ENCODE   = 1020;
+	var IDC_MODE_DECODE   = 1021;
+	var IDC_ACT_INSERT    = 1022;
+	var IDC_ACT_COPY      = 1023;
+	var IDC_ACT_SHOW      = 1024;
+	var IDC_OUTPUT        = 1025;
+	var IDC_OK            = 1026;
+	var IDC_CONVERT       = 1027;
+	var IDC_CANCEL        = 1028;
 
 	var hWndGroupType, hWndTypeHTML, hWndTypeEscapes, hWndTypeRegExp, hWndTypeString, hWndTypeURI,
 		hWndTypeURIC, hWndTypeUnescape, hWndTypeBase64, hWndTypeCharset;
