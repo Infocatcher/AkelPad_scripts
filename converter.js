@@ -90,6 +90,7 @@
 //   -encodeChars=false                      - (default: false) encode char => &#code;
 //   -encodeAsHex=false                      - use hex instead of decimal
 //   -charsToEncode=/'|[^!-~ \t\n\rа-яё]/ig  - mask for chars to encode
+//   -ignoreEntities="lt,gt"                 - don't convert some entities, comma-separated list
 // Arguments for escapes converter:
 //   -customEscapesDecoder=false             - (experimental, default: false) use custom decoder instead of eval()
 // Arguments for URIs converters:
@@ -287,6 +288,7 @@ var charsToEncode         = getArg("charsToEncode", /'|[^!-~ \t\n\rа-яё]/ig);
 // "!-~"     - latin symbols
 // " \t\n\r" - spaces
 // "а-яё"    - cyrillic symbols
+var ignoreEntities        = getArg("ignoreEntities", "");
 
 var customEscapesDecoder  = getArg("customEscapesDecoder", false);
 var codePageURI           = getArg("codePageURI", CP_NOT_CONVERT);
@@ -297,6 +299,14 @@ var toBase64              = getArgOrPref("toBase64",  prefs && prefs.DWORD, fals
 var codePage              = getArg("codePage", CP_CURRENT);
 var codePageFrom          = getArg("codePageFrom", CP_CURRENT);
 var codePageTo            = getArg("codePageTo", CP_CURRENT);
+
+var entitiesBlackList = null;
+if(ignoreEntities) {
+	entitiesBlackList = {};
+	var entities = ignoreEntities.split(/,\s*/);
+	for(var i = 0, l = entities.length; i < l; ++i)
+		entitiesBlackList[entities[i]] = true;
+}
 
 // Deprecated arguments and prefs
 var copy = getArgOrPref("copy", prefs && prefs.DWORD);
@@ -581,11 +591,23 @@ var spacesEntities = {
 	thinsp:   "\u2009"
 };
 function encodeHTML(str) {
-	str = str
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
+	if(entitiesBlackList) {
+		if(!("amp" in entitiesBlackList))
+			str = str.replace(/&/g, "&amp;");
+		if(!("lt" in entitiesBlackList))
+			str = str.replace(/</g, "&lt;");
+		if(!("gt" in entitiesBlackList))
+			str = str.replace(/>/g, "&gt;");
+		if(!("quot" in entitiesBlackList))
+			str = str.replace(/"/g, "&quot;");
+	}
+	else {
+		str = str
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;");
+	}
 	if(encodeSpecialEntities)
 		str = encodeEntities(str, specialEntities);
 	if(encodeSpacesEntities)
@@ -605,6 +627,8 @@ function encodeHTML(str) {
 }
 function encodeEntities(str, entities) {
 	for(var entity in entities) {
+		if(entitiesBlackList && entity in entitiesBlackList)
+			continue;
 		var chr = entities[entity];
 		var hex = chr.charCodeAt(0).toString(16);
 		hex = "\\u" + "0000".substr(hex.length) + hex;
@@ -633,6 +657,8 @@ function decodeHTML(str) {
 				/&([a-z]+\d*);/ig,
 				function(s, entity) {
 					// "key in object" Doesn't work in old JScript, but "replace(str, function)" doesn't work too
+					if(entitiesBlackList && entity in entitiesBlackList)
+						return s;
 					if(decodeSpecialEntities && entity in specialEntities)
 						return specialEntities[entity];
 					if(decodeSpacesEntities && entity in spacesEntities)
@@ -640,6 +666,17 @@ function decodeHTML(str) {
 					return s;
 				}
 			);
+	}
+	if(entitiesBlackList) {
+		if(!("lt" in entitiesBlackList))
+			str = str.replace(/&lt;/g, "<");
+		if(!("gt" in entitiesBlackList))
+			str = str.replace(/&gt;/g, ">");
+		if(!("quot" in entitiesBlackList))
+			str = str.replace(/&quot;/g, '"');
+		if(!("amp" in entitiesBlackList))
+			str = str.replace(/&amp;/g, "&");
+		return str;
 	}
 	return str
 		.replace(/&lt;/g, "<")
