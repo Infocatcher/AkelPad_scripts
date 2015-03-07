@@ -889,7 +889,7 @@ function decodeURICustom(str, cp) {
 			return convertToUnicode(String.fromCharCode(parseInt(hex, 16)), cp);
 		}
 	);
-	return /%/.test(ret) ? str : ret;
+	return ret.indexOf("%") == -1 ? ret : str;
 }
 
 function escapeWrapped(str) {
