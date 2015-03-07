@@ -590,7 +590,7 @@ function encodeHTML(str) {
 		str = encodeEntities(str, specialEntities);
 	if(encodeSpacesEntities)
 		str = encodeEntities(str, spacesEntities);
-	if(encodeChars)
+	if(encodeChars) {
 		str = str.replace(
 			charsToEncode,
 			function(s) {
@@ -600,6 +600,7 @@ function encodeHTML(str) {
 				return "&#" + code + ";";
 			}
 		);
+	}
 	return str;
 }
 function encodeEntities(str, entities) {
@@ -612,7 +613,7 @@ function encodeEntities(str, entities) {
 	return str;
 }
 function decodeHTML(str) {
-	if(decodeCharCodes)
+	if(decodeCharCodes) {
 		str = str
 			.replace(
 				/&#(?:x([\da-f]{1,4})|(\d{1,5}));/ig,
@@ -625,7 +626,8 @@ function decodeHTML(str) {
 					return String.fromCharCode(code);
 				}
 			);
-	if(decodeSpecialEntities || decodeSpacesEntities)
+	}
+	if(decodeSpecialEntities || decodeSpacesEntities) {
 		str = str
 			.replace(
 				/&([a-z]+\d*);/ig,
@@ -638,6 +640,7 @@ function decodeHTML(str) {
 					return s;
 				}
 			);
+	}
 	return str
 		.replace(/&lt;/g, "<")
 		.replace(/&gt;/g, ">")
@@ -790,14 +793,16 @@ function convertString(str, esc) {
 		var comma  = RegExp.$2;
 		var middle = RegExp.$3;
 		var end    = RegExp.$4;
-		if(comma == '"')
+		if(comma == '"') {
 			middle = esc
 				? middle.replace(/[\\"]/g, "\\$&")
 				: middle.replace(/\\([\\"])/g, "$1");
-		else
+		}
+		else {
 			middle = esc
 				? middle.replace(/[\\']/g, "\\$&")
 				: middle.replace(/\\([\\'])/g, "$1");
+		}
 		return start + middle + end;
 	}
 	return esc
@@ -1328,10 +1333,11 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 				break;
 			}
 		}
-		if(indx == undefined)
+		if(indx == undefined) {
 			indx = _res.length > _text.length
 				? _text.length
 				: _res.length - 1;
+		}
 		firstChangedCharObj.value = [indx, Math.min(indx + 1, _res.length)];
 	}
 
@@ -1413,11 +1419,12 @@ function converterDialog(modal) {
 		var rcWnd = getWindowRect(hWndDialog);
 		if(!rcWnd)
 			return;
-		if(savePosition)
+		if(savePosition) {
 			prefs.set({
 				windowLeft: rcWnd.left,
 				windowTop:  rcWnd.top
 			});
+		}
 		if(saveSize)
 			prefs.set("outputHeight", Math.round(outputH/scale.y(10000)*10000));
 		prefs.end();
@@ -2087,19 +2094,21 @@ function converterDialog(modal) {
 					if(oSys.Call("user32::GetFocus") != hWndOutput)
 						AkelPad.Command(4154); //IDM_EDIT_COPY
 				}
-				else if(ctrl && wParam == 86 /*V*/ || shift && wParam == 45 /*VK_INSERT*/) // Ctrl+V, Shift+Insert
+				else if(ctrl && wParam == 86 /*V*/ || shift && wParam == 45 /*VK_INSERT*/) { // Ctrl+V, Shift+Insert
 					noScroll(function() {
 						AkelPad.Command(4155); //IDM_EDIT_PASTE
 					});
+				}
 				else if(ctrl && wParam == 88 /*X*/ || shift && wParam == 46 /*VK_DELETE*/) // Ctrl+X, Shift+Del
 					AkelPad.Command(4153); //IDM_EDIT_CUT
 				else if(wParam == 46 /*VK_DELETE*/) // Delete
 					AkelPad.Command(4156); //IDM_EDIT_CLEAR
 				else if(ctrl && wParam == 65 /*A*/) { // Ctrl+A
-					if(oSys.Call("user32::GetFocus") != hWndOutput)
+					if(oSys.Call("user32::GetFocus") != hWndOutput) {
 						noScroll(function() {
 							AkelPad.Command(4157); //IDM_EDIT_SELECTALL
 						});
+					}
 				}
 				else if(ctrl && wParam == 83 /*S*/) // Ctrl+S
 					AkelPad.Command(4105); // IDM_FILE_SAVE
@@ -2232,10 +2241,11 @@ function converterDialog(modal) {
 				var cmd = oSys.Call("user32::TrackPopupMenu", hPopupView, 0x182 /*TPM_RETURNCMD|TPM_NONOTIFY|TPM_LEFTBUTTON|TPM_RIGHTBUTTON*/, xPos, yPos, 0, hWnd, 0);
 				if(cmd == 4154 /*IDM_EDIT_COPY*/)
 					AkelPad.SendMessage(hWndOutput, 769 /*WM_COPY*/, 0, 0);
-				else if(cmd == 4157 /*IDM_EDIT_SELECTALL*/)
+				else if(cmd == 4157 /*IDM_EDIT_SELECTALL*/) {
 					noScroll(function() {
 						AkelPad.SendMessage(hWndOutput, 177 /*EM_SETSEL*/, 0, -1);
 					}, hWndOutput);
+				}
 			break;
 			case 36: //WM_GETMINMAXINFO
 				if(!handleResize)
