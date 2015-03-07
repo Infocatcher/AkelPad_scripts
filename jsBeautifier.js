@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-02-25 23:55:10 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-03-06 22:19:53 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -584,6 +584,7 @@ function detectXMLType(str) {
         opt.wrap_line_length = (options.wrap_line_length === undefined) ? 0 : parseInt(options.wrap_line_length, 10);
         opt.e4x = (options.e4x === undefined) ? false : options.e4x;
         opt.end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
+        opt.comma_first = (options.comma_first === undefined) ? false : options.comma_first;
 
 
         // force opt.space_after_anon_function to true if opt.jslint_happy
@@ -754,6 +755,16 @@ function detectXMLType(str) {
         }
 
         function print_token(printable_token) {
+            if (opt.comma_first && last_type === 'TK_COMMA'
+                && output.just_added_newline()) {
+                if(output.previous_line.last() === ',') {
+                    output.previous_line.pop();
+                    print_token_line_indentation();
+                    output.add_token(',');
+                    output.space_before_token = true;
+                }
+            }
+
             printable_token = printable_token || current_token.text;
             print_token_line_indentation();
             output.add_token(printable_token);
@@ -1334,6 +1345,11 @@ function detectXMLType(str) {
                     print_newline(false, true);
                 } else {
                     output.space_before_token = true;
+                    // for comma-first, we want to allow a newline before the comma
+                    // to turn into a newline after the comma, which we will fixup later
+                    if (opt.comma_first) {
+                        allow_wrap_or_preserved_newline();
+                    }
                 }
                 return;
             }
@@ -1348,6 +1364,11 @@ function detectXMLType(str) {
             } else {
                 // EXPR or DO_BLOCK
                 output.space_before_token = true;
+                // for comma-first, we want to allow a newline before the comma
+                // to turn into a newline after the comma, which we will fixup later
+                if (opt.comma_first) {
+                    allow_wrap_or_preserved_newline();
+                }
             }
 
         }
@@ -1385,12 +1406,6 @@ function detectXMLType(str) {
                 return;
             }
 
-            // http://www.ecma-international.org/ecma-262/5.1/#sec-7.9.1
-            // if there is a newline between -- or ++ and anything else we should preserve it.
-            if (current_token.wanted_newline && (current_token.text === '--' || current_token.text === '++')) {
-                print_newline(false, true);
-            }
-
             // Allow line wrapping between operators
             if (last_type === 'TK_OPERATOR') {
                 allow_wrap_or_preserved_newline();
@@ -1405,18 +1420,33 @@ function detectXMLType(str) {
                 space_before = false;
                 space_after = false;
 
+                // http://www.ecma-international.org/ecma-262/5.1/#sec-7.9.1
+                // if there is a newline between -- or ++ and anything else we should preserve it.
+                if (current_token.wanted_newline && (current_token.text === '--' || current_token.text === '++')) {
+                    print_newline(false, true);
+                }
+
                 if (flags.last_text === ';' && is_expression(flags.mode)) {
                     // for (;; ++i)
                     //        ^^^
                     space_before = true;
                 }
 
-                if (last_type === 'TK_RESERVED' || last_type === 'TK_END_EXPR') {
+                if (last_type === 'TK_RESERVED') {
                     space_before = true;
+                } else if (last_type === 'TK_END_EXPR') {
+                    space_before = !(flags.last_text === ']' && (current_token.text === '--' || current_token.text === '++'));
                 } else if (last_type === 'TK_OPERATOR') {
-                    space_before =
-                        (in_array(current_token.text, ['--', '-']) && in_array(flags.last_text, ['--', '-'])) ||
-                        (in_array(current_token.text, ['++', '+']) && in_array(flags.last_text, ['++', '+']));
+                    // a++ + ++b;
+                    // a - -b
+                    space_before = in_array(current_token.text, ['--', '-', '++', '+']) && in_array(flags.last_text, ['--', '-', '++', '+']);
+                    // + and - are not unary when preceeded by -- or ++ operator
+                    // a-- + b
+                    // a * +b
+                    // a - -b
+                    if (in_array(current_token.text, ['+', '-']) && in_array(flags.last_text, ['--', '++'])) {
+                        space_after = true;
+                    }
                 }
 
                 if ((flags.mode === MODE.BlockStatement || flags.mode === MODE.Statement) && (flags.last_text === '{' || flags.last_text === ';')) {
@@ -1567,6 +1597,16 @@ function detectXMLType(str) {
             _empty = false;
         }
 
+        this.pop = function() {
+            var item = null;
+            if (!_empty) {
+                item = _items.pop();
+                _character_count -= item.length;
+                _empty = _items.length === 0;
+            }
+            return item;
+        }
+
         this.remove_indent = function() {
             if (_indent_count > 0) {
                 _indent_count -= 1;
@@ -1603,6 +1643,7 @@ function detectXMLType(str) {
         var lines =[];
         this.baseIndentString = baseIndentString;
         this.indent_string = indent_string;
+        this.previous_line = null;
         this.current_line = null;
         this.space_before_token = false;
 
@@ -1617,6 +1658,7 @@ function detectXMLType(str) {
             }
 
             if (force_newline || !this.just_added_newline()) {
+                this.previous_line = this.current_line;
                 this.current_line = new OutputLine(this);
                 lines.push(this.current_line);
                 return true;
@@ -1693,6 +1735,8 @@ function detectXMLType(str) {
                 this.current_line = lines[lines.length - 1]
                 this.current_line.trim();
             }
+
+            this.previous_line = lines.length > 1 ? lines[lines.length - 2] : null;
         }
 
         this.just_added_newline = function() {
@@ -1732,8 +1776,8 @@ function detectXMLType(str) {
                 +' <%= <% %> <?= <? ?>').split(' '); // try to be a good boy and try not to break the markup language identifiers
 
         // words which should always start on new line.
-        this.line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function,yield,import,export'.split(',');
-        var reserved_words = this.line_starters.concat(['do', 'in', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof']);
+        this.line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function,import,export'.split(',');
+        var reserved_words = this.line_starters.concat(['do', 'in', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof', 'yield']);
 
         var n_newlines, whitespace_before_token, in_html_comment, tokens, parser_pos;
         var input_length;
@@ -2330,6 +2374,7 @@ function detectXMLType(str) {
 
         var pos = -1,
             ch;
+        var parenLevel = 0;
 
         function next() {
             ch = source_text.charAt(++pos);
@@ -2372,7 +2417,7 @@ function detectXMLType(str) {
         function eatWhitespace() {
             var result = '';
             while (whiteRe.test(peek())) {
-                next()
+                next();
                 result += ch;
             }
             return result;
@@ -2384,14 +2429,14 @@ function detectXMLType(str) {
                 result = ch;
             }
             while (whiteRe.test(next())) {
-                result += ch
+                result += ch;
             }
             return result;
         }
 
         function eatComment(singleLine) {
             var start = pos;
-            var singleLine = peek() === "/";
+            singleLine = peek() === "/";
             next();
             while (next()) {
                 if (!singleLine && ch === "*" && peek() === "/") {
@@ -2498,8 +2543,8 @@ function detectXMLType(str) {
             var whitespace = skipWhitespace();
             var isAfterSpace = whitespace !== '';
             var isAfterNewline = whitespace.indexOf('\n') !== -1;
-            var last_top_ch = top_ch;
-            var top_ch = ch;
+            last_top_ch = top_ch;
+            top_ch = ch;
 
             if (!ch) {
                 break;
@@ -2613,6 +2658,7 @@ function detectXMLType(str) {
                         }
                     }
                 } else {
+                    parenLevel++;
                     if (isAfterSpace) {
                         print.singleSpace();
                     }
@@ -2621,10 +2667,11 @@ function detectXMLType(str) {
                 }
             } else if (ch === ')') {
                 output.push(ch);
+                parenLevel--;
             } else if (ch === ',') {
                 output.push(ch);
                 eatWhitespace();
-                if (!insideRule && selectorSeparatorNewline) {
+                if (!insideRule && selectorSeparatorNewline && parenLevel < 1) {
                     print.newLine();
                 } else {
                     print.singleSpace();
@@ -2637,7 +2684,8 @@ function detectXMLType(str) {
                 }
                 output.push(ch);
             } else if (ch === '=') { // no whitespace before or after
-                eatWhitespace();
+                eatWhitespace()
+                ch = '=';
                 output.push(ch);
             } else {
                 if (isAfterSpace) {
@@ -3479,7 +3527,7 @@ function detectXMLType(str) {
                             tag_extracted_from_last_output = multi_parser.output[multi_parser.output.length - 1].match(/(?:<|{{#)\s*(\w+)/);
                         }
                         if (tag_extracted_from_last_output === null ||
-                            tag_extracted_from_last_output[1] !== tag_name) {
+                            (tag_extracted_from_last_output[1] !== tag_name && !multi_parser.Utils.in_array(tag_extracted_from_last_output[1], unformatted))) {
                             multi_parser.print_newline(false, multi_parser.output);
                         }
                     }
@@ -4220,6 +4268,42 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         test_fragment('   \n\nreturn .5\n\n\n\n', '   return .5');
         test_fragment('\n', '');
 
+        // Comma-first option - (c0 = "\n, ", c1 = "\n    , ", c2 = "\n        , ", c3 = "\n            , ")
+        opts.comma_first = true;
+        bt('{a:1, b:2}', '{\n    a: 1\n    , b: 2\n}');
+        bt('var a=1, b=c[d], e=6;', 'var a = 1\n    , b = c[d]\n    , e = 6;');
+        bt('for(var a=1,b=2,c=3;d<3;d++)\ne', 'for (var a = 1, b = 2, c = 3; d < 3; d++)\n    e');
+        bt('for(var a=1,b=2,\nc=3;d<3;d++)\ne', 'for (var a = 1, b = 2\n        , c = 3; d < 3; d++)\n    e');
+        bt('function foo() {\n    return [\n        "one"\n        , "two"\n    ];\n}');
+        bt('a=[[1,2],[4,5],[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , [7, 8]\n]');
+        bt('a=[[1,2],[4,5],[7,8],]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , [7, 8]\n, ]');
+        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , [7, 8]\n]');
+        bt('a=[[1,2],[4,5],function(){},function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , function() {}\n    , [7, 8]\n]');
+        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , [7, 8]\n]');
+        bt('a=[b,c,function(){},function(){},d]', 'a = [b, c, function() {}, function() {}, d]');
+        bt('a=[b,c,\nfunction(){},function(){},d]', 'a = [b, c\n    , function() {}\n    , function() {}\n    , d\n]');
+        bt('a=[a[1],b[4],c[d[7]]]', 'a = [a[1], b[4], c[d[7]]]');
+        bt('[1,2,[3,4,[5,6],7],8]', '[1, 2, [3, 4, [5, 6], 7], 8]');
+        bt('[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]', '[\n    [\n        ["1", "2"]\n        , ["3", "4"]\n    ]\n    , [\n        ["5", "6", "7"]\n        , ["8", "9", "0"]\n    ]\n    , [\n        ["1", "2", "3"]\n        , ["4", "5", "6", "7"]\n        , ["8", "9", "0"]\n    ]\n]');
+
+        // Comma-first option - (c0 = ",\n", c1 = ",\n    ", c2 = ",\n        ", c3 = ",\n            ")
+        opts.comma_first = false;
+        bt('{a:1, b:2}', '{\n    a: 1,\n    b: 2\n}');
+        bt('var a=1, b=c[d], e=6;', 'var a = 1,\n    b = c[d],\n    e = 6;');
+        bt('for(var a=1,b=2,c=3;d<3;d++)\ne', 'for (var a = 1, b = 2, c = 3; d < 3; d++)\n    e');
+        bt('for(var a=1,b=2,\nc=3;d<3;d++)\ne', 'for (var a = 1, b = 2,\n        c = 3; d < 3; d++)\n    e');
+        bt('function foo() {\n    return [\n        "one",\n        "two"\n    ];\n}');
+        bt('a=[[1,2],[4,5],[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    [7, 8]\n]');
+        bt('a=[[1,2],[4,5],[7,8],]', 'a = [\n    [1, 2],\n    [4, 5],\n    [7, 8],\n]');
+        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    [7, 8]\n]');
+        bt('a=[[1,2],[4,5],function(){},function(){},[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    function() {},\n    [7, 8]\n]');
+        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    [7, 8]\n]');
+        bt('a=[b,c,function(){},function(){},d]', 'a = [b, c, function() {}, function() {}, d]');
+        bt('a=[b,c,\nfunction(){},function(){},d]', 'a = [b, c,\n    function() {},\n    function() {},\n    d\n]');
+        bt('a=[a[1],b[4],c[d[7]]]', 'a = [a[1], b[4], c[d[7]]]');
+        bt('[1,2,[3,4,[5,6],7],8]', '[1, 2, [3, 4, [5, 6], 7], 8]');
+        bt('[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]', '[\n    [\n        ["1", "2"],\n        ["3", "4"]\n    ],\n    [\n        ["5", "6", "7"],\n        ["8", "9", "0"]\n    ],\n    [\n        ["1", "2", "3"],\n        ["4", "5", "6", "7"],\n        ["8", "9", "0"]\n    ]\n]');
+
         // New Test Suite
 
         // Old tests
@@ -4445,6 +4529,13 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('if(true)\n++a;', 'if (true)\n    ++a;');
         bt('if(true)--a;', 'if (true) --a;');
         bt('if(true)\n--a;', 'if (true)\n    --a;');
+        bt('elem[array]++;');
+        bt('elem++ * elem[array]++;');
+        bt('elem-- * -elem[array]++;');
+        bt('elem-- + elem[array]++;');
+        bt('elem-- - elem[array]++;');
+        bt('elem-- - -elem[array]++;');
+        bt('elem-- - +elem[array]++;');
 
         // Handling of newlines around unary ++ and -- operators
         bt('{foo\n++bar;}', '{\n    foo\n    ++bar;\n}');
@@ -4470,6 +4561,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('switch (a) {\n    case /foo\\//:\n        b\n}');
         bt('if (a) /foo\\//\nelse /foo\\//;');
         bt('if (foo) /regex/.test();');
+        bt('result = yield pgClient.query_(queryString);');
         bt('function foo() {\n    return [\n        "one",\n        "two"\n    ];\n}');
         bt('a=[[1,2],[4,5],[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    [7, 8]\n]');
         bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    [7, 8]\n]');
@@ -5737,6 +5829,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('.tabs    {    }', '.tabs {}');
         t('.tabs    \n{\n    \n  }', '.tabs {}');
 
+        //
+        t('#cboxOverlay {\n\tbackground: url(images/overlay.png) repeat 0 0;\n\topacity: 0.9;\n\tfilter: alpha(opacity = 90);\n}', '#cboxOverlay {\n\tbackground: url(images/overlay.png) repeat 0 0;\n\topacity: 0.9;\n\tfilter: alpha(opacity=90);\n}');
+
         // Newline Between Rules - (separator = "\n")
         opts.newline_between_rules = true;
         t('.div {}\n.span {}', '.div {}\n\n.span {}');
@@ -5762,6 +5857,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n.div{height:15px;}', '@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n.div {\n\theight: 15px;\n}');
         t('@font-face {\n\tfont-family: "Bitstream Vera Serif Bold";\n\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n}\n@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo.png);\n\t}\n\t@media screen and (min-device-pixel-ratio: 2) {\n\t\t@font-face {\n\t\t\tfont-family: "Helvetica Neue"\n\t\t}\n\t\t#foo:hover {\n\t\t\tbackground-image: url(foo@2x.png);\n\t\t}\n\t}\n}');
         t('a:first-child{color:red;div:first-child{color:black;}}\n.div{height:15px;}', 'a:first-child {\n\tcolor: red;\n\tdiv:first-child {\n\t\tcolor: black;\n\t}\n}\n.div {\n\theight: 15px;\n}');
+
+        // Functions braces
+        t('.tabs(){}', '.tabs() {}');
+        t('.tabs (){}', '.tabs () {}');
+        t('.tabs (pa, pa(1,2)), .cols { }', '.tabs (pa, pa(1, 2)),\n.cols {}');
+        t('.tabs(pa, pa(1,2)), .cols { }', '.tabs(pa, pa(1, 2)),\n.cols {}');
+        t('.tabs (   )   {    }', '.tabs () {}');
+        t('.tabs(   )   {    }', '.tabs() {}');
+        t('.tabs  (t, t2)  \n{\n  key: val(p1  ,p2);  \n  }', '.tabs (t, t2) {\n\tkey: val(p1, p2);\n}');
+        t('.box-shadow(@shadow: 0 1px 3px rgba(0, 0, 0, .25)) {\n\t-webkit-box-shadow: @shadow;\n\t-moz-box-shadow: @shadow;\n\tbox-shadow: @shadow;\n}');
 
         //
 
@@ -6059,6 +6164,10 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
+
+        // Unformatted tags
+        test_fragment('<ol>\n    <li>b<pre>c</pre></li>\n</ol>');
+        test_fragment('<ol>\n    <li>b<code>c</code></li>\n</ol>');
 
         // New Test Suite
 
