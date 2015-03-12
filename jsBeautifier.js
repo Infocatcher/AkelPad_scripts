@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-03-09 20:21:37 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-03-11 23:44:13 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -4255,12 +4255,14 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.keep_array_indentation = false;
         opts.brace_style = 'collapse';
 
+
         // Unicode Support
         bt('var ' + unicode_char(3232) + '_' + unicode_char(3232) + ' = "hi";');
         bt(
             'var ' + unicode_char(228) + 'x = {\n' +
             '    ' + unicode_char(228) + 'rgerlich: true\n' +
             '};');
+
 
         // End With Newline - (eof = "\n")
         opts.end_with_newline = true;
@@ -4275,6 +4277,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         test_fragment('   return .5');
         test_fragment('   \n\nreturn .5\n\n\n\n', '   return .5');
         test_fragment('\n', '');
+
 
         // Comma-first option - (c0 = "\n, ", c1 = "\n    , ", c2 = "\n        , ", c3 = "\n            , ")
         opts.comma_first = true;
@@ -4312,7 +4315,11 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('[1,2,[3,4,[5,6],7],8]', '[1, 2, [3, 4, [5, 6], 7], 8]');
         bt('[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]', '[\n    [\n        ["1", "2"],\n        ["3", "4"]\n    ],\n    [\n        ["5", "6", "7"],\n        ["8", "9", "0"]\n    ],\n    [\n        ["1", "2", "3"],\n        ["4", "5", "6", "7"],\n        ["8", "9", "0"]\n    ]\n]');
 
+
+
         // New Test Suite
+
+
 
         // Async / await tests
         bt('async function foo() {}');
@@ -4323,78 +4330,141 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('wrapper(async function foo() {})');
 
         // await on inline anonymous function. should have a space after await
-        bt('async function() {\n    var w = await(async function() {\n        return await foo();\n    })();\n}', 'async function() {\n    var w = await (async function() {\n        return await foo();\n    })();\n}');
+        bt(
+            'async function() {\n    var w = await(async function() {\n        return await foo();\n    })();\n}',
+            'async function() {\n    var w = await (async function() {\n        return await foo();\n    })();\n}');
 
         // ensure that this doesn't break anyone with the async library
         bt('async.map(function(t) {})');
 
+
+
+        // Multiple braces
+        bt('{{}/z/}', '{\n    {}\n    /z/\n}');
+
+
         // jslint and space after anon function - (f = " ", c = "")
         opts.jslint_happy = true;
         opts.space_after_anon_function = true;
-        bt('a=typeof(x)', 'a = typeof (x)');
-        bt('x();\n\nfunction(){}', 'x();\n\nfunction () {}');
-        bt('function () {\n    var a, b, c, d, e = [],\n        f;\n}');
-        bt('switch(x) {case 0: case 1: a(); break; default: break}', 'switch (x) {\ncase 0:\ncase 1:\n    a();\n    break;\ndefault:\n    break\n}');
+        bt(
+            'a=typeof(x)',
+            'a = typeof (x)');
+        bt(
+            'x();\n\nfunction(){}',
+            'x();\n\nfunction () {}');
+        bt(
+            'function () {\n    var a, b, c, d, e = [],\n        f;\n}');
+        bt(
+            'switch(x) {case 0: case 1: a(); break; default: break}',
+            'switch (x) {\ncase 0:\ncase 1:\n    a();\n    break;\ndefault:\n    break\n}');
         bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\ncase -1:\n    break;\ncase !y:\n    break;\n}');
 
         // typical greasemonkey start
         test_fragment('// comment 2\n(function ()');
-        bt('var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';', 'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
-        bt('var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';', 'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
-        bt('var o2=$.extend(a);function(){alert(x);}', 'var o2 = $.extend(a);\n\nfunction () {\n    alert(x);\n}');
+        bt(
+            'var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';',
+            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+        bt(
+            'var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';',
+            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+        bt(
+            'var o2=$.extend(a);function(){alert(x);}',
+            'var o2 = $.extend(a);\n\nfunction () {\n    alert(x);\n}');
         bt('function*() {\n    yield 1;\n}', 'function* () {\n    yield 1;\n}');
         bt('function* x() {\n    yield 1;\n}');
 
         // jslint and space after anon function - (f = " ", c = "")
         opts.jslint_happy = true;
         opts.space_after_anon_function = false;
-        bt('a=typeof(x)', 'a = typeof (x)');
-        bt('x();\n\nfunction(){}', 'x();\n\nfunction () {}');
-        bt('function () {\n    var a, b, c, d, e = [],\n        f;\n}');
-        bt('switch(x) {case 0: case 1: a(); break; default: break}', 'switch (x) {\ncase 0:\ncase 1:\n    a();\n    break;\ndefault:\n    break\n}');
+        bt(
+            'a=typeof(x)',
+            'a = typeof (x)');
+        bt(
+            'x();\n\nfunction(){}',
+            'x();\n\nfunction () {}');
+        bt(
+            'function () {\n    var a, b, c, d, e = [],\n        f;\n}');
+        bt(
+            'switch(x) {case 0: case 1: a(); break; default: break}',
+            'switch (x) {\ncase 0:\ncase 1:\n    a();\n    break;\ndefault:\n    break\n}');
         bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\ncase -1:\n    break;\ncase !y:\n    break;\n}');
 
         // typical greasemonkey start
         test_fragment('// comment 2\n(function ()');
-        bt('var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';', 'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
-        bt('var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';', 'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
-        bt('var o2=$.extend(a);function(){alert(x);}', 'var o2 = $.extend(a);\n\nfunction () {\n    alert(x);\n}');
+        bt(
+            'var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';',
+            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+        bt(
+            'var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';',
+            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+        bt(
+            'var o2=$.extend(a);function(){alert(x);}',
+            'var o2 = $.extend(a);\n\nfunction () {\n    alert(x);\n}');
         bt('function*() {\n    yield 1;\n}', 'function* () {\n    yield 1;\n}');
         bt('function* x() {\n    yield 1;\n}');
 
         // jslint and space after anon function - (f = " ", c = "    ")
         opts.jslint_happy = false;
         opts.space_after_anon_function = true;
-        bt('a=typeof(x)', 'a = typeof (x)');
-        bt('x();\n\nfunction(){}', 'x();\n\nfunction () {}');
-        bt('function () {\n    var a, b, c, d, e = [],\n        f;\n}');
-        bt('switch(x) {case 0: case 1: a(); break; default: break}', 'switch (x) {\n    case 0:\n    case 1:\n        a();\n        break;\n    default:\n        break\n}');
+        bt(
+            'a=typeof(x)',
+            'a = typeof (x)');
+        bt(
+            'x();\n\nfunction(){}',
+            'x();\n\nfunction () {}');
+        bt(
+            'function () {\n    var a, b, c, d, e = [],\n        f;\n}');
+        bt(
+            'switch(x) {case 0: case 1: a(); break; default: break}',
+            'switch (x) {\n    case 0:\n    case 1:\n        a();\n        break;\n    default:\n        break\n}');
         bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\n    case -1:\n        break;\n    case !y:\n        break;\n}');
 
         // typical greasemonkey start
         test_fragment('// comment 2\n(function ()');
-        bt('var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';', 'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
-        bt('var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';', 'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
-        bt('var o2=$.extend(a);function(){alert(x);}', 'var o2 = $.extend(a);\n\nfunction () {\n    alert(x);\n}');
+        bt(
+            'var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';',
+            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+        bt(
+            'var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';',
+            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+        bt(
+            'var o2=$.extend(a);function(){alert(x);}',
+            'var o2 = $.extend(a);\n\nfunction () {\n    alert(x);\n}');
         bt('function*() {\n    yield 1;\n}', 'function* () {\n    yield 1;\n}');
         bt('function* x() {\n    yield 1;\n}');
 
         // jslint and space after anon function - (f = "", c = "    ")
         opts.jslint_happy = false;
         opts.space_after_anon_function = false;
-        bt('a=typeof(x)', 'a = typeof(x)');
-        bt('x();\n\nfunction(){}', 'x();\n\nfunction() {}');
-        bt('function () {\n    var a, b, c, d, e = [],\n        f;\n}', 'function() {\n    var a, b, c, d, e = [],\n        f;\n}');
-        bt('switch(x) {case 0: case 1: a(); break; default: break}', 'switch (x) {\n    case 0:\n    case 1:\n        a();\n        break;\n    default:\n        break\n}');
+        bt(
+            'a=typeof(x)',
+            'a = typeof(x)');
+        bt(
+            'x();\n\nfunction(){}',
+            'x();\n\nfunction() {}');
+        bt(
+            'function () {\n    var a, b, c, d, e = [],\n        f;\n}',
+            'function() {\n    var a, b, c, d, e = [],\n        f;\n}');
+        bt(
+            'switch(x) {case 0: case 1: a(); break; default: break}',
+            'switch (x) {\n    case 0:\n    case 1:\n        a();\n        break;\n    default:\n        break\n}');
         bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\n    case -1:\n        break;\n    case !y:\n        break;\n}');
 
         // typical greasemonkey start
         test_fragment('// comment 2\n(function()');
-        bt('var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';', 'var a2, b2, c2, d2 = 0,\n    c = function() {},\n    d = \'\';');
-        bt('var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';', 'var a2, b2, c2, d2 = 0,\n    c = function() {},\n    d = \'\';');
-        bt('var o2=$.extend(a);function(){alert(x);}', 'var o2 = $.extend(a);\n\nfunction() {\n    alert(x);\n}');
+        bt(
+            'var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';',
+            'var a2, b2, c2, d2 = 0,\n    c = function() {},\n    d = \'\';');
+        bt(
+            'var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';',
+            'var a2, b2, c2, d2 = 0,\n    c = function() {},\n    d = \'\';');
+        bt(
+            'var o2=$.extend(a);function(){alert(x);}',
+            'var o2 = $.extend(a);\n\nfunction() {\n    alert(x);\n}');
         bt('function*() {\n    yield 1;\n}');
         bt('function* x() {\n    yield 1;\n}');
+
+
 
         // Regression tests
 
@@ -4431,8 +4501,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        var test;\n' +
             '    });\n' +
             'var test = 1;');
-        bt('(function() {if (!window.FOO) window.FOO || (window.FOO = function() {var b = {bar: "zort"};});})();',
-           '(function() {\n' +
+        bt(
+            '(function() {if (!window.FOO) window.FOO || (window.FOO = function() {var b = {bar: "zort"};});})();',
+            '(function() {\n' +
             '    if (!window.FOO) window.FOO || (window.FOO = function() {\n' +
             '        var b = {\n' +
             '            bar: "zort"\n' +
@@ -4521,8 +4592,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '};');
 
         // Issue 331 - if-else with braces edge case
-        bt('if(x){a();}else{b();}if(y){c();}',
-           'if (x) {\n' +
+        bt(
+            'if(x){a();}else{b();}if(y){c();}',
+            'if (x) {\n' +
             '    a();\n' +
             '} else {\n' +
             '    b();\n' +
@@ -4619,6 +4691,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        return 0;\n' +
             '    }\n' +
             '}');
+
+
 
         // Old tests
         bt('');
@@ -4780,7 +4854,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('(x) => { x }', '(x) => {\n    x\n}');
 
         // a common snippet in jQuery plugins
-        bt('settings = $.extend({},defaults,settings);', 'settings = $.extend({}, defaults, settings);');
+        bt(
+            'settings = $.extend({},defaults,settings);',
+            'settings = $.extend({}, defaults, settings);');
         bt('$http().then().finally().default()');
         bt('$http()\n.then()\n.finally()\n.default()', '$http()\n    .then()\n    .finally()\n    .default()');
         bt('$http().when.in.new.catch().throw()');
@@ -4901,7 +4977,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('var a=1,b={foo:2,bar:3},{baz:4,wham:5},\nc=4;', 'var a = 1,\n    b = {\n        foo: 2,\n        bar: 3\n    },\n    {\n        baz: 4,\n        wham: 5\n    },\n    c = 4;');
 
         // inline comment
-        bt('function x(/*int*/ start, /*string*/ foo)', 'function x( /*int*/ start, /*string*/ foo)');
+        bt(
+            'function x(/*int*/ start, /*string*/ foo)',
+            'function x( /*int*/ start, /*string*/ foo)');
 
         // javadoc comment
         bt('/**\n* foo\n*/', '/**\n * foo\n */');
@@ -4937,7 +5015,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('var a = function() {\n    func1()\n}\nvar b = function() {\n    func2()\n}');
 
         // code with and without semicolons
-        bt('var whatever = require("whatever");\nfunction() {\n    a = 6;\n}', 'var whatever = require("whatever");\n\nfunction() {\n    a = 6;\n}');
+        bt(
+            'var whatever = require("whatever");\nfunction() {\n    a = 6;\n}',
+            'var whatever = require("whatever");\n\nfunction() {\n    a = 6;\n}');
         bt('var whatever = require("whatever")\nfunction() {\n    a = 6\n}', 'var whatever = require("whatever")\n\nfunction() {\n    a = 6\n}');
         bt('{"x":[{"a":1,"b":3},\n7,8,8,8,8,{"b":99},{"a":11}]}', '{\n    "x": [{\n            "a": 1,\n            "b": 3\n        },\n        7, 8, 8, 8, 8, {\n            "b": 99\n        }, {\n            "a": 11\n        }\n    ]\n}');
         bt('{"x":[{"a":1,"b":3},7,8,8,8,8,{"b":99},{"a":11}]}', '{\n    "x": [{\n        "a": 1,\n        "b": 3\n    }, 7, 8, 8, 8, 8, {\n        "b": 99\n    }, {\n        "a": 11\n    }]\n}');
@@ -4951,7 +5031,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('var a=1,b={bang:2},c=3;', 'var a = 1,\n    b = {\n        bang: 2\n    },\n    c = 3;');
         bt('var a={bing:1},b=2,c=3;', 'var a = {\n        bing: 1\n    },\n    b = 2,\n    c = 3;');
 
-        bt('{{}/z/}', "{\n    {}\n    /z/\n}");
+
 
         opts.indent_size = 1;
         opts.indent_char = ' ';
@@ -6107,25 +6187,6 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             }
             test_fragment(wrapped_input, wrapped_expectation);
         }
-
-        // Test that handlebars non-block {{}} tags act as content and do not
-        // get any spacing or line breaks.
-        if (input.indexOf('content') != -1) {
-            // Just {{field}}
-            field_input = input.replace(/content/g, '{{field}}');
-            field_expectation = expectation.replace(/content/g, '{{field}}');
-            test_fragment(field_input, field_expectation);
-
-            // handlebars comment
-            field_input = input.replace(/content/g, '{{! comment}}');
-            field_expectation = expectation.replace(/content/g, '{{! comment}}');
-            test_fragment(field_input, field_expectation);
-
-            // mixed {{field}} and content
-            field_input = input.replace(/content/g, 'pre{{field1}} {{field2}} {{field3}}post');
-            field_expectation = expectation.replace(/content/g, 'pre{{field1}} {{field2}} {{field3}}post');
-            test_fragment(field_input, field_expectation);
-        }
     }
 
     function unicode_char(value) {
@@ -6156,6 +6217,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('');
         test_fragment('<div></div>');
         test_fragment('\n', '');
+
 
         // Attribute Wrap - (eof = "\n", indent_attr = "    ", over80 = "\n")
         opts.wrap_attributes = 'force';
@@ -6191,11 +6253,190 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
 
+
+
+        // Handlebars Indenting Off
+        opts.indent_handlebars = false;
+        test_fragment(
+            '{{#if 0}}\n    <div>\n    </div>\n{{/if}}',
+            '{{#if 0}}\n<div>\n</div>\n{{/if}}');
+        test_fragment(
+            '<div>\n{{#each thing}}\n    {{name}}\n{{/each}}\n</div>',
+            '<div>\n    {{#each thing}} {{name}} {{/each}}\n</div>');
+
+
+        // Handlebars Indenting On - (content = "{{field}}")
+        opts.indent_handlebars = true;
+        test_fragment('{{#if 0}}{{/if}}');
+        test_fragment('{{#if 0}}{{field}}{{/if}}');
+        test_fragment('{{#if 0}}\n{{/if}}');
+        test_fragment(
+            '{{#if     words}}{{/if}}',
+            '{{#if words}}{{/if}}');
+        test_fragment(
+            '{{#if     words}}{{field}}{{/if}}',
+            '{{#if words}}{{field}}{{/if}}');
+        test_fragment(
+            '{{#if     words}}{{field}}{{/if}}',
+            '{{#if words}}{{field}}{{/if}}');
+        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n<div>\n</div>\n{{/if}}',
+            '{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment('<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+        test_fragment(
+            '<div>\n{{#if 1}}\n{{/if}}\n</div>',
+            '<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+        test_fragment(
+            '{{#if}}\n{{#each}}\n{{#if}}\n{{field}}\n{{/if}}\n{{#if}}\n{{field}}\n{{/if}}\n{{/each}}\n{{/if}}',
+            '{{#if}}\n    {{#each}}\n        {{#if}}\n            {{field}}\n        {{/if}}\n        {{#if}}\n            {{field}}\n        {{/if}}\n    {{/each}}\n{{/if}}');
+        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n    {{field}}\n    {{else}}\n    {{field}}\n{{/if}}',
+            '{{#if 1}}\n    {{field}}\n{{else}}\n    {{field}}\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n    {{else}}\n    {{/if}}',
+            '{{#if 1}}\n{{else}}\n{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n{{#if otherthing}}\n    {{field}}\n    {{else}}\n{{field}}\n    {{/if}}\n       {{else}}\n{{field}}\n{{/if}}',
+            '{{#if thing}}\n    {{#if otherthing}}\n        {{field}}\n    {{else}}\n        {{field}}\n    {{/if}}\n{{else}}\n    {{field}}\n{{/if}}');
+        test_fragment(
+            '<div{{somestyle}}></div>',
+            '<div {{somestyle}}></div>');
+        test_fragment(
+            '<div{{#if test}}class="foo"{{/if}}>{{field}}</div>',
+            '<div {{#if test}} class="foo" {{/if}}>{{field}}</div>');
+        test_fragment(
+            '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{field}}</div>',
+            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{field}}</div>');
+        test_fragment(
+            '<span{{#if condition}}class="foo"{{/if}}>{{field}}</span>',
+            '<span {{#if condition}} class="foo" {{/if}}>{{field}}</span>');
+        test_fragment('<div unformatted="{{#if}}{{field}}{{/if}}">{{field}}</div>');
+        test_fragment('<div unformatted="{{#if  }}    {{field}}{{/if}}">{{field}}</div>');
+        test_fragment('<div class="{{#if thingIs "value"}}{{field}}{{/if}}"></div>');
+        test_fragment('<div class="{{#if thingIs \'value\'}}{{field}}{{/if}}"></div>');
+        test_fragment('<div class=\'{{#if thingIs "value"}}{{field}}{{/if}}\'></div>');
+        test_fragment('<div class=\'{{#if thingIs \'value\'}}{{field}}{{/if}}\'></div>');
+
+        // Handlebars Indenting On - (content = "{{! comment}}")
+        opts.indent_handlebars = true;
+        test_fragment('{{#if 0}}{{/if}}');
+        test_fragment('{{#if 0}}{{! comment}}{{/if}}');
+        test_fragment('{{#if 0}}\n{{/if}}');
+        test_fragment(
+            '{{#if     words}}{{/if}}',
+            '{{#if words}}{{/if}}');
+        test_fragment(
+            '{{#if     words}}{{! comment}}{{/if}}',
+            '{{#if words}}{{! comment}}{{/if}}');
+        test_fragment(
+            '{{#if     words}}{{! comment}}{{/if}}',
+            '{{#if words}}{{! comment}}{{/if}}');
+        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n<div>\n</div>\n{{/if}}',
+            '{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment('<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+        test_fragment(
+            '<div>\n{{#if 1}}\n{{/if}}\n</div>',
+            '<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+        test_fragment(
+            '{{#if}}\n{{#each}}\n{{#if}}\n{{! comment}}\n{{/if}}\n{{#if}}\n{{! comment}}\n{{/if}}\n{{/each}}\n{{/if}}',
+            '{{#if}}\n    {{#each}}\n        {{#if}}\n            {{! comment}}\n        {{/if}}\n        {{#if}}\n            {{! comment}}\n        {{/if}}\n    {{/each}}\n{{/if}}');
+        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n    {{! comment}}\n    {{else}}\n    {{! comment}}\n{{/if}}',
+            '{{#if 1}}\n    {{! comment}}\n{{else}}\n    {{! comment}}\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n    {{else}}\n    {{/if}}',
+            '{{#if 1}}\n{{else}}\n{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n{{#if otherthing}}\n    {{! comment}}\n    {{else}}\n{{! comment}}\n    {{/if}}\n       {{else}}\n{{! comment}}\n{{/if}}',
+            '{{#if thing}}\n    {{#if otherthing}}\n        {{! comment}}\n    {{else}}\n        {{! comment}}\n    {{/if}}\n{{else}}\n    {{! comment}}\n{{/if}}');
+        test_fragment(
+            '<div{{somestyle}}></div>',
+            '<div {{somestyle}}></div>');
+        test_fragment(
+            '<div{{#if test}}class="foo"{{/if}}>{{! comment}}</div>',
+            '<div {{#if test}} class="foo" {{/if}}>{{! comment}}</div>');
+        test_fragment(
+            '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{! comment}}</div>',
+            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{! comment}}</div>');
+        test_fragment(
+            '<span{{#if condition}}class="foo"{{/if}}>{{! comment}}</span>',
+            '<span {{#if condition}} class="foo" {{/if}}>{{! comment}}</span>');
+        test_fragment('<div unformatted="{{#if}}{{! comment}}{{/if}}">{{! comment}}</div>');
+        test_fragment('<div unformatted="{{#if  }}    {{! comment}}{{/if}}">{{! comment}}</div>');
+        test_fragment('<div class="{{#if thingIs "value"}}{{! comment}}{{/if}}"></div>');
+        test_fragment('<div class="{{#if thingIs \'value\'}}{{! comment}}{{/if}}"></div>');
+        test_fragment('<div class=\'{{#if thingIs "value"}}{{! comment}}{{/if}}\'></div>');
+        test_fragment('<div class=\'{{#if thingIs \'value\'}}{{! comment}}{{/if}}\'></div>');
+
+        // Handlebars Indenting On - (content = "{pre{{field1}} {{field2}} {{field3}}post")
+        opts.indent_handlebars = true;
+        test_fragment('{{#if 0}}{{/if}}');
+        test_fragment('{{#if 0}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}');
+        test_fragment('{{#if 0}}\n{{/if}}');
+        test_fragment(
+            '{{#if     words}}{{/if}}',
+            '{{#if words}}{{/if}}');
+        test_fragment(
+            '{{#if     words}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}',
+            '{{#if words}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}');
+        test_fragment(
+            '{{#if     words}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}',
+            '{{#if words}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}');
+        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n<div>\n</div>\n{{/if}}',
+            '{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment('<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+        test_fragment(
+            '<div>\n{{#if 1}}\n{{/if}}\n</div>',
+            '<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+        test_fragment(
+            '{{#if}}\n{{#each}}\n{{#if}}\n{pre{{field1}} {{field2}} {{field3}}post\n{{/if}}\n{{#if}}\n{pre{{field1}} {{field2}} {{field3}}post\n{{/if}}\n{{/each}}\n{{/if}}',
+            '{{#if}}\n    {{#each}}\n        {{#if}}\n            {pre{{field1}} {{field2}} {{field3}}post\n        {{/if}}\n        {{#if}}\n            {pre{{field1}} {{field2}} {{field3}}post\n        {{/if}}\n    {{/each}}\n{{/if}}');
+        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n    {pre{{field1}} {{field2}} {{field3}}post\n    {{else}}\n    {pre{{field1}} {{field2}} {{field3}}post\n{{/if}}',
+            '{{#if 1}}\n    {pre{{field1}} {{field2}} {{field3}}post\n{{else}}\n    {pre{{field1}} {{field2}} {{field3}}post\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n    {{else}}\n    {{/if}}',
+            '{{#if 1}}\n{{else}}\n{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n{{#if otherthing}}\n    {pre{{field1}} {{field2}} {{field3}}post\n    {{else}}\n{pre{{field1}} {{field2}} {{field3}}post\n    {{/if}}\n       {{else}}\n{pre{{field1}} {{field2}} {{field3}}post\n{{/if}}',
+            '{{#if thing}}\n    {{#if otherthing}}\n        {pre{{field1}} {{field2}} {{field3}}post\n    {{else}}\n        {pre{{field1}} {{field2}} {{field3}}post\n    {{/if}}\n{{else}}\n    {pre{{field1}} {{field2}} {{field3}}post\n{{/if}}');
+        test_fragment(
+            '<div{{somestyle}}></div>',
+            '<div {{somestyle}}></div>');
+        test_fragment(
+            '<div{{#if test}}class="foo"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</div>',
+            '<div {{#if test}} class="foo" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</div>');
+        test_fragment(
+            '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</div>',
+            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</div>');
+        test_fragment(
+            '<span{{#if condition}}class="foo"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</span>',
+            '<span {{#if condition}} class="foo" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</span>');
+        test_fragment('<div unformatted="{{#if}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}">{pre{{field1}} {{field2}} {{field3}}post</div>');
+        test_fragment('<div unformatted="{{#if  }}    {pre{{field1}} {{field2}} {{field3}}post{{/if}}">{pre{{field1}} {{field2}} {{field3}}post</div>');
+        test_fragment('<div class="{{#if thingIs "value"}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}"></div>');
+        test_fragment('<div class="{{#if thingIs \'value\'}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}"></div>');
+        test_fragment('<div class=\'{{#if thingIs "value"}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}\'></div>');
+        test_fragment('<div class=\'{{#if thingIs \'value\'}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}\'></div>');
+
+
+
         // Unformatted tags
         test_fragment('<ol>\n    <li>b<pre>c</pre></li>\n</ol>');
         test_fragment('<ol>\n    <li>b<code>c</code></li>\n</ol>');
 
+
+
         // New Test Suite
+
 
         opts.end_with_newline = true;
         test_fragment('', '\n');
@@ -6406,139 +6647,6 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Handlebars tests
         // Without the indent option on, handlebars are treated as content.
-        opts.indent_handlebars = false;
-        bth('{{#if 0}}\n' +
-            '    <div>\n' +
-            '    </div>\n' +
-            '{{/if}}',
-            '{{#if 0}}\n' +
-            '<div>\n' +
-            '</div>\n' +
-            '{{/if}}');
-        bth('<div>\n' +
-            '{{#each thing}}\n' +
-            '    {{name}}\n' +
-            '{{/each}}\n' +
-            '</div>',
-            '<div>\n' +
-            '    {{#each thing}} {{name}} {{/each}}\n' +
-            '</div>');
-
-        opts.indent_handlebars = true;
-        bth('{{#if 0}}{{/if}}');
-        bth('{{#if 0}}content{{/if}}');
-        bth('{{#if 0}}\n' +
-            '{{/if}}');
-        bth('{{#if     words}}{{/if}}',
-            '{{#if words}}{{/if}}');
-        bth('{{#if     words}}content{{/if}}',
-            '{{#if words}}content{{/if}}');
-        bth('{{#if     words}}content{{/if}}',
-            '{{#if words}}content{{/if}}');
-        bth('{{#if 1}}\n' +
-            '    <div>\n' +
-            '    </div>\n' +
-            '{{/if}}');
-        bth('{{#if 1}}\n' +
-            '<div>\n' +
-            '</div>\n' +
-            '{{/if}}',
-            '{{#if 1}}\n' +
-            '    <div>\n' +
-            '    </div>\n' +
-            '{{/if}}');
-        bth('<div>\n' +
-            '    {{#if 1}}\n' +
-            '    {{/if}}\n' +
-            '</div>');
-        bth('<div>\n' +
-            '{{#if 1}}\n' +
-            '{{/if}}\n' +
-            '</div>',
-            '<div>\n' +
-            '    {{#if 1}}\n' +
-            '    {{/if}}\n' +
-            '</div>');
-        bth('{{#if}}\n' +
-            '{{#each}}\n' +
-            '{{#if}}\n' +
-            'content\n' +
-            '{{/if}}\n' +
-            '{{#if}}\n' +
-            'content\n' +
-            '{{/if}}\n' +
-            '{{/each}}\n' +
-            '{{/if}}',
-            '{{#if}}\n' +
-            '    {{#each}}\n' +
-            '        {{#if}}\n' +
-            '            content\n' +
-            '        {{/if}}\n' +
-            '        {{#if}}\n' +
-            '            content\n' +
-            '        {{/if}}\n' +
-            '    {{/each}}\n' +
-            '{{/if}}');
-        bth('{{#if 1}}\n' +
-            '    <div>\n' +
-            '    </div>\n' +
-            '{{/if}}');
-
-        // Test {{else}} aligned with {{#if}} and {{/if}}
-        bth('{{#if 1}}\n' +
-            '    content\n' +
-            '    {{else}}\n' +
-            '    content\n' +
-            '{{/if}}',
-            '{{#if 1}}\n' +
-            '    content\n' +
-            '{{else}}\n' +
-            '    content\n' +
-            '{{/if}}');
-        bth('{{#if 1}}\n' +
-            '    {{else}}\n' +
-            '    {{/if}}',
-            '{{#if 1}}\n' +
-            '{{else}}\n' +
-            '{{/if}}');
-        bth('{{#if thing}}\n' +
-            '{{#if otherthing}}\n' +
-            '    content\n' +
-            '    {{else}}\n' +
-            'content\n' +
-            '    {{/if}}\n' +
-            '       {{else}}\n'+
-            'content\n' +
-            '{{/if}}',
-            '{{#if thing}}\n' +
-            '    {{#if otherthing}}\n' +
-            '        content\n' +
-            '    {{else}}\n' +
-            '        content\n' +
-            '    {{/if}}\n' +
-            '{{else}}\n'+
-            '    content\n' +
-            '{{/if}}');
-
-        // Test {{}} inside of <> tags, which should be separated by spaces
-        // for readability, unless they are inside a string.
-        bth('<div{{somestyle}}></div>',
-            '<div {{somestyle}}></div>');
-        bth('<div{{#if test}}class="foo"{{/if}}>content</div>',
-            '<div {{#if test}} class="foo" {{/if}}>content</div>');
-        bth('<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>content</div>',
-            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>content</div>');
-        bth('<span{{#if condition}}class="foo"{{/if}}>content</span>',
-            '<span {{#if condition}} class="foo" {{/if}}>content</span>');
-        bth('<div unformatted="{{#if}}content{{/if}}">content</div>');
-        bth('<div unformatted="{{#if  }}    content{{/if}}">content</div>');
-
-        // Quotes found inside of Handlebars expressions inside of quoted
-        // strings themselves should not be considered string delimiters.
-        bth('<div class="{{#if thingIs "value"}}content{{/if}}"></div>');
-        bth('<div class="{{#if thingIs \'value\'}}content{{/if}}"></div>');
-        bth('<div class=\'{{#if thingIs "value"}}content{{/if}}\'></div>');
-        bth('<div class=\'{{#if thingIs \'value\'}}content{{/if}}\'></div>');
 
         opts.wrap_line_length = 0;
         //...---------1---------2---------3---------4---------5---------6---------7
