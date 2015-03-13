@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-03-11 23:44:13 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-03-12 23:42:38 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -2019,7 +2019,7 @@ function detectXMLType(str) {
             if (c === '`' || c === "'" || c === '"' || // string
                 (
                     (c === '/') || // regexp
-                    (opts.e4x && c === "<" && input.slice(parser_pos - 1).match(/^<([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([-a-zA-Z:0-9_.]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*\/?\s*>/)) // xml
+                    (opts.e4x && c === "<" && input.slice(parser_pos - 1).match(/^<([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])(\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{[^{}]*}))*\s*(\/?)\s*>/)) // xml
                 ) && ( // regex and xml can only appear in specific locations during parsing
                     (last_token.type === 'TK_RESERVED' && in_array(last_token.text , ['return', 'case', 'throw', 'else', 'do', 'typeof', 'yield'])) ||
                     (last_token.type === 'TK_END_EXPR' && last_token.text === ')' &&
@@ -2060,7 +2060,7 @@ function detectXMLType(str) {
                     //
                     // handle e4x xml literals
                     //
-                    var xmlRegExp = /<(\/?)([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])\s*([-a-zA-Z:0-9_.]+=('[^']*'|"[^"]*"|{[^{}]*})\s*)*(\/?)\s*>/g;
+                    var xmlRegExp = /<(\/?)([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])(\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{[^{}]*}))*\s*(\/?)\s*>/g;
                     var xmlStr = input.slice(parser_pos - 1);
                     var match = xmlRegExp.exec(xmlStr);
                     if (match && match.index === 0) {
@@ -2977,6 +2977,8 @@ function detectXMLType(str) {
                         if (peek3 === '{{#' || peek3 === '{{/') {
                             // These are tags and not content.
                             break;
+                        } else if (peek3 === '{{!') {
+                            return [this.get_tag(), 'TK_TAG_HANDLEBARS_COMMENT'];
                         } else if (this.input.substr(this.pos, 2) === '{{') {
                             if (this.get_tag(true) === '{{else}}') {
                                 break;
@@ -3139,7 +3141,7 @@ function detectXMLType(str) {
 
                     if (indent_handlebars && !tag_start_char) {
                         if (content.length >= 2 && content[content.length - 1] === '{' && content[content.length - 2] === '{') {
-                            if (input_char === '#' || input_char === '/') {
+                            if (input_char === '#' || input_char === '/' || input_char === '!') {
                                 tag_start = this.pos - 3;
                             } else {
                                 tag_start = this.pos - 2;
@@ -3152,6 +3154,13 @@ function detectXMLType(str) {
                     content.push(input_char); //inserts character at-a-time (or string)
 
                     if (content[1] && content[1] === '!') { //if we're in a comment, do something special
+                        // We treat all comments as literals, even more than preformatted tags
+                        // we just look for the appropriate close tag
+                        content = [this.get_comment(tag_start)];
+                        break;
+                    }
+
+                    if (indent_handlebars && content[1] && content[1] === '{' && content[2] && content[2] === '!') { //if we're in a comment, do something special
                         // We treat all comments as literals, even more than preformatted tags
                         // we just look for the appropriate close tag
                         content = [this.get_comment(tag_start)];
@@ -3283,6 +3292,9 @@ function detectXMLType(str) {
                             matched = true;
                         } else if (comment.indexOf('<!--') === 0) { // <!-- comment ...
                             delimiter = '-->';
+                            matched = true;
+                        } else if (comment.indexOf('{{!') === 0) { // {{! handlebars comment
+                            delimiter = '}}';
                             matched = true;
                         }
                     }
@@ -3558,6 +3570,10 @@ function detectXMLType(str) {
                         multi_parser.indent_content = false;
                     }
                     multi_parser.current_mode = 'CONTENT';
+                    break;
+                case 'TK_TAG_HANDLEBARS_COMMENT':
+                    multi_parser.print_token(multi_parser.token_text);
+                    multi_parser.current_mode = 'TAG';
                     break;
                 case 'TK_CONTENT':
                     multi_parser.print_token(multi_parser.token_text);
@@ -4336,6 +4352,92 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         // ensure that this doesn't break anyone with the async library
         bt('async.map(function(t) {})');
+
+
+
+        // e4x - Test that e4x literals passed through when e4x-option is enabled
+        opts.e4x = true;
+        bt('xml=<a b="c"><d/><e>\n foo</e>x</a>;', 'xml = <a b="c"><d/><e>\n foo</e>x</a>;');
+        bt('<a b=\'This is a quoted "c".\'/>');
+        bt('<a b="This is a quoted \'c\'."/>');
+        bt('<a b="A quote \' inside string."/>');
+        bt('<a b=\'A quote " inside string.\'/>');
+        bt('<a b=\'Some """ quotes ""  inside string.\'/>');
+
+        // Handles inline expressions
+        bt('xml=<{a} b="c"><d/><e v={z}>\n foo</e>x</{a}>;', 'xml = <{a} b="c"><d/><e v={z}>\n foo</e>x</{a}>;');
+        bt('xml=<{a} b="c">\n    <e v={z}>\n foo</e>x</{a}>;', 'xml = <{a} b="c">\n    <e v={z}>\n foo</e>x</{a}>;');
+
+        // xml literals with special characters in elem names - see http://www.w3.org/TR/REC-xml/#NT-NameChar
+        bt('xml = <_:.valid.xml- _:.valid.xml-="123"/>;');
+
+        // Handles CDATA
+        bt('xml=<![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;', 'xml = <![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;');
+        bt('xml=<![CDATA[]]>;', 'xml = <![CDATA[]]>;');
+        bt('xml=<a b="c"><![CDATA[d/></a></{}]]></a>;', 'xml = <a b="c"><![CDATA[d/></a></{}]]></a>;');
+
+        // Handles messed up tags, as long as it isn't the same name
+        // as the root tag. Also handles tags of same name as root tag
+        // as long as nesting matches.
+        bt(
+            'xml=<a x="jn"><c></b></f><a><d jnj="jnn"><f></a ></nj></a>;',
+            'xml = <a x="jn"><c></b></f><a><d jnj="jnn"><f></a ></nj></a>;');
+
+        // If xml is not terminated, the remainder of the file is treated
+        // as part of the xml-literal (passed through unaltered)
+        test_fragment(
+            'xml=<a></b>\nc<b;',
+            'xml = <a></b>\nc<b;');
+
+        // Issue #646 = whitespace is allowed in attribute declarations
+        bt(
+            'let a = React.createClass({\n' +
+            '    render() {\n' +
+            '        return (\n' +
+            '            <p className=\'a\'>\n' +
+            '                <span>c</span>\n' +
+            '            </p>\n' +
+            '        );\n' +
+            '    }\n' +
+            '});');
+        bt(
+            'let a = React.createClass({\n' +
+            '    render() {\n' +
+            '        return (\n' +
+            '            <p className = \'b\'>\n' +
+            '                <span>c</span>\n' +
+            '            </p>\n' +
+            '        );\n' +
+            '    }\n' +
+            '});');
+        bt(
+            'let a = React.createClass({\n' +
+            '    render() {\n' +
+            '        return (\n' +
+            '            <p className = "c">\n' +
+            '                <span>c</span>\n' +
+            '            </p>\n' +
+            '        );\n' +
+            '    }\n' +
+            '});');
+        bt(
+            'let a = React.createClass({\n' +
+            '    render() {\n' +
+            '        return (\n' +
+            '            <{e}  className = {d}>\n' +
+            '                <span>c</span>\n' +
+            '            </{e}>\n' +
+            '        );\n' +
+            '    }\n' +
+            '});');
+
+
+
+        // e4x disabled
+        opts.e4x = false;
+        bt(
+            'xml=<a b="c"><d/><e>\n foo</e>x</a>;',
+            'xml = < a b = "c" > < d / > < e >\n    foo < /e>x</a > ;');
 
 
 
@@ -5808,35 +5910,6 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('`This is a ${template} string.`', '`This is a ${template} string.`');
         bt('`This\n  is\n  a\n  ${template}\n  string.`', '`This\n  is\n  a\n  ${template}\n  string.`');
 
-        // Test that e4x literals passed through when e4x-option is enabled
-        bt('xml=<a b="c"><d/><e>\n foo</e>x</a>;', 'xml = < a b = "c" > < d / > < e >\n    foo < /e>x</a > ;');
-        opts.e4x = true;
-        bt('xml=<a b="c"><d/><e>\n foo</e>x</a>;', 'xml = <a b="c"><d/><e>\n foo</e>x</a>;');
-        bt('<a b=\'This is a quoted "c".\'/>', '<a b=\'This is a quoted "c".\'/>');
-        bt('<a b="This is a quoted \'c\'."/>', '<a b="This is a quoted \'c\'."/>');
-        bt('<a b="A quote \' inside string."/>', '<a b="A quote \' inside string."/>');
-        bt('<a b=\'A quote " inside string.\'/>', '<a b=\'A quote " inside string.\'/>');
-        bt('<a b=\'Some """ quotes ""  inside string.\'/>', '<a b=\'Some """ quotes ""  inside string.\'/>');
-        // Handles inline expressions
-        bt('xml=<{a} b="c"><d/><e v={z}>\n foo</e>x</{a}>;', 'xml = <{a} b="c"><d/><e v={z}>\n foo</e>x</{a}>;');
-        // xml literals with special characters in elem names
-        // see http://www.w3.org/TR/REC-xml/#NT-NameChar
-        bt('xml = <_:.valid.xml- _:.valid.xml-="123"/>;', 'xml = <_:.valid.xml- _:.valid.xml-="123"/>;');
-        // Handles CDATA
-        bt('xml=<![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;', 'xml = <![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;');
-        bt('xml=<![CDATA[]]>;', 'xml = <![CDATA[]]>;');
-        bt('xml=<a b="c"><![CDATA[d/></a></{}]]></a>;', 'xml = <a b="c"><![CDATA[d/></a></{}]]></a>;');
-
-        // Handles messed up tags, as long as it isn't the same name
-        // as the root tag. Also handles tags of same name as root tag
-        // as long as nesting matches.
-        bt('xml=<a x="jn"><c></b></f><a><d jnj="jnn"><f></a ></nj></a>;',
-         'xml = <a x="jn"><c></b></f><a><d jnj="jnn"><f></a ></nj></a>;');
-        // If xml is not terminated, the remainder of the file is treated
-        // as part of the xml-literal (passed through unaltered)
-        test_fragment('xml=<a></b>\nc<b;', 'xml = <a></b>\nc<b;');
-        opts.e4x = false;
-
         Urlencoded.run_tests(sanitytest);
     }
 
@@ -6426,6 +6499,60 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div class="{{#if thingIs \'value\'}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}"></div>');
         test_fragment('<div class=\'{{#if thingIs "value"}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}\'></div>');
         test_fragment('<div class=\'{{#if thingIs \'value\'}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}\'></div>');
+
+        // Handlebars Indenting On - (content = "{{! \n mult-line\ncomment  \n     with spacing\n}}")
+        opts.indent_handlebars = true;
+        test_fragment('{{#if 0}}{{/if}}');
+        test_fragment('{{#if 0}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}');
+        test_fragment('{{#if 0}}\n{{/if}}');
+        test_fragment(
+            '{{#if     words}}{{/if}}',
+            '{{#if words}}{{/if}}');
+        test_fragment(
+            '{{#if     words}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}',
+            '{{#if words}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}');
+        test_fragment(
+            '{{#if     words}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}',
+            '{{#if words}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}');
+        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n<div>\n</div>\n{{/if}}',
+            '{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment('<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+        test_fragment(
+            '<div>\n{{#if 1}}\n{{/if}}\n</div>',
+            '<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+        test_fragment(
+            '{{#if}}\n{{#each}}\n{{#if}}\n{{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}\n{{#if}}\n{{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}\n{{/each}}\n{{/if}}',
+            '{{#if}}\n    {{#each}}\n        {{#if}}\n            {{! \n mult-line\ncomment  \n     with spacing\n}}\n        {{/if}}\n        {{#if}}\n            {{! \n mult-line\ncomment  \n     with spacing\n}}\n        {{/if}}\n    {{/each}}\n{{/if}}');
+        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n    {{else}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}',
+            '{{#if 1}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n{{else}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n    {{else}}\n    {{/if}}',
+            '{{#if 1}}\n{{else}}\n{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n{{#if otherthing}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n    {{else}}\n{{! \n mult-line\ncomment  \n     with spacing\n}}\n    {{/if}}\n       {{else}}\n{{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}',
+            '{{#if thing}}\n    {{#if otherthing}}\n        {{! \n mult-line\ncomment  \n     with spacing\n}}\n    {{else}}\n        {{! \n mult-line\ncomment  \n     with spacing\n}}\n    {{/if}}\n{{else}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}');
+        test_fragment(
+            '<div{{somestyle}}></div>',
+            '<div {{somestyle}}></div>');
+        test_fragment(
+            '<div{{#if test}}class="foo"{{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</div>',
+            '<div {{#if test}} class="foo" {{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</div>');
+        test_fragment(
+            '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</div>',
+            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</div>');
+        test_fragment(
+            '<span{{#if condition}}class="foo"{{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</span>',
+            '<span {{#if condition}} class="foo" {{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</span>');
+        test_fragment('<div unformatted="{{#if}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}">{{! \n mult-line\ncomment  \n     with spacing\n}}</div>');
+        test_fragment('<div unformatted="{{#if  }}    {{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}">{{! \n mult-line\ncomment  \n     with spacing\n}}</div>');
+        test_fragment('<div class="{{#if thingIs "value"}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}"></div>');
+        test_fragment('<div class="{{#if thingIs \'value\'}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}"></div>');
+        test_fragment('<div class=\'{{#if thingIs "value"}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}\'></div>');
+        test_fragment('<div class=\'{{#if thingIs \'value\'}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}\'></div>');
 
 
 
