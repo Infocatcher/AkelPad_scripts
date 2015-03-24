@@ -21,6 +21,7 @@
 //             =3                 - always set
 //   -indentSize=1                - indent with a tab character
 //              =4                - indent with 4 spaces
+//   -eol="\\n"                   - character(s) to use as line terminators (default newline - "\\n")
 //   -preserveNewlines=true       - whether existing line breaks should be preserved
 //   -maxPreserveNewlines=2       - maximum number of line breaks to be preserved in one chunk
 //   -braceStyle="collapse"       - braces with control statement
@@ -105,6 +106,7 @@ var action                 = getArg("action", ACT_INSERT);
 var restoreCaretPos        = getArg("restoreCaretPos", true);
 var setSyntaxMode          = getArg("setSyntax", 2);
 var indentSize             = getArg("indentSize", 1);
+var eol                    = getArg("eol");
 var preserveNewlines       = getArg("preserveNewlines", true);
 var maxPreserveNewlines    = getArg("maxPreserveNewlines", 2);
 var braceStyle             = getArg("braceStyle", "end-expand");
@@ -172,6 +174,7 @@ function beautify(source, syntax) { // Based on beautify function
 	var opts = {
 		indent_size:              indentSize,
 		indent_char:              indentChar,
+		eol:                      eol,
 		preserve_newlines:        preserveNewlines,
 		max_preserve_newlines:    maxPreserveNewlines,
 		brace_style:              braceStyle,
