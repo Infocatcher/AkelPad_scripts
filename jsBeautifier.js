@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-03-16 20:29:32 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-03-23 22:11:19 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -574,6 +574,7 @@ function detectXMLType(str) {
 
         opt.indent_size = options.indent_size ? parseInt(options.indent_size, 10) : 4;
         opt.indent_char = options.indent_char ? options.indent_char : ' ';
+        opt.eol = options.eol ? options.eol : '\n';
         opt.preserve_newlines = (options.preserve_newlines === undefined) ? true : options.preserve_newlines;
         opt.break_chained_methods = (options.break_chained_methods === undefined) ? false : options.break_chained_methods;
         opt.max_preserve_newlines = (options.max_preserve_newlines === undefined) ? 0 : parseInt(options.max_preserve_newlines, 10);
@@ -599,6 +600,8 @@ function detectXMLType(str) {
             opt.indent_char = '\t';
             opt.indent_size = 1;
         }
+
+        opt.eol = opt.eol.replace(/\\r/, '\r').replace(/\\n/, '\n')
 
         //----------------------------------
         indent_string = '';
@@ -662,6 +665,10 @@ function detectXMLType(str) {
             sweet_code = output.get_code();
             if (opt.end_with_newline) {
                 sweet_code += '\n';
+            }
+
+            if (opt.eol != '\n') {
+                sweet_code = sweet_code.replace(/[\r]?[\n]/mg, opt.eol);
             }
 
             return sweet_code;
@@ -2097,6 +2104,11 @@ function detectXMLType(str) {
                             (esc || (input.charAt(parser_pos) !== sep &&
                             (sep === '`' || !acorn.newline.test(input.charAt(parser_pos)))))) {
                         resulting_string += input.charAt(parser_pos);
+                        // Handle \r\n linebreaks after escapes or in template strings
+                        if (input.charAt(parser_pos) === '\r' && input.charAt(parser_pos + 1) === '\n') {
+                            parser_pos += 1;
+                            resulting_string += '\n';
+                        }
                         if (esc) {
                             if (input.charAt(parser_pos) === 'x' || input.charAt(parser_pos) === 'u') {
                                 has_char_escapes = true;
@@ -4104,6 +4116,13 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             wrapped_input = '{\n' + input.replace(/^(.+)$/mg, '    $1') + '\n    foo = bar;\n}';
             wrapped_expectation = '{\n' + expectation.replace(/^(.+)$/mg, '    $1') + '\n    foo = bar;\n}';
             test_fragment(wrapped_input, wrapped_expectation);
+
+            // Everywhere we do newlines, they should be replaced with opts.eol
+            opts.eol = '\r\\n';
+            wrapped_input = wrapped_input.replace(/[\n]/mg, '\r\n');
+            wrapped_expectation = wrapped_expectation.replace(/[\n]/mg, '\r\n');
+            test_fragment(wrapped_input, wrapped_expectation);
+            opts.eol = '\n';
         }
 
     }
