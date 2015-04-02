@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-03-23 22:11:19 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-04-01 00:08:33 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -2595,7 +2595,17 @@ function detectXMLType(str) {
                 output.push(ch);
 
                 // strip trailing space, if present, for hash property checks
-                var variableOrRule = peekString(": ,;{}()[]/='\"").replace(/\s$/, '');
+                var variableOrRule = peekString(": ,;{}()[]/='\"");
+
+                if (variableOrRule.match(/[ :]$/)) {
+                    // we have a variable or pseudo-class, add it and insert one space before continuing
+                    next();
+                    variableOrRule = eatString(": ").replace(/\s$/, '');
+                    output.push(variableOrRule);
+                    print.singleSpace();
+                }
+
+                variableOrRule = variableOrRule.replace(/\s$/, '')
 
                 // might be a nesting at-rule
                 if (variableOrRule in css_beautify.NESTED_AT_RULE) {
@@ -2603,12 +2613,6 @@ function detectXMLType(str) {
                     if (variableOrRule in css_beautify.CONDITIONAL_GROUP_RULE) {
                         enteringConditionalGroup = true;
                     }
-                } else if (': '.indexOf(variableOrRule.charAt(variableOrRule.length - 1)) >= 0) {
-                    //we have a variable, add it and insert one space before continuing
-                    next();
-                    variableOrRule = eatString(": ").replace(/\s$/, '');
-                    output.push(variableOrRule);
-                    print.singleSpace();
                 }
             } else if (ch === '{') {
                 if (peek(true) === '}') {
@@ -2827,7 +2831,7 @@ function detectXMLType(str) {
     max_preserve_newlines (default unlimited) - maximum number of line breaks to be preserved in one chunk
     indent_handlebars (default false) - format and indent {{#foo}} and {{/foo}}
     end_with_newline (false)          - end with a newline
-
+    extra_liners (default [head,body,/html]) -List of tags that should have an extra newline before them.
 
     e.g.
 
@@ -2840,7 +2844,8 @@ function detectXMLType(str) {
       'unformatted': ['a', 'sub', 'sup', 'b', 'i', 'u'],
       'preserve_newlines': true,
       'max_preserve_newlines': 5,
-      'indent_handlebars': false
+      'indent_handlebars': false,
+      'extra_liners': ['/html']
     });
 */
 
@@ -2873,7 +2878,8 @@ function detectXMLType(str) {
             indent_handlebars,
             wrap_attributes,
             wrap_attributes_indent_size,
-            end_with_newline;
+            end_with_newline,
+            extra_liners;
 
         options = options || {};
 
@@ -2897,7 +2903,9 @@ function detectXMLType(str) {
         wrap_attributes = (options.wrap_attributes === undefined) ? 'auto' : options.wrap_attributes;
         wrap_attributes_indent_size = (options.wrap_attributes_indent_size === undefined) ? indent_size : parseInt(options.wrap_attributes_indent_size, 10) || indent_size;
         end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
-
+        extra_liners = Array.isArray(options.extra_liners) ?
+            options.extra_liners.concat() : (typeof options.extra_liners === 'string') ?
+            options.extra_liners.split(',') : 'head,body,/html'.split(',');
         function Parser() {
 
             this.pos = 0; //Parser position
@@ -2916,7 +2924,7 @@ function detectXMLType(str) {
             this.Utils = { //Uilities made available to the various functions
                 whitespace: "\n\r\t ".split(''),
                 single_token: 'br,input,link,meta,!doctype,basefont,base,area,hr,wbr,param,img,isindex,?xml,embed,?php,?,?='.split(','), //all the single tags for HTML
-                extra_liners: 'head,body,/html'.split(','), //for tags that need a line of whitespace before them
+                extra_liners: extra_liners, //for tags that need a line of whitespace before them
                 in_array: function(what, arr) {
                     for (var i = 0; i < arr.length; i++) {
                         if (what === arr[i]) {
@@ -2927,8 +2935,7 @@ function detectXMLType(str) {
                 }
             };
 
-            // Return true iff the given text is composed entirely of
-            // whitespace.
+            // Return true if the given text is composed entirely of whitespace.
             this.is_whitespace = function(text) {
                 for (var n = 0; n < text.length; text++) {
                     if (!this.Utils.in_array(text.charAt(n), this.Utils.whitespace)) {
@@ -6282,6 +6289,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('.tabs  (t, t2)  \n{\n  key: val(p1  ,p2);  \n  }', '.tabs (t, t2) {\n\tkey: val(p1, p2);\n}');
         t('.box-shadow(@shadow: 0 1px 3px rgba(0, 0, 0, .25)) {\n\t-webkit-box-shadow: @shadow;\n\t-moz-box-shadow: @shadow;\n\tbox-shadow: @shadow;\n}');
 
+        // Psuedo-classes vs Variables
+        t('@page :first {}');
+
+        // Assume the colon goes with the @name. If we're in LESS, this is required regardless of the at-string.
+        t('@page:first {}', '@page: first {}');
+        t('@page: first {}');
+
         //
 
         // test basic css beautifier
@@ -6513,6 +6527,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         opts.jslint_happy = false;
         opts.keep_array_indentation = false;
         opts.brace_style = 'collapse';
+        opts.extra_liners = ['html', 'head', '/html'];
 
         // End With Newline - (eof = "\n")
         opts.end_with_newline = true;
@@ -6526,6 +6541,22 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div></div>');
         test_fragment('\n', '');
 
+
+        // Custom Extra Liners (empty) - ()
+        opts.extra_liners = [];
+        test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n        <p>x</p>\n    </div>\n</body>\n</html>');
+
+        // Custom Extra Liners (default) - ()
+        opts.extra_liners = null;
+        test_fragment('<html><head></head><body></body></html>', '<html>\n\n<head></head>\n\n<body></body>\n\n</html>');
+
+        // Custom Extra Liners (p, string) - ()
+        opts.extra_liners = 'p,/p';
+        test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n\n        <p>x\n\n        </p>\n    </div>\n</body>\n</html>');
+
+        // Custom Extra Liners (p) - ()
+        opts.extra_liners = ['p', '/p'];
+        test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n\n        <p>x\n\n        </p>\n    </div>\n</body>\n</html>');
 
         // Attribute Wrap - (eof = "\n", indent_attr = "    ", over80 = "\n")
         opts.wrap_attributes = 'force';
