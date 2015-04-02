@@ -2903,7 +2903,7 @@ function detectXMLType(str) {
         wrap_attributes = (options.wrap_attributes === undefined) ? 'auto' : options.wrap_attributes;
         wrap_attributes_indent_size = (options.wrap_attributes_indent_size === undefined) ? indent_size : parseInt(options.wrap_attributes_indent_size, 10) || indent_size;
         end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
-        extra_liners = Array.isArray(options.extra_liners) ?
+        extra_liners = typeof options.extra_liners == "object" && options.extra_liners ?
             options.extra_liners.concat() : (typeof options.extra_liners === 'string') ?
             options.extra_liners.split(',') : 'head,body,/html'.split(',');
         function Parser() {
@@ -7401,6 +7401,10 @@ function convertSource(file, text) {
 			.replace(
 				"text.length > 1 && text[text.length - 1]",
 				"text.length > 1 && text.charAt(text.length - 1)"
+			)
+			.replace(
+				"Array.isArray(options.extra_liners)",
+				'typeof options.extra_liners == "object" && options.extra_liners'
 			);
 	}
 	else if(file == "js/lib/beautify-css.js") {
