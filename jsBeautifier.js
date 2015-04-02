@@ -12,48 +12,48 @@
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
 
 // Arguments:
-//   -onlySelected=true           - use only selected text
-//   -action=1                    - 0 - insert (default), 1 - insert to new document, 2 - copy, 3 - show
-//   -restoreCaretPos=true        - restore caret position (works only without selection)
-//   -setSyntax=0                 - don't change syntax theme (Coder plugin)
-//             =1                 - set syntax theme only in documents without theme
-//             =2                 - (default) don't change syntax "type" (e.g. don't change "xml" to "html")
-//             =3                 - always set
-//   -indentSize=1                - indent with a tab character
-//              =4                - indent with 4 spaces
-//   -eol="\\n"                   - character(s) to use as line terminators (default newline - "\\n")
-//   -preserveNewlines=true       - whether existing line breaks should be preserved
-//   -maxPreserveNewlines=2       - maximum number of line breaks to be preserved in one chunk
-//   -braceStyle="collapse"       - braces with control statement
-//              ="expand"         - braces on own line
-//              ="end-expand"     - end braces on own line
-//              ="none"           - attempt to keep braces where they are
-//   -keepArrayIndentation=true   - keep array indentation
-//   -breakChainedMethods=false   - break lines on chained methods
-//   -spaceInParen=true           - add padding spaces within paren, i.e. f( a, b )
-//   -spaceInEmptyParen=true      - add a single space inside empty paren, i.e. f( )
-//   -jsLintHappy=true            - use "function ()" instead of "function()"
-//   -spaceBeforeConditional=true - space before conditional: "if(x)" / "if (x)"
-//   -indentScripts="keep"        - HTML <style>, <script> formatting: keep indent level of the tag
-//                 ="normal"      - add one indent level
-//                 ="separate"    - separate indentation
-//   -unescapeStrings=true        - unescape printable \xNN characters in strings ("example" vs "\x65\x78\x61\x6d\x70\x6c\x65")
-//   -wrapLineLength=70           - lines should wrap at next opportunity after this number of characters
-//   -e4x=true                    - handle E4X XML literals
-//   -endWithNewline=false        - end output with a newline
-//   -newlineBetweenRules=true    - add extra newline between CSS rules (only for HTML)
-//   -commaFirst=false            - put commas at the beginning of new line instead of end
-//   -maxChar=70                  - maximum amount of characters per line (only for HTML), deprecated, use -wrapLineLength instead
-//   -unformattedTags=["a"]       - list of tags, that shouldn't be reformatted (only for HTML)
-//   -indentInnerHTML=true        - indent <head> and <body> sections (only for HTML)
+//   -onlySelected=true            - use only selected text
+//   -action=1                     - 0 - insert (default), 1 - insert to new document, 2 - copy, 3 - show
+//   -restoreCaretPos=true         - restore caret position (works only without selection)
+//   -setSyntax=0                  - don't change syntax theme (Coder plugin)
+//             =1                  - set syntax theme only in documents without theme
+//             =2                  - (default) don't change syntax "type" (e.g. don't change "xml" to "html")
+//             =3                  - always set
+//   -indentSize=1                 - indent with a tab character
+//              =4                 - indent with 4 spaces
+//   -eol="\\n"                    - character(s) to use as line terminators (default newline - "\\n")
+//   -preserveNewlines=true        - whether existing line breaks should be preserved
+//   -maxPreserveNewlines=2        - maximum number of line breaks to be preserved in one chunk
+//   -braceStyle="collapse"        - braces with control statement
+//              ="expand"          - braces on own line
+//              ="end-expand"      - end braces on own line
+//              ="none"            - attempt to keep braces where they are
+//   -keepArrayIndentation=true    - keep array indentation
+//   -breakChainedMethods=false    - break lines on chained methods
+//   -spaceInParen=true            - add padding spaces within paren, i.e. f( a, b )
+//   -spaceInEmptyParen=true       - add a single space inside empty paren, i.e. f( )
+//   -jsLintHappy=true             - use "function ()" instead of "function()"
+//   -spaceBeforeConditional=true  - space before conditional: "if(x)" / "if (x)"
+//   -indentScripts="keep"         - HTML <style>, <script> formatting: keep indent level of the tag
+//                 ="normal"       - add one indent level
+//                 ="separate"     - separate indentation
+//   -unescapeStrings=true         - unescape printable \xNN characters in strings ("example" vs "\x65\x78\x61\x6d\x70\x6c\x65")
+//   -wrapLineLength=70            - lines should wrap at next opportunity after this number of characters
+//   -e4x=true                     - handle E4X XML literals
+//   -endWithNewline=false         - end output with a newline
+//   -newlineBetweenRules=true     - add extra newline between CSS rules (only for HTML)
+//   -commaFirst=false             - put commas at the beginning of new line instead of end
+//   -maxChar=70                   - maximum amount of characters per line (only for HTML), deprecated, use -wrapLineLength instead
+//   -unformattedTags=["a"]        - list of tags, that shouldn't be reformatted (only for HTML)
+//   -indentInnerHTML=true         - indent <head> and <body> sections (only for HTML)
 //   -extraLines="head,body,/html" - list of tags that should have an extra newline before them (only for HTML)
-//   -detectPackers=true          - detect packers
-//   -css=true                    - force beautify CSS (just automatically wrap code into <style>...</style>)
-//   -keepCSSIndentation=true     - keep initial CSS indentation (only for -css=true)
-//   -update=1                    - update source from https://github.com/beautify-web/js-beautify/
-//          =2                    - update source from https://github.com/beautify-web/js-beautify/tree/gh-pages
-//   -forceNoCache                - prevent caching during update
-//   -test                        - force run the tests
+//   -detectPackers=true           - detect packers
+//   -css=true                     - force beautify CSS (just automatically wrap code into <style>...</style>)
+//   -keepCSSIndentation=true      - keep initial CSS indentation (only for -css=true)
+//   -update=1                     - update source from https://github.com/beautify-web/js-beautify/
+//          =2                     - update source from https://github.com/beautify-web/js-beautify/tree/gh-pages
+//   -forceNoCache                 - prevent caching during update
+//   -test                         - force run the tests
 
 // You also can pass any arguments to js_beautify()/html_beautify() using "_raw_" prefix, example:
 //   -_raw_indent_handlebars=true - add "indent_handlebars: true" to options object
