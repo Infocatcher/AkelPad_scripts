@@ -986,10 +986,10 @@ function passwordPrompt(caption, label, modal, direction) {
 	}
 	function parseRect(lpRect) {
 		return {
-			left:   AkelPad.MemRead(lpRect,      3 /*DT_DWORD*/),
-			top:    AkelPad.MemRead(lpRect +  4, 3 /*DT_DWORD*/),
-			right:  AkelPad.MemRead(lpRect +  8, 3 /*DT_DWORD*/),
-			bottom: AkelPad.MemRead(lpRect + 12, 3 /*DT_DWORD*/)
+			left:   AkelPad.MemRead(_PtrAdd(lpRect,  0), 3 /*DT_DWORD*/),
+			top:    AkelPad.MemRead(_PtrAdd(lpRect,  4), 3 /*DT_DWORD*/),
+			right:  AkelPad.MemRead(_PtrAdd(lpRect,  8), 3 /*DT_DWORD*/),
+			bottom: AkelPad.MemRead(_PtrAdd(lpRect, 12), 3 /*DT_DWORD*/)
 		};
 	}
 	function readRadiosState() {
