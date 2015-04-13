@@ -101,7 +101,7 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 		return;
 
 	if(uMsg == 0x4E /*WM_NOTIFY*/) {
-		var cmd = AkelPad.MemRead(lParam + 8, 3 /*DT_DWORD*/);
+		var cmd = AkelPad.MemRead(_PtrAdd(lParam, 8), 3 /*DT_DWORD*/);
 		switch(cmd) {
 			case 0x804 /*AEN_HSCROLL*/:
 			case 0x805 /*AEN_VSCROLL*/:

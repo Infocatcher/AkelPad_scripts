@@ -47,8 +47,9 @@ function undoableReopen() {
 	AkelPad.SendMessage(hWndEdit, 11 /*WM_SETREDRAW*/, true, 0);
 	oSys.Call("user32::InvalidateRect", hWndEdit, 0, true);
 
-	var dwFlags = AkelPad.MemRead(lpSel + (_X64 ? 48 : 24) /*AESELECTION.dwFlags*/, 3 /*DT_DWORD*/);
-	AkelPad.MemCopy(lpSel + (_X64 ? 48 : 24) /*AESELECTION.dwFlags*/, dwFlags | 0x808 /*AESELT_LOCKSCROLL|AESELT_INDEXUPDATE*/, 3 /*DT_DWORD*/);
+	var lpOffset = _PtrAdd(lpSel, (_X64 ? 48 : 24) /*AESELECTION.dwFlags*/);
+	var dwFlags = AkelPad.MemRead(lpOffset, 3 /*DT_DWORD*/);
+	AkelPad.MemCopy(lpOffset, dwFlags | 0x808 /*AESELT_LOCKSCROLL|AESELT_INDEXUPDATE*/, 3 /*DT_DWORD*/);
 	AkelPad.SendMessage(hWndEdit, 3126 /*AEM_SETSEL*/, lpCaret, lpSel);
 	AkelPad.SendMessage(hWndEdit, 3180 /*AEM_SETSCROLLPOS*/, 0, lpPoint64);
 	cleanup();
