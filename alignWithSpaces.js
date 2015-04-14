@@ -722,7 +722,7 @@ function alignWithSpacesDialog(modal) {
 		AkelPad.MemCopy(pcbi, sizeofCBI, 3 /*DT_DWORD*/);
 		if(!oSys.Call("user32::GetComboBoxInfo", hWndCombobox, pcbi))
 			return false;
-		var hWndComboboxEdit = AkelPad.MemRead(pcbi + 4 + 16*2 + 4*2, 3 /*DT_DWORD*/);
+		var hWndComboboxEdit = AkelPad.MemRead(_PtrAdd(pcbi, 4 + 16*2 + 4*2), 3 /*DT_DWORD*/);
 		comboboxFocused = function() {
 			return oSys.Call("user32::GetFocus") == hWndComboboxEdit;
 		};
