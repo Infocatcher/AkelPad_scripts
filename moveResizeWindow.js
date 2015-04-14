@@ -184,7 +184,7 @@ function getWorkArea(hWnd) {
 		if(lpMi) {
 			AkelPad.MemCopy(lpMi, sizeofMonitorInfo, 3 /*DT_DWORD*/);
 			oSys.Call("user32::GetMonitorInfo" + _TCHAR, hMonitor, lpMi);
-			var rcWork = parseRect(lpMi + 4 + 16);
+			var rcWork = parseRect(_PtrAdd(lpMi, 4 + 16));
 			AkelPad.MemFree(lpMi);
 		}
 	}

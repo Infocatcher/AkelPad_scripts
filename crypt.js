@@ -2513,10 +2513,10 @@ function passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 		var lpRect = AkelPad.MemAlloc(16); //sizeof(RECT)
 		if(!lpRect)
 			return;
-		AkelPad.MemCopy(lpRect,      dlgX,                              3 /*DT_DWORD*/);
-		AkelPad.MemCopy(lpRect + 4,  dlgY,                              3 /*DT_DWORD*/);
-		AkelPad.MemCopy(lpRect + 8,  dlgX + (rcWnd.right - rcWnd.left), 3 /*DT_DWORD*/);
-		AkelPad.MemCopy(lpRect + 12, dlgY + (rcWnd.top - rcWnd.bottom), 3 /*DT_DWORD*/);
+		AkelPad.MemCopy(_PtrAdd(lpRect,  0), dlgX,                              3 /*DT_DWORD*/);
+		AkelPad.MemCopy(_PtrAdd(lpRect,  4), dlgY,                              3 /*DT_DWORD*/);
+		AkelPad.MemCopy(_PtrAdd(lpRect,  8), dlgX + (rcWnd.right - rcWnd.left), 3 /*DT_DWORD*/);
+		AkelPad.MemCopy(_PtrAdd(lpRect, 12), dlgY + (rcWnd.top - rcWnd.bottom), 3 /*DT_DWORD*/);
 		var hMonitor = oSys.Call("user32::MonitorFromRect", lpRect, 0x2 /*MONITOR_DEFAULTTONEAREST*/);
 
 		if(hMonitor) {
@@ -2531,7 +2531,7 @@ function passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 			if(lpMi) {
 				AkelPad.MemCopy(lpMi, sizeofMonitorInfo, 3 /*DT_DWORD*/);
 				oSys.Call("user32::GetMonitorInfo" + _TCHAR, hMonitor, lpMi);
-				var rcWork = parseRect(lpMi + 4 + 16);
+				var rcWork = parseRect(_PtrAdd(lpMi, 4 + 16));
 				AkelPad.MemFree(lpMi);
 			}
 		}
