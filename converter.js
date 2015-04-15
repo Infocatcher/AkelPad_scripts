@@ -2256,14 +2256,14 @@ function converterDialog(modal) {
 				if(lParam == -1) { // Context menu from keyboard
 					if(oSys.Call("user32::GetCaretPos", lpPoint)) {
 						oSys.Call("user32::ClientToScreen", hWndOutput, lpPoint);
-						xPos = AkelPad.MemRead(lpPoint,     3 /*DT_DWORD*/);
-						yPos = AkelPad.MemRead(lpPoint + 4, 3 /*DT_DWORD*/);
+						xPos = AkelPad.MemRead(_PtrAdd(lpPoint, 0), 3 /*DT_DWORD*/);
+						yPos = AkelPad.MemRead(_PtrAdd(lpPoint, 4), 3 /*DT_DWORD*/);
 					}
 					yPos += AkelPad.SendMessage(hWndOutput, 3188 /*AEM_GETCHARSIZE*/, 0 /*AECS_HEIGHT*/, 0);
 				}
 				else if(oSys.Call("user32::GetCursorPos", lpPoint)) {
-					xPos = AkelPad.MemRead(lpPoint,     3 /*DT_DWORD*/);
-					yPos = AkelPad.MemRead(lpPoint + 4, 3 /*DT_DWORD*/);
+					xPos = AkelPad.MemRead(_PtrAdd(lpPoint, 0), 3 /*DT_DWORD*/);
+					yPos = AkelPad.MemRead(_PtrAdd(lpPoint, 4), 3 /*DT_DWORD*/);
 				}
 				AkelPad.MemFree(lpPoint);
 
