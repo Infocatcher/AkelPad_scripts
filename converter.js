@@ -2320,10 +2320,10 @@ function converterDialog(modal) {
 								rcGrip.left = rcGrip.right  - oSys.Call("user32::GetSystemMetrics", 2 /*SM_CXVSCROLL*/);
 								rcGrip.top  = rcGrip.bottom - oSys.Call("user32::GetSystemMetrics", 20 /*SM_CYVSCROLL*/);
 
-								AkelPad.MemCopy(lpGrip,      rcGrip.left,   3 /*DT_DWORD*/);
-								AkelPad.MemCopy(lpGrip + 4,  rcGrip.top,    3 /*DT_DWORD*/);
-								AkelPad.MemCopy(lpGrip + 8,  rcGrip.right,  3 /*DT_DWORD*/);
-								AkelPad.MemCopy(lpGrip + 12, rcGrip.bottom, 3 /*DT_DWORD*/);
+								AkelPad.MemCopy(_PtrAdd(lpGrip,  0), rcGrip.left,   3 /*DT_DWORD*/);
+								AkelPad.MemCopy(_PtrAdd(lpGrip,  4), rcGrip.top,    3 /*DT_DWORD*/);
+								AkelPad.MemCopy(_PtrAdd(lpGrip,  8), rcGrip.right,  3 /*DT_DWORD*/);
+								AkelPad.MemCopy(_PtrAdd(lpGrip, 12), rcGrip.bottom, 3 /*DT_DWORD*/);
 
 								oSys.Call("user32::DrawFrameControl", hDC, lpGrip, 3 /*DFC_SCROLL*/, 0x8 /*DFCS_SCROLLSIZEGRIP*/);
 							}
