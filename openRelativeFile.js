@@ -349,9 +349,9 @@ function isFileBinary(pFile) {
 
 	if (lpDetectCodepage=AkelPad.MemAlloc(_X64?24:20 /*sizeof(DETECTCODEPAGEW)*/))
 	{
-		AkelPad.MemCopy(lpDetectCodepage /*offsetof(DETECTCODEPAGEW, pFile)*/, AkelPad.MemStrPtr(pFile), 2 /*DT_QWORD*/);
-		AkelPad.MemCopy(lpDetectCodepage + (_X64?8:4) /*offsetof(DETECTCODEPAGEW, dwBytesToCheck)*/, 1024, 3 /*DT_DWORD*/);
-		AkelPad.MemCopy(lpDetectCodepage + (_X64?12:8) /*offsetof(DETECTCODEPAGEW, dwFlags)*/, 0x11 /*ADT_BINARY_ERROR|ADT_NOMESSAGES*/, 3 /*DT_DWORD*/);
+		AkelPad.MemCopy(_PtrAdd(lpDetectCodepage,             0 /*offsetof(DETECTCODEPAGEW, pFile)*/), AkelPad.MemStrPtr(pFile), 2 /*DT_QWORD*/);
+		AkelPad.MemCopy(_PtrAdd(lpDetectCodepage, _X64 ?  8 : 4 /*offsetof(DETECTCODEPAGEW, dwBytesToCheck)*/), 1024, 3 /*DT_DWORD*/);
+		AkelPad.MemCopy(_PtrAdd(lpDetectCodepage, _X64 ? 12 : 8 /*offsetof(DETECTCODEPAGEW, dwFlags)*/), 0x11 /*ADT_BINARY_ERROR|ADT_NOMESSAGES*/, 3 /*DT_DWORD*/);
 		if (AkelPad.SendMessage(hMainWnd, 1177 /*AKD_DETECTCODEPAGEW*/, 0, lpDetectCodepage) == -4 /*EDT_BINARY*/)
 			bResult=true;
 
