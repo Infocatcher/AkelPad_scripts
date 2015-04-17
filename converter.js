@@ -988,7 +988,7 @@ var base64 = {
 		var _keyMap = this._keyMap;
 		if(!_keyMap) {
 			_keyMap = this._keyMap = {};
-			for (var j = 0, l = _keyStr.length; j < l; j++)
+			for (var j = 0, l = _keyStr.length; j < l; ++j)
 				_keyMap[_keyStr.charAt(j)] = j;
 		}
 
@@ -1364,7 +1364,7 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 		var _text = text.replace(/\r\n/g, "\n");
 		var _res = res.replace(/\r\n/g, "\n");
 		var indx;
-		for(var i = 0, l = Math.min(_text.length, _res.length); i < l; i++) {
+		for(var i = 0, l = Math.min(_text.length, _res.length); i < l; ++i) {
 			if(_res.charAt(i) != _text.charAt(i)) {
 				indx = i;
 				break;
@@ -2853,7 +2853,7 @@ function convertFromUnicode(str, cp) {
 	) {
 		var isLE = cp == 1200 || cp == 12000;
 		var u32 = cp == 12000 || cp == 12001 ? "\x00\x00" : "";
-		for(var i = 0, l = str.length; i < l; i++) {
+		for(var i = 0, l = str.length; i < l; ++i) {
 			var code = str.charCodeAt(i);
 			var b1 = String.fromCharCode(code & 0xff);
 			var b2 = String.fromCharCode(code >> 8 & 0xff);
