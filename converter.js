@@ -2913,7 +2913,11 @@ function convertFromUnicode(str, cp) {
 			throw new Error("WideCharToMultiByte fail " + oSys.GetLastError());
 
 		//ret = AkelPad.MemRead(pMBBuf, 0 /*DT_ANSI*/);
-		for(var pCurr = pMBBuf, bufMax = pMBBuf + bufLen - 1; pCurr < bufMax; pCurr++)
+		for(
+			var pCurr = pMBBuf, bufMax = _PtrAdd(pMBBuf, bufLen - 1);
+			_PtrMath(pCurr, "<", bufMax);
+			pCurr = _PtrAdd(pCurr, 1)
+		)
 			ret += String.fromCharCode(AkelPad.MemRead(pCurr, 5 /*DT_BYTE*/));
 	}
 	catch(e) {
@@ -2972,8 +2976,8 @@ function convertToUnicode(str, cp) {
 		var pMBBuf = AkelPad.MemAlloc(strLen * 1 /*sizeof(char)*/);
 		if(!pMBBuf)
 			throw new Error("MemAlloc fail");
-		for(var i = 0; i < strLen; i++)
-			AkelPad.MemCopy(pMBBuf + i, str.charCodeAt(i), 5 /*DT_BYTE*/);
+		for(var i = 0; i < strLen; ++i)
+			AkelPad.MemCopy(_PtrAdd(pMBBuf, i), str.charCodeAt(i), 5 /*DT_BYTE*/);
 
 		// get required buffer size
 		var bufLen = oSys.Call(
@@ -3007,7 +3011,11 @@ function convertToUnicode(str, cp) {
 			throw new Error("MultiByteToWideChar fail " + oSys.GetLastError());
 
 		//ret = AkelPad.MemRead(pWCBuf, 1 /*DT_UNICODE*/);
-		for(var pCurr = pWCBuf, bufMax = pWCBuf + bufLen*2; pCurr < bufMax; pCurr += 2)
+		for(
+			var pCurr = pWCBuf, bufMax = _PtrAdd(pWCBuf, bufLen*2);
+			_PtrMath(pCurr, "<", bufMax);
+			pCurr = _PtrAdd(pCurr, 2)
+		)
 			ret += String.fromCharCode(AkelPad.MemRead(pCurr, 4 /*DT_WORD*/));
 	}
 	catch(e) {
