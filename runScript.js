@@ -525,7 +525,7 @@ function selectScriptDialog(modal) {
 		if(!hSearch)
 			return;
 		do {
-			var fName = AkelPad.MemRead(lpFindData + 44 /*offsetof(WIN32_FIND_DATAW, cFileName)*/, _TSTR);
+			var fName = AkelPad.MemRead(_PtrAdd(lpFindData, 44 /*offsetof(WIN32_FIND_DATAW, cFileName)*/), _TSTR);
 			if(fName == "." || fName == "..")
 				continue;
 			if(isScript(fName))
