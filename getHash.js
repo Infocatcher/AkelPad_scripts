@@ -2275,7 +2275,7 @@ function convertFromUnicode(str, cp) {
 	) {
 		var isLE = cp == 1200 || cp == 12000;
 		var u32 = cp == 12000 || cp == 12001 ? "\x00\x00" : "";
-		for(var i = 0, l = str.length; i < l; i++) {
+		for(var i = 0, l = str.length; i < l; ++i) {
 			var code = str.charCodeAt(i);
 			var b1 = String.fromCharCode(code & 0xff);
 			var b2 = String.fromCharCode(code >> 8 & 0xff);
@@ -2335,7 +2335,11 @@ function convertFromUnicode(str, cp) {
 			throw new Error("WideCharToMultiByte fail " + oSys.GetLastError());
 
 		//ret = AkelPad.MemRead(pMBBuf, 0 /*DT_ANSI*/);
-		for(var pCurr = pMBBuf, bufMax = pMBBuf + bufLen - 1; pCurr < bufMax; pCurr++)
+		for(
+			var pCurr = pMBBuf, bufMax = _PtrAdd(pMBBuf, bufLen - 1);
+			_PtrMath(pCurr, "<", bufMax);
+			pCurr = _PtrAdd(pCurr, 1)
+		)
 			ret += String.fromCharCode(AkelPad.MemRead(pCurr, 5 /*DT_BYTE*/));
 	}
 	catch(e) {
