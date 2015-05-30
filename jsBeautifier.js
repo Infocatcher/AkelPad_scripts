@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-04-01 00:08:33 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-05-28 01:02:09 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -840,6 +840,7 @@ function detectXMLType(str) {
                     (last_type === 'TK_WORD' && flags.mode === MODE.BlockStatement
                         && !flags.in_case
                         && !(current_token.text === '--' || current_token.text === '++')
+                        && last_last_text !== 'function'
                         && current_token.type !== 'TK_WORD' && current_token.type !== 'TK_RESERVED') ||
                     (flags.mode === MODE.ObjectLiteral && (
                         (flags.last_text === ':' && flags.ternary_depth === 0) || (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['get', 'set']))))
@@ -1833,13 +1834,13 @@ function detectXMLType(str) {
 
                 if (next.type === 'TK_START_BLOCK' || next.type === 'TK_START_EXPR') {
                     next.parent = last;
+                    open_stack.push(open);
                     open = next;
-                    open_stack.push(next);
                 }  else if ((next.type === 'TK_END_BLOCK' || next.type === 'TK_END_EXPR') &&
                     (open && (
                         (next.text === ']' && open.text === '[') ||
                         (next.text === ')' && open.text === '(') ||
-                        (next.text === '}' && open.text === '}')))) {
+                        (next.text === '}' && open.text === '{')))) {
                     next.parent = open.parent;
                     open = open_stack.pop();
                 }
@@ -2394,6 +2395,10 @@ function detectXMLType(str) {
             indentSize = parseInt(indentSize, 10);
         }
 
+        if(options.indent_with_tabs){
+            indentCharacter = '\t';
+            indentSize = 1;
+        }
 
         // tokenizer
         var whiteRe = /^\s+$/;
@@ -2409,6 +2414,7 @@ function detectXMLType(str) {
         }
 
         function peek(skipWhitespace) {
+            var result = '';
             var prev_pos = pos;
             if (skipWhitespace) {
                 eatWhitespace();
@@ -2531,15 +2537,16 @@ function detectXMLType(str) {
         };
 
         print.newLine = function(keepWhitespace) {
-            if (!keepWhitespace) {
-                print.trim();
-            }
-
             if (output.length) {
+                if (!keepWhitespace && output[output.length - 1] !== '\n') {
+                    print.trim();
+                }
+
                 output.push('\n');
-            }
-            if (basebaseIndentString) {
-                output.push(basebaseIndentString);
+
+                if (basebaseIndentString) {
+                    output.push(basebaseIndentString);
+                }
             }
         };
         print.singleSpace = function() {
@@ -2556,9 +2563,6 @@ function detectXMLType(str) {
 
 
         var output = [];
-        if (basebaseIndentString) {
-            output.push(basebaseIndentString);
-        }
         /*_____________________--------------------_____________________*/
 
         var insideRule = false;
@@ -2576,15 +2580,19 @@ function detectXMLType(str) {
             if (!ch) {
                 break;
             } else if (ch === '/' && peek() === '*') { /* css comment */
-                var header = lookBack("");
-                print.newLine();
+                var header = indentLevel === 0;
+
+                if (isAfterNewline || header) {
+                    print.newLine();
+                }
+
                 output.push(eatComment());
                 print.newLine();
                 if (header) {
                     print.newLine(true);
                 }
             } else if (ch === '/' && peek() === '/') { // single line comment
-                if (!isAfterNewline && last_top_ch !== '{') {
+                if (!isAfterNewline && last_top_ch !== '{' ) {
                     print.trim();
                 }
                 print.singleSpace();
@@ -2728,7 +2736,12 @@ function detectXMLType(str) {
         }
 
 
-        var sweetCode = output.join('').replace(/[\r\n\t ]+$/, '');
+        var sweetCode = '';
+        if (basebaseIndentString) {
+            sweetCode += basebaseIndentString;
+        }
+
+        sweetCode += output.join('').replace(/[\r\n\t ]+$/, '');
 
         // establish end_with_newline
         if (end_with_newline) {
@@ -2909,6 +2922,12 @@ function detectXMLType(str) {
         extra_liners = typeof options.extra_liners == "object" && options.extra_liners ?
             options.extra_liners.concat() : (typeof options.extra_liners === 'string') ?
             options.extra_liners.split(',') : 'head,body,/html'.split(',');
+
+        if(options.indent_with_tabs){
+            indent_character = '\t';
+            indent_size = 1;
+        }
+
         function Parser() {
 
             this.pos = 0; //Parser position
@@ -2926,7 +2945,7 @@ function detectXMLType(str) {
 
             this.Utils = { //Uilities made available to the various functions
                 whitespace: "\n\r\t ".split(''),
-                single_token: 'br,input,link,meta,!doctype,basefont,base,area,hr,wbr,param,img,isindex,?xml,embed,?php,?,?='.split(','), //all the single tags for HTML
+                single_token: 'br,input,link,meta,source,!doctype,basefont,base,area,hr,wbr,param,img,isindex,?xml,embed,?php,?,?='.split(','), //all the single tags for HTML
                 extra_liners: extra_liners, //for tags that need a line of whitespace before them
                 in_array: function(what, arr) {
                     for (var i = 0; i < arr.length; i++) {
@@ -5039,6 +5058,16 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    }\n' +
             '}');
 
+        // Issue 583 - Functions with comments after them should still indent correctly.
+        bt(
+            'function exit(code) {\n' +
+            '    setTimeout(function() {\n' +
+            '        phantom.exit(code);\n' +
+            '    }, 0);\n' +
+            '    phantom.onError = function() {};\n' +
+            '}\n' +
+            '// Comment');
+
 
 
         // Old tests
@@ -5298,6 +5327,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('switch (a) {\n    case /foo\\//:\n        b\n}');
         bt('if (a) /foo\\//\nelse /foo\\//;');
         bt('if (foo) /regex/.test();');
+        bt('for (index in [1, 2, 3]) /^test$/i.test(s)');
         bt('result = yield pgClient.query_(queryString);');
         bt('function foo() {\n    return [\n        "one",\n        "two"\n    ];\n}');
         bt('a=[[1,2],[4,5],[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    [7, 8]\n]');
@@ -6292,6 +6322,25 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('.tabs  (t, t2)  \n{\n  key: val(p1  ,p2);  \n  }', '.tabs (t, t2) {\n\tkey: val(p1, p2);\n}');
         t('.box-shadow(@shadow: 0 1px 3px rgba(0, 0, 0, .25)) {\n\t-webkit-box-shadow: @shadow;\n\t-moz-box-shadow: @shadow;\n\tbox-shadow: @shadow;\n}');
 
+        // Comments
+        t('/* test */');
+        t('.tabs{/* test */}', '.tabs {\n\t/* test */\n}');
+        t('.tabs{/* test */}', '.tabs {\n\t/* test */\n}');
+        t('/* header */.tabs {}', '/* header */\n\n.tabs {}');
+        t('.tabs {\n/* non-header */\nwidth:10px;}', '.tabs {\n\t/* non-header */\n\twidth: 10px;\n}');
+        t('/* header');
+        t('// comment');
+        t('.selector1 {\n\tmargin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n}', '.selector1 {\n\tmargin: 0;\n\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n}');
+
+        // single line comment support (less/sass)
+        t('.tabs{\n// comment\nwidth:10px;\n}', '.tabs {\n\t// comment\n\twidth: 10px;\n}');
+        t('.tabs{// comment\nwidth:10px;\n}', '.tabs {\n\t// comment\n\twidth: 10px;\n}');
+        t('//comment\n.tabs{width:10px;}', '//comment\n.tabs {\n\twidth: 10px;\n}');
+        t('.tabs{//comment\n//2nd single line comment\nwidth:10px;}', '.tabs {\n\t//comment\n\t//2nd single line comment\n\twidth: 10px;\n}');
+        t('.tabs{width:10px;//end of line comment\n}', '.tabs {\n\twidth: 10px; //end of line comment\n}');
+        t('.tabs{width:10px;//end of line comment\nheight:10px;}', '.tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px;\n}');
+        t('.tabs{width:10px;//end of line comment\nheight:10px;//another\n}', '.tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px; //another\n}');
+
         // Psuedo-classes vs Variables
         t('@page :first {}');
 
@@ -6320,24 +6369,6 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t("   a, img {padding: 0.2px}", "   a,\n   img {\n   \tpadding: 0.2px\n   }");
         t(" \t \na, img {padding: 0.2px}", " \t a,\n \t img {\n \t \tpadding: 0.2px\n \t }");
         t("\n\n     a, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}");
-
-        // comments
-        t("/* test */", "/* test */");
-        t(".tabs{/* test */}", ".tabs {\n\t/* test */\n}");
-        t("/* header */.tabs {}", "/* header */\n\n.tabs {}");
-        t("/* header", "/* header");
-        t("// comment", "// comment");
-        t(".selector1 {\n\tmargin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n}",
-            ".selector1 {\n\tmargin: 0;\n\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n}")
-
-        //single line comment support (less/sass)
-        t(".tabs{\n// comment\nwidth:10px;\n}", ".tabs {\n\t// comment\n\twidth: 10px;\n}");
-        t(".tabs{// comment\nwidth:10px;\n}", ".tabs {\n\t// comment\n\twidth: 10px;\n}");
-        t("//comment\n.tabs{width:10px;}", "//comment\n.tabs {\n\twidth: 10px;\n}");
-        t(".tabs{//comment\n//2nd single line comment\nwidth:10px;}", ".tabs {\n\t//comment\n\t//2nd single line comment\n\twidth: 10px;\n}");
-        t(".tabs{width:10px;//end of line comment\n}", ".tabs {\n\twidth: 10px; //end of line comment\n}");
-        t(".tabs{width:10px;//end of line comment\nheight:10px;}", ".tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px;\n}");
-        t(".tabs{width:10px;//end of line comment\nheight:10px;//another\n}", ".tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px; //another\n}");
 
         // separate selectors
         t("#bla, #foo{color:red}", "#bla,\n#foo {\n\tcolor: red\n}");
@@ -6526,6 +6557,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         opts.indent_size = 4;
         opts.indent_char = ' ';
+        opts.indent_with_tabs = false;
         opts.preserve_newlines = true;
         opts.jslint_happy = false;
         opts.keep_array_indentation = false;
@@ -6549,17 +6581,21 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         opts.extra_liners = [];
         test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n        <p>x</p>\n    </div>\n</body>\n</html>');
 
+
         // Custom Extra Liners (default) - ()
         opts.extra_liners = null;
         test_fragment('<html><head></head><body></body></html>', '<html>\n\n<head></head>\n\n<body></body>\n\n</html>');
+
 
         // Custom Extra Liners (p, string) - ()
         opts.extra_liners = 'p,/p';
         test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n\n        <p>x\n\n        </p>\n    </div>\n</body>\n</html>');
 
+
         // Custom Extra Liners (p) - ()
         opts.extra_liners = ['p', '/p'];
         test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n\n        <p>x\n\n        </p>\n    </div>\n</body>\n</html>');
+
 
         // Attribute Wrap - (eof = "\n", indent_attr = "    ", over80 = "\n")
         opts.wrap_attributes = 'force';
@@ -6825,9 +6861,34 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
 
 
+        // Unclosed html elements
+        test_fragment('<source>\n<source>');
+        test_fragment('<br>\n<br>');
+        test_fragment('<input>\n<input>');
+        test_fragment('<meta>\n<meta>');
+        test_fragment('<link>\n<link>');
+
+
+
         // Unformatted tags
         test_fragment('<ol>\n    <li>b<pre>c</pre></li>\n</ol>');
         test_fragment('<ol>\n    <li>b<code>c</code></li>\n</ol>');
+
+
+
+        // Indent with tabs
+        opts.indent_with_tabs = true;
+        test_fragment(
+            '<div>\n<div>\n</div>\n</div>',
+            '<div>\n\t<div>\n\t</div>\n</div>');
+
+
+
+        // Indent without tabs
+        opts.indent_with_tabs = false;
+        test_fragment(
+            '<div>\n<div>\n</div>\n</div>',
+            '<div>\n    <div>\n    </div>\n</div>');
 
 
 
