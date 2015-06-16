@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-16 17:53:55 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-16 19:12:52 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -2624,6 +2624,12 @@ function detectXMLType(str) {
             }
         };
 
+        print.preservedSingleSpace = function() {
+            if (isAfterSpace) {
+                print.singleSpace();
+            }
+        };
+
         print.trim = function() {
             while (print._lastCharWhitespace()) {
                 output.pop();
@@ -2668,10 +2674,7 @@ function detectXMLType(str) {
                 output.push(eatComment());
                 print.newLine();
             } else if (ch === '@') {
-                // pass along the space we found as a separate item
-                if (isAfterSpace) {
-                    print.singleSpace();
-                }
+                print.preservedSingleSpace();
                 output.push(ch);
 
                 // strip trailing space, if present, for hash property checks
@@ -2694,6 +2697,9 @@ function detectXMLType(str) {
                         enteringConditionalGroup = true;
                     }
                 }
+            } else if (ch === '#' && peek() === '{') {
+              print.preservedSingleSpace();
+              output.push(eatString('}'));
             } else if (ch === '{') {
                 if (peek(true) === '}') {
                     eatWhitespace();
@@ -2747,9 +2753,7 @@ function detectXMLType(str) {
                     }
                 }
             } else if (ch === '"' || ch === '\'') {
-                if (isAfterSpace) {
-                    print.singleSpace();
-                }
+                print.preservedSingleSpace();
                 output.push(eatString(ch));
             } else if (ch === ';') {
                 output.push(ch);
@@ -2767,9 +2771,7 @@ function detectXMLType(str) {
                     }
                 } else {
                     parenLevel++;
-                    if (isAfterSpace) {
-                        print.singleSpace();
-                    }
+                    print.preservedSingleSpace();
                     output.push(ch);
                     eatWhitespace();
                 }
@@ -2787,19 +2789,14 @@ function detectXMLType(str) {
             } else if (ch === ']') {
                 output.push(ch);
             } else if (ch === '[') {
-                if (isAfterSpace) {
-                    print.singleSpace();
-                }
+                print.preservedSingleSpace();
                 output.push(ch);
             } else if (ch === '=') { // no whitespace before or after
                 eatWhitespace()
                 ch = '=';
                 output.push(ch);
             } else {
-                if (isAfterSpace) {
-                    print.singleSpace();
-                }
-
+                print.preservedSingleSpace();
                 output.push(ch);
             }
         }
@@ -6527,6 +6524,17 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // Assume the colon goes with the @name. If we're in LESS, this is required regardless of the at-string.
         t('@page:first {}', '@page: first {}');
         t('@page: first {}');
+
+        // SASS/SCSS
+
+        // Basic Interpolation
+        t('p {\n\t$font-size: 12px;\n\t$line-height: 30px;\n\tfont: #{$font-size}/#{$line-height};\n}');
+        t('p.#{$name} {}');
+        t(
+            '@mixin itemPropertiesCoverItem($items, $margin) {\n' +
+            '\twidth: calc((100% - ((#{$items} - 1) * #{$margin}rem)) / #{$items});\n' +
+            '\tmargin: 1.6rem #{$margin}rem 1.6rem 0;\n' +
+            '}');
 
         //
 
