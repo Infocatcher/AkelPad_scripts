@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-05-28 01:02:09 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-16 17:53:55 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -522,7 +522,6 @@ function detectXMLType(str) {
             'TK_OPERATOR': handle_operator,
             'TK_COMMA': handle_comma,
             'TK_BLOCK_COMMENT': handle_block_comment,
-            'TK_INLINE_COMMENT': handle_inline_comment,
             'TK_COMMENT': handle_comment,
             'TK_DOT': handle_dot,
             'TK_UNKNOWN': handle_unknown,
@@ -596,6 +595,8 @@ function detectXMLType(str) {
         opt.end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
         opt.comma_first = (options.comma_first === undefined) ? false : options.comma_first;
 
+        // For testing of beautify ignore:start directive
+        opt.test_output_raw = (options.test_output_raw === undefined) ? false : options.test_output_raw;
 
         // force opt.space_after_anon_function to true if opt.jslint_happy
         if(opt.jslint_happy) {
@@ -629,6 +630,9 @@ function detectXMLType(str) {
         last_type = 'TK_START_BLOCK'; // last token type
         last_last_text = ''; // pre-last token text
         output = new Output(indent_string, baseIndentString);
+
+        // If testing the ignore directive, start with output disable set to true
+        output.raw = opt.test_output_raw;
 
 
         // Stack of parsing/formatting states, including MODE.
@@ -771,6 +775,11 @@ function detectXMLType(str) {
         }
 
         function print_token(printable_token) {
+            if (output.raw) {
+                output.add_raw_token(current_token)
+                return;
+            }
+
             if (opt.comma_first && last_type === 'TK_COMMA'
                 && output.just_added_newline()) {
                 if(output.previous_line.last() === ',') {
@@ -1495,6 +1504,32 @@ function detectXMLType(str) {
         }
 
         function handle_block_comment() {
+            if (output.raw) {
+                output.add_raw_token(current_token)
+                if (current_token.directives && current_token.directives['preserve'] === 'end') {
+                    output.raw = false;
+                }
+                return;
+            }
+
+            if (current_token.directives) {
+                print_newline(false, true);
+                print_token();
+                if (current_token.directives['preserve'] === 'start') {
+                    output.raw = true;
+                }
+                print_newline(false, true);
+                return;
+            }
+
+            // inline block
+            if (!acorn.newline.test(current_token.text) && !current_token.wanted_newline) {
+                output.space_before_token = true;
+                print_token();
+                output.space_before_token = true;
+                return;
+            }
+
             var lines = split_newlines(current_token.text);
             var j; // iterator for this case
             var javadoc = false;
@@ -1531,12 +1566,6 @@ function detectXMLType(str) {
 
             // for comments of more than one line, make sure there's a new line after
             print_newline(false, true);
-        }
-
-        function handle_inline_comment() {
-            output.space_before_token = true;
-            print_token();
-            output.space_before_token = true;
         }
 
         function handle_comment() {
@@ -1661,6 +1690,7 @@ function detectXMLType(str) {
         this.indent_cache = [ baseIndentString ];
         this.baseIndentLength = baseIndentString.length;
         this.indent_length = indent_string.length;
+        this.raw = false;
 
         var lines =[];
         this.baseIndentString = baseIndentString;
@@ -1668,6 +1698,16 @@ function detectXMLType(str) {
         this.previous_line = null;
         this.current_line = null;
         this.space_before_token = false;
+
+        this.add_outputline = function() {
+            this.previous_line = this.current_line;
+            this.current_line = new OutputLine(this);
+            lines.push(this.current_line);
+        }
+
+        // initialize
+        this.add_outputline();
+
 
         this.get_line_number = function() {
             return lines.length;
@@ -1680,17 +1720,14 @@ function detectXMLType(str) {
             }
 
             if (force_newline || !this.just_added_newline()) {
-                this.previous_line = this.current_line;
-                this.current_line = new OutputLine(this);
-                lines.push(this.current_line);
+                if (!this.raw) {
+                    this.add_outputline();
+                }
                 return true;
             }
 
             return false;
         }
-
-        // initialize
-        this.add_new_line(true);
 
         this.get_code = function() {
             var sweet_code = lines.join('\n').replace(/[\r\n\t ]+$/, '');
@@ -1709,6 +1746,15 @@ function detectXMLType(str) {
             }
             this.current_line.set_indent(0);
             return false;
+        }
+
+        this.add_raw_token = function(token) {
+            for (var x = 0; x < token.newlines; x++) {
+                this.add_outputline();
+            }
+            this.current_line.push(token.whitespace_before);
+            this.current_line.push(token.text);
+            this.space_before_token = false;
         }
 
         this.add_token = function(printable_token) {
@@ -1787,12 +1833,14 @@ function detectXMLType(str) {
         this.wanted_newline = newlines > 0;
         this.whitespace_before = whitespace_before || '';
         this.parent = null;
+        this.directives = null;
     }
 
     function tokenizer(input, opts, indent_string) {
 
         var whitespace = "\n\r\t ".split('');
         var digit = /[0-9]/;
+        var digit_hex = /[0123456789abcdefABCDEF]/;
 
         var punct = ('+ - * / % & ++ -- = += -= *= /= %= == === != !== > < >= <= >> << >>> >>>= >>= <<= && &= | || ! ~ , : ? ^ ^= |= :: =>'
                 +' <%= <% %> <?= <? ?>').split(' '); // try to be a good boy and try not to break the markup language identifiers
@@ -1800,6 +1848,17 @@ function detectXMLType(str) {
         // words which should always start on new line.
         this.line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function,import,export'.split(',');
         var reserved_words = this.line_starters.concat(['do', 'in', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof', 'yield', 'async', 'await']);
+
+        //  /* ... */ comment ends with nearest */ or end of file
+        var block_comment_pattern = /([\s\S]*?)((?:\*\/)|$)/g;
+
+        // comment ends just before nearest linefeed or end of file
+        var comment_pattern = /([^\n\r\u2028\u2029]*)/g;
+
+        var directives_pattern = /\/\*\sbeautify\s(\w+[:]\w+)+\s\*\//g;
+        var directives_end_ignore_pattern = /([\s\S]*?)((?:\/\*\sbeautify\signore:end\s\*\/)|$)/g;
+
+        var template_pattern = /((<\?php|<\?=)[\s\S]*?\?>)|(<%[\s\S]*?%>)/g
 
         var n_newlines, whitespace_before_token, in_html_comment, tokens, parser_pos;
         var input_length;
@@ -1820,8 +1879,10 @@ function detectXMLType(str) {
             while (!(last && last.type === 'TK_EOF')) {
                 token_values = tokenize_next();
                 next = new Token(token_values[1], token_values[0], n_newlines, whitespace_before_token);
-                while(next.type === 'TK_INLINE_COMMENT' || next.type === 'TK_COMMENT' ||
-                    next.type === 'TK_BLOCK_COMMENT' || next.type === 'TK_UNKNOWN') {
+                while(next.type === 'TK_COMMENT' || next.type === 'TK_BLOCK_COMMENT' || next.type === 'TK_UNKNOWN') {
+                    if (next.type === 'TK_BLOCK_COMMENT') {
+                        next.directives = token_values[2];
+                    }
                     comments.push(next);
                     token_values = tokenize_next();
                     next = new Token(token_values[1], token_values[0], n_newlines, whitespace_before_token);
@@ -1852,6 +1913,17 @@ function detectXMLType(str) {
             return tokens;
         }
 
+        function get_directives (text) {
+            var directives = null;
+            var directives_match = directives_pattern.exec(text);
+            if (directives_match) {
+                directives = {};
+                var directive = directives_match[1].split(':');
+                directives[directive[0]] = directive[1];
+            }
+            return directives;
+        }
+
         function tokenize_next() {
             var i, resulting_string;
             var whitespace_on_this_line = [];
@@ -1877,15 +1949,13 @@ function detectXMLType(str) {
 
             while (in_array(c, whitespace)) {
 
-                if (c === '\n') {
-                    n_newlines += 1;
-                    whitespace_on_this_line = [];
-                } else if (n_newlines) {
-                    if (c === indent_string) {
-                        whitespace_on_this_line.push(indent_string);
-                    } else if (c !== '\r') {
-                        whitespace_on_this_line.push(' ');
+                if (acorn.newline.test(c)) {
+                    if (!(c === '\n' && input.charAt(parser_pos-2) === '\r')) {
+                        n_newlines += 1;
+                        whitespace_on_this_line = [];
                     }
+                } else {
+                    whitespace_on_this_line.push(c);
                 }
 
                 if (parser_pos >= input_length) {
@@ -1911,7 +1981,7 @@ function detectXMLType(str) {
                     allow_e = false;
                     c += input.charAt(parser_pos);
                     parser_pos += 1;
-                    local_digit = /[0123456789abcdefABCDEF]/
+                    local_digit = digit_hex
                 } else {
                     // we know this first loop will run.  It keeps the logic simpler.
                     c = '';
@@ -1992,39 +2062,28 @@ function detectXMLType(str) {
             if (c === '/') {
                 var comment = '';
                 // peek for comment /* ... */
-                var inline_comment = true;
                 if (input.charAt(parser_pos) === '*') {
                     parser_pos += 1;
-                    if (parser_pos < input_length) {
-                        while (parser_pos < input_length && !(input.charAt(parser_pos) === '*' && input.charAt(parser_pos + 1) && input.charAt(parser_pos + 1) === '/')) {
-                            c = input.charAt(parser_pos);
-                            comment += c;
-                            if (c === "\n" || c === "\r") {
-                                inline_comment = false;
-                            }
-                            parser_pos += 1;
-                            if (parser_pos >= input_length) {
-                                break;
-                            }
-                        }
+                    block_comment_pattern.lastIndex = parser_pos;
+                    var comment_match = block_comment_pattern.exec(input);
+                    comment = '/*' + comment_match[0];
+                    parser_pos += comment_match[0].length;
+                    var directives = get_directives(comment);
+                    if (directives && directives['ignore'] === 'start') {
+                        directives_end_ignore_pattern.lastIndex = parser_pos;
+                        comment_match = directives_end_ignore_pattern.exec(input)
+                        comment += comment_match[0];
+                        parser_pos += comment_match[0].length;
                     }
-                    parser_pos += 2;
-                    if (inline_comment && n_newlines === 0) {
-                        return ['/*' + comment + '*/', 'TK_INLINE_COMMENT'];
-                    } else {
-                        return ['/*' + comment + '*/', 'TK_BLOCK_COMMENT'];
-                    }
+                    return [comment, 'TK_BLOCK_COMMENT', directives];
                 }
                 // peek for comment // ...
                 if (input.charAt(parser_pos) === '/') {
-                    comment = c;
-                    while (input.charAt(parser_pos) !== '\r' && input.charAt(parser_pos) !== '\n') {
-                        comment += input.charAt(parser_pos);
-                        parser_pos += 1;
-                        if (parser_pos >= input_length) {
-                            break;
-                        }
-                    }
+                    parser_pos += 1;
+                    comment_pattern.lastIndex = parser_pos;
+                    var comment_match = comment_pattern.exec(input);
+                    comment = '//' + comment_match[0];
+                    parser_pos += comment_match[0].length;
                     return [comment, 'TK_COMMENT'];
                 }
 
@@ -2184,6 +2243,16 @@ function detectXMLType(str) {
                         parser_pos += 2;
                     }
                     return [sharp, 'TK_WORD'];
+                }
+            }
+
+            if (c === '<' && (input.charAt(parser_pos) === '?' || input.charAt(parser_pos) === '%')) {
+                template_pattern.lastIndex = parser_pos - 1;
+                var template_match = template_pattern.exec(input);
+                if(template_match) {
+                    c = template_match[0];
+                    parser_pos += c.length - 1;
+                    return [c, 'TK_STRING'];
                 }
             }
 
@@ -2910,7 +2979,9 @@ function detectXMLType(str) {
         indent_character = (options.indent_char === undefined) ? ' ' : options.indent_char;
         brace_style = (options.brace_style === undefined) ? 'collapse' : options.brace_style;
         wrap_line_length =  parseInt(options.wrap_line_length, 10) === 0 ? 32786 : parseInt(options.wrap_line_length || 250, 10);
-        unformatted = options.unformatted || ['a', 'span', 'img', 'bdo', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym', 'q', 'sub', 'sup', 'tt', 'i', 'b', 'big', 'small', 'u', 's', 'strike', 'font', 'ins', 'del', 'pre', 'address', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+        unformatted = options.unformatted || ['a', 'span', 'img', 'bdo', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd',
+            'var', 'cite', 'abbr', 'acronym', 'q', 'sub', 'sup', 'tt', 'i', 'b', 'big', 'small', 'u', 's', 'strike',
+            'font', 'ins', 'del', 'pre', 'address', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
         preserve_newlines = (options.preserve_newlines === undefined) ? true : options.preserve_newlines;
         max_preserve_newlines = preserve_newlines ?
             (isNaN(parseInt(options.max_preserve_newlines, 10)) ? 32786 : parseInt(options.max_preserve_newlines, 10))
@@ -2945,7 +3016,7 @@ function detectXMLType(str) {
 
             this.Utils = { //Uilities made available to the various functions
                 whitespace: "\n\r\t ".split(''),
-                single_token: 'br,input,link,meta,source,!doctype,basefont,base,area,hr,wbr,param,img,isindex,?xml,embed,?php,?,?='.split(','), //all the single tags for HTML
+                single_token: 'br,input,link,meta,source,!doctype,basefont,base,area,hr,wbr,param,img,isindex,embed'.split(','), //all the single tags for HTML
                 extra_liners: extra_liners, //for tags that need a line of whitespace before them
                 in_array: function(what, arr) {
                     for (var i = 0; i < arr.length; i++) {
@@ -3198,7 +3269,7 @@ function detectXMLType(str) {
                     this.line_char_count++;
                     content.push(input_char); //inserts character at-a-time (or string)
 
-                    if (content[1] && content[1] === '!') { //if we're in a comment, do something special
+                    if (content[1] && (content[1] === '!' || content[1] === '?' || content[1] === '%')) { //if we're in a comment, do something special
                         // We treat all comments as literals, even more than preformatted tags
                         // we just look for the appropriate close tag
                         content = [this.get_comment(tag_start)];
@@ -3340,6 +3411,12 @@ function detectXMLType(str) {
                             matched = true;
                         } else if (comment.indexOf('{{!') === 0) { // {{! handlebars comment
                             delimiter = '}}';
+                            matched = true;
+                        } else if (comment.indexOf('<?') === 0) { // {{! handlebars comment
+                            delimiter = '?>';
+                            matched = true;
+                        } else if (comment.indexOf('<%') === 0) { // {{! handlebars comment
+                            delimiter = '%>';
                             matched = true;
                         }
                     }
@@ -4136,6 +4213,13 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         sanitytest.test_function(test_js_beautifier, 'js_beautify');
         test_fragment(input, expectation);
 
+        // If we set raw, input should be unchanged
+        opts.test_output_raw = true;
+        if (!opts.end_with_newline) {
+            test_fragment(input, input);
+        }
+        opts.test_output_raw = false;
+
         // test also the returned indentation
         // e.g if input = "asdf();"
         // then test that this remains properly formatted as well:
@@ -4148,6 +4232,13 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             wrapped_input = '{\n' + input.replace(/^(.+)$/mg, '    $1') + '\n    foo = bar;\n}';
             wrapped_expectation = '{\n' + expectation.replace(/^(.+)$/mg, '    $1') + '\n    foo = bar;\n}';
             test_fragment(wrapped_input, wrapped_expectation);
+
+            // If we set raw, input should be unchanged
+            opts.test_output_raw = true;
+            if (!opts.end_with_newline) {
+                test_fragment(wrapped_input, wrapped_input);
+            }
+            opts.test_output_raw = false;
 
             // Everywhere we do newlines, they should be replaced with opts.eol
             opts.eol = '\r\\n';
@@ -4707,6 +4798,96 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         // Multiple braces
         bt('{{}/z/}', '{\n    {}\n    /z/\n}');
+
+
+
+        // Beautify preserve formatting
+        bt('/* beautify preserve:start */\n/* beautify preserve:end */');
+        bt('/* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */');
+        bt('var a = 1;\n/* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */');
+        bt('/* beautify preserve:start */     {asdklgh;y;;{}dd2d}/* beautify preserve:end */');
+        bt(
+            'var a =  1;\n/* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */',
+            'var a = 1;\n/* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */');
+        bt(
+            'var a = 1;\n /* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */',
+            'var a = 1;\n/* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */');
+        bt(
+            'var a = {\n' +
+            '    /* beautify preserve:start */\n' +
+            '    one   :  1\n' +
+            '    two   :  2,\n' +
+            '    three :  3,\n' +
+            '    ten   : 10\n' +
+            '    /* beautify preserve:end */\n' +
+            '};');
+        bt(
+            'var a = {\n' +
+            '/* beautify preserve:start */\n' +
+            '    one   :  1,\n' +
+            '    two   :  2,\n' +
+            '    three :  3,\n' +
+            '    ten   : 10\n' +
+            '/* beautify preserve:end */\n' +
+            '};',
+            'var a = {\n' +
+            '    /* beautify preserve:start */\n' +
+            '    one   :  1,\n' +
+            '    two   :  2,\n' +
+            '    three :  3,\n' +
+            '    ten   : 10\n' +
+            '/* beautify preserve:end */\n' +
+            '};');
+        bt('/* beautify ignore:start */\n/* beautify ignore:end */');
+        bt('/* beautify ignore:start */\n   var a,,,{ 1;\n/* beautify ignore:end */');
+        bt('var a = 1;\n/* beautify ignore:start */\n   var a = 1;\n/* beautify ignore:end */');
+        bt('/* beautify ignore:start */     {asdklgh;y;+++;dd2d}/* beautify ignore:end */');
+        bt(
+            'var a =  1;\n/* beautify ignore:start */\n   var a,,,{ 1;\n/* beautify ignore:end */',
+            'var a = 1;\n/* beautify ignore:start */\n   var a,,,{ 1;\n/* beautify ignore:end */');
+        bt(
+            'var a = 1;\n /* beautify ignore:start */\n   var a,,,{ 1;\n/* beautify ignore:end */',
+            'var a = 1;\n/* beautify ignore:start */\n   var a,,,{ 1;\n/* beautify ignore:end */');
+        bt(
+            'var a = {\n' +
+            '    /* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            '    two   :  2,\n' +
+            '    three : {\n' +
+            '    ten   : 10\n' +
+            '    /* beautify ignore:end */\n' +
+            '};');
+        bt(
+            'var a = {\n' +
+            '/* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            '    two   :  2,\n' +
+            '    three : {\n' +
+            '    ten   : 10\n' +
+            '/* beautify ignore:end */\n' +
+            '};',
+            'var a = {\n' +
+            '    /* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            '    two   :  2,\n' +
+            '    three : {\n' +
+            '    ten   : 10\n' +
+            '/* beautify ignore:end */\n' +
+            '};');
+
+
+
+        // Template Formatting
+        bt('<?=$view["name"]; ?>');
+        bt('a = <?= external() ?>;');
+        bt(
+            '<?php\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '?>');
+        bt('a = <%= external() %>;');
 
 
         // jslint and space after anon function - (f = " ", c = "")
@@ -5614,9 +5795,6 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         beautify_brace_tests('end-expand');
         beautify_brace_tests('none');
 
-        bt('a = <?= external() ?> ;'); // not the most perfect thing in the world, but you're the weirdo beaufifying php mix-ins with javascript beautifier
-        bt('a = <%= external() %> ;');
-
         bt('// func-comment\n\nfunction foo() {}\n\n// end-func-comment');
 
         test_fragment('roo = {\n    /*\n    ****\n      FOO\n    ****\n    */\n    BAR: 0\n};');
@@ -6184,6 +6362,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         // Test template strings
         bt('`This is a ${template} string.`', '`This is a ${template} string.`');
         bt('`This\n  is\n  a\n  ${template}\n  string.`', '`This\n  is\n  a\n  ${template}\n  string.`');
+        bt('a = `This is a continuation\\\nstring.`', 'a = `This is a continuation\\\nstring.`');
+        bt('a = "This is a continuation\\\nstring."', 'a = "This is a continuation\\\nstring."');
 
         Urlencoded.run_tests(sanitytest);
     }
@@ -6645,6 +6825,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Handlebars Indenting On - (content = "{{field}}")
         opts.indent_handlebars = true;
+        test_fragment('{{page-title}}');
         test_fragment('{{#if 0}}{{/if}}');
         test_fragment('{{#if 0}}{{field}}{{/if}}');
         test_fragment('{{#if 0}}\n{{/if}}');
@@ -6699,6 +6880,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Handlebars Indenting On - (content = "{{! comment}}")
         opts.indent_handlebars = true;
+        test_fragment('{{page-title}}');
         test_fragment('{{#if 0}}{{/if}}');
         test_fragment('{{#if 0}}{{! comment}}{{/if}}');
         test_fragment('{{#if 0}}\n{{/if}}');
@@ -6753,6 +6935,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Handlebars Indenting On - (content = "{pre{{field1}} {{field2}} {{field3}}post")
         opts.indent_handlebars = true;
+        test_fragment('{{page-title}}');
         test_fragment('{{#if 0}}{{/if}}');
         test_fragment('{{#if 0}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}');
         test_fragment('{{#if 0}}\n{{/if}}');
@@ -6807,6 +6990,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Handlebars Indenting On - (content = "{{! \n mult-line\ncomment  \n     with spacing\n}}")
         opts.indent_handlebars = true;
+        test_fragment('{{page-title}}');
         test_fragment('{{#if 0}}{{/if}}');
         test_fragment('{{#if 0}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}');
         test_fragment('{{#if 0}}\n{{/if}}');
@@ -6873,6 +7057,28 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // Unformatted tags
         test_fragment('<ol>\n    <li>b<pre>c</pre></li>\n</ol>');
         test_fragment('<ol>\n    <li>b<code>c</code></li>\n</ol>');
+
+
+
+        // Php formatting
+        test_fragment('<h1 class="content-page-header"><?=$view["name"]; ?></h1>');
+        test_fragment(
+            '<?php\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '?>');
+
+
+
+        // underscore.js  formatting
+        test_fragment(
+            '<div class="col-sm-9">\n' +
+            '    <textarea id="notes" class="form-control" rows="3">\n' +
+            '        <%= notes %>\n' +
+            '    </textarea>\n' +
+            '</div>');
 
 
 
