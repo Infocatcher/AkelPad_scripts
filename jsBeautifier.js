@@ -7425,6 +7425,7 @@ if (typeof exports !== "undefined") {
 
 
 function SanityTest (func, name_of_test) {
+    var tl = new TitleLogger(WScript.ScriptName + ": ");
 
     var test_func = func || function (x) {
         return x;
@@ -7456,6 +7457,8 @@ function SanityTest (func, name_of_test) {
             n_failed += 1;
             failures.push([test_name, parameters, expected_value, result]);
         }
+        if((n_succeeded + n_failed) % 10 == 0)
+            tl.log("Test: " + n_succeeded + "/" + n_failed);
     };
 
 
@@ -7480,6 +7483,7 @@ function SanityTest (func, name_of_test) {
             }
             results += n_failed + ' tests failed.\n';
         }
+        tl.restore();
         return results;
     };
 
@@ -7692,10 +7696,24 @@ function convertSource(file, text) {
 		);
 	}
 	else if(file == "js/test/sanitytest.js") {
-		text = text.replace(
-			"results = 'All ' + n_succeeded + ' tests passed.';",
-			'results = _localize("All %S tests passed.").replace("%S", n_succeeded);'
-		);
+		text = text
+			.replace(
+				"results = 'All ' + n_succeeded + ' tests passed.';",
+				'results = _localize("All %S tests passed.").replace("%S", n_succeeded);'
+			)
+			// Patch to provide simple progress
+			.replace(
+				/\sfunction SanityTest *\([^()]*\) *\{\r\n/,
+				'$&    var tl = new TitleLogger(WScript.ScriptName + ": ");\r\n'
+			)
+			.replace(
+				/\sfailures\.push\([^()]+\);\r\n\s*\}\r\n/,
+				'$&        if((n_succeeded + n_failed) % 10 == 0)\r\n            tl.log("Test: " + n_succeeded + "/" + n_failed);\r\n'
+			)
+			.replace(
+				/\sresults \+= n_failed \+ [^\r\n]+\r\n\s*\}\r\n/,
+				"$&        tl.restore();\r\n"
+			);
 	}
 	else if(file == "js/test/beautify-css-tests.js") {
 		text = text.replace(/(newline_between_rules: true),(\s*\})/, "$1$2"); // Remove trailing comma
