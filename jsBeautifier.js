@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-16 19:12:52 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-17 02:02:21 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -2562,11 +2562,20 @@ function detectXMLType(str) {
         // and the next special character found opens
         // a new block
         function foundNestedPseudoClass() {
+            var openParen = 0;
             for (var i = pos + 1; i < source_text.length; i++) {
                 var ch = source_text.charAt(i);
                 if (ch === "{") {
                     return true;
-                } else if (ch === ";" || ch === "}" || ch === ")") {
+                } else if (ch === '(') {
+                    // pseudoclasses can contain ()
+                    openParen += 1;
+                } else if (ch === ')') {
+                    if (openParen == 0) {
+                        return false;
+                    }
+                    openParen -= 1;
+                } else if (ch === ";" || ch === "}") {
                     return false;
                 }
             }
@@ -2624,7 +2633,7 @@ function detectXMLType(str) {
             }
         };
 
-        print.preservedSingleSpace = function() {
+        print.preserveSingleSpace = function() {
             if (isAfterSpace) {
                 print.singleSpace();
             }
@@ -2674,7 +2683,7 @@ function detectXMLType(str) {
                 output.push(eatComment());
                 print.newLine();
             } else if (ch === '@') {
-                print.preservedSingleSpace();
+                print.preserveSingleSpace();
                 output.push(ch);
 
                 // strip trailing space, if present, for hash property checks
@@ -2698,7 +2707,7 @@ function detectXMLType(str) {
                     }
                 }
             } else if (ch === '#' && peek() === '{') {
-              print.preservedSingleSpace();
+              print.preserveSingleSpace();
               output.push(eatString('}'));
             } else if (ch === '{') {
                 if (peek(true) === '}') {
@@ -2753,7 +2762,7 @@ function detectXMLType(str) {
                     }
                 }
             } else if (ch === '"' || ch === '\'') {
-                print.preservedSingleSpace();
+                print.preserveSingleSpace();
                 output.push(eatString(ch));
             } else if (ch === ';') {
                 output.push(ch);
@@ -2771,7 +2780,7 @@ function detectXMLType(str) {
                     }
                 } else {
                     parenLevel++;
-                    print.preservedSingleSpace();
+                    print.preserveSingleSpace();
                     output.push(ch);
                     eatWhitespace();
                 }
@@ -2789,14 +2798,14 @@ function detectXMLType(str) {
             } else if (ch === ']') {
                 output.push(ch);
             } else if (ch === '[') {
-                print.preservedSingleSpace();
+                print.preserveSingleSpace();
                 output.push(ch);
             } else if (ch === '=') { // no whitespace before or after
                 eatWhitespace()
                 ch = '=';
                 output.push(ch);
             } else {
-                print.preservedSingleSpace();
+                print.preserveSingleSpace();
                 output.push(ch);
             }
         }
@@ -6475,6 +6484,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n.div{height:15px;}', '@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n\n.div {\n\theight: 15px;\n}');
         t('@font-face {\n\tfont-family: "Bitstream Vera Serif Bold";\n\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n}\n@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo.png);\n\t}\n\t@media screen and (min-device-pixel-ratio: 2) {\n\t\t@font-face {\n\t\t\tfont-family: "Helvetica Neue"\n\t\t}\n\t\t#foo:hover {\n\t\t\tbackground-image: url(foo@2x.png);\n\t\t}\n\t}\n}', '@font-face {\n\tfont-family: "Bitstream Vera Serif Bold";\n\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n}\n\n@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo.png);\n\t}\n\t@media screen and (min-device-pixel-ratio: 2) {\n\t\t@font-face {\n\t\t\tfont-family: "Helvetica Neue"\n\t\t}\n\t\t#foo:hover {\n\t\t\tbackground-image: url(foo@2x.png);\n\t\t}\n\t}\n}');
         t('a:first-child{color:red;div:first-child{color:black;}}\n.div{height:15px;}', 'a:first-child {\n\tcolor: red;\n\tdiv:first-child {\n\t\tcolor: black;\n\t}\n}\n\n.div {\n\theight: 15px;\n}');
+        t('a:first-child{color:red;div:not(.peq){color:black;}}\n.div{height:15px;}', 'a:first-child {\n\tcolor: red;\n\tdiv:not(.peq) {\n\t\tcolor: black;\n\t}\n}\n\n.div {\n\theight: 15px;\n}');
 
         // Newline Between Rules - (separator = "")
         opts.newline_between_rules = false;
@@ -6488,6 +6498,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n.div{height:15px;}', '@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n.div {\n\theight: 15px;\n}');
         t('@font-face {\n\tfont-family: "Bitstream Vera Serif Bold";\n\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n}\n@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo.png);\n\t}\n\t@media screen and (min-device-pixel-ratio: 2) {\n\t\t@font-face {\n\t\t\tfont-family: "Helvetica Neue"\n\t\t}\n\t\t#foo:hover {\n\t\t\tbackground-image: url(foo@2x.png);\n\t\t}\n\t}\n}');
         t('a:first-child{color:red;div:first-child{color:black;}}\n.div{height:15px;}', 'a:first-child {\n\tcolor: red;\n\tdiv:first-child {\n\t\tcolor: black;\n\t}\n}\n.div {\n\theight: 15px;\n}');
+        t('a:first-child{color:red;div:not(.peq){color:black;}}\n.div{height:15px;}', 'a:first-child {\n\tcolor: red;\n\tdiv:not(.peq) {\n\t\tcolor: black;\n\t}\n}\n.div {\n\theight: 15px;\n}');
 
         // Functions braces
         t('.tabs(){}', '.tabs() {}');
