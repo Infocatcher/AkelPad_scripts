@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-17 18:27:35 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-18 21:03:46 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -434,7 +434,7 @@ function detectXMLType(str) {
       // Matches a whole line break (where CRLF is considered a single
       // line break). Used to count lines.
 
-      var lineBreak = /\r\n|[\n\r\u2028\u2029]/g;
+      var lineBreak = exports.lineBreak = /\r\n|[\n\r\u2028\u2029]/g;
 
       // Test whether a given character code starts an identifier.
 
@@ -678,7 +678,7 @@ function detectXMLType(str) {
             }
 
             if (opt.eol != '\n') {
-                sweet_code = sweet_code.replace(/[\r]?[\n]/mg, opt.eol);
+                sweet_code = sweet_code.replace(/[\n]/g, opt.eol);
             }
 
             return sweet_code;
@@ -2075,6 +2075,7 @@ function detectXMLType(str) {
                         comment += comment_match[0];
                         parser_pos += comment_match[0].length;
                     }
+                    comment = comment.replace(acorn.lineBreak, '\n');
                     return [comment, 'TK_BLOCK_COMMENT', directives];
                 }
                 // peek for comment // ...
@@ -2158,6 +2159,7 @@ function detectXMLType(str) {
                         var xmlLength = match ? match.index + match[0].length : xmlStr.length;
                         xmlStr = xmlStr.slice(0, xmlLength);
                         parser_pos += xmlLength - 1;
+                        xmlStr = xmlStr.replace(acorn.lineBreak, '\n');
                         return [xmlStr, "TK_STRING"];
                     }
                 } else {
@@ -2169,11 +2171,14 @@ function detectXMLType(str) {
                     while (parser_pos < input_length &&
                             (esc || (input.charAt(parser_pos) !== sep &&
                             (sep === '`' || !acorn.newline.test(input.charAt(parser_pos)))))) {
-                        resulting_string += input.charAt(parser_pos);
                         // Handle \r\n linebreaks after escapes or in template strings
-                        if (input.charAt(parser_pos) === '\r' && input.charAt(parser_pos + 1) === '\n') {
-                            parser_pos += 1;
+                        if ((esc || sep === '`') && acorn.newline.test(input.charAt(parser_pos))) {
+                            if (input.charAt(parser_pos) === '\r' && input.charAt(parser_pos + 1) === '\n') {
+                                parser_pos += 1;
+                            }
                             resulting_string += '\n';
+                        } else {
+                            resulting_string += input.charAt(parser_pos);
                         }
                         if (esc) {
                             if (input.charAt(parser_pos) === 'x' || input.charAt(parser_pos) === 'u') {
@@ -2252,6 +2257,7 @@ function detectXMLType(str) {
                 if(template_match) {
                     c = template_match[0];
                     parser_pos += c.length - 1;
+                    c = c.replace(acorn.lineBreak, '\n');
                     return [c, 'TK_STRING'];
                 }
             }
@@ -2259,7 +2265,7 @@ function detectXMLType(str) {
             if (c === '<' && input.substring(parser_pos - 1, parser_pos + 3) === '<!--') {
                 parser_pos += 3;
                 c = '<!--';
-                while (input.charAt(parser_pos) !== '\n' && parser_pos < input_length) {
+                while (!acorn.newline.test(input.charAt(parser_pos)) && parser_pos < input_length) {
                     c += input.charAt(parser_pos);
                     parser_pos++;
                 }
@@ -2453,11 +2459,16 @@ function detectXMLType(str) {
 (function() {
     function css_beautify(source_text, options) {
         options = options || {};
+        source_text = source_text || '';
+        // HACK: newline parsing inconsistent. This brute force normalizes the input.
+        source_text = source_text.replace(/\r\n|[\r\u2028\u2029]/g, '\n')
+
         var indentSize = options.indent_size || 4;
         var indentCharacter = options.indent_char || ' ';
         var selectorSeparatorNewline = (options.selector_separator_newline === undefined) ? true : options.selector_separator_newline;
         var end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
         var newline_between_rules = (options.newline_between_rules === undefined) ? true : options.newline_between_rules;
+        var eol = options.eol ? options.eol : '\n';
 
         // compatibility
         if (typeof indentSize === "string") {
@@ -2468,6 +2479,9 @@ function detectXMLType(str) {
             indentCharacter = '\t';
             indentSize = 1;
         }
+
+        eol = eol.replace(/\\r/, '\r').replace(/\\n/, '\n')
+
 
         // tokenizer
         var whiteRe = /^\s+$/;
@@ -2824,7 +2838,11 @@ function detectXMLType(str) {
 
         // establish end_with_newline
         if (end_with_newline) {
-            sweetCode += "\n";
+            sweetCode += '\n';
+        }
+
+        if (eol != '\n') {
+            sweetCode = sweetCode.replace(/[\n]/g, eol);
         }
 
         return sweetCode;
@@ -2974,7 +2992,8 @@ function detectXMLType(str) {
             wrap_attributes,
             wrap_attributes_indent_size,
             end_with_newline,
-            extra_liners;
+            extra_liners,
+            eol;
 
         options = options || {};
 
@@ -3003,11 +3022,14 @@ function detectXMLType(str) {
         extra_liners = typeof options.extra_liners == "object" && options.extra_liners ?
             options.extra_liners.concat() : (typeof options.extra_liners === 'string') ?
             options.extra_liners.split(',') : 'head,body,/html'.split(',');
+        eol = options.eol ? options.eol : '\n';
 
         if(options.indent_with_tabs){
             indent_character = '\t';
             indent_size = 1;
         }
+
+        eol = eol.replace(/\\r/, '\r').replace(/\\n/, '\n')
 
         function Parser() {
 
@@ -3557,6 +3579,10 @@ function detectXMLType(str) {
             this.printer = function(js_source, indent_character, indent_size, wrap_line_length, brace_style) { //handles input/output and some other printing functions
 
                 this.input = js_source || ''; //gets the input for the Parser
+
+                // HACK: newline parsing inconsistent. This brute force normalizes the input.
+                this.input = this.input.replace(/\r\n|[\r\u2028\u2029]/g, '\n')
+
                 this.output = [];
                 this.indent_character = indent_character;
                 this.indent_string = '';
@@ -3732,8 +3758,11 @@ function detectXMLType(str) {
 
                         var indentation = multi_parser.get_full_indent(script_indent_level);
                         if (_beautifier) {
+
                             // call the Beautifier if avaliable
-                            text = _beautifier(text.replace(/^\s*/, indentation), options);
+                            var child_options = JSON.parse(JSON.stringify(options));
+                            child_options.eol = '\n';
+                            text = _beautifier(text.replace(/^\s*/, indentation), child_options);
                         } else {
                             // simply indent the string otherwise
                             var white = text.match(/^\s*/)[0];
@@ -3762,9 +3791,16 @@ function detectXMLType(str) {
             multi_parser.last_text = multi_parser.token_text;
         }
         var sweet_code = multi_parser.output.join('').replace(/[\r\n\t ]+$/, '');
+
+        // establish end_with_newline
         if (end_with_newline) {
             sweet_code += '\n';
         }
+
+        if (eol != '\n') {
+            sweet_code = sweet_code.replace(/[\n]/g, eol);
+        }
+
         return sweet_code;
     }
 
@@ -4209,6 +4245,14 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         if (expected !== input) {
             sanitytest.expect(expected, expected);
         }
+
+        // Everywhere we do newlines, they should be replaced with opts.eol
+        opts.eol = '\r\\n';
+        expected = expected.replace(/[\n]/g, '\r\n');
+        sanitytest.expect(input, expected);
+        input = input.replace(/[\n]/g, '\r\n');
+        sanitytest.expect(input, expected);
+        opts.eol = '\n';
     }
 
 
@@ -4249,13 +4293,6 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                 test_fragment(wrapped_input, wrapped_input);
             }
             opts.test_output_raw = false;
-
-            // Everywhere we do newlines, they should be replaced with opts.eol
-            opts.eol = '\r\\n';
-            wrapped_input = wrapped_input.replace(/[\n]/mg, '\r\n');
-            wrapped_expectation = wrapped_expectation.replace(/[\n]/mg, '\r\n');
-            test_fragment(wrapped_input, wrapped_expectation);
-            opts.eol = '\n';
         }
 
     }
@@ -5794,9 +5831,6 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         bt('a = //comment\n    /regex/;');
 
-        test_fragment('/*\n * X\n */');
-        test_fragment('/*\r\n * X\r\n */', '/*\n * X\n */');
-
         bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}', 'if (a) {\n    b;\n} else {\n    c;\n}');
 
         // tests for brace positioning
@@ -6425,6 +6459,14 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         if (expected !== input) {
             sanitytest.expect(expected, expected);
         }
+
+        // Everywhere we do newlines, they should be replaced with opts.eol
+        opts.eol = '\r\\n';
+        expected = expected.replace(/[\n]/g, '\r\n');
+        sanitytest.expect(input, expected);
+        input = input.replace(/[\n]/g, '\r\n');
+        sanitytest.expect(input, expected);
+        opts.eol = '\n';
     }
 
     // test css
@@ -6755,6 +6797,14 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         if (expected !== input) {
             sanitytest.expect(expected, expected);
         }
+
+        // Everywhere we do newlines, they should be replaced with opts.eol
+        opts.eol = '\r\n';
+        expected = expected.replace(/[\n]/g, '\r\n');
+        sanitytest.expect(input, expected);
+        input = input.replace(/[\n]/g, '\r\n');
+        sanitytest.expect(input, expected);
+        opts.eol = '\n';
     }
 
     // test html
@@ -6769,9 +6819,6 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         if (opts.indent_size === 4 && input) {
             wrapped_input = '<div>\n' + input.replace(/^(.+)$/mg, '    $1') + '\n    <span>inline</span>\n</div>';
             wrapped_expectation = '<div>\n' + expectation.replace(/^(.+)$/mg, '    $1') + '\n    <span>inline</span>\n</div>';
-            if (opts.end_with_newline) {
-                wrapped_expectation += '\n';
-            }
             test_fragment(wrapped_input, wrapped_expectation);
         }
     }
