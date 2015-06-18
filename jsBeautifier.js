@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-17 02:02:21 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-17 18:27:35 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -2650,6 +2650,7 @@ function detectXMLType(str) {
         /*_____________________--------------------_____________________*/
 
         var insideRule = false;
+        var insidePropertyValue = false;
         var enteringConditionalGroup = false;
         var top_ch = '';
         var last_top_ch = '';
@@ -2735,6 +2736,7 @@ function detectXMLType(str) {
                 outdent();
                 print["}"](ch);
                 insideRule = false;
+                insidePropertyValue = false;
                 if (nestedLevel) {
                     nestedLevel--;
                 }
@@ -2747,6 +2749,7 @@ function detectXMLType(str) {
                     !(lookBack("&") || foundNestedPseudoClass())) {
                     // 'property: value' delimiter
                     // which could be in a conditional group query
+                    insidePropertyValue = true;
                     output.push(':');
                     print.singleSpace();
                 } else {
@@ -2765,6 +2768,7 @@ function detectXMLType(str) {
                 print.preserveSingleSpace();
                 output.push(eatString(ch));
             } else if (ch === ';') {
+                insidePropertyValue = false;
                 output.push(ch);
                 print.newLine();
             } else if (ch === '(') { // may be a url
@@ -2790,7 +2794,7 @@ function detectXMLType(str) {
             } else if (ch === ',') {
                 output.push(ch);
                 eatWhitespace();
-                if (!insideRule && selectorSeparatorNewline && parenLevel < 1) {
+                if (selectorSeparatorNewline && !insidePropertyValue && parenLevel < 1) {
                     print.newLine();
                 } else {
                     print.singleSpace();
@@ -6472,6 +6476,42 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         //
         t('#cboxOverlay {\n\tbackground: url(images/overlay.png) repeat 0 0;\n\topacity: 0.9;\n\tfilter: alpha(opacity = 90);\n}', '#cboxOverlay {\n\tbackground: url(images/overlay.png) repeat 0 0;\n\topacity: 0.9;\n\tfilter: alpha(opacity=90);\n}');
 
+        // Selector Separator - (separator = " ", separator1 = " ")
+        opts.selector_separator_newline = false;
+        opts.selector_separator = " ";
+        t('#bla, #foo{color:green}', '#bla, #foo {\n\tcolor: green\n}');
+        t('@media print {.tab{}}', '@media print {\n\t.tab {}\n}');
+        t('@media print {.tab,.bat{}}', '@media print {\n\t.tab, .bat {}\n}');
+        t('#bla, #foo{color:black}', '#bla, #foo {\n\tcolor: black\n}');
+        t('a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}', 'a:first-child, a:first-child {\n\tcolor: red;\n\tdiv:first-child, div:hover {\n\t\tcolor: black;\n\t}\n}');
+
+        // Selector Separator - (separator = " ", separator1 = " ")
+        opts.selector_separator_newline = false;
+        opts.selector_separator = "  ";
+        t('#bla, #foo{color:green}', '#bla, #foo {\n\tcolor: green\n}');
+        t('@media print {.tab{}}', '@media print {\n\t.tab {}\n}');
+        t('@media print {.tab,.bat{}}', '@media print {\n\t.tab, .bat {}\n}');
+        t('#bla, #foo{color:black}', '#bla, #foo {\n\tcolor: black\n}');
+        t('a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}', 'a:first-child, a:first-child {\n\tcolor: red;\n\tdiv:first-child, div:hover {\n\t\tcolor: black;\n\t}\n}');
+
+        // Selector Separator - (separator = "\n", separator1 = "\n\t")
+        opts.selector_separator_newline = true;
+        opts.selector_separator = " ";
+        t('#bla, #foo{color:green}', '#bla,\n#foo {\n\tcolor: green\n}');
+        t('@media print {.tab{}}', '@media print {\n\t.tab {}\n}');
+        t('@media print {.tab,.bat{}}', '@media print {\n\t.tab,\n\t.bat {}\n}');
+        t('#bla, #foo{color:black}', '#bla,\n#foo {\n\tcolor: black\n}');
+        t('a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}', 'a:first-child,\na:first-child {\n\tcolor: red;\n\tdiv:first-child,\n\tdiv:hover {\n\t\tcolor: black;\n\t}\n}');
+
+        // Selector Separator - (separator = "\n", separator1 = "\n\t")
+        opts.selector_separator_newline = true;
+        opts.selector_separator = "  ";
+        t('#bla, #foo{color:green}', '#bla,\n#foo {\n\tcolor: green\n}');
+        t('@media print {.tab{}}', '@media print {\n\t.tab {}\n}');
+        t('@media print {.tab,.bat{}}', '@media print {\n\t.tab,\n\t.bat {}\n}');
+        t('#bla, #foo{color:black}', '#bla,\n#foo {\n\tcolor: black\n}');
+        t('a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}', 'a:first-child,\na:first-child {\n\tcolor: red;\n\tdiv:first-child,\n\tdiv:hover {\n\t\tcolor: black;\n\t}\n}');
+
         // Newline Between Rules - (separator = "\n")
         opts.newline_between_rules = true;
         t('.div {}\n.span {}', '.div {}\n\n.span {}');
@@ -6630,9 +6670,6 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t("a:first-child{color:red;div:first-child{color:black;}}",
             "a:first-child {\n\tcolor: red;\n\tdiv:first-child {\n\t\tcolor: black;\n\t}\n}");
 
-        t("a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}",
-            "a:first-child,\na:first-child {\n\tcolor: red;\n\tdiv:first-child, div:hover {\n\t\tcolor: black;\n\t}\n}");
-
         // handle SASS/LESS parent reference
         t("div{&:first-letter {text-transform: uppercase;}}",
             "div {\n\t&:first-letter {\n\t\ttext-transform: uppercase;\n\t}\n}");
@@ -6654,11 +6691,6 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         opts.indent_size = 2;
         opts.indent_char = ' ';
         opts.selector_separator_newline = false;
-
-        t("#bla, #foo{color:green}", "#bla, #foo {\n  color: green\n}");
-        t("@media print {.tab{}}", "@media print {\n  .tab {}\n}");
-        t("@media print {.tab,.bat{}}", "@media print {\n  .tab, .bat {}\n}");
-        t("#bla, #foo{color:black}", "#bla, #foo {\n  color: black\n}");
 
         // pseudo-classes and pseudo-elements
         t("#foo:hover {\n  background-image: url(foo@2x.png)\n}");
