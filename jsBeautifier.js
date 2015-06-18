@@ -3760,7 +3760,7 @@ function detectXMLType(str) {
                         if (_beautifier) {
 
                             // call the Beautifier if avaliable
-                            var child_options = JSON.parse(JSON.stringify(options));
+                            var child_options = {}; for(var p in options) child_options[p] = options[p];
                             child_options.eol = '\n';
                             text = _beautifier(text.replace(/^\s*/, indentation), child_options);
                         } else {
@@ -7777,6 +7777,10 @@ function convertSource(file, text) {
 			.replace(
 				"Array.isArray(options.extra_liners)",
 				'typeof options.extra_liners == "object" && options.extra_liners'
+			)
+			.replace(
+				"var child_options = JSON.parse(JSON.stringify(options));",
+				"var child_options = {}; for(var p in options) child_options[p] = options[p];"
 			);
 	}
 	else if(file == "js/lib/beautify-css.js") {
