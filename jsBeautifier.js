@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-18 21:03:46 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-19 18:38:50 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -3019,7 +3019,7 @@ function detectXMLType(str) {
         wrap_attributes = (options.wrap_attributes === undefined) ? 'auto' : options.wrap_attributes;
         wrap_attributes_indent_size = (options.wrap_attributes_indent_size === undefined) ? indent_size : parseInt(options.wrap_attributes_indent_size, 10) || indent_size;
         end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
-        extra_liners = typeof options.extra_liners == "object" && options.extra_liners ?
+        extra_liners = (typeof options.extra_liners == 'object') && options.extra_liners ?
             options.extra_liners.concat() : (typeof options.extra_liners === 'string') ?
             options.extra_liners.split(',') : 'head,body,/html'.split(',');
         eol = options.eol ? options.eol : '\n';
@@ -3760,8 +3760,11 @@ function detectXMLType(str) {
                         if (_beautifier) {
 
                             // call the Beautifier if avaliable
-                            var child_options = {}; for(var p in options) child_options[p] = options[p];
-                            child_options.eol = '\n';
+                            var Child_options = function() {
+                                this.eol = '\n';
+                            };
+                            Child_options.prototype = options;
+                            var child_options = new Child_options();
                             text = _beautifier(text.replace(/^\s*/, indentation), child_options);
                         } else {
                             // simply indent the string otherwise
