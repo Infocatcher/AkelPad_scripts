@@ -6,7 +6,7 @@
 // Version: 0.2.7 - 2015-01-10
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-19 18:38:50 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-19 22:28:13 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -7756,43 +7756,7 @@ function convertSource(file, text) {
 	text = text
 		.replace(/\r\n?|\n\r?/g, "\r\n")
 		.replace(/[ \t]+([\n\r]|$)/g, "$1");
-	if(file == "js/lib/beautify.js") {
-		text = text
-			.replace(".substr(-esc2)", ".slice(-esc2)")
-			.replace("token_text[token_text.length - 1]", "token_text.charAt(token_text.length - 1)")
-			.replace("&& flags.whitespace_before.length", "&& flags.whitespace_before && flags.whitespace_before.length");
-	}
-	else if(file == "js/lib/beautify-html.js") {
-		text = text
-			.replace(/tag_complete\[(\d+)\]/g, "tag_complete.charAt($1)")
-			.replace(
-				"comment[comment.length - 1] === delimiter[delimiter.length - 1]",
-				"comment.charAt(comment.length - 1) === delimiter.charAt(delimiter.length - 1)"
-			)
-			.replace(
-				"content.length && content[content.length - 2]",
-				"content.length && content.charAt(content.length - 2)"
-			)
-			.replace(
-				"text.length > 1 && text[text.length - 1]",
-				"text.length > 1 && text.charAt(text.length - 1)"
-			)
-			.replace(
-				"Array.isArray(options.extra_liners)",
-				'typeof options.extra_liners == "object" && options.extra_liners'
-			)
-			.replace(
-				"var child_options = JSON.parse(JSON.stringify(options));",
-				"var child_options = {}; for(var p in options) child_options[p] = options[p];"
-			);
-	}
-	else if(file == "js/lib/beautify-css.js") {
-		text = text.replace(
-			/variableOrRule\[variableOrRule\.length - ?1\]/,
-			"variableOrRule.charAt(variableOrRule.length - 1)"
-		);
-	}
-	else if(file == "js/test/sanitytest.js") {
+	if(file == "js/test/sanitytest.js") {
 		text = text
 			.replace(
 				"results = 'All ' + n_succeeded + ' tests passed.';",
@@ -7811,9 +7775,6 @@ function convertSource(file, text) {
 				/\sresults \+= n_failed \+ [^\r\n]+\r\n\s*\}\r\n/,
 				"$&        tl.restore();\r\n"
 			);
-	}
-	else if(file == "js/test/beautify-css-tests.js") {
-		text = text.replace(/(newline_between_rules: true),(\s*\})/, "$1$2"); // Remove trailing comma
 	}
 	return text;
 }
