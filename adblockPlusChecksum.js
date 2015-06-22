@@ -48,10 +48,9 @@ function _localize(s) {
 			ru: "Контрольная сумма уже добавлена!"
 		}
 	};
-	var lng;
+	var lng = "en";
 	switch(AkelPad.GetLangId(1 /*LANGID_PRIMARY*/)) {
-		case 0x19: lng = "ru"; break;
-		default:   lng = "en";
+		case 0x19: lng = "ru";
 	}
 	_localize = function(s) {
 		return strings[s] && strings[s][lng] || s;

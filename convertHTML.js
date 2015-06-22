@@ -43,10 +43,9 @@ function _localize(s) {
 			ru: "Нечего перекодировать!"
 		}
 	};
-	var lng;
-	switch(AkelPad.SystemFunction().Call("kernel32::GetUserDefaultLangID") & 0x3ff /*PRIMARYLANGID*/) {
-		case 0x19: lng = "ru"; break;
-		default:   lng = "en";
+	var lng = "en";
+	switch(AkelPad.GetLangId(1 /*LANGID_PRIMARY*/)) {
+		case 0x19: lng = "ru";
 	}
 	_localize = function(s) {
 		return strings[s] && strings[s][lng] || s;
