@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-19 22:28:13 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-25 19:47:43 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -1507,7 +1507,10 @@ function detectXMLType(str) {
             if (output.raw) {
                 output.add_raw_token(current_token)
                 if (current_token.directives && current_token.directives['preserve'] === 'end') {
-                    output.raw = false;
+                    // If we're testing the raw output behavior, do not allow a directive to turn it off.
+                    if (!opt.test_output_raw) {
+                        output.raw = false;
+                    }
                 }
                 return;
             }
@@ -1855,7 +1858,8 @@ function detectXMLType(str) {
         // comment ends just before nearest linefeed or end of file
         var comment_pattern = /([^\n\r\u2028\u2029]*)/g;
 
-        var directives_pattern = /\/\*\sbeautify\s(\w+[:]\w+)+\s\*\//g;
+        var directives_block_pattern = /\/\* beautify( \w+[:]\w+)+ \*\//g;
+        var directive_pattern = / (\w+)[:](\w+)/g;
         var directives_end_ignore_pattern = /([\s\S]*?)((?:\/\*\sbeautify\signore:end\s\*\/)|$)/g;
 
         var template_pattern = /((<\?php|<\?=)[\s\S]*?\?>)|(<%[\s\S]*?%>)/g
@@ -1914,13 +1918,19 @@ function detectXMLType(str) {
         }
 
         function get_directives (text) {
-            var directives = null;
-            var directives_match = directives_pattern.exec(text);
-            if (directives_match) {
-                directives = {};
-                var directive = directives_match[1].split(':');
-                directives[directive[0]] = directive[1];
+            if (!text.match(directives_block_pattern)) {
+                return null;
             }
+
+            var directives = {};
+            directive_pattern.lastIndex = 0;
+            var directive_match = directive_pattern.exec(text);
+
+            while (directive_match) {
+                directives[directive_match[1]] = directive_match[2];
+                directive_match = directive_pattern.exec(text);
+            }
+
             return directives;
         }
 
@@ -4888,6 +4898,55 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    ten   : 10\n' +
             '/* beautify preserve:end */\n' +
             '};');
+
+        // one space before and after required, only single spaces inside.
+        bt(
+            'var a = {\n' +
+            '/*  beautify preserve:start  */\n' +
+            '    one   :  1,\n' +
+            '    two   :  2,\n' +
+            '    three :  3,\n' +
+            '    ten   : 10\n' +
+            '};',
+            'var a = {\n' +
+            '    /*  beautify preserve:start  */\n' +
+            '    one: 1,\n' +
+            '    two: 2,\n' +
+            '    three: 3,\n' +
+            '    ten: 10\n' +
+            '};');
+        bt(
+            'var a = {\n' +
+            '/*beautify preserve:start*/\n' +
+            '    one   :  1,\n' +
+            '    two   :  2,\n' +
+            '    three :  3,\n' +
+            '    ten   : 10\n' +
+            '};',
+            'var a = {\n' +
+            '    /*beautify preserve:start*/\n' +
+            '    one: 1,\n' +
+            '    two: 2,\n' +
+            '    three: 3,\n' +
+            '    ten: 10\n' +
+            '};');
+        bt(
+            'var a = {\n' +
+            '/*beautify  preserve:start*/\n' +
+            '    one   :  1,\n' +
+            '    two   :  2,\n' +
+            '    three :  3,\n' +
+            '    ten   : 10\n' +
+            '};',
+            'var a = {\n' +
+            '    /*beautify  preserve:start*/\n' +
+            '    one: 1,\n' +
+            '    two: 2,\n' +
+            '    three: 3,\n' +
+            '    ten: 10\n' +
+            '};');
+
+        // Directive: ignore
         bt('/* beautify ignore:start */\n/* beautify ignore:end */');
         bt('/* beautify ignore:start */\n   var a,,,{ 1;\n/* beautify ignore:end */');
         bt('var a = 1;\n/* beautify ignore:start */\n   var a = 1;\n/* beautify ignore:end */');
@@ -4903,7 +4962,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    /* beautify ignore:start */\n' +
             '    one   :  1\n' +
             '    two   :  2,\n' +
-            '    three : {\n' +
+            '    three :  {\n' +
             '    ten   : 10\n' +
             '    /* beautify ignore:end */\n' +
             '};');
@@ -4912,7 +4971,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '/* beautify ignore:start */\n' +
             '    one   :  1\n' +
             '    two   :  2,\n' +
-            '    three : {\n' +
+            '    three :  {\n' +
             '    ten   : 10\n' +
             '/* beautify ignore:end */\n' +
             '};',
@@ -4920,9 +4979,132 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    /* beautify ignore:start */\n' +
             '    one   :  1\n' +
             '    two   :  2,\n' +
-            '    three : {\n' +
+            '    three :  {\n' +
             '    ten   : 10\n' +
             '/* beautify ignore:end */\n' +
+            '};');
+
+        // Directives - multiple and interacting
+        bt(
+            'var a = {\n' +
+            '/* beautify preserve:start */\n' +
+            '/* beautify preserve:start */\n' +
+            '    one   :  1,\n' +
+            '  /* beautify preserve:end */\n' +
+            '    two   :  2,\n' +
+            '    three :  3,\n' +
+            '/* beautify preserve:start */\n' +
+            '    ten   : 10\n' +
+            '/* beautify preserve:end */\n' +
+            '};',
+            'var a = {\n' +
+            '    /* beautify preserve:start */\n' +
+            '/* beautify preserve:start */\n' +
+            '    one   :  1,\n' +
+            '  /* beautify preserve:end */\n' +
+            '    two: 2,\n' +
+            '    three: 3,\n' +
+            '    /* beautify preserve:start */\n' +
+            '    ten   : 10\n' +
+            '/* beautify preserve:end */\n' +
+            '};');
+        bt(
+            'var a = {\n' +
+            '/* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            ' /* beautify ignore:end */\n' +
+            '    two   :  2,\n' +
+            '/* beautify ignore:start */\n' +
+            '    three :  {\n' +
+            '    ten   : 10\n' +
+            '/* beautify ignore:end */\n' +
+            '};',
+            'var a = {\n' +
+            '    /* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            ' /* beautify ignore:end */\n' +
+            '    two: 2,\n' +
+            '    /* beautify ignore:start */\n' +
+            '    three :  {\n' +
+            '    ten   : 10\n' +
+            '/* beautify ignore:end */\n' +
+            '};');
+
+        // Starts can occur together, ignore:end must occur alone.
+        bt(
+            'var a = {\n' +
+            '/* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            '    NOTE: ignore end block does not support starting other directives\n' +
+            '    This does not match the ending the ignore...\n' +
+            ' /* beautify ignore:end preserve:start */\n' +
+            '    two   :  2,\n' +
+            '/* beautify ignore:start */\n' +
+            '    three :  {\n' +
+            '    ten   : 10\n' +
+            '    ==The next comment ends the starting ignore==\n' +
+            '/* beautify ignore:end */\n' +
+            '};',
+            'var a = {\n' +
+            '    /* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            '    NOTE: ignore end block does not support starting other directives\n' +
+            '    This does not match the ending the ignore...\n' +
+            ' /* beautify ignore:end preserve:start */\n' +
+            '    two   :  2,\n' +
+            '/* beautify ignore:start */\n' +
+            '    three :  {\n' +
+            '    ten   : 10\n' +
+            '    ==The next comment ends the starting ignore==\n' +
+            '/* beautify ignore:end */\n' +
+            '};');
+        bt(
+            'var a = {\n' +
+            '/* beautify ignore:start preserve:start */\n' +
+            '    one   :  {\n' +
+            ' /* beautify ignore:end */\n' +
+            '    two   :  2,\n' +
+            '  /* beautify ignore:start */\n' +
+            '    three :  {\n' +
+            '/* beautify ignore:end */\n' +
+            '    ten   : 10\n' +
+            '   // This is all preserved\n' +
+            '};',
+            'var a = {\n' +
+            '    /* beautify ignore:start preserve:start */\n' +
+            '    one   :  {\n' +
+            ' /* beautify ignore:end */\n' +
+            '    two   :  2,\n' +
+            '  /* beautify ignore:start */\n' +
+            '    three :  {\n' +
+            '/* beautify ignore:end */\n' +
+            '    ten   : 10\n' +
+            '   // This is all preserved\n' +
+            '};');
+        bt(
+            'var a = {\n' +
+            '/* beautify ignore:start preserve:start */\n' +
+            '    one   :  {\n' +
+            ' /* beautify ignore:end */\n' +
+            '    two   :  2,\n' +
+            '  /* beautify ignore:start */\n' +
+            '    three :  {\n' +
+            '/* beautify ignore:end */\n' +
+            '    ten   : 10,\n' +
+            '/* beautify preserve:end */\n' +
+            '     eleven: 11\n' +
+            '};',
+            'var a = {\n' +
+            '    /* beautify ignore:start preserve:start */\n' +
+            '    one   :  {\n' +
+            ' /* beautify ignore:end */\n' +
+            '    two   :  2,\n' +
+            '  /* beautify ignore:start */\n' +
+            '    three :  {\n' +
+            '/* beautify ignore:end */\n' +
+            '    ten   : 10,\n' +
+            '/* beautify preserve:end */\n' +
+            '    eleven: 11\n' +
             '};');
 
 
