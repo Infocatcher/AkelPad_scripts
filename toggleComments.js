@@ -30,6 +30,7 @@
 //   -checkSyntax=0                     - don't check any syntax constructions, fast, but may works incorrect
 //               =1                     - check simple syntax constructions
 //               =2                     - (default) check complex syntax constructions (only in *.js for now), may be very slow
+//   -defaultExt="c"                    - default extension in case of detection failure (will be asked, if not specified)
 //   -saveLastExt=0                     - don't save last used extension
 //               =1                     - save only typed (default)
 //               =2                     - always save
@@ -266,6 +267,7 @@ var blockCommentsEntireLines    = getArg("blockCommentsEntireLines", 1);
 var searchRegions               = getArg("searchRegions", true);
 var preserveSelection           = getArg("preserveSelection", true);
 var checkSyntax                 = getArg("checkSyntax", 2);
+var defaultExt                  = getArg("defaultExt", "");
 var saveLastExt                 = getArg("saveLastExt", 1);
 
 // Support for old arguments
@@ -1193,6 +1195,8 @@ function getCurrentExt() {
 		if(coderExt)
 			ext = coderExt;
 	}
+	if(!ext && defaultExt && commentsSets[defaultExt])
+		ext = defaultExt;
 	var read, write;
 	if(saveLastExt && (read = oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/))) {
 		var extCacheId = "processId:" + oSys.Call("kernel32::GetCurrentProcessId")
