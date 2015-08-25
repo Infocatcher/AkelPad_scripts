@@ -57,6 +57,10 @@
 // based on code from http://www.farfarfar.com/scripts/encrypt/
 //   Test, проверка <=> VGVzdCwg0L/RgNC+0LLQtdGA0LrQsA== (used UTF-8 code page)
 
+// Quoted-printable encode/decode
+// -type="QuotedPrintable"
+//   [=3D] <=> [=]
+
 // Convert charset
 // -type="Charset"
 //   Encode: WideCharToMultiByte() http://msdn.microsoft.com/en-us/library/dd374130(v=vs.85).aspx
@@ -70,7 +74,8 @@
 //   -mode=1                                 - encode
 //   -mode=2                                 - decode
 //   -type="RegExp"                          - type of converter ("HTML", "Escapes", "RegExp", "String",
-//                                             "URI", "URIComponent", "Unescape", "Base64", "Charset", "Recode")
+//                                             "URI", "URIComponent", "Unescape", "Base64", "QuotedPrintable"
+//                                             "Charset", "Recode")
 //   -action=1                               - sum of flags: 1 - insert, 2 - copy, 4 - show
 //   -dialog=false                           - don't show dialog
 //   -onlySelected=true                      - use only selected text
@@ -1113,6 +1118,24 @@ function decodeBase64(str) {
 	return base64.decode(str);
 }
 
+function encodeQuotedPrintable(str) {
+	//~ todo: another charset
+	return str.replace(
+		/=|[^!-~\s]/g,
+		function(s) {
+			var code = s.charCodeAt(0);
+			var hex = code.toString(16).toUpperCase();
+			return "=" + "00".substr(hex.length) + hex;
+		}
+	);
+}
+function decodeQuotedPrintable(str) {
+	//~ todo: another charset
+	return str.replace(/=([\dA-F]{2})/g, function(s, code) {
+		return String.fromCharCode("0x" + code);
+	});
+}
+
 var convertersNoGUI = {
 	charset: true,
 	recode: true
@@ -1174,6 +1197,13 @@ var converters = {
 		speed: [156.56, 138.30],
 		encode: encodeBase64,
 		decode: decodeBase64
+	},
+	quotedprintable: {
+		prettyName: "Quoted-Printable",
+		firstAction: "decode",
+		speed: [10e3, 10e3], //~ todo: use real values
+		encode: encodeQuotedPrintable,
+		decode: decodeQuotedPrintable
 	},
 	charset: {
 		prettyName: "Charset",
