@@ -1131,9 +1131,11 @@ function encodeQuotedPrintable(str) {
 }
 function decodeQuotedPrintable(str) {
 	//~ todo: another charset
-	return str.replace(/=([\dA-F]{2})/g, function(s, code) {
-		return String.fromCharCode("0x" + code);
-	});
+	return str
+		.replace(/=(\r\n?|\n\r?)/g, "")
+		.replace(/=([\dA-F]{2})/g, function(s, code) {
+			return String.fromCharCode("0x" + code);
+		});
 }
 
 var convertersNoGUI = {
