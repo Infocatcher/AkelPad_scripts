@@ -928,7 +928,7 @@ function decodeURICustom(str, cp) {
 	var ret = str.replace(
 		/%([0-9a-f]{2})/ig,
 		function(s, hex) {
-			return convertToUnicode(String.fromCharCode(parseInt(hex, 16)), cp);
+			return convertToUnicode(String.fromCharCode("0x" + hex), cp);
 		}
 	);
 	return ret.indexOf("%") == -1 ? ret : str;
