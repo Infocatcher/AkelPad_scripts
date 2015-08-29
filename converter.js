@@ -1132,6 +1132,7 @@ function encodeQuotedPrintable(str) {
 function decodeQuotedPrintable(str) {
 	//~ todo: another charset
 	return str
+		.replace(/[ \t]+$/mg, "")
 		.replace(/=(\r\n?|\n\r?)/g, "")
 		.replace(/=([\da-fA-F]{2})/g, function(s, code) {
 			return String.fromCharCode("0x" + code);
