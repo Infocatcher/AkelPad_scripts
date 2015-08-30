@@ -111,6 +111,8 @@
 // Arguments for recode converter:
 //   -codePageFrom=20866                     - code page: -1 - current
 //   -codePageTo=1251                        - code page: -1 - current
+// Arguments for quoted-printable converter:
+//   -codePageQP=1251                        - code page: -1 - current
 
 // Usage:
 //   Call("Scripts::Main", 1, "converter.js")
@@ -304,6 +306,7 @@ var toBase64              = getArgOrPref("toBase64",  prefs && prefs.DWORD, fals
 var codePage              = getArg("codePage", CP_CURRENT);
 var codePageFrom          = getArg("codePageFrom", CP_CURRENT);
 var codePageTo            = getArg("codePageTo", CP_CURRENT);
+var codePageQP            = getArg("codePageQP", CP_CURRENT);
 
 var entitiesBlackList = null;
 if(ignoreEntities) {
@@ -1118,8 +1121,8 @@ function decodeBase64(str) {
 	return base64.decode(str);
 }
 
-function encodeQuotedPrintable(str) {
-	str = convertFromUnicode(str, codePage);
+function encodeQuotedPrintable(str, cp) {
+	str = convertFromUnicode(str, cp || codePageQP);
 	return str.replace(
 		/=|[^!-~\s]/g,
 		function(s) {
@@ -1129,7 +1132,7 @@ function encodeQuotedPrintable(str) {
 		}
 	);
 }
-function decodeQuotedPrintable(str) {
+function decodeQuotedPrintable(str, cp) {
 	if(!isQuotedPrintable(str))
 		return str;
 	str = str
@@ -1138,7 +1141,7 @@ function decodeQuotedPrintable(str) {
 		.replace(/=([\da-fA-F]{2})/g, function(s, code) {
 			return String.fromCharCode("0x" + code);
 		});
-	return convertToUnicode(str, codePage);
+	return convertToUnicode(str, cp || codePageQP);
 }
 function isQuotedPrintable(str) {
 	return /=([\da-fA-F]{2}|[ \t]*(\r\n?|\n\r?))/.test(str);
