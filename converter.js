@@ -1119,7 +1119,7 @@ function decodeBase64(str) {
 }
 
 function encodeQuotedPrintable(str) {
-	//~ todo: another charset
+	str = convertFromUnicode(str, codePage);
 	return str.replace(
 		/=|[^!-~\s]/g,
 		function(s) {
@@ -1130,13 +1130,13 @@ function encodeQuotedPrintable(str) {
 	);
 }
 function decodeQuotedPrintable(str) {
-	//~ todo: another charset
-	return str
+	str = str
 		.replace(/[ \t]+$/mg, "")
 		.replace(/=(\r\n?|\n\r?)/g, "")
 		.replace(/=([\da-fA-F]{2})/g, function(s, code) {
 			return String.fromCharCode("0x" + code);
 		});
+	return convertToUnicode(str, codePage);
 }
 
 var convertersNoGUI = {
