@@ -1122,6 +1122,7 @@ function decodeBase64(str) {
 }
 
 function encodeQuotedPrintable(str, cp) {
+	//~ todo: limit lines to 76 characters
 	str = convertFromUnicode(str, cp || codePageQP);
 	return str.replace(
 		/=|[^!-~\s]/g,
