@@ -1130,6 +1130,8 @@ function encodeQuotedPrintable(str) {
 	);
 }
 function decodeQuotedPrintable(str) {
+	if(!isQuotedPrintable(str))
+		return str;
 	str = str
 		.replace(/[ \t]+$/mg, "")
 		.replace(/=(\r\n?|\n\r?)/g, "")
@@ -1137,6 +1139,9 @@ function decodeQuotedPrintable(str) {
 			return String.fromCharCode("0x" + code);
 		});
 	return convertToUnicode(str, codePage);
+}
+function isQuotedPrintable(str) {
+	return /=([\da-fA-F]{2}|[ \t]*(\r\n?|\n\r?))/.test(str);
 }
 
 var convertersNoGUI = {
