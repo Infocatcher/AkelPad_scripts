@@ -639,7 +639,7 @@ function encodeEntities(str, entities) {
 			continue;
 		var chr = entities[entity];
 		var hex = chr.charCodeAt(0).toString(16);
-		hex = "\\u" + "0000".substr(hex.length) + hex;
+		hex = "\\u" + ("000" + hex).slice(-4);
 		str = str.replace(new RegExp(hex, "g"), "&" + entity + ";");
 	}
 	return str;
@@ -698,7 +698,7 @@ function encodeEscapes(str) {
 		/[^!-~ \t\n\r]/ig,
 		function(s) {
 			var hex = s.charCodeAt(0).toString(16);
-			return "\\u" + "0000".substr(hex.length) + hex;
+			return "\\u" + ("000" + hex).slice(-4);
 		}
 	);
 }
@@ -898,7 +898,7 @@ function encodeURIWrapper(str, encodeURIFunc, pattern) {
 			var hex = enc.charCodeAt(0).toString(16).toUpperCase();
 			if(hex.length > 2)
 				return chr;
-			return "%" + "00".substr(hex.length) + hex;
+			return "%" + ("0" + hex).slice(-2);
 		}
 	);
 }
@@ -1129,7 +1129,7 @@ function encodeQuotedPrintable(str, cp) {
 		function(s) {
 			var code = s.charCodeAt(0);
 			var hex = code.toString(16).toUpperCase();
-			return "=" + "00".substr(hex.length) + hex;
+			return "=" + ("0" + hex).slice(-2);
 		}
 	);
 }
