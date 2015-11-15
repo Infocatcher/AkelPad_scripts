@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-06-30 18:30:06 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-11-12 22:02:24 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -439,9 +439,13 @@ function detectXMLType(str) {
       // Test whether a given character code starts an identifier.
 
       var isIdentifierStart = exports.isIdentifierStart = function(code) {
-        if (code < 65) return code === 36;
+        // permit $ (36) and @ (64). @ is used in ES7 decorators.
+        if (code < 65) return code === 36 || code === 64;
+        // 65 through 91 are uppercase letters.
         if (code < 91) return true;
+        // permit _ (95).
         if (code < 97) return code === 95;
+        // 97 through 123 are lowercase letters.
         if (code < 123)return true;
         return code >= 0xaa && nonASCIIidentifierStart.test(String.fromCharCode(code));
       };
@@ -1843,6 +1847,7 @@ function detectXMLType(str) {
 
         var whitespace = "\n\r\t ".split('');
         var digit = /[0-9]/;
+        var digit_oct = /[01234567]/;
         var digit_hex = /[0123456789abcdefABCDEF]/;
 
         var punct = ('+ - * / % & ++ -- = += -= *= /= %= == === != !== > < >= <= >> << >>> >>>= >>= <<= && &= | || ! ~ , : ? ^ ^= |= :: =>').split(' ');
@@ -1983,17 +1988,17 @@ function detectXMLType(str) {
                 var allow_e = true;
                 var local_digit = digit;
 
-                if (c === '0' && parser_pos < input_length && /[Xx]/.test(input.charAt(parser_pos))) {
-                    // switch to hex number, no decimal or e, just hex digits
+                if (c === '0' && parser_pos < input_length && /[Xxo]/.test(input.charAt(parser_pos))) {
+                    // switch to hex/oct number, no decimal or e, just hex/oct digits
                     allow_decimal = false;
                     allow_e = false;
                     c += input.charAt(parser_pos);
                     parser_pos += 1;
-                    local_digit = digit_hex
+                    local_digit = /[o]/.test(input.charAt(parser_pos)) ? digit_oct : digit_hex;
                 } else {
                     // we know this first loop will run.  It keeps the logic simpler.
                     c = '';
-                    parser_pos -= 1
+                    parser_pos -= 1;
                 }
 
                 // Add the digits
@@ -3070,7 +3075,7 @@ function detectXMLType(str) {
 
             // Return true if the given text is composed entirely of whitespace.
             this.is_whitespace = function(text) {
-                for (var n = 0; n < text.length; text++) {
+                for (var n = 0; n < text.length; n++) {
                     if (!this.Utils.in_array(text.charAt(n), this.Utils.whitespace)) {
                         return false;
                     }
@@ -3423,7 +3428,7 @@ function detectXMLType(str) {
                     matched = false;
 
                 this.pos = start_pos;
-                input_char = this.input.charAt(this.pos);
+                var input_char = this.input.charAt(this.pos);
                 this.pos++;
 
                 while (this.pos <= this.input.length) {
@@ -3730,6 +3735,21 @@ function detectXMLType(str) {
                     multi_parser.current_mode = 'CONTENT';
                     break;
                 case 'TK_TAG_HANDLEBARS_ELSE':
+                    // Don't add a newline if opening {{#if}} tag is on the current line
+                    var foundIfOnCurrentLine = false;
+                    for (var lastCheckedOutput=multi_parser.output.length-1; lastCheckedOutput>=0; lastCheckedOutput--) {
+		        if (multi_parser.output[lastCheckedOutput] === '\n') {
+		            break;
+                        } else {
+                            if (multi_parser.output[lastCheckedOutput].match(/{{#if/)) {
+                                foundIfOnCurrentLine = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!foundIfOnCurrentLine) {
+                        multi_parser.print_newline(false, multi_parser.output);
+                    }
                     multi_parser.print_token(multi_parser.token_text);
                     if (multi_parser.indent_content) {
                         multi_parser.indent();
@@ -4479,6 +4499,16 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var ' + unicode_char(228) + 'x = {\n' +
             '    ' + unicode_char(228) + 'rgerlich: true\n' +
             '};');
+
+
+
+        // ES7 Decorators
+        bt('@foo');
+        bt('@foo(bar)');
+        bt(
+            '@foo(function(k, v) {\n' +
+            '    implementation();\n' +
+            '})');
 
 
         // End With Newline - (eof = "\n")
@@ -5521,6 +5551,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a<=.5', 'a <= .5');
         bt('a = 0xff;');
         bt('a=0xff+4', 'a = 0xff + 4');
+        bt('a = 0o77;');
+        bt('a=0o77+4', 'a = 0o77 + 4');
         bt('a = [1, 2, 3, 4]');
         bt('F*(g/=f)*g+b', 'F * (g /= f) * g + b');
         bt('a.b({c:d})', 'a.b({\n    c: d\n})');
@@ -7323,6 +7355,15 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div class="{{#if thingIs \'value\'}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}"></div>');
         test_fragment('<div class=\'{{#if thingIs "value"}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}\'></div>');
         test_fragment('<div class=\'{{#if thingIs \'value\'}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}\'></div>');
+
+
+
+        // Handlebars Else tag indenting
+        opts.indent_handlebars = true;
+        test_fragment(
+            '{{#if test}}<div></div>{{else}}<div></div>{{/if}}',
+            '{{#if test}}\n    <div></div>\n{{else}}\n    <div></div>\n{{/if}}');
+        test_fragment('{{#if test}}<span></span>{{else}}<span></span>{{/if}}');
 
 
 
