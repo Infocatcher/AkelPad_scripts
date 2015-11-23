@@ -997,7 +997,7 @@ function detectXMLType(str) {
             // a.b('c',
             //     () => d.e
             // )
-            if (current_token.text === '(' && ['TK_WORD', 'TK_RESERVED'].indexOf(last_type) === -1) {
+            if (current_token.text === '(' && last_type !== 'TK_WORD' && last_type !== 'TK_RESERVED') {
                 allow_wrap_or_preserved_newline();
             }
 
@@ -8044,6 +8044,13 @@ function convertSource(file, text) {
 			.replace(
 				/\sresults \+= n_failed \+ [^\r\n]+\r\n\s*\}\r\n/,
 				"$&        tl.restore();\r\n"
+			);
+	}
+	else if(file == "js/lib/beautify.js") {
+		text = text
+			.replace(
+				"['TK_WORD', 'TK_RESERVED'].indexOf(last_type) === -1",
+				"last_type !== 'TK_WORD' && last_type !== 'TK_RESERVED'"
 			);
 	}
 	return text;
