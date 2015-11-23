@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-11-12 22:02:24 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-11-19 22:46:35 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -993,6 +993,14 @@ function detectXMLType(str) {
                 }
             }
 
+            // Support preserving wrapped arrow function expressions
+            // a.b('c',
+            //     () => d.e
+            // )
+            if (current_token.text === '(' && ['TK_WORD', 'TK_RESERVED'].indexOf(last_type) === -1) {
+                allow_wrap_or_preserved_newline();
+            }
+
             set_mode(next_mode);
             print_token();
             if (opt.space_in_paren) {
@@ -1046,7 +1054,7 @@ function detectXMLType(str) {
             var next_token = get_token(1)
             var second_token = get_token(2)
             if (second_token && (
-                    (second_token.text === ':' && in_array(next_token.type, ['TK_STRING', 'TK_WORD', 'TK_RESERVED']))
+                    (in_array(second_token.text, [':', ',']) && in_array(next_token.type, ['TK_STRING', 'TK_WORD', 'TK_RESERVED']))
                     || (in_array(next_token.text, ['get', 'set']) && in_array(second_token.type, ['TK_WORD', 'TK_RESERVED']))
                 )) {
                 // We don't support TypeScript,but we didn't break it for a very long time.
@@ -1847,6 +1855,7 @@ function detectXMLType(str) {
 
         var whitespace = "\n\r\t ".split('');
         var digit = /[0-9]/;
+        var digit_bin = /[01]/;
         var digit_oct = /[01234567]/;
         var digit_hex = /[0123456789abcdefABCDEF]/;
 
@@ -1988,13 +1997,19 @@ function detectXMLType(str) {
                 var allow_e = true;
                 var local_digit = digit;
 
-                if (c === '0' && parser_pos < input_length && /[Xxo]/.test(input.charAt(parser_pos))) {
-                    // switch to hex/oct number, no decimal or e, just hex/oct digits
+                if (c === '0' && parser_pos < input_length && /[Xxob]/.test(input.charAt(parser_pos))) {
+                    // switch to hex/oct/bin number, no decimal or e, just hex/oct/bin digits
                     allow_decimal = false;
                     allow_e = false;
                     c += input.charAt(parser_pos);
                     parser_pos += 1;
-                    local_digit = /[o]/.test(input.charAt(parser_pos)) ? digit_oct : digit_hex;
+                    if ( /[b]/.test(input.charAt(parser_pos)) ) {
+                        local_digit = digit_bin;
+                    } else if ( /[o]/.test(input.charAt(parser_pos)) ) {
+                        local_digit = digit_oct;
+                    } else {
+                        local_digit = digit_hex;
+                    }
                 } else {
                     // we know this first loop will run.  It keeps the logic simpler.
                     c = '';
@@ -5509,6 +5524,38 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}\n' +
             '// Comment');
 
+        // Issue 806 - newline arrow functions
+        bt(
+            'a.b("c",\n' +
+            '    () => d.e\n' +
+            ')');
+
+        // Issue 810 - es6 object literal detection
+        bt(
+            'function badFormatting() {\n' +
+            '    return {\n' +
+            '        a,\n' +
+            '        b: c,\n' +
+            '        d: e,\n' +
+            '        f: g,\n' +
+            '        h,\n' +
+            '        i,\n' +
+            '        j: k\n' +
+            '    }\n' +
+            '}\n' +
+            '\n' +
+            'function goodFormatting() {\n' +
+            '    return {\n' +
+            '        a: b,\n' +
+            '        c,\n' +
+            '        d: e,\n' +
+            '        f: g,\n' +
+            '        h,\n' +
+            '        i,\n' +
+            '        j: k\n' +
+            '    }\n' +
+            '}');
+
 
 
         // Old tests
@@ -5553,6 +5600,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a=0xff+4', 'a = 0xff + 4');
         bt('a = 0o77;');
         bt('a=0o77+4', 'a = 0o77 + 4');
+        bt('a = 0b1010;');
+        bt('a=0b1010+4', 'a = 0b1010 + 4');
         bt('a = [1, 2, 3, 4]');
         bt('F*(g/=f)*g+b', 'F * (g /= f) * g + b');
         bt('a.b({c:d})', 'a.b({\n    c: d\n})');
