@@ -8346,14 +8346,15 @@ function selfUpdate() {
 		tl.log("Update: save");
 		// Create backup
 		var fso = new ActiveXObject("Scripting.FileSystemObject");
-		fso.CopyFile(WScript.ScriptFullName, WScript.ScriptFullName.slice(0, -3) + ts() + ".js.bak", true);
+		var scriptPath = WScript.ScriptFullName;
+		fso.CopyFile(scriptPath, scriptPath.slice(0, -3) + ts() + ".js.bak", true);
 
 		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
 		AkelPad.SetSel(0, -1);
 		AkelPad.ReplaceSel(selfCode);
 		AkelPad.Command(4184); // IDM_EDIT_NEWLINE_WIN
 		AkelPad.SetSel(0, 0);
-		AkelPad.SaveFile(AkelPad.GetEditWnd(), WScript.ScriptFullName, 65001, 1);
+		AkelPad.SaveFile(AkelPad.GetEditWnd(), scriptPath, 65001, 1);
 	}
 
 	function ts() {
