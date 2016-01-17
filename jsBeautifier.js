@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2015-12-04 02:47:30 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2016-01-16 06:07:10 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -4278,7 +4278,12 @@ if (isNode) {
 
 
 //== js/test/generated/beautify-javascript-tests.js
-/*global js_beautify: true */
+/*
+    AUTO-GENERATED. DO NOT MODIFY.
+    Script: test/generate-tests.js
+    Template: test/data/javascript/node.mustache
+    Data: test/data/javascript/tests.js
+*/
 
 function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_beautify)
 {
@@ -6859,7 +6864,12 @@ if (typeof exports !== "undefined") {
 
 
 //== js/test/generated/beautify-css-tests.js
-/*global js_beautify: true */
+/*
+    AUTO-GENERATED. DO NOT MODIFY.
+    Script: test/generate-tests.js
+    Template: test/data/css/node.mustache
+    Data: test/data/css/tests.js
+*/
 
 function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_beautify)
 {
@@ -7198,7 +7208,12 @@ if (typeof exports !== "undefined") {
 
 
 //== js/test/generated/beautify-html-tests.js
-/*global js_beautify: true */
+/*
+    AUTO-GENERATED. DO NOT MODIFY.
+    Script: test/generate-tests.js
+    Template: test/data/html/node.mustache
+    Data: test/data/html/tests.js
+*/
 
 function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_beautify)
 {
