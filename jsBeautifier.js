@@ -4277,7 +4277,7 @@ if (isNode) {
 //== js/lib/unpackers/urlencode_unpacker.js end
 
 
-//== js/test/beautify-javascript-tests.js
+//== js/test/generated/beautify-javascript-tests.js
 /*global js_beautify: true */
 
 function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_beautify)
@@ -6855,10 +6855,10 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 if (typeof exports !== "undefined") {
     exports.run_javascript_tests = run_javascript_tests;
 }
-//== js/test/beautify-javascript-tests.js end
+//== js/test/generated/beautify-javascript-tests.js end
 
 
-//== js/test/beautify-css-tests.js
+//== js/test/generated/beautify-css-tests.js
 /*global js_beautify: true */
 
 function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_beautify)
@@ -7194,10 +7194,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
 if (typeof exports !== "undefined") {
     exports.run_css_tests = run_css_tests;
 }
-//== js/test/beautify-css-tests.js end
+//== js/test/generated/beautify-css-tests.js end
 
 
-//== js/test/beautify-html-tests.js
+//== js/test/generated/beautify-html-tests.js
 /*global js_beautify: true */
 
 function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_beautify)
@@ -7971,7 +7971,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 if (typeof exports !== "undefined") {
     exports.run_html_tests = run_html_tests;
 }
-//== js/test/beautify-html-tests.js end
+//== js/test/generated/beautify-html-tests.js end
 
 
 //== js/test/sanitytest.js
@@ -8274,9 +8274,9 @@ function selfUpdate() {
 		"js/lib/unpackers/myobfuscate_unpacker.js": "",
 		"js/lib/unpackers/p_a_c_k_e_r_unpacker.js": "",
 		"js/lib/unpackers/urlencode_unpacker.js": "",
-		"js/test/beautify-javascript-tests.js": "",
-		"js/test/beautify-css-tests.js": "",
-		"js/test/beautify-html-tests.js": "",
+		"js/test/generated/beautify-javascript-tests.js": "",
+		"js/test/generated/beautify-css-tests.js": "",
+		"js/test/generated/beautify-html-tests.js": "",
 		"js/test/sanitytest.js": ""
 	};
 
