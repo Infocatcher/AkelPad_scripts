@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2016-01-16 06:07:10 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2016-01-22 19:51:06 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -434,7 +434,11 @@ function detectXMLType(str) {
       // Matches a whole line break (where CRLF is considered a single
       // line break). Used to count lines.
 
-      var lineBreak = exports.lineBreak = /\r\n|[\n\r\u2028\u2029]/g;
+      // in javascript, these two differ
+      // in python they are the same, different methods are called on them
+      var lineBreak = exports.lineBreak = /\r\n|[\n\r\u2028\u2029]/;
+      var allLineBreaks = exports.allLineBreaks = new RegExp(lineBreak.source, 'g');
+
 
       // Test whether a given character code starts an identifier.
 
@@ -580,10 +584,9 @@ function detectXMLType(str) {
             opt.brace_style = "expand";
         }
 
-
         opt.indent_size = options.indent_size ? parseInt(options.indent_size, 10) : 4;
         opt.indent_char = options.indent_char ? options.indent_char : ' ';
-        opt.eol = options.eol ? options.eol : '\n';
+        opt.eol = options.eol ? options.eol : 'auto';
         opt.preserve_newlines = (options.preserve_newlines === undefined) ? true : options.preserve_newlines;
         opt.break_chained_methods = (options.break_chained_methods === undefined) ? false : options.break_chained_methods;
         opt.max_preserve_newlines = (options.max_preserve_newlines === undefined) ? 0 : parseInt(options.max_preserve_newlines, 10);
@@ -610,6 +613,13 @@ function detectXMLType(str) {
         if(options.indent_with_tabs){
             opt.indent_char = '\t';
             opt.indent_size = 1;
+        }
+
+        if (opt.eol === 'auto') {
+            opt.eol = '\n';
+            if (js_source_text && acorn.lineBreak.test(js_source_text || '')) {
+                opt.eol = js_source_text.match(acorn.lineBreak)[0];
+            }
         }
 
         opt.eol = opt.eol.replace(/\\r/, '\r').replace(/\\n/, '\n')
@@ -717,10 +727,10 @@ function detectXMLType(str) {
 
         // we could use just string.split, but
         // IE doesn't like returning empty strings
-        function split_newlines(s) {
+        function split_linebreaks(s) {
             //return s.split(/\x0d\x0a|\x0a/);
 
-            s = s.replace(/\x0d/g, '');
+            s = s.replace(acorn.allLineBreaks, '\n');
             var out = [],
                 idx = s.indexOf("\n");
             while (idx !== -1) {
@@ -734,6 +744,7 @@ function detectXMLType(str) {
             return out;
         }
 
+        var newline_restricted_tokens = ['break','contiue','return', 'throw'];
         function allow_wrap_or_preserved_newline(force_linewrap) {
             force_linewrap = (force_linewrap === undefined) ? false : force_linewrap;
 
@@ -745,6 +756,11 @@ function detectXMLType(str) {
             if ((opt.preserve_newlines && current_token.wanted_newline) || force_linewrap) {
                 print_newline(false, true);
             } else if (opt.wrap_line_length) {
+                if (last_type === 'TK_RESERVED' && in_array(flags.last_text, newline_restricted_tokens)) {
+                    // These tokens should never have a newline inserted
+                    // between them and the following expression.
+                    return
+                }
                 var proposed_line_length = output.current_line.get_character_count() + current_token.text.length +
                     (output.space_before_token ? 1 : 0);
                 if (proposed_line_length >= opt.wrap_line_length) {
@@ -847,7 +863,7 @@ function detectXMLType(str) {
             if (
                     (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const']) && current_token.type === 'TK_WORD') ||
                     (last_type === 'TK_RESERVED' && flags.last_text === 'do') ||
-                    (last_type === 'TK_RESERVED' && flags.last_text === 'return' && !current_token.wanted_newline) ||
+                    (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['return', 'throw']) && !current_token.wanted_newline) ||
                     (last_type === 'TK_RESERVED' && flags.last_text === 'else' && !(current_token.type === 'TK_RESERVED' && current_token.text === 'if')) ||
                     (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)) ||
                     (last_type === 'TK_WORD' && flags.mode === MODE.BlockStatement
@@ -1552,7 +1568,7 @@ function detectXMLType(str) {
                 return;
             }
 
-            var lines = split_newlines(current_token.text);
+            var lines = split_linebreaks(current_token.text);
             var j; // iterator for this case
             var javadoc = false;
             var starless = false;
@@ -1866,7 +1882,7 @@ function detectXMLType(str) {
         var digit_oct = /[01234567]/;
         var digit_hex = /[0123456789abcdefABCDEF]/;
 
-        var punct = ('+ - * / % & ++ -- = += -= *= /= %= == === != !== > < >= <= >> << >>> >>>= >>= <<= && &= | || ! ~ , : ? ^ ^= |= :: =>').split(' ');
+        var punct = ('+ - * / % & ++ -- = += -= *= /= %= == === != !== > < >= <= >> << >>> >>>= >>= <<= && &= | || ! ~ , : ? ^ ^= |= :: => **').split(' ');
         // words which should always start on new line.
         this.line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function,import,export'.split(',');
         var reserved_words = this.line_starters.concat(['do', 'in', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof', 'yield', 'async', 'await']);
@@ -2111,7 +2127,7 @@ function detectXMLType(str) {
                         comment += comment_match[0];
                         parser_pos += comment_match[0].length;
                     }
-                    comment = comment.replace(acorn.lineBreak, '\n');
+                    comment = comment.replace(acorn.allLineBreaks, '\n');
                     return [comment, 'TK_BLOCK_COMMENT', directives];
                 }
                 // peek for comment // ...
@@ -2195,7 +2211,7 @@ function detectXMLType(str) {
                         var xmlLength = match ? match.index + match[0].length : xmlStr.length;
                         xmlStr = xmlStr.slice(0, xmlLength);
                         parser_pos += xmlLength - 1;
-                        xmlStr = xmlStr.replace(acorn.lineBreak, '\n');
+                        xmlStr = xmlStr.replace(acorn.allLineBreaks, '\n');
                         return [xmlStr, "TK_STRING"];
                     }
                 } else {
@@ -2293,7 +2309,7 @@ function detectXMLType(str) {
                 if(template_match) {
                     c = template_match[0];
                     parser_pos += c.length - 1;
-                    c = c.replace(acorn.lineBreak, '\n');
+                    c = c.replace(acorn.allLineBreaks, '\n');
                     return [c, 'TK_STRING'];
                 }
             }
@@ -3084,7 +3100,7 @@ function detectXMLType(str) {
 
             this.Utils = { //Uilities made available to the various functions
                 whitespace: "\n\r\t ".split(''),
-                single_token: 'br,input,link,meta,source,!doctype,basefont,base,area,hr,wbr,param,img,isindex,embed'.split(','), //all the single tags for HTML
+                single_token: 'br,input,link,meta,source,!doctype,basefont,base,area,hr,wbr,param,img,isindex,embed,?php,?xml'.split(','), //all the single tags for HTML
                 extra_liners: extra_liners, //for tags that need a line of whitespace before them
                 in_array: function(what, arr) {
                     for (var i = 0; i < arr.length; i++) {
@@ -4557,6 +4573,12 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '@foo(function(k, v) {\n' +
             '    implementation();\n' +
             '})');
+
+
+
+        // ES7 exponential
+        bt('x ** 2');
+        bt('x ** -2');
 
 
         // End With Newline - (eof = "\n")
@@ -6399,6 +6421,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
         wrap_input_1=('foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
+                      'return between_return_and_expression_should_never_wrap.but_this_can\n' +
+                      'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
                       'object_literal = {\n' +
                       '    propertx: first_token + 12345678.99999E-6,\n' +
@@ -6412,6 +6436,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         wrap_input_2=('{\n' +
                       '    foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
                       '    Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
+                      '    return between_return_and_expression_should_never_wrap.but_this_can\n' +
+                      '    throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
                       '    if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
                       '    object_literal = {\n' +
                       '        propertx: first_token + 12345678.99999E-6,\n' +
@@ -6429,6 +6455,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       /* expected */
                       'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
+                      'return between_return_and_expression_should_never_wrap.but_this_can\n' +
+                      'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
                       'object_literal = {\n' +
                       '    propertx: first_token + 12345678.99999E-6,\n' +
@@ -6444,6 +6472,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       /* expected */
                       'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
+                      'return between_return_and_expression_should_never_wrap.but_this_can\n' +
+                      'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
                       'object_literal = {\n' +
                       '    propertx: first_token + 12345678.99999E-6,\n' +
@@ -6460,6 +6490,10 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'foo.bar().baz().cucumber((fat &&\n' +
                       '    "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
+                      '    .but_this_can\n' +
+                      'return between_return_and_expression_should_never_wrap\n' +
+                      '    .but_this_can\n' +
+                      'throw between_throw_and_expression_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
                       '    inside_an_if_block) that_is_.okay();\n' +
@@ -6483,6 +6517,10 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'foo.bar().baz().cucumber((fat && "sassy") ||\n' +
                       '    (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
+                      '    .but_this_can\n' +
+                      'return between_return_and_expression_should_never_wrap\n' +
+                      '    .but_this_can\n' +
+                      'throw between_throw_and_expression_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
                       '    inside_an_if_block) that_is_.okay();\n' +
@@ -6508,6 +6546,10 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '        (leans && mean));\n' +
                       '    Test_very_long_variable_name_this_should_never_wrap\n' +
                       '        .but_this_can\n' +
+                      '    return between_return_and_expression_should_never_wrap\n' +
+                      '        .but_this_can\n' +
+                      '    throw between_throw_and_expression_should_never_wrap\n' +
+                      '        .but_this_can\n' +
                       '    if (wraps_can_occur &&\n' +
                       '        inside_an_if_block) that_is_.okay();\n' +
                       '    object_literal = {\n' +
@@ -6531,6 +6573,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
+                      'return between_return_and_expression_should_never_wrap.but_this_can\n' +
+                      'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
                       '    .okay();\n' +
                       'object_literal = {\n' +
@@ -6548,6 +6592,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
+                      'return between_return_and_expression_should_never_wrap.but_this_can\n' +
+                      'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
                       'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
                       '    .okay();\n' +
                       'object_literal = {\n' +
@@ -6566,6 +6612,10 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       'foo.bar().baz().cucumber((fat &&\n' +
                       '    "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
+                      '    .but_this_can\n' +
+                      'return between_return_and_expression_should_never_wrap\n' +
+                      '    .but_this_can\n' +
+                      'throw between_throw_and_expression_should_never_wrap\n' +
                       '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
                       '    inside_an_if_block) that_is_\n' +
@@ -6591,6 +6641,10 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '    (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n' +
                       '    .but_this_can\n' +
+                      'return between_return_and_expression_should_never_wrap\n' +
+                      '    .but_this_can\n' +
+                      'throw between_throw_and_expression_should_never_wrap\n' +
+                      '    .but_this_can\n' +
                       'if (wraps_can_occur &&\n' +
                       '    inside_an_if_block) that_is_\n' +
                       '    .okay();\n' +
@@ -6615,6 +6669,10 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '    foo.bar().baz().cucumber((fat && "sassy") ||\n' +
                       '        (leans && mean));\n' +
                       '    Test_very_long_variable_name_this_should_never_wrap\n' +
+                      '        .but_this_can\n' +
+                      '    return between_return_and_expression_should_never_wrap\n' +
+                      '        .but_this_can\n' +
+                      '    throw between_throw_and_expression_should_never_wrap\n' +
                       '        .but_this_can\n' +
                       '    if (wraps_can_occur &&\n' +
                       '        inside_an_if_block) that_is_\n' +
@@ -7429,6 +7487,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n    attr1="123"\n    data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n    attr0\n    attr1="123"\n    data-attr2="hello    t here"\n    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n    attr1="123"\n    data-attr2="hello    t here" />');
+        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n    attr2="bar" />');
 
         // Attribute Wrap - (eof = "\n", indent_attr = "    ", over80 = "\n")
         opts.wrap_attributes = 'force';
@@ -7436,6 +7495,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n    attr1="123"\n    data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n    attr0\n    attr1="123"\n    data-attr2="hello    t here"\n    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n    attr1="123"\n    data-attr2="hello    t here" />');
+        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n    attr2="bar" />');
 
         // Attribute Wrap - (eof = "\n", indent_attr = "        ", over80 = "\n")
         opts.wrap_attributes = 'force';
@@ -7443,6 +7503,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n        attr1="123"\n        data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n        attr0\n        attr1="123"\n        data-attr2="hello    t here"\n        heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n        attr1="123"\n        data-attr2="hello    t here" />');
+        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n        attr2="bar" />');
 
         // Attribute Wrap - (eof = " ", indent_attr = "", over80 = "\n")
         opts.wrap_attributes = 'auto';
@@ -7450,6 +7511,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here"\nheymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
+        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo" attr2="bar" />');
 
         // Attribute Wrap - (eof = " ", indent_attr = "", over80 = " ")
         opts.wrap_attributes = 'auto';
@@ -7457,6 +7519,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
+        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo" attr2="bar" />');
 
 
 
@@ -7725,6 +7788,16 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    echo($i . "</br>");\n' +
             '}\n' +
             '?>');
+        test_fragment(
+            '<?php ?>\n' +
+            '<!DOCTYPE html>\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
 
 
 
