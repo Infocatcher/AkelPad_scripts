@@ -4568,7 +4568,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
     function reset_options()
     {
-        opts = JSON.parse(JSON.stringify(default_opts));
+        opts = {}; for(var p in default_opts) opts[p] = default_opts[p];
     }
 
     function test_js_beautifier(input)
@@ -7949,7 +7949,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
 
     function reset_options()
     {
-        opts = JSON.parse(JSON.stringify(default_opts));
+        opts = {}; for(var p in default_opts) opts[p] = default_opts[p];
     }
 
     function test_css_beautifier(input)
@@ -8344,7 +8344,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
     function reset_options()
     {
-        opts = JSON.parse(JSON.stringify(default_opts));
+        opts = {}; for(var p in default_opts) opts[p] = default_opts[p];
     }
 
     function test_html_beautifier(input)
@@ -9446,6 +9446,13 @@ function convertSource(file, text) {
 				"last_type !== 'TK_WORD' && last_type !== 'TK_RESERVED'"
 			)
 			.replace(/(preserve_newline: 'preserve-newline'),(\s*\};)/, "$1$2");
+	}
+	else if(file.substr(0, 18) == "js/test/generated/") {
+		text = text
+			.replace(
+				/ opts = JSON\.parse\(JSON\.stringify\(default_opts\)\);/g,
+				" opts = {}; for(var p in default_opts) opts[p] = default_opts[p];"
+			)
 	}
 	return text;
 }
