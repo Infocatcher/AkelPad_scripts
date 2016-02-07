@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2016-01-22 19:51:06 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2016-02-04 20:09:51 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -376,7 +376,7 @@ function detectXMLType(str) {
     space_after_anon_function (default false) - should the space before an anonymous function's parens be added, "function()" vs "function ()",
           NOTE: This option is overriden by jslint_happy (i.e. if jslint_happy is true, space_after_anon_function is true by design)
 
-    brace_style (default "collapse") - "collapse" | "expand" | "end-expand" | "none"
+    brace_style (default "collapse") - "collapse-preserve-inline" | "collapse" | "expand" | "end-expand" | "none"
             put braces on the same line as control statements (default), or put braces on own line (Allman / ANSI style), or just put end braces on own line, or attempt to keep them where they are.
 
     space_before_conditional (default true) - should the space before conditional statement be added, "if(true)" vs "if (true)",
@@ -399,73 +399,93 @@ function detectXMLType(str) {
 
 */
 
+// Object.values polyfill found here:
+// http://tokenposts.blogspot.com.au/2012/04/javascript-objectkeys-browser.html
+if (!Object.values) {
+    Object.values = function(o) {
+        if (o !== Object(o)) {
+            throw new TypeError('Object.values called on a non-object');
+        }
+        var k = [],
+            p;
+        for (p in o) {
+            if (Object.prototype.hasOwnProperty.call(o, p)) {
+                k.push(o[p]);
+            }
+        }
+        return k;
+    };
+}
+
 (function() {
 
     var acorn = {};
-    (function (exports) {
-      // This section of code is taken from acorn.
-      //
-      // Acorn was written by Marijn Haverbeke and released under an MIT
-      // license. The Unicode regexps (for identifiers and whitespace) were
-      // taken from [Esprima](http://esprima.org) by Ariya Hidayat.
-      //
-      // Git repositories for Acorn are available at
-      //
-      //     http://marijnhaverbeke.nl/git/acorn
-      //     https://github.com/marijnh/acorn.git
+    (function(exports) {
+        /* jshint curly: false */
+        // This section of code is taken from acorn.
+        //
+        // Acorn was written by Marijn Haverbeke and released under an MIT
+        // license. The Unicode regexps (for identifiers and whitespace) were
+        // taken from [Esprima](http://esprima.org) by Ariya Hidayat.
+        //
+        // Git repositories for Acorn are available at
+        //
+        //     http://marijnhaverbeke.nl/git/acorn
+        //     https://github.com/marijnh/acorn.git
 
-      // ## Character categories
+        // ## Character categories
 
-      // Big ugly regular expressions that match characters in the
-      // whitespace, identifier, and identifier-start categories. These
-      // are only applied when a character is found to actually have a
-      // code point above 128.
+        // Big ugly regular expressions that match characters in the
+        // whitespace, identifier, and identifier-start categories. These
+        // are only applied when a character is found to actually have a
+        // code point above 128.
 
-      var nonASCIIwhitespace = /[\u1680\u180e\u2000-\u200a\u202f\u205f\u3000\ufeff]/;
-      var nonASCIIidentifierStartChars = "\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0370-\u0374\u0376\u0377\u037a-\u037d\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u048a-\u0527\u0531-\u0556\u0559\u0561-\u0587\u05d0-\u05ea\u05f0-\u05f2\u0620-\u064a\u066e\u066f\u0671-\u06d3\u06d5\u06e5\u06e6\u06ee\u06ef\u06fa-\u06fc\u06ff\u0710\u0712-\u072f\u074d-\u07a5\u07b1\u07ca-\u07ea\u07f4\u07f5\u07fa\u0800-\u0815\u081a\u0824\u0828\u0840-\u0858\u08a0\u08a2-\u08ac\u0904-\u0939\u093d\u0950\u0958-\u0961\u0971-\u0977\u0979-\u097f\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bd\u09ce\u09dc\u09dd\u09df-\u09e1\u09f0\u09f1\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a59-\u0a5c\u0a5e\u0a72-\u0a74\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abd\u0ad0\u0ae0\u0ae1\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3d\u0b5c\u0b5d\u0b5f-\u0b61\u0b71\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bd0\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c33\u0c35-\u0c39\u0c3d\u0c58\u0c59\u0c60\u0c61\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbd\u0cde\u0ce0\u0ce1\u0cf1\u0cf2\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d3a\u0d3d\u0d4e\u0d60\u0d61\u0d7a-\u0d7f\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0e01-\u0e30\u0e32\u0e33\u0e40-\u0e46\u0e81\u0e82\u0e84\u0e87\u0e88\u0e8a\u0e8d\u0e94-\u0e97\u0e99-\u0e9f\u0ea1-\u0ea3\u0ea5\u0ea7\u0eaa\u0eab\u0ead-\u0eb0\u0eb2\u0eb3\u0ebd\u0ec0-\u0ec4\u0ec6\u0edc-\u0edf\u0f00\u0f40-\u0f47\u0f49-\u0f6c\u0f88-\u0f8c\u1000-\u102a\u103f\u1050-\u1055\u105a-\u105d\u1061\u1065\u1066\u106e-\u1070\u1075-\u1081\u108e\u10a0-\u10c5\u10c7\u10cd\u10d0-\u10fa\u10fc-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u1380-\u138f\u13a0-\u13f4\u1401-\u166c\u166f-\u167f\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f0\u1700-\u170c\u170e-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176c\u176e-\u1770\u1780-\u17b3\u17d7\u17dc\u1820-\u1877\u1880-\u18a8\u18aa\u18b0-\u18f5\u1900-\u191c\u1950-\u196d\u1970-\u1974\u1980-\u19ab\u19c1-\u19c7\u1a00-\u1a16\u1a20-\u1a54\u1aa7\u1b05-\u1b33\u1b45-\u1b4b\u1b83-\u1ba0\u1bae\u1baf\u1bba-\u1be5\u1c00-\u1c23\u1c4d-\u1c4f\u1c5a-\u1c7d\u1ce9-\u1cec\u1cee-\u1cf1\u1cf5\u1cf6\u1d00-\u1dbf\u1e00-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffc\u2071\u207f\u2090-\u209c\u2102\u2107\u210a-\u2113\u2115\u2119-\u211d\u2124\u2126\u2128\u212a-\u212d\u212f-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb-\u2cee\u2cf2\u2cf3\u2d00-\u2d25\u2d27\u2d2d\u2d30-\u2d67\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u2e2f\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303c\u3041-\u3096\u309d-\u309f\u30a1-\u30fa\u30fc-\u30ff\u3105-\u312d\u3131-\u318e\u31a0-\u31ba\u31f0-\u31ff\u3400-\u4db5\u4e00-\u9fcc\ua000-\ua48c\ua4d0-\ua4fd\ua500-\ua60c\ua610-\ua61f\ua62a\ua62b\ua640-\ua66e\ua67f-\ua697\ua6a0-\ua6ef\ua717-\ua71f\ua722-\ua788\ua78b-\ua78e\ua790-\ua793\ua7a0-\ua7aa\ua7f8-\ua801\ua803-\ua805\ua807-\ua80a\ua80c-\ua822\ua840-\ua873\ua882-\ua8b3\ua8f2-\ua8f7\ua8fb\ua90a-\ua925\ua930-\ua946\ua960-\ua97c\ua984-\ua9b2\ua9cf\uaa00-\uaa28\uaa40-\uaa42\uaa44-\uaa4b\uaa60-\uaa76\uaa7a\uaa80-\uaaaf\uaab1\uaab5\uaab6\uaab9-\uaabd\uaac0\uaac2\uaadb-\uaadd\uaae0-\uaaea\uaaf2-\uaaf4\uab01-\uab06\uab09-\uab0e\uab11-\uab16\uab20-\uab26\uab28-\uab2e\uabc0-\uabe2\uac00-\ud7a3\ud7b0-\ud7c6\ud7cb-\ud7fb\uf900-\ufa6d\ufa70-\ufad9\ufb00-\ufb06\ufb13-\ufb17\ufb1d\ufb1f-\ufb28\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40\ufb41\ufb43\ufb44\ufb46-\ufbb1\ufbd3-\ufd3d\ufd50-\ufd8f\ufd92-\ufdc7\ufdf0-\ufdfb\ufe70-\ufe74\ufe76-\ufefc\uff21-\uff3a\uff41-\uff5a\uff66-\uffbe\uffc2-\uffc7\uffca-\uffcf\uffd2-\uffd7\uffda-\uffdc";
-      var nonASCIIidentifierChars = "\u0300-\u036f\u0483-\u0487\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u0610-\u061a\u0620-\u0649\u0672-\u06d3\u06e7-\u06e8\u06fb-\u06fc\u0730-\u074a\u0800-\u0814\u081b-\u0823\u0825-\u0827\u0829-\u082d\u0840-\u0857\u08e4-\u08fe\u0900-\u0903\u093a-\u093c\u093e-\u094f\u0951-\u0957\u0962-\u0963\u0966-\u096f\u0981-\u0983\u09bc\u09be-\u09c4\u09c7\u09c8\u09d7\u09df-\u09e0\u0a01-\u0a03\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a66-\u0a71\u0a75\u0a81-\u0a83\u0abc\u0abe-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ae2-\u0ae3\u0ae6-\u0aef\u0b01-\u0b03\u0b3c\u0b3e-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b56\u0b57\u0b5f-\u0b60\u0b66-\u0b6f\u0b82\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd7\u0be6-\u0bef\u0c01-\u0c03\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c62-\u0c63\u0c66-\u0c6f\u0c82\u0c83\u0cbc\u0cbe-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0ce2-\u0ce3\u0ce6-\u0cef\u0d02\u0d03\u0d46-\u0d48\u0d57\u0d62-\u0d63\u0d66-\u0d6f\u0d82\u0d83\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0df2\u0df3\u0e34-\u0e3a\u0e40-\u0e45\u0e50-\u0e59\u0eb4-\u0eb9\u0ec8-\u0ecd\u0ed0-\u0ed9\u0f18\u0f19\u0f20-\u0f29\u0f35\u0f37\u0f39\u0f41-\u0f47\u0f71-\u0f84\u0f86-\u0f87\u0f8d-\u0f97\u0f99-\u0fbc\u0fc6\u1000-\u1029\u1040-\u1049\u1067-\u106d\u1071-\u1074\u1082-\u108d\u108f-\u109d\u135d-\u135f\u170e-\u1710\u1720-\u1730\u1740-\u1750\u1772\u1773\u1780-\u17b2\u17dd\u17e0-\u17e9\u180b-\u180d\u1810-\u1819\u1920-\u192b\u1930-\u193b\u1951-\u196d\u19b0-\u19c0\u19c8-\u19c9\u19d0-\u19d9\u1a00-\u1a15\u1a20-\u1a53\u1a60-\u1a7c\u1a7f-\u1a89\u1a90-\u1a99\u1b46-\u1b4b\u1b50-\u1b59\u1b6b-\u1b73\u1bb0-\u1bb9\u1be6-\u1bf3\u1c00-\u1c22\u1c40-\u1c49\u1c5b-\u1c7d\u1cd0-\u1cd2\u1d00-\u1dbe\u1e01-\u1f15\u200c\u200d\u203f\u2040\u2054\u20d0-\u20dc\u20e1\u20e5-\u20f0\u2d81-\u2d96\u2de0-\u2dff\u3021-\u3028\u3099\u309a\ua640-\ua66d\ua674-\ua67d\ua69f\ua6f0-\ua6f1\ua7f8-\ua800\ua806\ua80b\ua823-\ua827\ua880-\ua881\ua8b4-\ua8c4\ua8d0-\ua8d9\ua8f3-\ua8f7\ua900-\ua909\ua926-\ua92d\ua930-\ua945\ua980-\ua983\ua9b3-\ua9c0\uaa00-\uaa27\uaa40-\uaa41\uaa4c-\uaa4d\uaa50-\uaa59\uaa7b\uaae0-\uaae9\uaaf2-\uaaf3\uabc0-\uabe1\uabec\uabed\uabf0-\uabf9\ufb20-\ufb28\ufe00-\ufe0f\ufe20-\ufe26\ufe33\ufe34\ufe4d-\ufe4f\uff10-\uff19\uff3f";
-      var nonASCIIidentifierStart = new RegExp("[" + nonASCIIidentifierStartChars + "]");
-      var nonASCIIidentifier = new RegExp("[" + nonASCIIidentifierStartChars + nonASCIIidentifierChars + "]");
+        var nonASCIIwhitespace = /[\u1680\u180e\u2000-\u200a\u202f\u205f\u3000\ufeff]/; // jshint ignore:line
+        var nonASCIIidentifierStartChars = "\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0370-\u0374\u0376\u0377\u037a-\u037d\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u048a-\u0527\u0531-\u0556\u0559\u0561-\u0587\u05d0-\u05ea\u05f0-\u05f2\u0620-\u064a\u066e\u066f\u0671-\u06d3\u06d5\u06e5\u06e6\u06ee\u06ef\u06fa-\u06fc\u06ff\u0710\u0712-\u072f\u074d-\u07a5\u07b1\u07ca-\u07ea\u07f4\u07f5\u07fa\u0800-\u0815\u081a\u0824\u0828\u0840-\u0858\u08a0\u08a2-\u08ac\u0904-\u0939\u093d\u0950\u0958-\u0961\u0971-\u0977\u0979-\u097f\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bd\u09ce\u09dc\u09dd\u09df-\u09e1\u09f0\u09f1\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a59-\u0a5c\u0a5e\u0a72-\u0a74\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abd\u0ad0\u0ae0\u0ae1\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3d\u0b5c\u0b5d\u0b5f-\u0b61\u0b71\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bd0\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c33\u0c35-\u0c39\u0c3d\u0c58\u0c59\u0c60\u0c61\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbd\u0cde\u0ce0\u0ce1\u0cf1\u0cf2\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d3a\u0d3d\u0d4e\u0d60\u0d61\u0d7a-\u0d7f\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0e01-\u0e30\u0e32\u0e33\u0e40-\u0e46\u0e81\u0e82\u0e84\u0e87\u0e88\u0e8a\u0e8d\u0e94-\u0e97\u0e99-\u0e9f\u0ea1-\u0ea3\u0ea5\u0ea7\u0eaa\u0eab\u0ead-\u0eb0\u0eb2\u0eb3\u0ebd\u0ec0-\u0ec4\u0ec6\u0edc-\u0edf\u0f00\u0f40-\u0f47\u0f49-\u0f6c\u0f88-\u0f8c\u1000-\u102a\u103f\u1050-\u1055\u105a-\u105d\u1061\u1065\u1066\u106e-\u1070\u1075-\u1081\u108e\u10a0-\u10c5\u10c7\u10cd\u10d0-\u10fa\u10fc-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u1380-\u138f\u13a0-\u13f4\u1401-\u166c\u166f-\u167f\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f0\u1700-\u170c\u170e-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176c\u176e-\u1770\u1780-\u17b3\u17d7\u17dc\u1820-\u1877\u1880-\u18a8\u18aa\u18b0-\u18f5\u1900-\u191c\u1950-\u196d\u1970-\u1974\u1980-\u19ab\u19c1-\u19c7\u1a00-\u1a16\u1a20-\u1a54\u1aa7\u1b05-\u1b33\u1b45-\u1b4b\u1b83-\u1ba0\u1bae\u1baf\u1bba-\u1be5\u1c00-\u1c23\u1c4d-\u1c4f\u1c5a-\u1c7d\u1ce9-\u1cec\u1cee-\u1cf1\u1cf5\u1cf6\u1d00-\u1dbf\u1e00-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffc\u2071\u207f\u2090-\u209c\u2102\u2107\u210a-\u2113\u2115\u2119-\u211d\u2124\u2126\u2128\u212a-\u212d\u212f-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb-\u2cee\u2cf2\u2cf3\u2d00-\u2d25\u2d27\u2d2d\u2d30-\u2d67\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u2e2f\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303c\u3041-\u3096\u309d-\u309f\u30a1-\u30fa\u30fc-\u30ff\u3105-\u312d\u3131-\u318e\u31a0-\u31ba\u31f0-\u31ff\u3400-\u4db5\u4e00-\u9fcc\ua000-\ua48c\ua4d0-\ua4fd\ua500-\ua60c\ua610-\ua61f\ua62a\ua62b\ua640-\ua66e\ua67f-\ua697\ua6a0-\ua6ef\ua717-\ua71f\ua722-\ua788\ua78b-\ua78e\ua790-\ua793\ua7a0-\ua7aa\ua7f8-\ua801\ua803-\ua805\ua807-\ua80a\ua80c-\ua822\ua840-\ua873\ua882-\ua8b3\ua8f2-\ua8f7\ua8fb\ua90a-\ua925\ua930-\ua946\ua960-\ua97c\ua984-\ua9b2\ua9cf\uaa00-\uaa28\uaa40-\uaa42\uaa44-\uaa4b\uaa60-\uaa76\uaa7a\uaa80-\uaaaf\uaab1\uaab5\uaab6\uaab9-\uaabd\uaac0\uaac2\uaadb-\uaadd\uaae0-\uaaea\uaaf2-\uaaf4\uab01-\uab06\uab09-\uab0e\uab11-\uab16\uab20-\uab26\uab28-\uab2e\uabc0-\uabe2\uac00-\ud7a3\ud7b0-\ud7c6\ud7cb-\ud7fb\uf900-\ufa6d\ufa70-\ufad9\ufb00-\ufb06\ufb13-\ufb17\ufb1d\ufb1f-\ufb28\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40\ufb41\ufb43\ufb44\ufb46-\ufbb1\ufbd3-\ufd3d\ufd50-\ufd8f\ufd92-\ufdc7\ufdf0-\ufdfb\ufe70-\ufe74\ufe76-\ufefc\uff21-\uff3a\uff41-\uff5a\uff66-\uffbe\uffc2-\uffc7\uffca-\uffcf\uffd2-\uffd7\uffda-\uffdc";
+        var nonASCIIidentifierChars = "\u0300-\u036f\u0483-\u0487\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u0610-\u061a\u0620-\u0649\u0672-\u06d3\u06e7-\u06e8\u06fb-\u06fc\u0730-\u074a\u0800-\u0814\u081b-\u0823\u0825-\u0827\u0829-\u082d\u0840-\u0857\u08e4-\u08fe\u0900-\u0903\u093a-\u093c\u093e-\u094f\u0951-\u0957\u0962-\u0963\u0966-\u096f\u0981-\u0983\u09bc\u09be-\u09c4\u09c7\u09c8\u09d7\u09df-\u09e0\u0a01-\u0a03\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a66-\u0a71\u0a75\u0a81-\u0a83\u0abc\u0abe-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ae2-\u0ae3\u0ae6-\u0aef\u0b01-\u0b03\u0b3c\u0b3e-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b56\u0b57\u0b5f-\u0b60\u0b66-\u0b6f\u0b82\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd7\u0be6-\u0bef\u0c01-\u0c03\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c62-\u0c63\u0c66-\u0c6f\u0c82\u0c83\u0cbc\u0cbe-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0ce2-\u0ce3\u0ce6-\u0cef\u0d02\u0d03\u0d46-\u0d48\u0d57\u0d62-\u0d63\u0d66-\u0d6f\u0d82\u0d83\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0df2\u0df3\u0e34-\u0e3a\u0e40-\u0e45\u0e50-\u0e59\u0eb4-\u0eb9\u0ec8-\u0ecd\u0ed0-\u0ed9\u0f18\u0f19\u0f20-\u0f29\u0f35\u0f37\u0f39\u0f41-\u0f47\u0f71-\u0f84\u0f86-\u0f87\u0f8d-\u0f97\u0f99-\u0fbc\u0fc6\u1000-\u1029\u1040-\u1049\u1067-\u106d\u1071-\u1074\u1082-\u108d\u108f-\u109d\u135d-\u135f\u170e-\u1710\u1720-\u1730\u1740-\u1750\u1772\u1773\u1780-\u17b2\u17dd\u17e0-\u17e9\u180b-\u180d\u1810-\u1819\u1920-\u192b\u1930-\u193b\u1951-\u196d\u19b0-\u19c0\u19c8-\u19c9\u19d0-\u19d9\u1a00-\u1a15\u1a20-\u1a53\u1a60-\u1a7c\u1a7f-\u1a89\u1a90-\u1a99\u1b46-\u1b4b\u1b50-\u1b59\u1b6b-\u1b73\u1bb0-\u1bb9\u1be6-\u1bf3\u1c00-\u1c22\u1c40-\u1c49\u1c5b-\u1c7d\u1cd0-\u1cd2\u1d00-\u1dbe\u1e01-\u1f15\u200c\u200d\u203f\u2040\u2054\u20d0-\u20dc\u20e1\u20e5-\u20f0\u2d81-\u2d96\u2de0-\u2dff\u3021-\u3028\u3099\u309a\ua640-\ua66d\ua674-\ua67d\ua69f\ua6f0-\ua6f1\ua7f8-\ua800\ua806\ua80b\ua823-\ua827\ua880-\ua881\ua8b4-\ua8c4\ua8d0-\ua8d9\ua8f3-\ua8f7\ua900-\ua909\ua926-\ua92d\ua930-\ua945\ua980-\ua983\ua9b3-\ua9c0\uaa00-\uaa27\uaa40-\uaa41\uaa4c-\uaa4d\uaa50-\uaa59\uaa7b\uaae0-\uaae9\uaaf2-\uaaf3\uabc0-\uabe1\uabec\uabed\uabf0-\uabf9\ufb20-\ufb28\ufe00-\ufe0f\ufe20-\ufe26\ufe33\ufe34\ufe4d-\ufe4f\uff10-\uff19\uff3f";
+        var nonASCIIidentifierStart = new RegExp("[" + nonASCIIidentifierStartChars + "]");
+        var nonASCIIidentifier = new RegExp("[" + nonASCIIidentifierStartChars + nonASCIIidentifierChars + "]");
 
-      // Whether a single character denotes a newline.
+        // Whether a single character denotes a newline.
 
-      var newline = exports.newline = /[\n\r\u2028\u2029]/;
+        exports.newline = /[\n\r\u2028\u2029]/;
 
-      // Matches a whole line break (where CRLF is considered a single
-      // line break). Used to count lines.
+        // Matches a whole line break (where CRLF is considered a single
+        // line break). Used to count lines.
 
-      // in javascript, these two differ
-      // in python they are the same, different methods are called on them
-      var lineBreak = exports.lineBreak = /\r\n|[\n\r\u2028\u2029]/;
-      var allLineBreaks = exports.allLineBreaks = new RegExp(lineBreak.source, 'g');
+        // in javascript, these two differ
+        // in python they are the same, different methods are called on them
+        exports.lineBreak = new RegExp('\r\n|' + exports.newline.source);
+        exports.allLineBreaks = new RegExp(exports.lineBreak.source, 'g');
 
 
-      // Test whether a given character code starts an identifier.
+        // Test whether a given character code starts an identifier.
 
-      var isIdentifierStart = exports.isIdentifierStart = function(code) {
-        // permit $ (36) and @ (64). @ is used in ES7 decorators.
-        if (code < 65) return code === 36 || code === 64;
-        // 65 through 91 are uppercase letters.
-        if (code < 91) return true;
-        // permit _ (95).
-        if (code < 97) return code === 95;
-        // 97 through 123 are lowercase letters.
-        if (code < 123)return true;
-        return code >= 0xaa && nonASCIIidentifierStart.test(String.fromCharCode(code));
-      };
+        exports.isIdentifierStart = function(code) {
+            // permit $ (36) and @ (64). @ is used in ES7 decorators.
+            if (code < 65) return code === 36 || code === 64;
+            // 65 through 91 are uppercase letters.
+            if (code < 91) return true;
+            // permit _ (95).
+            if (code < 97) return code === 95;
+            // 97 through 123 are lowercase letters.
+            if (code < 123) return true;
+            return code >= 0xaa && nonASCIIidentifierStart.test(String.fromCharCode(code));
+        };
 
-      // Test whether a given character is part of an identifier.
+        // Test whether a given character is part of an identifier.
 
-      var isIdentifierChar = exports.isIdentifierChar = function(code) {
-        if (code < 48) return code === 36;
-        if (code < 58) return true;
-        if (code < 65) return false;
-        if (code < 91) return true;
-        if (code < 97) return code === 95;
-        if (code < 123)return true;
-        return code >= 0xaa && nonASCIIidentifier.test(String.fromCharCode(code));
-      };
+        exports.isIdentifierChar = function(code) {
+            if (code < 48) return code === 36;
+            if (code < 58) return true;
+            if (code < 65) return false;
+            if (code < 91) return true;
+            if (code < 97) return code === 95;
+            if (code < 123) return true;
+            return code >= 0xaa && nonASCIIidentifier.test(String.fromCharCode(code));
+        };
     })(acorn);
+    /* jshint curly: true */
 
     function in_array(what, arr) {
         for (var i = 0; i < arr.length; i += 1) {
@@ -484,9 +504,9 @@ function detectXMLType(str) {
         return s.replace(/^\s+/g, '');
     }
 
-    function rtrim(s) {
-        return s.replace(/\s+$/g, '');
-    }
+    // function rtrim(s) {
+    //     return s.replace(/\s+$/g, '');
+    // }
 
     function js_beautify(js_source_text, options) {
         "use strict";
@@ -494,20 +514,43 @@ function detectXMLType(str) {
         return beautifier.beautify();
     }
 
+    function sanitizeOperatorPosition(opPosition) {
+        opPosition = opPosition || OPERATOR_POSITION.before_newline;
+
+        var validPositionValues = Object.values(OPERATOR_POSITION);
+
+        if (!in_array(opPosition, validPositionValues)) {
+            throw new Error("Invalid Option Value: The option 'operator_position' must be one of the following values\n" +
+                validPositionValues +
+                "\nYou passed in: '" + opPosition + "'");
+        }
+
+        return opPosition;
+    }
+
+    var OPERATOR_POSITION = {
+        before_newline: 'before-newline',
+        after_newline: 'after-newline',
+        preserve_newline: 'preserve-newline',
+    };
+
+    var OPERATOR_POSITION_BEFORE_OR_PRESERVE = [OPERATOR_POSITION.before_newline, OPERATOR_POSITION.preserve_newline];
+
     var MODE = {
-            BlockStatement: 'BlockStatement', // 'BLOCK'
-            Statement: 'Statement', // 'STATEMENT'
-            ObjectLiteral: 'ObjectLiteral', // 'OBJECT',
-            ArrayLiteral: 'ArrayLiteral', //'[EXPRESSION]',
-            ForInitializer: 'ForInitializer', //'(FOR-EXPRESSION)',
-            Conditional: 'Conditional', //'(COND-EXPRESSION)',
-            Expression: 'Expression' //'(EXPRESSION)'
-        };
+        BlockStatement: 'BlockStatement', // 'BLOCK'
+        Statement: 'Statement', // 'STATEMENT'
+        ObjectLiteral: 'ObjectLiteral', // 'OBJECT',
+        ArrayLiteral: 'ArrayLiteral', //'[EXPRESSION]',
+        ForInitializer: 'ForInitializer', //'(FOR-EXPRESSION)',
+        Conditional: 'Conditional', //'(COND-EXPRESSION)',
+        Expression: 'Expression' //'(EXPRESSION)'
+    };
 
     function Beautifier(js_source_text, options) {
         "use strict";
-        var output
-        var tokens = [], token_pos;
+        var output;
+        var tokens = [],
+            token_pos;
         var Tokenizer;
         var current_token;
         var last_type, last_last_text, indent_string;
@@ -554,10 +597,12 @@ function detectXMLType(str) {
                 declaration_statement: false,
                 declaration_assignment: false,
                 multiline_frame: false,
+                inline_frame: false,
                 if_block: false,
                 else_block: false,
                 do_block: false,
                 do_while: false,
+                import_block: false,
                 in_case_statement: false, // switch(..){ INSIDE HERE }
                 in_case: false, // we're on the exact line with "case 0:"
                 case_body: false, // the indented case-action block
@@ -601,16 +646,17 @@ function detectXMLType(str) {
         opt.e4x = (options.e4x === undefined) ? false : options.e4x;
         opt.end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
         opt.comma_first = (options.comma_first === undefined) ? false : options.comma_first;
+        opt.operator_position = sanitizeOperatorPosition(options.operator_position);
 
         // For testing of beautify ignore:start directive
         opt.test_output_raw = (options.test_output_raw === undefined) ? false : options.test_output_raw;
 
         // force opt.space_after_anon_function to true if opt.jslint_happy
-        if(opt.jslint_happy) {
+        if (opt.jslint_happy) {
             opt.space_after_anon_function = true;
         }
 
-        if(options.indent_with_tabs){
+        if (options.indent_with_tabs) {
             opt.indent_char = '\t';
             opt.indent_size = 1;
         }
@@ -622,7 +668,7 @@ function detectXMLType(str) {
             }
         }
 
-        opt.eol = opt.eol.replace(/\\r/, '\r').replace(/\\n/, '\n')
+        opt.eol = opt.eol.replace(/\\r/, '\r').replace(/\\n/, '\n');
 
         //----------------------------------
         indent_string = '';
@@ -632,8 +678,8 @@ function detectXMLType(str) {
         }
 
         var preindent_index = 0;
-        if(js_source_text && js_source_text.length) {
-            while ( (js_source_text.charAt(preindent_index) === ' ' ||
+        if (js_source_text && js_source_text.length) {
+            while ((js_source_text.charAt(preindent_index) === ' ' ||
                     js_source_text.charAt(preindent_index) === '\t')) {
                 baseIndentString += js_source_text.charAt(preindent_index);
                 preindent_index += 1;
@@ -670,8 +716,13 @@ function detectXMLType(str) {
             tokens = Tokenizer.tokenize();
             token_pos = 0;
 
-            while (local_token = get_token()) {
-                for(var i = 0; i < local_token.comments_before.length; i++) {
+            function get_local_token() {
+                local_token = get_token();
+                return local_token;
+            }
+
+            while (get_local_token()) {
+                for (var i = 0; i < local_token.comments_before.length; i++) {
                     // The cleanest handling of inline comments is to treat them as though they aren't there.
                     // Just continue formatting and the behavior should be logical.
                     // Also ignore unknown tokens.  Again, this should result in better behavior.
@@ -691,7 +742,7 @@ function detectXMLType(str) {
                 sweet_code += '\n';
             }
 
-            if (opt.eol != '\n') {
+            if (opt.eol !== '\n') {
                 sweet_code = sweet_code.replace(/[\n]/g, opt.eol);
             }
 
@@ -703,7 +754,7 @@ function detectXMLType(str) {
             var keep_whitespace = opt.keep_array_indentation && is_array(flags.mode);
 
             if (keep_whitespace) {
-                for (i = 0; i < newlines; i += 1) {
+                for (var i = 0; i < newlines; i += 1) {
                     print_newline(i > 0);
                 }
             } else {
@@ -714,7 +765,7 @@ function detectXMLType(str) {
                 if (opt.preserve_newlines) {
                     if (local_token.newlines > 1) {
                         print_newline();
-                        for (var i = 1; i < newlines; i += 1) {
+                        for (var j = 1; j < newlines; j += 1) {
                             print_newline(true);
                         }
                     }
@@ -744,22 +795,35 @@ function detectXMLType(str) {
             return out;
         }
 
-        var newline_restricted_tokens = ['break','contiue','return', 'throw'];
+        var newline_restricted_tokens = ['break', 'contiue', 'return', 'throw'];
+
         function allow_wrap_or_preserved_newline(force_linewrap) {
             force_linewrap = (force_linewrap === undefined) ? false : force_linewrap;
 
             // Never wrap the first token on a line
             if (output.just_added_newline()) {
-                return
+                return;
             }
 
-            if ((opt.preserve_newlines && current_token.wanted_newline) || force_linewrap) {
+            var shouldPreserveOrForce = (opt.preserve_newlines && current_token.wanted_newline) || force_linewrap;
+            var operatorLogicApplies = in_array(flags.last_text, Tokenizer.positionable_operators) || in_array(current_token.text, Tokenizer.positionable_operators);
+
+            if (operatorLogicApplies) {
+                var shouldPrintOperatorNewline = (
+                        in_array(flags.last_text, Tokenizer.positionable_operators) &&
+                        in_array(opt.operator_position, OPERATOR_POSITION_BEFORE_OR_PRESERVE)
+                    ) ||
+                    in_array(current_token.text, Tokenizer.positionable_operators);
+                shouldPreserveOrForce = shouldPreserveOrForce && shouldPrintOperatorNewline;
+            }
+
+            if (shouldPreserveOrForce) {
                 print_newline(false, true);
             } else if (opt.wrap_line_length) {
                 if (last_type === 'TK_RESERVED' && in_array(flags.last_text, newline_restricted_tokens)) {
                     // These tokens should never have a newline inserted
                     // between them and the following expression.
-                    return
+                    return;
                 }
                 var proposed_line_length = output.current_line.get_character_count() + current_token.text.length +
                     (output.space_before_token ? 1 : 0);
@@ -796,14 +860,24 @@ function detectXMLType(str) {
 
         function print_token(printable_token) {
             if (output.raw) {
-                output.add_raw_token(current_token)
+                output.add_raw_token(current_token);
                 return;
             }
 
-            if (opt.comma_first && last_type === 'TK_COMMA'
-                && output.just_added_newline()) {
-                if(output.previous_line.last() === ',') {
-                    output.previous_line.pop();
+            if (opt.comma_first && last_type === 'TK_COMMA' &&
+                output.just_added_newline()) {
+                if (output.previous_line.last() === ',') {
+                    var popped = output.previous_line.pop();
+                    // if the comma was already at the start of the line,
+                    // pull back onto that line and reprint the indentation
+                    if (output.previous_line.is_empty()) {
+                        output.previous_line.push(popped);
+                        output.trim(true);
+                        output.current_line.pop();
+                        output.trim();
+                    }
+
+                    // add the comma in front of the next token
                     print_token_line_indentation();
                     output.add_token(',');
                     output.space_before_token = true;
@@ -821,8 +895,10 @@ function detectXMLType(str) {
 
         function deindent() {
             if (flags.indentation_level > 0 &&
-                ((!flags.parent) || flags.indentation_level > flags.parent.indentation_level))
+                ((!flags.parent) || flags.indentation_level > flags.parent.indentation_level)) {
                 flags.indentation_level -= 1;
+
+            }
         }
 
         function set_mode(mode) {
@@ -861,19 +937,19 @@ function detectXMLType(str) {
 
         function start_of_statement() {
             if (
-                    (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const']) && current_token.type === 'TK_WORD') ||
-                    (last_type === 'TK_RESERVED' && flags.last_text === 'do') ||
-                    (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['return', 'throw']) && !current_token.wanted_newline) ||
-                    (last_type === 'TK_RESERVED' && flags.last_text === 'else' && !(current_token.type === 'TK_RESERVED' && current_token.text === 'if')) ||
-                    (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)) ||
-                    (last_type === 'TK_WORD' && flags.mode === MODE.BlockStatement
-                        && !flags.in_case
-                        && !(current_token.text === '--' || current_token.text === '++')
-                        && last_last_text !== 'function'
-                        && current_token.type !== 'TK_WORD' && current_token.type !== 'TK_RESERVED') ||
-                    (flags.mode === MODE.ObjectLiteral && (
-                        (flags.last_text === ':' && flags.ternary_depth === 0) || (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['get', 'set']))))
-                ) {
+                (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const']) && current_token.type === 'TK_WORD') ||
+                (last_type === 'TK_RESERVED' && flags.last_text === 'do') ||
+                (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['return', 'throw']) && !current_token.wanted_newline) ||
+                (last_type === 'TK_RESERVED' && flags.last_text === 'else' && !(current_token.type === 'TK_RESERVED' && current_token.text === 'if')) ||
+                (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)) ||
+                (last_type === 'TK_WORD' && flags.mode === MODE.BlockStatement &&
+                    !flags.in_case &&
+                    !(current_token.text === '--' || current_token.text === '++') &&
+                    last_last_text !== 'function' &&
+                    current_token.type !== 'TK_WORD' && current_token.type !== 'TK_RESERVED') ||
+                (flags.mode === MODE.ObjectLiteral && (
+                    (flags.last_text === ':' && flags.ternary_depth === 0) || (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['get', 'set']))))
+            ) {
 
                 set_mode(MODE.Statement);
                 indent();
@@ -994,7 +1070,7 @@ function detectXMLType(str) {
             }
 
             // Should be a space between await and an IIFE
-            if(current_token.text === '(' && last_type === 'TK_RESERVED' && flags.last_word === 'await'){
+            if (current_token.text === '(' && last_type === 'TK_RESERVED' && flags.last_word === 'await') {
                 output.space_before_token = true;
             }
 
@@ -1039,7 +1115,7 @@ function detectXMLType(str) {
             }
 
             if (opt.space_in_paren) {
-                if (last_type === 'TK_START_EXPR' && ! opt.space_in_empty_paren) {
+                if (last_type === 'TK_START_EXPR' && !opt.space_in_empty_paren) {
                     // () [] no inner space in empty parens like these, ever, ref #320
                     output.trim();
                     output.space_before_token = false;
@@ -1067,33 +1143,38 @@ function detectXMLType(str) {
 
         function handle_start_block() {
             // Check if this is should be treated as a ObjectLiteral
-            var next_token = get_token(1)
-            var second_token = get_token(2)
+            var next_token = get_token(1);
+            var second_token = get_token(2);
             if (second_token && (
-                    (in_array(second_token.text, [':', ',']) && in_array(next_token.type, ['TK_STRING', 'TK_WORD', 'TK_RESERVED']))
-                    || (in_array(next_token.text, ['get', 'set']) && in_array(second_token.type, ['TK_WORD', 'TK_RESERVED']))
+                    (in_array(second_token.text, [':', ',']) && in_array(next_token.type, ['TK_STRING', 'TK_WORD', 'TK_RESERVED'])) ||
+                    (in_array(next_token.text, ['get', 'set']) && in_array(second_token.type, ['TK_WORD', 'TK_RESERVED']))
                 )) {
                 // We don't support TypeScript,but we didn't break it for a very long time.
                 // We'll try to keep not breaking it.
-                if (!in_array(last_last_text, ['class','interface'])) {
+                if (!in_array(last_last_text, ['class', 'interface'])) {
                     set_mode(MODE.ObjectLiteral);
                 } else {
                     set_mode(MODE.BlockStatement);
                 }
+            } else if (last_type === 'TK_OPERATOR' && flags.last_text === '=>') {
+                // arrow function: (param1, paramN) => { statements }
+                set_mode(MODE.BlockStatement);
             } else if (in_array(last_type, ['TK_EQUALS', 'TK_START_EXPR', 'TK_COMMA', 'TK_OPERATOR']) ||
-                (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['return', 'throw']))
-                ) {
-                // Detecting shorthand function syntax is difficult by scanning forward, so check the surrounding context.
-                // If the block is being returned, passed as arg, assigned with = or assigned in a nested object, treat as an ObjectLiteral.
+                (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['return', 'throw', 'import']))
+            ) {
+                // Detecting shorthand function syntax is difficult by scanning forward,
+                //     so check the surrounding context.
+                // If the block is being returned, imported, passed as arg,
+                //     assigned with = or assigned in a nested object, treat as an ObjectLiteral.
                 set_mode(MODE.ObjectLiteral);
             } else {
                 set_mode(MODE.BlockStatement);
             }
 
-
-            var empty_braces = !next_token.comments_before.length &&  next_token.text === '}';
+            var empty_braces = !next_token.comments_before.length && next_token.text === '}';
             var empty_anonymous_function = empty_braces && flags.last_word === 'function' &&
                 last_type === 'TK_END_EXPR';
+
 
             if (opt.brace_style === "expand" ||
                 (opt.brace_style === "none" && current_token.wanted_newline)) {
@@ -1106,21 +1187,40 @@ function detectXMLType(str) {
                     print_newline(false, true);
                 }
             } else { // collapse
-                if (last_type !== 'TK_OPERATOR' && last_type !== 'TK_START_EXPR') {
+                if (opt.brace_style === 'collapse-preserve-inline') {
+                    // search forward for a newline wanted inside this block
+                    var index = 0;
+                    var check_token = null;
+                    flags.inline_frame = true;
+                    do {
+                        index += 1;
+                        check_token = get_token(index);
+                        if (check_token.wanted_newline) {
+                            flags.inline_frame = false;
+                            break;
+                        }
+                    } while (check_token.type !== 'TK_EOF' &&
+                        !(check_token.type === 'TK_END_BLOCK' && check_token.opened === current_token));
+                }
+
+                if (is_array(previous_flags.mode) && (last_type === 'TK_START_EXPR' || last_type === 'TK_COMMA')) {
+                    // if we're preserving inline,
+                    // allow newline between comma and next brace.
+                    if (last_type === 'TK_COMMA' || opt.space_in_paren) {
+                        output.space_before_token = true;
+                    }
+
+                    if (opt.brace_style === 'collapse-preserve-inline' &&
+                        (last_type === 'TK_COMMA' || (last_type === 'TK_START_EXPR' && flags.inline_frame))) {
+                        allow_wrap_or_preserved_newline();
+                        previous_flags.multiline_frame = previous_flags.multiline_frame || flags.multiline_frame;
+                        flags.multiline_frame = false;
+                    }
+                } else if (last_type !== 'TK_OPERATOR' && last_type !== 'TK_START_EXPR') {
                     if (last_type === 'TK_START_BLOCK') {
                         print_newline();
                     } else {
                         output.space_before_token = true;
-                    }
-                } else {
-                    // if TK_OPERATOR or TK_START_EXPR
-                    if (is_array(previous_flags.mode) && flags.last_text === ',') {
-                        if (last_last_text === '}') {
-                            // }, { in array context
-                            output.space_before_token = true;
-                        } else {
-                            print_newline(); // [a, b, c, {
-                        }
                     }
                 }
             }
@@ -1142,7 +1242,9 @@ function detectXMLType(str) {
             } else {
                 // skip {}
                 if (!empty_braces) {
-                    if (is_array(flags.mode) && opt.keep_array_indentation) {
+                    if (flags.inline_frame) {
+                        output.space_before_token = true;
+                    } else if (is_array(flags.mode) && opt.keep_array_indentation) {
                         // we REALLY need a newline here, but newliner would skip that
                         opt.keep_array_indentation = false;
                         print_newline();
@@ -1158,15 +1260,16 @@ function detectXMLType(str) {
         }
 
         function handle_word() {
-            if (current_token.type === 'TK_RESERVED' && flags.mode !== MODE.ObjectLiteral &&
-                in_array(current_token.text, ['set', 'get'])) {
-                current_token.type = 'TK_WORD';
-            }
-
-            if (current_token.type === 'TK_RESERVED' && flags.mode === MODE.ObjectLiteral) {
-                var next_token = get_token(1);
-                if (next_token.text == ':') {
+            if (current_token.type === 'TK_RESERVED') {
+                if (in_array(current_token.text, ['set', 'get']) && flags.mode !== MODE.ObjectLiteral) {
                     current_token.type = 'TK_WORD';
+                } else if (in_array(current_token.text, ['as', 'from']) && !flags.import_block) {
+                    current_token.type = 'TK_WORD';
+                } else if (flags.mode === MODE.ObjectLiteral) {
+                    var next_token = get_token(1);
+                    if (next_token.text === ':') {
+                        current_token.type = 'TK_WORD';
+                    }
                 }
             }
 
@@ -1225,10 +1328,10 @@ function detectXMLType(str) {
             }
 
             if (current_token.type === 'TK_RESERVED' && current_token.text === 'function') {
-                if (in_array(flags.last_text, ['}', ';']) || (output.just_added_newline() && ! in_array(flags.last_text, ['[', '{', ':', '=', ',']))) {
+                if (in_array(flags.last_text, ['}', ';']) || (output.just_added_newline() && !in_array(flags.last_text, ['[', '{', ':', '=', ',']))) {
                     // make sure there is a nice clean space of at least one blank line
                     // before a new function definition
-                    if ( !output.just_added_blankline() && !current_token.comments_before.length) {
+                    if (!output.just_added_blankline() && !current_token.comments_before.length) {
                         print_newline();
                         print_newline(true);
                     }
@@ -1257,7 +1360,7 @@ function detectXMLType(str) {
                 }
             }
 
-            if (current_token.type === 'TK_RESERVED' &&  in_array(current_token.text, ['function', 'get', 'set'])) {
+            if (current_token.type === 'TK_RESERVED' && in_array(current_token.text, ['function', 'get', 'set'])) {
                 print_token();
                 flags.last_word = current_token.text;
                 return;
@@ -1266,7 +1369,8 @@ function detectXMLType(str) {
             prefix = 'NONE';
 
             if (last_type === 'TK_END_BLOCK') {
-                if (!(current_token.type === 'TK_RESERVED' && in_array(current_token.text, ['else', 'catch', 'finally']))) {
+
+                if (!(current_token.type === 'TK_RESERVED' && in_array(current_token.text, ['else', 'catch', 'finally', 'from']))) {
                     prefix = 'NEWLINE';
                 } else {
                     if (opt.brace_style === "expand" ||
@@ -1289,7 +1393,11 @@ function detectXMLType(str) {
                 (flags.last_text === '*' && last_last_text === 'function')) {
                 prefix = 'SPACE';
             } else if (last_type === 'TK_START_BLOCK') {
-                prefix = 'NEWLINE';
+                if (flags.inline_frame) {
+                    prefix = 'SPACE';
+                } else {
+                    prefix = 'NEWLINE';
+                }
             } else if (last_type === 'TK_END_EXPR') {
                 output.space_before_token = true;
                 prefix = 'NEWLINE';
@@ -1305,7 +1413,7 @@ function detectXMLType(str) {
             }
 
             if (current_token.type === 'TK_RESERVED' && in_array(current_token.text, ['else', 'catch', 'finally'])) {
-                if (last_type !== 'TK_END_BLOCK' ||
+                if (!(last_type === 'TK_END_BLOCK' && previous_flags.mode === MODE.BlockStatement) ||
                     opt.brace_style === "expand" ||
                     opt.brace_style === "end-expand" ||
                     (opt.brace_style === "none" && current_token.wanted_newline)) {
@@ -1345,12 +1453,16 @@ function detectXMLType(str) {
             print_token();
             flags.last_word = current_token.text;
 
-            if (current_token.type === 'TK_RESERVED' && current_token.text === 'do') {
-                flags.do_block = true;
-            }
-
-            if (current_token.type === 'TK_RESERVED' && current_token.text === 'if') {
-                flags.if_block = true;
+            if (current_token.type === 'TK_RESERVED') {
+                if (current_token.text === 'do') {
+                    flags.do_block = true;
+                } else if (current_token.text === 'if') {
+                    flags.if_block = true;
+                } else if (current_token.text === 'import') {
+                    flags.import_block = true;
+                } else if (flags.import_block && current_token.type === 'TK_RESERVED' && current_token.text === 'from') {
+                    flags.import_block = false;
+                }
             }
         }
 
@@ -1363,6 +1475,11 @@ function detectXMLType(str) {
             while (flags.mode === MODE.Statement && !flags.if_block && !flags.do_block) {
                 restore_mode();
             }
+
+            // hacky but effective for the moment
+            if (flags.import_block) {
+                flags.import_block = false;
+            }
             print_token();
         }
 
@@ -1371,7 +1488,7 @@ function detectXMLType(str) {
                 // The conditional starts the statement if appropriate.
                 // One difference - strings want at least a space before
                 output.space_before_token = true;
-            } else if (last_type === 'TK_RESERVED' || last_type === 'TK_WORD') {
+            } else if (last_type === 'TK_RESERVED' || last_type === 'TK_WORD' || flags.inline_frame) {
                 output.space_before_token = true;
             } else if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
                 if (!start_of_object_property()) {
@@ -1398,45 +1515,37 @@ function detectXMLType(str) {
         }
 
         function handle_comma() {
+            print_token();
+            output.space_before_token = true;
             if (flags.declaration_statement) {
                 if (is_expression(flags.parent.mode)) {
                     // do not break on comma, for(var a = 1, b = 2)
                     flags.declaration_assignment = false;
                 }
 
-                print_token();
-
                 if (flags.declaration_assignment) {
                     flags.declaration_assignment = false;
                     print_newline(false, true);
-                } else {
-                    output.space_before_token = true;
+                } else if (opt.comma_first) {
                     // for comma-first, we want to allow a newline before the comma
                     // to turn into a newline after the comma, which we will fixup later
-                    if (opt.comma_first) {
-                        allow_wrap_or_preserved_newline();
-                    }
+                    allow_wrap_or_preserved_newline();
                 }
-                return;
-            }
-
-            print_token();
-            if (flags.mode === MODE.ObjectLiteral ||
+            } else if (flags.mode === MODE.ObjectLiteral ||
                 (flags.mode === MODE.Statement && flags.parent.mode === MODE.ObjectLiteral)) {
                 if (flags.mode === MODE.Statement) {
                     restore_mode();
                 }
-                print_newline();
-            } else {
+
+                if (!flags.inline_frame) {
+                    print_newline();
+                }
+            } else if (opt.comma_first) {
                 // EXPR or DO_BLOCK
-                output.space_before_token = true;
                 // for comma-first, we want to allow a newline before the comma
                 // to turn into a newline after the comma, which we will fixup later
-                if (opt.comma_first) {
-                    allow_wrap_or_preserved_newline();
-                }
+                allow_wrap_or_preserved_newline();
             }
-
         }
 
         function handle_operator() {
@@ -1457,6 +1566,18 @@ function detectXMLType(str) {
                 return;
             }
 
+            if (current_token.text === '::') {
+                // no spaces around exotic namespacing syntax operator
+                print_token();
+                return;
+            }
+
+            // Allow line wrapping between operators when operator_position is
+            //   set to before or preserve
+            if (last_type === 'TK_OPERATOR' && in_array(opt.operator_position, OPERATOR_POSITION_BEFORE_OR_PRESERVE)) {
+                allow_wrap_or_preserved_newline();
+            }
+
             if (current_token.text === ':' && flags.in_case) {
                 flags.case_body = true;
                 indent();
@@ -1466,21 +1587,86 @@ function detectXMLType(str) {
                 return;
             }
 
-            if (current_token.text === '::') {
-                // no spaces around exotic namespacing syntax operator
-                print_token();
-                return;
-            }
-
-            // Allow line wrapping between operators
-            if (last_type === 'TK_OPERATOR') {
-                allow_wrap_or_preserved_newline();
-            }
-
             var space_before = true;
             var space_after = true;
+            var in_ternary = false;
+            var isGeneratorAsterisk = current_token.text === '*' && last_type === 'TK_RESERVED' && flags.last_text === 'function';
+            var isUnary = in_array(current_token.text, ['-', '+']) && (
+                in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) ||
+                in_array(flags.last_text, Tokenizer.line_starters) ||
+                flags.last_text === ','
+            );
 
-            if (in_array(current_token.text, ['--', '++', '!', '~']) || (in_array(current_token.text, ['-', '+']) && (in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) || in_array(flags.last_text, Tokenizer.line_starters) || flags.last_text === ','))) {
+            if (current_token.text === ':') {
+                if (flags.ternary_depth === 0) {
+                    // Colon is invalid javascript outside of ternary and object, but do our best to guess what was meant.
+                    space_before = false;
+                } else {
+                    flags.ternary_depth -= 1;
+                    in_ternary = true;
+                }
+            } else if (current_token.text === '?') {
+                flags.ternary_depth += 1;
+            }
+
+            // let's handle the operator_position option prior to any conflicting logic
+            if (!isUnary && !isGeneratorAsterisk && opt.preserve_newlines && in_array(current_token.text, Tokenizer.positionable_operators)) {
+                var isColon = current_token.text === ':';
+                var isTernaryColon = (isColon && in_ternary);
+                var isOtherColon = (isColon && !in_ternary);
+
+                switch (opt.operator_position) {
+                    case OPERATOR_POSITION.before_newline:
+                        // if the current token is : and it's not a ternary statement then we set space_before to false
+                        output.space_before_token = !isOtherColon;
+
+                        print_token();
+
+                        if (!isColon || isTernaryColon) {
+                            allow_wrap_or_preserved_newline();
+                        }
+
+                        output.space_before_token = true;
+                        return;
+
+                    case OPERATOR_POSITION.after_newline:
+                        // if the current token is anything but colon, or (via deduction) it's a colon and in a ternary statement,
+                        //   then print a newline.
+
+                        output.space_before_token = true;
+
+                        if (!isColon || isTernaryColon) {
+                            if (get_token(1).wanted_newline) {
+                                print_newline(false, true);
+                            } else {
+                                allow_wrap_or_preserved_newline();
+                            }
+                        } else {
+                            output.space_before_token = false;
+                        }
+
+                        print_token();
+
+                        output.space_before_token = true;
+                        return;
+
+                    case OPERATOR_POSITION.preserve_newline:
+                        if (!isOtherColon) {
+                            allow_wrap_or_preserved_newline();
+                        }
+
+                        // if we just added a newline, or the current token is : and it's not a ternary statement,
+                        //   then we set space_before to false
+                        space_before = !(output.just_added_newline() || isOtherColon);
+
+                        output.space_before_token = space_before;
+                        print_token();
+                        output.space_before_token = true;
+                        return;
+                }
+            }
+
+            if (in_array(current_token.text, ['--', '++', '!', '~']) || isUnary) {
                 // unary operators (and binary +/- pretending to be unary) special cases
 
                 space_before = false;
@@ -1515,21 +1701,14 @@ function detectXMLType(str) {
                     }
                 }
 
-                if ((flags.mode === MODE.BlockStatement || flags.mode === MODE.Statement) && (flags.last_text === '{' || flags.last_text === ';')) {
+
+                if (((flags.mode === MODE.BlockStatement && !flags.inline_frame) || flags.mode === MODE.Statement) &&
+                    (flags.last_text === '{' || flags.last_text === ';')) {
                     // { foo; --i }
                     // foo(); --bar;
                     print_newline();
                 }
-            } else if (current_token.text === ':') {
-                if (flags.ternary_depth === 0) {
-                    // Colon is invalid javascript outside of ternary and object, but do our best to guess what was meant.
-                    space_before = false;
-                } else {
-                    flags.ternary_depth -= 1;
-                }
-            } else if (current_token.text === '?') {
-                flags.ternary_depth += 1;
-            } else if (current_token.text === '*' && last_type === 'TK_RESERVED' && flags.last_text === 'function') {
+            } else if (isGeneratorAsterisk) {
                 space_before = false;
                 space_after = false;
             }
@@ -1540,12 +1719,10 @@ function detectXMLType(str) {
 
         function handle_block_comment() {
             if (output.raw) {
-                output.add_raw_token(current_token)
-                if (current_token.directives && current_token.directives['preserve'] === 'end') {
+                output.add_raw_token(current_token);
+                if (current_token.directives && current_token.directives.preserve === 'end') {
                     // If we're testing the raw output behavior, do not allow a directive to turn it off.
-                    if (!opt.test_output_raw) {
-                        output.raw = false;
-                    }
+                    output.raw = opt.test_output_raw;
                 }
                 return;
             }
@@ -1553,7 +1730,7 @@ function detectXMLType(str) {
             if (current_token.directives) {
                 print_newline(false, true);
                 print_token();
-                if (current_token.directives['preserve'] === 'start') {
+                if (current_token.directives.preserve === 'start') {
                     output.raw = true;
                 }
                 print_newline(false, true);
@@ -1578,12 +1755,8 @@ function detectXMLType(str) {
             // block comment starts with a new line
             print_newline(false, true);
             if (lines.length > 1) {
-                if (all_lines_start_with(lines.slice(1), '*')) {
-                    javadoc = true;
-                }
-                else if (each_line_matches_indent(lines.slice(1), lastIndent)) {
-                    starless = true;
-                }
+                javadoc = all_lines_start_with(lines.slice(1), '*');
+                starless = each_line_matches_indent(lines.slice(1), lastIndent);
             }
 
             // first line always indented
@@ -1660,31 +1833,31 @@ function detectXMLType(str) {
         var _empty = true;
 
         this.set_indent = function(level) {
-            _character_count = parent.baseIndentLength + level * parent.indent_length
+            _character_count = parent.baseIndentLength + level * parent.indent_length;
             _indent_count = level;
-        }
+        };
 
         this.get_character_count = function() {
             return _character_count;
-        }
+        };
 
         this.is_empty = function() {
             return _empty;
-        }
+        };
 
         this.last = function() {
             if (!this._empty) {
-              return _items[_items.length - 1];
+                return _items[_items.length - 1];
             } else {
-              return null;
+                return null;
             }
-        }
+        };
 
         this.push = function(input) {
             _items.push(input);
             _character_count += input.length;
             _empty = false;
-        }
+        };
 
         this.pop = function() {
             var item = null;
@@ -1694,22 +1867,22 @@ function detectXMLType(str) {
                 _empty = _items.length === 0;
             }
             return item;
-        }
+        };
 
         this.remove_indent = function() {
             if (_indent_count > 0) {
                 _indent_count -= 1;
-                _character_count -= parent.indent_length
+                _character_count -= parent.indent_length;
             }
-        }
+        };
 
         this.trim = function() {
             while (this.last() === ' ') {
-                var item = _items.pop();
+                _items.pop();
                 _character_count -= 1;
             }
             _empty = _items.length === 0;
-        }
+        };
 
         this.toString = function() {
             var result = '';
@@ -1717,20 +1890,20 @@ function detectXMLType(str) {
                 if (_indent_count >= 0) {
                     result = parent.indent_cache[_indent_count];
                 }
-                result += _items.join('')
+                result += _items.join('');
             }
             return result;
-        }
+        };
     }
 
     function Output(indent_string, baseIndentString) {
         baseIndentString = baseIndentString || '';
-        this.indent_cache = [ baseIndentString ];
+        this.indent_cache = [baseIndentString];
         this.baseIndentLength = baseIndentString.length;
         this.indent_length = indent_string.length;
         this.raw = false;
 
-        var lines =[];
+        var lines = [];
         this.baseIndentString = baseIndentString;
         this.indent_string = indent_string;
         this.previous_line = null;
@@ -1741,7 +1914,7 @@ function detectXMLType(str) {
             this.previous_line = this.current_line;
             this.current_line = new OutputLine(this);
             lines.push(this.current_line);
-        }
+        };
 
         // initialize
         this.add_outputline();
@@ -1749,7 +1922,7 @@ function detectXMLType(str) {
 
         this.get_line_number = function() {
             return lines.length;
-        }
+        };
 
         // Using object instead of string to allow for later expansion of info about each line
         this.add_new_line = function(force_newline) {
@@ -1765,17 +1938,17 @@ function detectXMLType(str) {
             }
 
             return false;
-        }
+        };
 
         this.get_code = function() {
             var sweet_code = lines.join('\n').replace(/[\r\n\t ]+$/, '');
             return sweet_code;
-        }
+        };
 
         this.set_indent = function(level) {
             // Never indent your first output indent at the start of the file
             if (lines.length > 1) {
-                while(level >= this.indent_cache.length) {
+                while (level >= this.indent_cache.length) {
                     this.indent_cache.push(this.indent_cache[this.indent_cache.length - 1] + this.indent_string);
                 }
 
@@ -1784,7 +1957,7 @@ function detectXMLType(str) {
             }
             this.current_line.set_indent(0);
             return false;
-        }
+        };
 
         this.add_raw_token = function(token) {
             for (var x = 0; x < token.newlines; x++) {
@@ -1793,21 +1966,21 @@ function detectXMLType(str) {
             this.current_line.push(token.whitespace_before);
             this.current_line.push(token.text);
             this.space_before_token = false;
-        }
+        };
 
         this.add_token = function(printable_token) {
             this.add_space_before_token();
             this.current_line.push(printable_token);
-        }
+        };
 
         this.add_space_before_token = function() {
             if (this.space_before_token && !this.just_added_newline()) {
                 this.current_line.push(' ');
             }
             this.space_before_token = false;
-        }
+        };
 
-        this.remove_redundant_indentation = function (frame) {
+        this.remove_redundant_indentation = function(frame) {
             // This implementation is effective but has some issues:
             //     - can cause line wrap to happen too soon due to indent removal
             //           after wrap points are calculated
@@ -1821,14 +1994,13 @@ function detectXMLType(str) {
 
             // remove one indent from each line inside this section
             var index = frame.start_line_index;
-            var line;
 
             var output_length = lines.length;
             while (index < output_length) {
                 lines[index].remove_indent();
                 index++;
             }
-        }
+        };
 
         this.trim = function(eat_newlines) {
             eat_newlines = (eat_newlines === undefined) ? false : eat_newlines;
@@ -1838,16 +2010,16 @@ function detectXMLType(str) {
             while (eat_newlines && lines.length > 1 &&
                 this.current_line.is_empty()) {
                 lines.pop();
-                this.current_line = lines[lines.length - 1]
+                this.current_line = lines[lines.length - 1];
                 this.current_line.trim();
             }
 
             this.previous_line = lines.length > 1 ? lines[lines.length - 2] : null;
-        }
+        };
 
         this.just_added_newline = function() {
             return this.current_line.is_empty();
-        }
+        };
 
         this.just_added_blankline = function() {
             if (this.just_added_newline()) {
@@ -1859,22 +2031,23 @@ function detectXMLType(str) {
                 return line.is_empty();
             }
             return false;
-        }
+        };
     }
 
 
-    var Token = function(type, text, newlines, whitespace_before, mode, parent) {
+    var Token = function(type, text, newlines, whitespace_before, parent) {
         this.type = type;
         this.text = text;
         this.comments_before = [];
         this.newlines = newlines || 0;
         this.wanted_newline = newlines > 0;
         this.whitespace_before = whitespace_before || '';
-        this.parent = null;
+        this.parent = parent || null;
+        this.opened = null;
         this.directives = null;
-    }
+    };
 
-    function tokenizer(input, opts, indent_string) {
+    function tokenizer(input, opts) {
 
         var whitespace = "\n\r\t ".split('');
         var digit = /[0-9]/;
@@ -1882,10 +2055,14 @@ function detectXMLType(str) {
         var digit_oct = /[01234567]/;
         var digit_hex = /[0123456789abcdefABCDEF]/;
 
-        var punct = ('+ - * / % & ++ -- = += -= *= /= %= == === != !== > < >= <= >> << >>> >>>= >>= <<= && &= | || ! ~ , : ? ^ ^= |= :: => **').split(' ');
+        this.positionable_operators = '!= !== % & && * ** + - / : < << <= == === > >= >> >>> ? ^ | ||'.split(' ');
+        var punct = this.positionable_operators.concat(
+            // non-positionable operators - these do not follow operator position settings
+            '! %= &= *= **= ++ += , -- -= /= :: <<= = => >>= >>>= ^= |= ~'.split(' '));
+
         // words which should always start on new line.
         this.line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function,import,export'.split(',');
-        var reserved_words = this.line_starters.concat(['do', 'in', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof', 'yield', 'async', 'await']);
+        var reserved_words = this.line_starters.concat(['do', 'in', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof', 'yield', 'async', 'await', 'from', 'as']);
 
         //  /* ... */ comment ends with nearest */ or end of file
         var block_comment_pattern = /([\s\S]*?)((?:\*\/)|$)/g;
@@ -1897,16 +2074,16 @@ function detectXMLType(str) {
         var directive_pattern = / (\w+)[:](\w+)/g;
         var directives_end_ignore_pattern = /([\s\S]*?)((?:\/\*\sbeautify\signore:end\s\*\/)|$)/g;
 
-        var template_pattern = /((<\?php|<\?=)[\s\S]*?\?>)|(<%[\s\S]*?%>)/g
+        var template_pattern = /((<\?php|<\?=)[\s\S]*?\?>)|(<%[\s\S]*?%>)/g;
 
         var n_newlines, whitespace_before_token, in_html_comment, tokens, parser_pos;
         var input_length;
 
         this.tokenize = function() {
             // cache the source's length.
-            input_length = input.length
+            input_length = input.length;
             parser_pos = 0;
-            in_html_comment = false
+            in_html_comment = false;
             tokens = [];
 
             var next, last;
@@ -1918,7 +2095,7 @@ function detectXMLType(str) {
             while (!(last && last.type === 'TK_EOF')) {
                 token_values = tokenize_next();
                 next = new Token(token_values[1], token_values[0], n_newlines, whitespace_before_token);
-                while(next.type === 'TK_COMMENT' || next.type === 'TK_BLOCK_COMMENT' || next.type === 'TK_UNKNOWN') {
+                while (next.type === 'TK_COMMENT' || next.type === 'TK_BLOCK_COMMENT' || next.type === 'TK_UNKNOWN') {
                     if (next.type === 'TK_BLOCK_COMMENT') {
                         next.directives = token_values[2];
                     }
@@ -1936,12 +2113,14 @@ function detectXMLType(str) {
                     next.parent = last;
                     open_stack.push(open);
                     open = next;
-                }  else if ((next.type === 'TK_END_BLOCK' || next.type === 'TK_END_EXPR') &&
+                } else if ((next.type === 'TK_END_BLOCK' || next.type === 'TK_END_EXPR') &&
                     (open && (
                         (next.text === ']' && open.text === '[') ||
                         (next.text === ')' && open.text === '(') ||
                         (next.text === '}' && open.text === '{')))) {
                     next.parent = open.parent;
+                    next.opened = open;
+
                     open = open_stack.pop();
                 }
 
@@ -1950,9 +2129,9 @@ function detectXMLType(str) {
             }
 
             return tokens;
-        }
+        };
 
-        function get_directives (text) {
+        function get_directives(text) {
             if (!text.match(directives_block_pattern)) {
                 return null;
             }
@@ -1970,7 +2149,7 @@ function detectXMLType(str) {
         }
 
         function tokenize_next() {
-            var i, resulting_string;
+            var resulting_string;
             var whitespace_on_this_line = [];
 
             n_newlines = 0;
@@ -1982,7 +2161,7 @@ function detectXMLType(str) {
 
             var last_token;
             if (tokens.length) {
-                last_token = tokens[tokens.length-1];
+                last_token = tokens[tokens.length - 1];
             } else {
                 // For the sake of tokenizing we can pretend that there was on open brace to start
                 last_token = new Token('TK_START_BLOCK', '{');
@@ -1995,7 +2174,7 @@ function detectXMLType(str) {
             while (in_array(c, whitespace)) {
 
                 if (acorn.newline.test(c)) {
-                    if (!(c === '\n' && input.charAt(parser_pos-2) === '\r')) {
+                    if (!(c === '\n' && input.charAt(parser_pos - 2) === '\r')) {
                         n_newlines += 1;
                         whitespace_on_this_line = [];
                     }
@@ -2011,7 +2190,7 @@ function detectXMLType(str) {
                 parser_pos += 1;
             }
 
-            if(whitespace_on_this_line.length) {
+            if (whitespace_on_this_line.length) {
                 whitespace_before_token = whitespace_on_this_line.join('');
             }
 
@@ -2024,9 +2203,9 @@ function detectXMLType(str) {
                     // switch to hex/oct/bin number, no decimal or e, just hex/oct/bin digits
                     allow_decimal = false;
                     allow_e = false;
-                    if ( /[Bb]/.test(input.charAt(parser_pos)) ) {
+                    if (/[Bb]/.test(input.charAt(parser_pos))) {
                         local_digit = digit_bin;
-                    } else if ( /[Oo]/.test(input.charAt(parser_pos)) ) {
+                    } else if (/[Oo]/.test(input.charAt(parser_pos))) {
                         local_digit = digit_oct;
                     } else {
                         local_digit = digit_hex;
@@ -2068,7 +2247,7 @@ function detectXMLType(str) {
                 return [c, 'TK_WORD'];
             }
 
-            if (acorn.isIdentifierStart(input.charCodeAt(parser_pos-1))) {
+            if (acorn.isIdentifierStart(input.charCodeAt(parser_pos - 1))) {
                 if (parser_pos < input_length) {
                     while (acorn.isIdentifierChar(input.charCodeAt(parser_pos))) {
                         c += input.charAt(parser_pos);
@@ -2080,8 +2259,8 @@ function detectXMLType(str) {
                 }
 
                 if (!(last_token.type === 'TK_DOT' ||
-                        (last_token.type === 'TK_RESERVED' && in_array(last_token.text, ['set', 'get'])))
-                    && in_array(c, reserved_words)) {
+                        (last_token.type === 'TK_RESERVED' && in_array(last_token.text, ['set', 'get']))) &&
+                    in_array(c, reserved_words)) {
                     if (c === 'in') { // hack for 'in' operator
                         return [c, 'TK_OPERATOR'];
                     }
@@ -2113,17 +2292,18 @@ function detectXMLType(str) {
 
             if (c === '/') {
                 var comment = '';
+                var comment_match;
                 // peek for comment /* ... */
                 if (input.charAt(parser_pos) === '*') {
                     parser_pos += 1;
                     block_comment_pattern.lastIndex = parser_pos;
-                    var comment_match = block_comment_pattern.exec(input);
+                    comment_match = block_comment_pattern.exec(input);
                     comment = '/*' + comment_match[0];
                     parser_pos += comment_match[0].length;
                     var directives = get_directives(comment);
-                    if (directives && directives['ignore'] === 'start') {
+                    if (directives && directives.ignore === 'start') {
                         directives_end_ignore_pattern.lastIndex = parser_pos;
-                        comment_match = directives_end_ignore_pattern.exec(input)
+                        comment_match = directives_end_ignore_pattern.exec(input);
                         comment += comment_match[0];
                         parser_pos += comment_match[0].length;
                     }
@@ -2134,7 +2314,7 @@ function detectXMLType(str) {
                 if (input.charAt(parser_pos) === '/') {
                     parser_pos += 1;
                     comment_pattern.lastIndex = parser_pos;
-                    var comment_match = comment_pattern.exec(input);
+                    comment_match = comment_pattern.exec(input);
                     comment = '//' + comment_match[0];
                     parser_pos += comment_match[0].length;
                     return [comment, 'TK_COMMENT'];
@@ -2142,12 +2322,14 @@ function detectXMLType(str) {
 
             }
 
+            var startXmlRegExp = /^<([-a-zA-Z:0-9_.]+|{.+?}|!\[CDATA\[[\s\S]*?\]\])(\s+{.+?}|\s+[-a-zA-Z:0-9_.]+|\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{.+?}))*\s*(\/?)\s*>/;
+
             if (c === '`' || c === "'" || c === '"' || // string
                 (
                     (c === '/') || // regexp
-                    (opts.e4x && c === "<" && input.slice(parser_pos - 1).match(/^<([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])(\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{.*?}))*\s*(\/?)\s*>/)) // xml
+                    (opts.e4x && c === "<" && input.slice(parser_pos - 1).match(startXmlRegExp)) // xml
                 ) && ( // regex and xml can only appear in specific locations during parsing
-                    (last_token.type === 'TK_RESERVED' && in_array(last_token.text , ['return', 'case', 'throw', 'else', 'do', 'typeof', 'yield'])) ||
+                    (last_token.type === 'TK_RESERVED' && in_array(last_token.text, ['return', 'case', 'throw', 'else', 'do', 'typeof', 'yield'])) ||
                     (last_token.type === 'TK_END_EXPR' && last_token.text === ')' &&
                         last_token.parent && last_token.parent.type === 'TK_RESERVED' && in_array(last_token.parent.text, ['if', 'while', 'for'])) ||
                     (in_array(last_token.type, ['TK_COMMENT', 'TK_START_EXPR', 'TK_START_BLOCK',
@@ -2167,7 +2349,7 @@ function detectXMLType(str) {
                     //
                     var in_char_class = false;
                     while (parser_pos < input_length &&
-                            ((esc || in_char_class || input.charAt(parser_pos) !== sep) &&
+                        ((esc || in_char_class || input.charAt(parser_pos) !== sep) &&
                             !acorn.newline.test(input.charAt(parser_pos)))) {
                         resulting_string += input.charAt(parser_pos);
                         if (!esc) {
@@ -2186,16 +2368,17 @@ function detectXMLType(str) {
                     //
                     // handle e4x xml literals
                     //
-                    var xmlRegExp = /<(\/?)([-a-zA-Z:0-9_.]+|{[^{}]*}|!\[CDATA\[[\s\S]*?\]\])(\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{.*?}))*\s*(\/?)\s*>/g;
+
+                    var xmlRegExp = /<(\/?)([-a-zA-Z:0-9_.]+|{.+?}|!\[CDATA\[[\s\S]*?\]\])(\s+{.+?}|\s+[-a-zA-Z:0-9_.]+|\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{.+?}))*\s*(\/?)\s*>/g;
                     var xmlStr = input.slice(parser_pos - 1);
                     var match = xmlRegExp.exec(xmlStr);
                     if (match && match.index === 0) {
                         var rootTag = match[2];
                         var depth = 0;
                         while (match) {
-                            var isEndTag = !! match[1];
+                            var isEndTag = !!match[1];
                             var tagName = match[2];
-                            var isSingletonTag = ( !! match[match.length - 1]) || (tagName.slice(0, 8) === "![CDATA[");
+                            var isSingletonTag = (!!match[match.length - 1]) || (tagName.slice(0, 8) === "![CDATA[");
                             if (tagName === rootTag && !isSingletonTag) {
                                 if (isEndTag) {
                                     --depth;
@@ -2218,31 +2401,53 @@ function detectXMLType(str) {
                     //
                     // handle string
                     //
-                    // Template strings can travers lines without escape characters.
-                    // Other strings cannot
-                    while (parser_pos < input_length &&
-                            (esc || (input.charAt(parser_pos) !== sep &&
-                            (sep === '`' || !acorn.newline.test(input.charAt(parser_pos)))))) {
-                        // Handle \r\n linebreaks after escapes or in template strings
-                        if ((esc || sep === '`') && acorn.newline.test(input.charAt(parser_pos))) {
-                            if (input.charAt(parser_pos) === '\r' && input.charAt(parser_pos + 1) === '\n') {
-                                parser_pos += 1;
+                    var parse_string = function(delimiter, allow_unescaped_newlines, start_sub) {
+                        // Template strings can travers lines without escape characters.
+                        // Other strings cannot
+                        var current_char;
+                        while (parser_pos < input_length) {
+                            current_char = input.charAt(parser_pos);
+                            if (!(esc || (current_char !== delimiter &&
+                                    (allow_unescaped_newlines || !acorn.newline.test(current_char))))) {
+                                break;
                             }
-                            resulting_string += '\n';
-                        } else {
-                            resulting_string += input.charAt(parser_pos);
-                        }
-                        if (esc) {
-                            if (input.charAt(parser_pos) === 'x' || input.charAt(parser_pos) === 'u') {
-                                has_char_escapes = true;
-                            }
-                            esc = false;
-                        } else {
-                            esc = input.charAt(parser_pos) === '\\';
-                        }
-                        parser_pos += 1;
-                    }
 
+                            // Handle \r\n linebreaks after escapes or in template strings
+                            if ((esc || allow_unescaped_newlines) && acorn.newline.test(current_char)) {
+                                if (current_char === '\r' && input.charAt(parser_pos + 1) === '\n') {
+                                    parser_pos += 1;
+                                    current_char = input.charAt(parser_pos);
+                                }
+                                resulting_string += '\n';
+                            } else {
+                                resulting_string += current_char;
+                            }
+                            if (esc) {
+                                if (current_char === 'x' || current_char === 'u') {
+                                    has_char_escapes = true;
+                                }
+                                esc = false;
+                            } else {
+                                esc = current_char === '\\';
+                            }
+
+                            parser_pos += 1;
+
+                            if (start_sub && resulting_string.indexOf(start_sub, resulting_string.length - start_sub.length) !== -1) {
+                                if (delimiter === '`') {
+                                    parse_string('}', allow_unescaped_newlines, '`');
+                                } else {
+                                    parse_string('`', allow_unescaped_newlines, '${');
+                                }
+                            }
+                        }
+                    };
+
+                    if (sep === '`') {
+                        parse_string('`', true, '${');
+                    } else {
+                        parse_string(sep);
+                    }
                 }
 
                 if (has_char_escapes && opts.unescape_strings) {
@@ -2306,7 +2511,7 @@ function detectXMLType(str) {
             if (c === '<' && (input.charAt(parser_pos) === '?' || input.charAt(parser_pos) === '%')) {
                 template_pattern.lastIndex = parser_pos - 1;
                 var template_match = template_pattern.exec(input);
-                if(template_match) {
+                if (template_match) {
                     c = template_match[0];
                     parser_pos += c.length - 1;
                     c = c.replace(acorn.allLineBreaks, '\n');
@@ -2420,7 +2625,6 @@ function detectXMLType(str) {
             }
             return out;
         }
-
     }
 
 
@@ -2513,7 +2717,7 @@ function detectXMLType(str) {
         options = options || {};
         source_text = source_text || '';
         // HACK: newline parsing inconsistent. This brute force normalizes the input.
-        source_text = source_text.replace(/\r\n|[\r\u2028\u2029]/g, '\n')
+        source_text = source_text.replace(/\r\n|[\r\u2028\u2029]/g, '\n');
 
         var indentSize = options.indent_size || 4;
         var indentCharacter = options.indent_char || ' ';
@@ -2527,17 +2731,16 @@ function detectXMLType(str) {
             indentSize = parseInt(indentSize, 10);
         }
 
-        if(options.indent_with_tabs){
+        if (options.indent_with_tabs) {
             indentCharacter = '\t';
             indentSize = 1;
         }
 
-        eol = eol.replace(/\\r/, '\r').replace(/\\n/, '\n')
+        eol = eol.replace(/\\r/, '\r').replace(/\\n/, '\n');
 
 
         // tokenizer
         var whiteRe = /^\s+$/;
-        var wordRe = /[\w$\-_]/;
 
         var pos = -1,
             ch;
@@ -2637,7 +2840,7 @@ function detectXMLType(str) {
                     // pseudoclasses can contain ()
                     openParen += 1;
                 } else if (ch === ')') {
-                    if (openParen == 0) {
+                    if (openParen === 0) {
                         return false;
                     }
                     openParen -= 1;
@@ -2743,7 +2946,7 @@ function detectXMLType(str) {
                     print.newLine(true);
                 }
             } else if (ch === '/' && peek() === '/') { // single line comment
-                if (!isAfterNewline && last_top_ch !== '{' ) {
+                if (!isAfterNewline && last_top_ch !== '{') {
                     print.trim();
                 }
                 print.singleSpace();
@@ -2764,7 +2967,7 @@ function detectXMLType(str) {
                     print.singleSpace();
                 }
 
-                variableOrRule = variableOrRule.replace(/\s$/, '')
+                variableOrRule = variableOrRule.replace(/\s$/, '');
 
                 // might be a nesting at-rule
                 if (variableOrRule in css_beautify.NESTED_AT_RULE) {
@@ -2774,8 +2977,8 @@ function detectXMLType(str) {
                     }
                 }
             } else if (ch === '#' && peek() === '{') {
-              print.preserveSingleSpace();
-              output.push(eatString('}'));
+                print.preserveSingleSpace();
+                output.push(eatString('}'));
             } else if (ch === '{') {
                 if (peek(true) === '}') {
                     eatWhitespace();
@@ -2871,7 +3074,7 @@ function detectXMLType(str) {
                 print.preserveSingleSpace();
                 output.push(ch);
             } else if (ch === '=') { // no whitespace before or after
-                eatWhitespace()
+                eatWhitespace();
                 ch = '=';
                 output.push(ch);
             } else {
@@ -2893,7 +3096,7 @@ function detectXMLType(str) {
             sweetCode += '\n';
         }
 
-        if (eol != '\n') {
+        if (eol !== '\n') {
             sweetCode = sweetCode.replace(/[\n]/g, eol);
         }
 
@@ -3006,7 +3209,6 @@ function detectXMLType(str) {
       'indent_char': ' ',
       'wrap_line_length': 78,
       'brace_style': 'expand',
-      'unformatted': ['a', 'sub', 'sup', 'b', 'i', 'u'],
       'preserve_newlines': true,
       'max_preserve_newlines': 5,
       'indent_handlebars': false,
@@ -3016,16 +3218,16 @@ function detectXMLType(str) {
 
 (function() {
 
-    function trim(s) {
-        return s.replace(/^\s+|\s+$/g, '');
-    }
+    // function trim(s) {
+    //     return s.replace(/^\s+|\s+$/g, '');
+    // }
 
     function ltrim(s) {
         return s.replace(/^\s+/g, '');
     }
 
     function rtrim(s) {
-        return s.replace(/\s+$/g,'');
+        return s.replace(/\s+$/g, '');
     }
 
     function style_html(html_source, options, js_beautify, css_beautify) {
@@ -3051,7 +3253,7 @@ function detectXMLType(str) {
 
         // backwards compatibility to 1.3.4
         if ((options.wrap_line_length === undefined || parseInt(options.wrap_line_length, 10) === 0) &&
-                (options.max_char !== undefined && parseInt(options.max_char, 10) !== 0)) {
+            (options.max_char !== undefined && parseInt(options.max_char, 10) !== 0)) {
             options.wrap_line_length = options.max_char;
         }
 
@@ -3059,29 +3261,39 @@ function detectXMLType(str) {
         indent_size = (options.indent_size === undefined) ? 4 : parseInt(options.indent_size, 10);
         indent_character = (options.indent_char === undefined) ? ' ' : options.indent_char;
         brace_style = (options.brace_style === undefined) ? 'collapse' : options.brace_style;
-        wrap_line_length =  parseInt(options.wrap_line_length, 10) === 0 ? 32786 : parseInt(options.wrap_line_length || 250, 10);
-        unformatted = options.unformatted || ['a', 'span', 'img', 'bdo', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd',
-            'var', 'cite', 'abbr', 'acronym', 'q', 'sub', 'sup', 'tt', 'i', 'b', 'big', 'small', 'u', 's', 'strike',
-            'font', 'ins', 'del', 'pre', 'address', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+        wrap_line_length = parseInt(options.wrap_line_length, 10) === 0 ? 32786 : parseInt(options.wrap_line_length || 250, 10);
+        unformatted = options.unformatted || [
+            // https://www.w3.org/TR/html5/dom.html#phrasing-content
+            'a', 'abbr', 'area', 'audio', 'b', 'bdi', 'bdo', 'br', 'button', 'canvas', 'cite',
+            'code', 'data', 'datalist', 'del', 'dfn', 'em', 'embed', 'i', 'iframe', 'img',
+            'input', 'ins', 'kbd', 'keygen', 'label', 'map', 'mark', 'math', 'meter', 'noscript',
+            'object', 'output', 'progress', 'q', 'ruby', 's', 'samp', /* 'script', */ 'select', 'small',
+            'span', 'strong', 'sub', 'sup', 'svg', 'template', 'textarea', 'time', 'u', 'var',
+            'video', 'wbr', 'text',
+            // prexisting - not sure of full effect of removing, leaving in
+            'acronym', 'address', 'big', 'dt', 'ins', 'small', 'strike', 'tt',
+            'pre',
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
+        ];
         preserve_newlines = (options.preserve_newlines === undefined) ? true : options.preserve_newlines;
         max_preserve_newlines = preserve_newlines ?
-            (isNaN(parseInt(options.max_preserve_newlines, 10)) ? 32786 : parseInt(options.max_preserve_newlines, 10))
-            : 0;
+            (isNaN(parseInt(options.max_preserve_newlines, 10)) ? 32786 : parseInt(options.max_preserve_newlines, 10)) :
+            0;
         indent_handlebars = (options.indent_handlebars === undefined) ? false : options.indent_handlebars;
         wrap_attributes = (options.wrap_attributes === undefined) ? 'auto' : options.wrap_attributes;
-        wrap_attributes_indent_size = (options.wrap_attributes_indent_size === undefined) ? indent_size : parseInt(options.wrap_attributes_indent_size, 10) || indent_size;
+        wrap_attributes_indent_size = (isNaN(parseInt(options.wrap_attributes_indent_size, 10))) ? indent_size : parseInt(options.wrap_attributes_indent_size, 10);
         end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
-        extra_liners = (typeof options.extra_liners == 'object') && options.extra_liners ?
+        extra_liners = (typeof options.extra_liners === 'object') && options.extra_liners ?
             options.extra_liners.concat() : (typeof options.extra_liners === 'string') ?
             options.extra_liners.split(',') : 'head,body,/html'.split(',');
         eol = options.eol ? options.eol : '\n';
 
-        if(options.indent_with_tabs){
+        if (options.indent_with_tabs) {
             indent_character = '\t';
             indent_size = 1;
         }
 
-        eol = eol.replace(/\\r/, '\r').replace(/\\n/, '\n')
+        eol = eol.replace(/\\r/, '\r').replace(/\\n/, '\n');
 
         function Parser() {
 
@@ -3100,7 +3312,25 @@ function detectXMLType(str) {
 
             this.Utils = { //Uilities made available to the various functions
                 whitespace: "\n\r\t ".split(''),
-                single_token: 'br,input,link,meta,source,!doctype,basefont,base,area,hr,wbr,param,img,isindex,embed,?php,?xml'.split(','), //all the single tags for HTML
+
+                single_token: [
+                    // HTLM void elements - aka self-closing tags - aka singletons
+                    // https://www.w3.org/html/wg/drafts/html/master/syntax.html#void-elements
+                    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'keygen',
+                    'link', 'menuitem', 'meta', 'param', 'source', 'track', 'wbr',
+                    // NOTE: Optional tags - are not understood.
+                    // https://www.w3.org/TR/html5/syntax.html#optional-tags
+                    // The rules for optional tags are too complex for a simple list
+                    // Also, the content of these tags should still be indented in many cases.
+                    // 'li' is a good exmple.
+
+                    // Doctype and xml elements
+                    '!doctype', '?xml',
+                    // ?php tag
+                    '?php',
+                    // other tags that were in this list, keeping just in case
+                    'basefont', 'isindex'
+                ],
                 extra_liners: extra_liners, //for tags that need a line of whitespace before them
                 in_array: function(what, arr) {
                     for (var i = 0; i < arr.length; i++) {
@@ -3143,20 +3373,22 @@ function detectXMLType(str) {
 
             // Append a space to the given content (string array) or, if we are
             // at the wrap_line_length, append a newline/indentation.
+            // return true if a newline was added, false if a space was added
             this.space_or_wrap = function(content) {
                 if (this.line_char_count >= this.wrap_line_length) { //insert a line when the wrap_line_length is reached
                     this.print_newline(false, content);
                     this.print_indentation(content);
+                    return true;
                 } else {
                     this.line_char_count++;
                     content.push(' ');
+                    return false;
                 }
             };
 
             this.get_content = function() { //function to capture regular content between tags
                 var input_char = '',
-                    content = [],
-                    space = false; //if a space is needed
+                    content = [];
 
                 while (this.input.charAt(this.pos) !== '<') {
                     if (this.pos >= this.input.length) {
@@ -3198,7 +3430,6 @@ function detectXMLType(str) {
                 if (this.pos === this.input.length) {
                     return ['', 'TK_EOF'];
                 }
-                var input_char = '';
                 var content = '';
                 var reg_match = new RegExp('</' + name + '\\s*>', 'igm');
                 reg_match.lastIndex = this.pos;
@@ -3305,20 +3536,25 @@ function detectXMLType(str) {
 
                     if (content.length && content[content.length - 1] !== '=' && input_char !== '>' && space) {
                         //no space after = or before >
-                        this.space_or_wrap(content);
+                        var wrapped = this.space_or_wrap(content);
+                        var indentAttrs = wrapped && input_char !== '/' && wrap_attributes !== 'force';
                         space = false;
-                        if (!first_attr && wrap_attributes === 'force' &&  input_char !== '/') {
-                            this.print_newline(true, content);
+                        if (!first_attr && wrap_attributes === 'force' && input_char !== '/') {
+                            this.print_newline(false, content);
                             this.print_indentation(content);
+                            indentAttrs = true;
+                        }
+                        if (indentAttrs) {
+                            //indent attributes an auto or forced line-wrap
                             for (var count = 0; count < wrap_attributes_indent_size; count++) {
                                 content.push(indent_character);
                             }
                         }
                         for (var i = 0; i < content.length; i++) {
-                          if (content[i] === ' ') {
-                            first_attr = false;
-                            break;
-                          }
+                            if (content[i] === ' ') {
+                                first_attr = false;
+                                break;
+                            }
                         }
                     }
 
@@ -3408,15 +3644,15 @@ function detectXMLType(str) {
                     this.tag_type = 'SINGLE';
                 } else if (tag_check === 'script' &&
                     (tag_complete.search('type') === -1 ||
-                    (tag_complete.search('type') > -1 &&
-                    tag_complete.search(/\b(text|application)\/(x-)?(javascript|ecmascript|jscript|livescript|(ld\+)?json)/) > -1))) {
+                        (tag_complete.search('type') > -1 &&
+                            tag_complete.search(/\b(text|application)\/(x-)?(javascript|ecmascript|jscript|livescript|(ld\+)?json)/) > -1))) {
                     if (!peek) {
                         this.record_tag(tag_check);
                         this.tag_type = 'SCRIPT';
                     }
                 } else if (tag_check === 'style' &&
                     (tag_complete.search('type') === -1 ||
-                    (tag_complete.search('type') > -1 && tag_complete.search('text/css') > -1))) {
+                        (tag_complete.search('type') > -1 && tag_complete.search('text/css') > -1))) {
                     if (!peek) {
                         this.record_tag(tag_check);
                         this.tag_type = 'STYLE';
@@ -3513,21 +3749,21 @@ function detectXMLType(str) {
             };
 
             function tokenMatcher(delimiter) {
-              var token = '';
+                var token = '';
 
-              var add = function (str) {
-                var newToken = token + str.toLowerCase();
-                token = newToken.length <= delimiter.length ? newToken : newToken.substr(newToken.length - delimiter.length, delimiter.length);
-              };
+                var add = function(str) {
+                    var newToken = token + str.toLowerCase();
+                    token = newToken.length <= delimiter.length ? newToken : newToken.substr(newToken.length - delimiter.length, delimiter.length);
+                };
 
-              var doesNotMatch = function () {
-                return token.indexOf(delimiter) === -1;
-              };
+                var doesNotMatch = function() {
+                    return token.indexOf(delimiter) === -1;
+                };
 
-              return {
-                add: add,
-                doesNotMatch: doesNotMatch
-              };
+                return {
+                    add: add,
+                    doesNotMatch: doesNotMatch
+                };
             }
 
             this.get_unformatted = function(delimiter, orig_tag) { //function to return unformatted content in its entirety
@@ -3653,7 +3889,7 @@ function detectXMLType(str) {
                 this.input = js_source || ''; //gets the input for the Parser
 
                 // HACK: newline parsing inconsistent. This brute force normalizes the input.
-                this.input = this.input.replace(/\r\n|[\r\u2028\u2029]/g, '\n')
+                this.input = this.input.replace(/\r\n|[\r\u2028\u2029]/g, '\n');
 
                 this.output = [];
                 this.indent_character = indent_character;
@@ -3796,9 +4032,9 @@ function detectXMLType(str) {
                 case 'TK_TAG_HANDLEBARS_ELSE':
                     // Don't add a newline if opening {{#if}} tag is on the current line
                     var foundIfOnCurrentLine = false;
-                    for (var lastCheckedOutput=multi_parser.output.length-1; lastCheckedOutput>=0; lastCheckedOutput--) {
-		        if (multi_parser.output[lastCheckedOutput] === '\n') {
-		            break;
+                    for (var lastCheckedOutput = multi_parser.output.length - 1; lastCheckedOutput >= 0; lastCheckedOutput--) {
+                        if (multi_parser.output[lastCheckedOutput] === '\n') {
+                            break;
                         } else {
                             if (multi_parser.output[lastCheckedOutput].match(/{{#if/)) {
                                 foundIfOnCurrentLine = true;
@@ -3887,7 +4123,7 @@ function detectXMLType(str) {
             sweet_code += '\n';
         }
 
-        if (eol != '\n') {
+        if (eol !== '\n') {
             sweet_code = sweet_code.replace(/[\n]/g, eol);
         }
 
@@ -3897,13 +4133,13 @@ function detectXMLType(str) {
     if (typeof define === "function" && define.amd) {
         // Add support for AMD ( https://github.com/amdjs/amdjs-api/wiki/AMD#defineamd-property- )
         define(["require", "./beautify", "./beautify-css"], function(requireamd) {
-            var js_beautify =  requireamd("./beautify");
-            var css_beautify =  requireamd("./beautify-css");
+            var js_beautify = requireamd("./beautify");
+            var css_beautify = requireamd("./beautify-css");
 
             return {
-              html_beautify: function(html_source, options) {
-                return style_html(html_source, options, js_beautify.js_beautify, css_beautify.css_beautify);
-              }
+                html_beautify: function(html_source, options) {
+                    return style_html(html_source, options, js_beautify.js_beautify, css_beautify.css_beautify);
+                }
             };
         });
     } else if (typeof exports !== "undefined") {
@@ -3945,11 +4181,11 @@ function detectXMLType(str) {
 //
 
 var JavascriptObfuscator = {
-    detect: function (str) {
+    detect: function(str) {
         return /^var _0x[a-f0-9]+ ?\= ?\[/.test(str);
     },
 
-    unpack: function (str) {
+    unpack: function(str) {
         if (JavascriptObfuscator.detect(str)) {
             var matches = /var (_0x[a-f\d]+) ?\= ?\[(.*?)\];/.exec(str);
             if (matches) {
@@ -3978,15 +4214,15 @@ var JavascriptObfuscator = {
         var strings = [];
         var pos = 0;
         while (pos < str.length) {
-            if (str.charAt(pos) == '"') {
+            if (str.charAt(pos) === '"') {
                 // new word
                 var word = '';
                 pos += 1;
                 while (pos < str.length) {
-                    if (str.charAt(pos) == '"') {
+                    if (str.charAt(pos) === '"') {
                         break;
                     }
-                    if (str.charAt(pos) == '\\') {
+                    if (str.charAt(pos) === '\\') {
                         word += '\\';
                         pos++;
                     }
@@ -4001,7 +4237,7 @@ var JavascriptObfuscator = {
     },
 
 
-    _unescape: function (str) {
+    _unescape: function(str) {
         // inefficient if used repeatedly or on small strings, but wonderful on single large chunk of text
         for (var i = 32; i < 128; i++) {
             str = str.replace(new RegExp('\\\\x' + i.toString(16), 'ig'), String.fromCharCode(i));
@@ -4010,7 +4246,7 @@ var JavascriptObfuscator = {
         return str;
     },
 
-    run_tests: function (sanity_test) {
+    run_tests: function(sanity_test) {
         var t = sanity_test || new SanityTest();
 
         t.test_function(JavascriptObfuscator._smart_split, "JavascriptObfuscator._smart_split");
@@ -4068,7 +4304,7 @@ var JavascriptObfuscator = {
 //
 
 var MyObfuscate = {
-    detect: function (str) {
+    detect: function(str) {
         if (/^var _?[0O1lI]{3}\=('|\[).*\)\)\);/.test(str)) {
             return true;
         }
@@ -4078,11 +4314,11 @@ var MyObfuscate = {
         return false;
     },
 
-    unpack: function (str) {
+    unpack: function(str) {
         if (MyObfuscate.detect(str)) {
             var __eval = eval;
             try {
-                eval = function (unpacked) {
+                eval = function(unpacked) { // jshint ignore:line
                     if (MyObfuscate.starts_with(unpacked, 'var _escape')) {
                         // fetch the urlencoded stuff from the script,
                         var matches = /'([^']*)'/.exec(unpacked);
@@ -4096,11 +4332,11 @@ var MyObfuscate = {
                         unpacked = unescaped;
                     }
                     // throw to terminate the script
-                    unpacked =  "// Unpacker warning: be careful when using myobfuscate.com for your projects:\n" +
+                    unpacked = "// Unpacker warning: be careful when using myobfuscate.com for your projects:\n" +
                         "// scripts obfuscated by the free online version may call back home.\n" +
                         "\n//\n" + unpacked;
                     throw unpacked;
-                };
+                }; // jshint ignore:line
                 __eval(str); // should throw
             } catch (e) {
                 // well, it failed. we'll just return the original, instead of crashing on user.
@@ -4108,20 +4344,20 @@ var MyObfuscate = {
                     str = e;
                 }
             }
-            eval = __eval;
+            eval = __eval; // jshint ignore:line
         }
         return str;
     },
 
-    starts_with: function (str, what) {
+    starts_with: function(str, what) {
         return str.substr(0, what.length) === what;
     },
 
-    ends_with: function (str, what) {
+    ends_with: function(str, what) {
         return str.substr(str.length - what.length, what.length) === what;
     },
 
-    run_tests: function (sanity_test) {
+    run_tests: function(sanity_test) {
         var t = sanity_test || new SanityTest();
 
         return t;
@@ -4148,7 +4384,7 @@ var MyObfuscate = {
 //
 
 var P_A_C_K_E_R = {
-    detect: function (str) {
+    detect: function(str) {
         return (P_A_C_K_E_R.get_chunks(str).length > 0);
     },
 
@@ -4157,44 +4393,47 @@ var P_A_C_K_E_R = {
         return chunks ? chunks : [];
     },
 
-    unpack: function (str) {
+    unpack: function(str) {
         var chunks = P_A_C_K_E_R.get_chunks(str),
             chunk;
-        for(var i = 0; i < chunks.length; i++) {
+        for (var i = 0; i < chunks.length; i++) {
             chunk = chunks[i].replace(/\n$/, '');
-            str = str.split(chunk).join( P_A_C_K_E_R.unpack_chunk(chunk) );
+            str = str.split(chunk).join(P_A_C_K_E_R.unpack_chunk(chunk));
         }
         return str;
     },
 
-    unpack_chunk: function (str) {
+    unpack_chunk: function(str) {
         var unpacked_source = '';
         var __eval = eval;
         if (P_A_C_K_E_R.detect(str)) {
             try {
-                eval = function (s) { unpacked_source += s; return unpacked_source; };
+                eval = function(s) { // jshint ignore:line
+                    unpacked_source += s;
+                    return unpacked_source;
+                }; // jshint ignore:line
                 __eval(str);
-                if (typeof unpacked_source == 'string' && unpacked_source) {
+                if (typeof unpacked_source === 'string' && unpacked_source) {
                     str = unpacked_source;
                 }
             } catch (e) {
                 // well, it failed. we'll just return the original, instead of crashing on user.
             }
         }
-        eval = __eval;
+        eval = __eval; // jshint ignore:line
         return str;
     },
 
-    run_tests: function (sanity_test) {
-        var t = sanity_test || new SanityTest(),
+    run_tests: function(sanity_test) {
+        var t = sanity_test || new SanityTest();
 
-        pk1 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'var||a'.split('|'),0,{}))",
-        unpk1 = 'var a=1',
-        pk2 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'foo||b'.split('|'),0,{}))",
-        unpk2 = 'foo b=1',
-        pk_broken =  "eval(function(p,a,c,k,e,r){BORKBORK;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'var||a'.split('|'),0,{}))";
-        pk3 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1{}))',3,3,'var||a'.split('|'),0,{}))",
-        unpk3 = 'var a=1{}))',
+        var pk1 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'var||a'.split('|'),0,{}))";
+        var unpk1 = 'var a=1';
+        var pk2 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'foo||b'.split('|'),0,{}))";
+        var unpk2 = 'foo b=1';
+        var pk_broken = "eval(function(p,a,c,k,e,r){BORKBORK;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'var||a'.split('|'),0,{}))";
+        var pk3 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1{}))',3,3,'var||a'.split('|'),0,{}))";
+        var unpk3 = 'var a=1{}))';
 
         t.test_function(P_A_C_K_E_R.detect, "P_A_C_K_E_R.detect");
         t.expect('', false);
@@ -4237,19 +4476,19 @@ if (isNode) {
 }
 
 var Urlencoded = {
-    detect: function (str) {
+    detect: function(str) {
         // the fact that script doesn't contain any space, but has %20 instead
         // should be sufficient check for now.
-        if (str.indexOf(' ') == -1) {
-            if (str.indexOf('%2') != -1) return true;
+        if (str.indexOf(' ') === -1) {
+            if (str.indexOf('%2') !== -1) return true;
             if (str.replace(/[^%]+/g, '').length > 3) return true;
         }
         return false;
     },
 
-    unpack: function (str) {
+    unpack: function(str) {
         if (Urlencoded.detect(str)) {
-            if (str.indexOf('%2B') != -1 || str.indexOf('%2b') != -1) {
+            if (str.indexOf('%2B') !== -1 || str.indexOf('%2b') !== -1) {
                 // "+" escaped as "%2B"
                 return unescape(str.replace(/\+/g, '%20'));
             } else {
@@ -4261,7 +4500,7 @@ var Urlencoded = {
 
 
 
-    run_tests: function (sanity_test) {
+    run_tests: function(sanity_test) {
         var t = sanity_test || new SanityTest();
         t.test_function(Urlencoded.detect, "Urlencoded.detect");
         t.expect('', false);
@@ -4300,11 +4539,12 @@ if (isNode) {
     Template: test/data/javascript/node.mustache
     Data: test/data/javascript/tests.js
 */
+/*jshint unused:false */
 
 function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_beautify)
 {
 
-    var opts = {
+    var default_opts = {
         indent_size: 4,
         indent_char: ' ',
         preserve_newlines: true,
@@ -4316,15 +4556,24 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         selector_separator: '\n',
         end_with_newline: false
     };
+    var opts;
+
+    default_opts.indent_size = 4;
+    default_opts.indent_char = ' ';
+    default_opts.preserve_newlines = true;
+    default_opts.jslint_happy = false;
+    default_opts.keep_array_indentation = false;
+    default_opts.brace_style = 'collapse';
+    default_opts.operator_position = 'before-newline';
+
+    function reset_options()
+    {
+        opts = JSON.parse(JSON.stringify(default_opts));
+    }
 
     function test_js_beautifier(input)
     {
         return js_beautify(input, opts);
-    }
-
-    function test_html_beautifier(input)
-    {
-        return html_beautify(input, opts);
     }
 
     var sanitytest;
@@ -4397,8 +4646,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
     // respectively, for most of the tests' inputs.
     function beautify_brace_tests(brace_style) {
 
-        var ex_brace_style = opts.brace_style,
-            indent_on_wrap_str = '    '; // could use Array(opts.indent_size + 1).join(' '); if we wanted to replace _all_ of the hardcoded 4-space in the test and expectation strings
+        var indent_on_wrap_str = '    '; // could use Array(opts.indent_size + 1).join(' '); if we wanted to replace _all_ of the hardcoded 4-space in the test and expectation strings
 
         function permute_brace_tests(expect_open_white, expect_close_white) {
 
@@ -4521,6 +4769,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                 "    });");
         }
 
+        reset_options();
         opts.brace_style = brace_style;
 
         switch(opts.brace_style) {
@@ -4537,26 +4786,19 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             permute_brace_tests();
             break;
         }
-
-        opts.brace_style = ex_brace_style;
     }
 
     function unicode_char(value) {
-        return String.fromCharCode(value)
+        return String.fromCharCode(value);
     }
 
     function beautifier_tests()
     {
         sanitytest = test_obj;
 
-        opts.indent_size = 4;
-        opts.indent_char = ' ';
-        opts.preserve_newlines = true;
-        opts.jslint_happy = false;
-        opts.keep_array_indentation = false;
-        opts.brace_style = 'collapse';
 
-
+        reset_options();
+        //============================================================
         // Unicode Support
         bt('var ' + unicode_char(3232) + '_' + unicode_char(3232) + ' = "hi";');
         bt(
@@ -4565,7 +4807,18 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '};');
 
 
+        reset_options();
+        //============================================================
+        // Test template and continuation strings
+        bt('`This is a ${template} string.`');
+        bt('`This\n  is\n  a\n  ${template}\n  string.`');
+        bt('a = `This is a continuation\\nstring.`');
+        bt('a = "This is a continuation\\nstring."');
+        bt('`SELECT\n  nextval(\'${this.options.schema ? `${this.options.schema}.` : \'\'}"${this.tableName}_${this.autoIncrementField}_seq"\'::regclass\n  ) nextval;`');
 
+
+        reset_options();
+        //============================================================
         // ES7 Decorators
         bt('@foo');
         bt('@foo(bar)');
@@ -4575,12 +4828,15 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '})');
 
 
-
+        reset_options();
+        //============================================================
         // ES7 exponential
         bt('x ** 2');
         bt('x ** -2');
 
 
+        reset_options();
+        //============================================================
         // End With Newline - (eof = "\n")
         opts.end_with_newline = true;
         test_fragment('', '\n');
@@ -4596,25 +4852,40 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         test_fragment('\n', '');
 
 
-        // Comma-first option - (c0 = "\n, ", c1 = "\n    , ", c2 = "\n        , ", c3 = "\n            , ")
-        opts.comma_first = true;
-        bt('{a:1, b:2}', '{\n    a: 1\n    , b: 2\n}');
-        bt('var a=1, b=c[d], e=6;', 'var a = 1\n    , b = c[d]\n    , e = 6;');
-        bt('for(var a=1,b=2,c=3;d<3;d++)\ne', 'for (var a = 1, b = 2, c = 3; d < 3; d++)\n    e');
-        bt('for(var a=1,b=2,\nc=3;d<3;d++)\ne', 'for (var a = 1, b = 2\n        , c = 3; d < 3; d++)\n    e');
-        bt('function foo() {\n    return [\n        "one"\n        , "two"\n    ];\n}');
-        bt('a=[[1,2],[4,5],[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , [7, 8]\n]');
-        bt('a=[[1,2],[4,5],[7,8],]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , [7, 8]\n, ]');
-        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , [7, 8]\n]');
-        bt('a=[[1,2],[4,5],function(){},function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , function() {}\n    , [7, 8]\n]');
-        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , [7, 8]\n]');
-        bt('a=[b,c,function(){},function(){},d]', 'a = [b, c, function() {}, function() {}, d]');
-        bt('a=[b,c,\nfunction(){},function(){},d]', 'a = [b, c\n    , function() {}\n    , function() {}\n    , d\n]');
-        bt('a=[a[1],b[4],c[d[7]]]', 'a = [a[1], b[4], c[d[7]]]');
-        bt('[1,2,[3,4,[5,6],7],8]', '[1, 2, [3, 4, [5, 6], 7], 8]');
-        bt('[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]', '[\n    [\n        ["1", "2"]\n        , ["3", "4"]\n    ]\n    , [\n        ["5", "6", "7"]\n        , ["8", "9", "0"]\n    ]\n    , [\n        ["1", "2", "3"]\n        , ["4", "5", "6", "7"]\n        , ["8", "9", "0"]\n    ]\n]');
+        reset_options();
+        //============================================================
+        // Brace style permutations - (ibo = "", iao = "", ibc = "", iac = "", obo = " ", oao = " ", obc = " ", oac = " ")
+        opts.brace_style = 'collapse-preserve-inline';
+        bt('var a ={a: 2};\nvar a ={a: 2};', 'var a = { a: 2 };\nvar a = { a: 2 };');
+        bt('//case 1\nif (a == 1){}\n//case 2\nelse if (a == 2){}', '//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
+        bt('if(1){2}else{3}', 'if (1) { 2 } else { 3 }');
+        bt('try{a();}catch(b){c();}catch(d){}finally{e();}', 'try { a(); } catch (b) { c(); } catch (d) {} finally { e(); }');
 
-        // Comma-first option - (c0 = ",\n", c1 = ",\n    ", c2 = ",\n        ", c3 = ",\n            ")
+        // Brace style permutations - (ibo = "\n", iao = "\n", ibc = "\n", iac = "\n", obo = " ", oao = "\n    ", obc = "\n", oac = " ")
+        opts.brace_style = 'collapse-preserve-inline';
+        bt('var a =\n{\na: 2\n}\n;\nvar a =\n{\na: 2\n}\n;', 'var a = {\n    a: 2\n};\nvar a = {\n    a: 2\n};');
+        bt('//case 1\nif (a == 1)\n{}\n//case 2\nelse if (a == 2)\n{}', '//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
+        bt('if(1)\n{\n2\n}\nelse\n{\n3\n}', 'if (1) {\n    2\n} else {\n    3\n}');
+        bt('try\n{\na();\n}\ncatch(b)\n{\nc();\n}\ncatch(d)\n{}\nfinally\n{\ne();\n}', 'try {\n    a();\n} catch (b) {\n    c();\n} catch (d) {} finally {\n    e();\n}');
+
+        // Brace style permutations - (ibo = "", iao = "", ibc = "", iac = "", obo = " ", oao = "\n    ", obc = "\n", oac = " ")
+        opts.brace_style = 'collapse';
+        bt('var a ={a: 2};\nvar a ={a: 2};', 'var a = {\n    a: 2\n};\nvar a = {\n    a: 2\n};');
+        bt('//case 1\nif (a == 1){}\n//case 2\nelse if (a == 2){}', '//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
+        bt('if(1){2}else{3}', 'if (1) {\n    2\n} else {\n    3\n}');
+        bt('try{a();}catch(b){c();}catch(d){}finally{e();}', 'try {\n    a();\n} catch (b) {\n    c();\n} catch (d) {} finally {\n    e();\n}');
+
+        // Brace style permutations - (ibo = "\n", iao = "\n", ibc = "\n", iac = "\n", obo = " ", oao = "\n    ", obc = "\n", oac = " ")
+        opts.brace_style = 'collapse';
+        bt('var a =\n{\na: 2\n}\n;\nvar a =\n{\na: 2\n}\n;', 'var a = {\n    a: 2\n};\nvar a = {\n    a: 2\n};');
+        bt('//case 1\nif (a == 1)\n{}\n//case 2\nelse if (a == 2)\n{}', '//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
+        bt('if(1)\n{\n2\n}\nelse\n{\n3\n}', 'if (1) {\n    2\n} else {\n    3\n}');
+        bt('try\n{\na();\n}\ncatch(b)\n{\nc();\n}\ncatch(d)\n{}\nfinally\n{\ne();\n}', 'try {\n    a();\n} catch (b) {\n    c();\n} catch (d) {} finally {\n    e();\n}');
+
+
+        reset_options();
+        //============================================================
+        // Comma-first option - (c0 = ",\n", c1 = ",\n    ", c2 = ",\n        ", c3 = ",\n            ", f1 = "    ,\n    ")
         opts.comma_first = false;
         bt('{a:1, b:2}', '{\n    a: 1,\n    b: 2\n}');
         bt('var a=1, b=c[d], e=6;', 'var a = 1,\n    b = c[d],\n    e = 6;');
@@ -4631,13 +4902,629 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a=[a[1],b[4],c[d[7]]]', 'a = [a[1], b[4], c[d[7]]]');
         bt('[1,2,[3,4,[5,6],7],8]', '[1, 2, [3, 4, [5, 6], 7], 8]');
         bt('[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]', '[\n    [\n        ["1", "2"],\n        ["3", "4"]\n    ],\n    [\n        ["5", "6", "7"],\n        ["8", "9", "0"]\n    ],\n    [\n        ["1", "2", "3"],\n        ["4", "5", "6", "7"],\n        ["8", "9", "0"]\n    ]\n]');
+        bt(
+            'changeCollection.add({\n' +
+            '    name: "Jonathan" // New line inserted after this line on every save\n' +
+            '    , age: 25\n' +
+            '});',
+            'changeCollection.add({\n' +
+            '    name: "Jonathan" // New line inserted after this line on every save\n' +
+            '        ,\n    age: 25\n' +
+            '});');
+
+        // Comma-first option - (c0 = "\n, ", c1 = "\n    , ", c2 = "\n        , ", c3 = "\n            , ", f1 = ", ")
+        opts.comma_first = true;
+        bt('{a:1, b:2}', '{\n    a: 1\n    , b: 2\n}');
+        bt('var a=1, b=c[d], e=6;', 'var a = 1\n    , b = c[d]\n    , e = 6;');
+        bt('for(var a=1,b=2,c=3;d<3;d++)\ne', 'for (var a = 1, b = 2, c = 3; d < 3; d++)\n    e');
+        bt('for(var a=1,b=2,\nc=3;d<3;d++)\ne', 'for (var a = 1, b = 2\n        , c = 3; d < 3; d++)\n    e');
+        bt('function foo() {\n    return [\n        "one"\n        , "two"\n    ];\n}');
+        bt('a=[[1,2],[4,5],[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , [7, 8]\n]');
+        bt('a=[[1,2],[4,5],[7,8],]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , [7, 8]\n, ]');
+        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , [7, 8]\n]');
+        bt('a=[[1,2],[4,5],function(){},function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , function() {}\n    , [7, 8]\n]');
+        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , [7, 8]\n]');
+        bt('a=[b,c,function(){},function(){},d]', 'a = [b, c, function() {}, function() {}, d]');
+        bt('a=[b,c,\nfunction(){},function(){},d]', 'a = [b, c\n    , function() {}\n    , function() {}\n    , d\n]');
+        bt('a=[a[1],b[4],c[d[7]]]', 'a = [a[1], b[4], c[d[7]]]');
+        bt('[1,2,[3,4,[5,6],7],8]', '[1, 2, [3, 4, [5, 6], 7], 8]');
+        bt('[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]', '[\n    [\n        ["1", "2"]\n        , ["3", "4"]\n    ]\n    , [\n        ["5", "6", "7"]\n        , ["8", "9", "0"]\n    ]\n    , [\n        ["1", "2", "3"]\n        , ["4", "5", "6", "7"]\n        , ["8", "9", "0"]\n    ]\n]');
+        bt(
+            'changeCollection.add({\n' +
+            '    name: "Jonathan" // New line inserted after this line on every save\n' +
+            '    , age: 25\n' +
+            '});');
 
 
+        reset_options();
+        //============================================================
+        // Space in parens tests - (s = "", e = "")
+        opts.space_in_paren = false;
+        opts.space_in_empty_paren = false;
+        bt('if(p) foo(a,b);', 'if (p) foo(a, b);');
+        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }', 'try {\n    while (true) {\n        willThrow()\n    }\n} catch (result) switch (result) {\n    case 1:\n        ++result\n}');
+        bt('((e/((a+(b)*c)-d))^2)*5;', '((e / ((a + (b) * c) - d)) ^ 2) * 5;');
+        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}', 'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
+        bt('a=[];', 'a = [];');
+        bt('a=[b,c,d];', 'a = [b, c, d];');
+        bt('a= f[b];', 'a = f[b];');
+        bt(
+            '{\n' +
+            '    files: [ {\n' +
+            '        expand: true,\n' +
+            '        cwd: "www/gui/",\n' +
+            '        src: [ "im/design_standards/*.*" ],\n' +
+            '        dest: "www/gui/build"\n' +
+            '    } ]\n' +
+            '}',
+            '{\n' +
+            '    files: [{\n' +
+            '        expand: true,\n' +
+            '        cwd: "www/gui/",\n' +
+            '        src: ["im/design_standards/*.*"],\n' +
+            '        dest: "www/gui/build"\n' +
+            '    }]\n' +
+            '}');
 
-        // New Test Suite
+        // Space in parens tests - (s = "", e = "")
+        opts.space_in_paren = false;
+        opts.space_in_empty_paren = true;
+        bt('if(p) foo(a,b);', 'if (p) foo(a, b);');
+        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }', 'try {\n    while (true) {\n        willThrow()\n    }\n} catch (result) switch (result) {\n    case 1:\n        ++result\n}');
+        bt('((e/((a+(b)*c)-d))^2)*5;', '((e / ((a + (b) * c) - d)) ^ 2) * 5;');
+        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}', 'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
+        bt('a=[];', 'a = [];');
+        bt('a=[b,c,d];', 'a = [b, c, d];');
+        bt('a= f[b];', 'a = f[b];');
+        bt(
+            '{\n' +
+            '    files: [ {\n' +
+            '        expand: true,\n' +
+            '        cwd: "www/gui/",\n' +
+            '        src: [ "im/design_standards/*.*" ],\n' +
+            '        dest: "www/gui/build"\n' +
+            '    } ]\n' +
+            '}',
+            '{\n' +
+            '    files: [{\n' +
+            '        expand: true,\n' +
+            '        cwd: "www/gui/",\n' +
+            '        src: ["im/design_standards/*.*"],\n' +
+            '        dest: "www/gui/build"\n' +
+            '    }]\n' +
+            '}');
+
+        // Space in parens tests - (s = " ", e = "")
+        opts.space_in_paren = true;
+        opts.space_in_empty_paren = false;
+        bt('if(p) foo(a,b);', 'if ( p ) foo( a, b );');
+        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }', 'try {\n    while ( true ) {\n        willThrow()\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
+        bt('((e/((a+(b)*c)-d))^2)*5;', '( ( e / ( ( a + ( b ) * c ) - d ) ) ^ 2 ) * 5;');
+        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}', 'function f( a, b ) {\n    if ( a ) b()\n}\n\nfunction g( a, b ) {\n    if ( !a ) b()\n}');
+        bt('a=[];', 'a = [];');
+        bt('a=[b,c,d];', 'a = [ b, c, d ];');
+        bt('a= f[b];', 'a = f[ b ];');
+        bt(
+            '{\n' +
+            '    files: [ {\n' +
+            '        expand: true,\n' +
+            '        cwd: "www/gui/",\n' +
+            '        src: [ "im/design_standards/*.*" ],\n' +
+            '        dest: "www/gui/build"\n' +
+            '    } ]\n' +
+            '}');
+
+        // Space in parens tests - (s = " ", e = " ")
+        opts.space_in_paren = true;
+        opts.space_in_empty_paren = true;
+        bt('if(p) foo(a,b);', 'if ( p ) foo( a, b );');
+        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }', 'try {\n    while ( true ) {\n        willThrow( )\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
+        bt('((e/((a+(b)*c)-d))^2)*5;', '( ( e / ( ( a + ( b ) * c ) - d ) ) ^ 2 ) * 5;');
+        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}', 'function f( a, b ) {\n    if ( a ) b( )\n}\n\nfunction g( a, b ) {\n    if ( !a ) b( )\n}');
+        bt('a=[];', 'a = [ ];');
+        bt('a=[b,c,d];', 'a = [ b, c, d ];');
+        bt('a= f[b];', 'a = f[ b ];');
+        bt(
+            '{\n' +
+            '    files: [ {\n' +
+            '        expand: true,\n' +
+            '        cwd: "www/gui/",\n' +
+            '        src: [ "im/design_standards/*.*" ],\n' +
+            '        dest: "www/gui/build"\n' +
+            '    } ]\n' +
+            '}');
 
 
+        reset_options();
+        //============================================================
+        // operator_position option - ensure no neswlines if preserve_newlines is false - ()
+        opts.operator_position = 'before-newline';
+        opts.preserve_newlines = false;
+        bt(
+            'var res = a + b - c / d * e % f;\n' +
+            'var res = g & h | i ^ j;\n' +
+            'var res = (k && l || m) ? n : o;\n' +
+            'var res = p >> q << r >>> s;\n' +
+            'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'ac + -ad');
+        bt(
+            'var res = a + b\n' +
+            '- c /\n' +
+            'd  *     e\n' +
+            '%\n' +
+            'f;\n' +
+            '   var res = g & h\n' +
+            '| i ^\n' +
+            'j;\n' +
+            'var res = (k &&\n' +
+            'l\n' +
+            '|| m) ?\n' +
+            'n\n' +
+            ': o\n' +
+            ';\n' +
+            'var res = p\n' +
+            '>> q <<\n' +
+            'r\n' +
+            '>>> s;\n' +
+            'var res\n' +
+            '  = t\n' +
+            '\n' +
+            ' === u !== v\n' +
+            ' !=\n' +
+            'w\n' +
+            '== x >=\n' +
+            'y <= z > aa <\n' +
+            'ab;\n' +
+            'ac +\n' +
+            '-ad',
+            'var res = a + b - c / d * e % f;\n' +
+            'var res = g & h | i ^ j;\n' +
+            'var res = (k && l || m) ? n : o;\n' +
+            'var res = p >> q << r >>> s;\n' +
+            'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'ac + -ad');
 
+        // operator_position option - ensure no neswlines if preserve_newlines is false - ()
+        opts.operator_position = 'after-newline';
+        opts.preserve_newlines = false;
+        bt(
+            'var res = a + b - c / d * e % f;\n' +
+            'var res = g & h | i ^ j;\n' +
+            'var res = (k && l || m) ? n : o;\n' +
+            'var res = p >> q << r >>> s;\n' +
+            'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'ac + -ad');
+        bt(
+            'var res = a + b\n' +
+            '- c /\n' +
+            'd  *     e\n' +
+            '%\n' +
+            'f;\n' +
+            '   var res = g & h\n' +
+            '| i ^\n' +
+            'j;\n' +
+            'var res = (k &&\n' +
+            'l\n' +
+            '|| m) ?\n' +
+            'n\n' +
+            ': o\n' +
+            ';\n' +
+            'var res = p\n' +
+            '>> q <<\n' +
+            'r\n' +
+            '>>> s;\n' +
+            'var res\n' +
+            '  = t\n' +
+            '\n' +
+            ' === u !== v\n' +
+            ' !=\n' +
+            'w\n' +
+            '== x >=\n' +
+            'y <= z > aa <\n' +
+            'ab;\n' +
+            'ac +\n' +
+            '-ad',
+            'var res = a + b - c / d * e % f;\n' +
+            'var res = g & h | i ^ j;\n' +
+            'var res = (k && l || m) ? n : o;\n' +
+            'var res = p >> q << r >>> s;\n' +
+            'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'ac + -ad');
+
+        // operator_position option - ensure no neswlines if preserve_newlines is false - ()
+        opts.operator_position = 'preserve-newline';
+        opts.preserve_newlines = false;
+        bt(
+            'var res = a + b - c / d * e % f;\n' +
+            'var res = g & h | i ^ j;\n' +
+            'var res = (k && l || m) ? n : o;\n' +
+            'var res = p >> q << r >>> s;\n' +
+            'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'ac + -ad');
+        bt(
+            'var res = a + b\n' +
+            '- c /\n' +
+            'd  *     e\n' +
+            '%\n' +
+            'f;\n' +
+            '   var res = g & h\n' +
+            '| i ^\n' +
+            'j;\n' +
+            'var res = (k &&\n' +
+            'l\n' +
+            '|| m) ?\n' +
+            'n\n' +
+            ': o\n' +
+            ';\n' +
+            'var res = p\n' +
+            '>> q <<\n' +
+            'r\n' +
+            '>>> s;\n' +
+            'var res\n' +
+            '  = t\n' +
+            '\n' +
+            ' === u !== v\n' +
+            ' !=\n' +
+            'w\n' +
+            '== x >=\n' +
+            'y <= z > aa <\n' +
+            'ab;\n' +
+            'ac +\n' +
+            '-ad',
+            'var res = a + b - c / d * e % f;\n' +
+            'var res = g & h | i ^ j;\n' +
+            'var res = (k && l || m) ? n : o;\n' +
+            'var res = p >> q << r >>> s;\n' +
+            'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'ac + -ad');
+
+
+        reset_options();
+        //============================================================
+        // operator_position option - set to 'before-newline' (default value)
+
+        // comprehensive, various newlines
+        bt(
+            'var res = a + b\n' +
+            '- c /\n' +
+            'd  *     e\n' +
+            '%\n' +
+            'f;\n' +
+            '   var res = g & h\n' +
+            '| i ^\n' +
+            'j;\n' +
+            'var res = (k &&\n' +
+            'l\n' +
+            '|| m) ?\n' +
+            'n\n' +
+            ': o\n' +
+            ';\n' +
+            'var res = p\n' +
+            '>> q <<\n' +
+            'r\n' +
+            '>>> s;\n' +
+            'var res\n' +
+            '  = t\n' +
+            '\n' +
+            ' === u !== v\n' +
+            ' !=\n' +
+            'w\n' +
+            '== x >=\n' +
+            'y <= z > aa <\n' +
+            'ab;\n' +
+            'ac +\n' +
+            '-ad',
+            'var res = a + b -\n' +
+            '    c /\n' +
+            '    d * e %\n' +
+            '    f;\n' +
+            'var res = g & h |\n' +
+            '    i ^\n' +
+            '    j;\n' +
+            'var res = (k &&\n' +
+            '        l ||\n' +
+            '        m) ?\n' +
+            '    n :\n' +
+            '    o;\n' +
+            'var res = p >>\n' +
+            '    q <<\n' +
+            '    r >>>\n' +
+            '    s;\n' +
+            'var res = t\n' +
+            '\n' +
+            '    ===\n' +
+            '    u !== v !=\n' +
+            '    w ==\n' +
+            '    x >=\n' +
+            '    y <= z > aa <\n' +
+            '    ab;\n' +
+            'ac +\n' +
+            '    -ad');
+
+        // colon special case
+        bt(
+            'var a = {\n' +
+            '    b\n' +
+            ': bval,\n' +
+            '    c:\n' +
+            'cval\n' +
+            '    ,d: dval\n' +
+            '};\n' +
+            'var e = f ? g\n' +
+            ': h;\n' +
+            'var i = j ? k :\n' +
+            'l;',
+            'var a = {\n' +
+            '    b: bval,\n' +
+            '    c: cval,\n' +
+            '    d: dval\n' +
+            '};\n' +
+            'var e = f ? g :\n' +
+            '    h;\n' +
+            'var i = j ? k :\n' +
+            '    l;');
+
+        // catch-all, includes brackets and other various code
+        bt(
+            'var d = 1;\n' +
+            'if (a === b\n' +
+            '    && c) {\n' +
+            '    d = (c * everything\n' +
+            '            / something_else) %\n' +
+            '        b;\n' +
+            '    e\n' +
+            '        += d;\n' +
+            '\n' +
+            '} else if (!(complex && simple) ||\n' +
+            '    (emotion && emotion.name === "happy")) {\n' +
+            '    cryTearsOfJoy(many ||\n' +
+            '        anOcean\n' +
+            '        || aRiver);\n' +
+            '}',
+            'var d = 1;\n' +
+            'if (a === b &&\n' +
+            '    c) {\n' +
+            '    d = (c * everything /\n' +
+            '            something_else) %\n' +
+            '        b;\n' +
+            '    e\n' +
+            '        += d;\n' +
+            '\n' +
+            '} else if (!(complex && simple) ||\n' +
+            '    (emotion && emotion.name === "happy")) {\n' +
+            '    cryTearsOfJoy(many ||\n' +
+            '        anOcean ||\n' +
+            '        aRiver);\n' +
+            '}');
+
+
+        reset_options();
+        //============================================================
+        // operator_position option - set to 'after_newline'
+        opts.operator_position = 'after-newline';
+
+        // comprehensive, various newlines
+        bt(
+            'var res = a + b\n' +
+            '- c /\n' +
+            'd  *     e\n' +
+            '%\n' +
+            'f;\n' +
+            '   var res = g & h\n' +
+            '| i ^\n' +
+            'j;\n' +
+            'var res = (k &&\n' +
+            'l\n' +
+            '|| m) ?\n' +
+            'n\n' +
+            ': o\n' +
+            ';\n' +
+            'var res = p\n' +
+            '>> q <<\n' +
+            'r\n' +
+            '>>> s;\n' +
+            'var res\n' +
+            '  = t\n' +
+            '\n' +
+            ' === u !== v\n' +
+            ' !=\n' +
+            'w\n' +
+            '== x >=\n' +
+            'y <= z > aa <\n' +
+            'ab;\n' +
+            'ac +\n' +
+            '-ad',
+            'var res = a + b\n' +
+            '    - c\n' +
+            '    / d * e\n' +
+            '    % f;\n' +
+            'var res = g & h\n' +
+            '    | i\n' +
+            '    ^ j;\n' +
+            'var res = (k\n' +
+            '        && l\n' +
+            '        || m)\n' +
+            '    ? n\n' +
+            '    : o;\n' +
+            'var res = p\n' +
+            '    >> q\n' +
+            '    << r\n' +
+            '    >>> s;\n' +
+            'var res = t\n' +
+            '\n' +
+            '    === u !== v\n' +
+            '    != w\n' +
+            '    == x\n' +
+            '    >= y <= z > aa\n' +
+            '    < ab;\n' +
+            'ac\n' +
+            '    + -ad');
+
+        // colon special case
+        bt(
+            'var a = {\n' +
+            '    b\n' +
+            ': bval,\n' +
+            '    c:\n' +
+            'cval\n' +
+            '    ,d: dval\n' +
+            '};\n' +
+            'var e = f ? g\n' +
+            ': h;\n' +
+            'var i = j ? k :\n' +
+            'l;',
+            'var a = {\n' +
+            '    b: bval,\n' +
+            '    c: cval,\n' +
+            '    d: dval\n' +
+            '};\n' +
+            'var e = f ? g\n' +
+            '    : h;\n' +
+            'var i = j ? k\n' +
+            '    : l;');
+
+        // catch-all, includes brackets and other various code
+        bt(
+            'var d = 1;\n' +
+            'if (a === b\n' +
+            '    && c) {\n' +
+            '    d = (c * everything\n' +
+            '            / something_else) %\n' +
+            '        b;\n' +
+            '    e\n' +
+            '        += d;\n' +
+            '\n' +
+            '} else if (!(complex && simple) ||\n' +
+            '    (emotion && emotion.name === "happy")) {\n' +
+            '    cryTearsOfJoy(many ||\n' +
+            '        anOcean\n' +
+            '        || aRiver);\n' +
+            '}',
+            'var d = 1;\n' +
+            'if (a === b\n' +
+            '    && c) {\n' +
+            '    d = (c * everything\n' +
+            '            / something_else)\n' +
+            '        % b;\n' +
+            '    e\n' +
+            '        += d;\n' +
+            '\n' +
+            '} else if (!(complex && simple)\n' +
+            '    || (emotion && emotion.name === "happy")) {\n' +
+            '    cryTearsOfJoy(many\n' +
+            '        || anOcean\n' +
+            '        || aRiver);\n' +
+            '}');
+
+
+        reset_options();
+        //============================================================
+        // operator_position option - set to 'preserve-newline'
+        opts.operator_position = 'preserve-newline';
+
+        // comprehensive, various newlines
+        bt(
+            'var res = a + b\n' +
+            '- c /\n' +
+            'd  *     e\n' +
+            '%\n' +
+            'f;\n' +
+            '   var res = g & h\n' +
+            '| i ^\n' +
+            'j;\n' +
+            'var res = (k &&\n' +
+            'l\n' +
+            '|| m) ?\n' +
+            'n\n' +
+            ': o\n' +
+            ';\n' +
+            'var res = p\n' +
+            '>> q <<\n' +
+            'r\n' +
+            '>>> s;\n' +
+            'var res\n' +
+            '  = t\n' +
+            '\n' +
+            ' === u !== v\n' +
+            ' !=\n' +
+            'w\n' +
+            '== x >=\n' +
+            'y <= z > aa <\n' +
+            'ab;\n' +
+            'ac +\n' +
+            '-ad',
+            'var res = a + b\n' +
+            '    - c /\n' +
+            '    d * e\n' +
+            '    %\n' +
+            '    f;\n' +
+            'var res = g & h\n' +
+            '    | i ^\n' +
+            '    j;\n' +
+            'var res = (k &&\n' +
+            '        l\n' +
+            '        || m) ?\n' +
+            '    n\n' +
+            '    : o;\n' +
+            'var res = p\n' +
+            '    >> q <<\n' +
+            '    r\n' +
+            '    >>> s;\n' +
+            'var res = t\n' +
+            '\n' +
+            '    === u !== v\n' +
+            '    !=\n' +
+            '    w\n' +
+            '    == x >=\n' +
+            '    y <= z > aa <\n' +
+            '    ab;\n' +
+            'ac +\n' +
+            '    -ad');
+
+        // colon special case
+        bt(
+            'var a = {\n' +
+            '    b\n' +
+            ': bval,\n' +
+            '    c:\n' +
+            'cval\n' +
+            '    ,d: dval\n' +
+            '};\n' +
+            'var e = f ? g\n' +
+            ': h;\n' +
+            'var i = j ? k :\n' +
+            'l;',
+            'var a = {\n' +
+            '    b: bval,\n' +
+            '    c: cval,\n' +
+            '    d: dval\n' +
+            '};\n' +
+            'var e = f ? g\n' +
+            '    : h;\n' +
+            'var i = j ? k :\n' +
+            '    l;');
+
+        // catch-all, includes brackets and other various code
+        bt(
+            'var d = 1;\n' +
+            'if (a === b\n' +
+            '    && c) {\n' +
+            '    d = (c * everything\n' +
+            '            / something_else) %\n' +
+            '        b;\n' +
+            '    e\n' +
+            '        += d;\n' +
+            '\n' +
+            '} else if (!(complex && simple) ||\n' +
+            '    (emotion && emotion.name === "happy")) {\n' +
+            '    cryTearsOfJoy(many ||\n' +
+            '        anOcean\n' +
+            '        || aRiver);\n' +
+            '}');
+
+
+        reset_options();
+        //============================================================
         // Async / await tests
         bt('async function foo() {}');
         bt('let w = async function foo() {}');
@@ -4655,7 +5542,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('async.map(function(t) {})');
 
 
-
+        reset_options();
+        //============================================================
         // e4x - Test that e4x literals passed through when e4x-option is enabled
         opts.e4x = true;
         bt('xml=<a b="c"><d/><e>\n foo</e>x</a>;', 'xml = <a b="c"><d/><e>\n foo</e>x</a>;');
@@ -4671,6 +5559,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         // xml literals with special characters in elem names - see http://www.w3.org/TR/REC-xml/#NT-NameChar
         bt('xml = <_:.valid.xml- _:.valid.xml-="123"/>;');
+
+        // xml literals with attributes without equal sign
+        bt('xml = <elem someAttr/>;');
 
         // Handles CDATA
         bt('xml=<![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;', 'xml = <![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;');
@@ -4726,7 +5617,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '\n' +
             'var HelloMessage = React.createClass({\n' +
             '    render: function() {\n' +
-            '        return <div>Hello {this.props.name}</div>;\n' +
+            '        return <div {someAttr}>Hello {this.props.name}</div>;\n' +
             '    }\n' +
             '});\n' +
             'React.render(<HelloMessage name="John" />, mountNode);');
@@ -4789,7 +5680,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    render: function() {\n' +
             '        return (\n' +
             '            <div>\n' +
-            '                <h3>TODO</h3>\n' +
+            '                <h3 {someAttr}>TODO</h3>\n' +
             '                <TodoList items={this.state.items} />\n' +
             '                <form onSubmit={this.handleSubmit}>\n' +
             '                    <input onChange={this.onChange} value={this.state.text} />\n' +
@@ -4945,7 +5836,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '});');
 
 
-
+        reset_options();
+        //============================================================
         // e4x disabled
         opts.e4x = false;
         bt(
@@ -4953,12 +5845,14 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'xml = < a b = "c" > < d / > < e >\n    foo < /e>x</a > ;');
 
 
-
+        reset_options();
+        //============================================================
         // Multiple braces
         bt('{{}/z/}', '{\n    {}\n    /z/\n}');
 
 
-
+        reset_options();
+        //============================================================
         // Beautify preserve formatting
         bt('/* beautify preserve:start */\n/* beautify preserve:end */');
         bt('/* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */');
@@ -5206,7 +6100,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '};');
 
 
-
+        reset_options();
+        //============================================================
         // Template Formatting
         bt('<?=$view["name"]; ?>');
         bt('a = <?= external() ?>;');
@@ -5220,6 +6115,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a = <%= external() %>;');
 
 
+        reset_options();
+        //============================================================
         // jslint and space after anon function - (f = " ", c = "")
         opts.jslint_happy = true;
         opts.space_after_anon_function = true;
@@ -5229,6 +6126,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt(
             'x();\n\nfunction(){}',
             'x();\n\nfunction () {}');
+        bt(
+            'x();\n\nvar x = {\nx: function(){}\n}',
+            'x();\n\nvar x = {\n    x: function () {}\n}');
         bt(
             'function () {\n    var a, b, c, d, e = [],\n        f;\n}');
         bt(
@@ -5259,6 +6159,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt(
             'x();\n\nfunction(){}',
             'x();\n\nfunction () {}');
+        bt(
+            'x();\n\nvar x = {\nx: function(){}\n}',
+            'x();\n\nvar x = {\n    x: function () {}\n}');
         bt(
             'function () {\n    var a, b, c, d, e = [],\n        f;\n}');
         bt(
@@ -5290,6 +6193,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'x();\n\nfunction(){}',
             'x();\n\nfunction () {}');
         bt(
+            'x();\n\nvar x = {\nx: function(){}\n}',
+            'x();\n\nvar x = {\n    x: function () {}\n}');
+        bt(
             'function () {\n    var a, b, c, d, e = [],\n        f;\n}');
         bt(
             'switch(x) {case 0: case 1: a(); break; default: break}',
@@ -5320,6 +6226,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'x();\n\nfunction(){}',
             'x();\n\nfunction() {}');
         bt(
+            'x();\n\nvar x = {\nx: function(){}\n}',
+            'x();\n\nvar x = {\n    x: function() {}\n}');
+        bt(
             'function () {\n    var a, b, c, d, e = [],\n        f;\n}',
             'function() {\n    var a, b, c, d, e = [],\n        f;\n}');
         bt(
@@ -5342,7 +6251,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('function* x() {\n    yield 1;\n}');
 
 
-
+        reset_options();
+        //============================================================
         // Regression tests
 
         // Issue 241
@@ -5684,8 +6594,117 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    }\n' +
             '}.fn2()');
 
+        // Issue 854 - Arrow function with statement block
+        bt(
+            'test(() => {\n' +
+            '    var a = {}\n' +
+            '\n' +
+            '    a.what = () => true ? 1 : 2\n' +
+            '\n' +
+            '    a.thing = () => {\n' +
+            '        b();\n' +
+            '    }\n' +
+            '})');
+
+        // Issue 406 - Multiline array
+        bt(
+            'var tempName = [\n' +
+            '    "temp",\n' +
+            '    process.pid,\n' +
+            '    (Math.random() * 0x1000000000).toString(36),\n' +
+            '    new Date().getTime()\n' +
+            '].join("-");');
 
 
+        reset_options();
+        //============================================================
+        // Destructured and related
+        opts.brace_style = 'collapse-preserve-inline';
+
+        // Issue 382 - import destructured
+        bt(
+            'module "Even" {\n' +
+            '    import { odd, oddly } from "Odd";\n' +
+            '}');
+        bt(
+            'import defaultMember from "module-name";\n' +
+            'import * as name from "module-name";\n' +
+            'import { member } from "module-name";\n' +
+            'import { member as alias } from "module-name";\n' +
+            'import { member1, member2 } from "module-name";\n' +
+            'import { member1, member2 as alias2 } from "module-name";\n' +
+            'import defaultMember, { member, member2 } from "module-name";\n' +
+            'import defaultMember, * as name from "module-name";\n' +
+            'import "module-name";');
+
+        // Issue 858 - from is a keyword only after import
+        bt(
+            'if (from < to) {\n' +
+            '    from++;\n' +
+            '} else {\n' +
+            '    from--;\n' +
+            '}');
+
+        // Issue 511 - destrutured
+        bt(
+            'var { b, c } = require("../stores");\n' +
+            'var { ProjectStore } = require("../stores");\n' +
+            '\n' +
+            'function takeThing({ prop }) {\n' +
+            '    console.log("inner prop", prop)\n' +
+            '}');
+
+        // Issue 315 - Short objects
+        bt(
+            'var a = { b: { c: { d: e } } };');
+        bt(
+            'var a = {\n' +
+            '    b: {\n' +
+            '        c: { d: e }\n' +
+            '        c3: { d: e }\n' +
+            '    },\n' +
+            '    b2: { c: { d: e } }\n' +
+            '};');
+
+        // Issue 370 - Short objects in array
+        bt(
+            'var methods = [\n' +
+            '    { name: "to" },\n' +
+            '    { name: "step" },\n' +
+            '    { name: "move" },\n' +
+            '    { name: "min" },\n' +
+            '    { name: "max" }\n' +
+            '];');
+
+        // Issue 838 - Short objects in array
+        bt(
+            'function(url, callback) {\n' +
+            '    var script = document.createElement("script")\n' +
+            '    if (true) script.onreadystatechange = function() {\n' +
+            '        foo();\n' +
+            '    }\n' +
+            '    else script.onload = callback;\n' +
+            '}');
+
+        // Issue 578 - Odd indenting after function
+        bt(
+            'function bindAuthEvent(eventName) {\n' +
+            '    self.auth.on(eventName, function(event, meta) {\n' +
+            '        self.emit(eventName, event, meta);\n' +
+            '    });\n' +
+            '}\n' +
+            '["logged_in", "logged_out", "signed_up", "updated_user"].forEach(bindAuthEvent);');
+
+        // Issue #487 - some short expressions examples
+        bt(
+            'if (a == 1) { a++; }\n' +
+            'a = { a: a };\n' +
+            'UserDB.findOne({ username: "xyz" }, function(err, user) {});\n' +
+            'import { fs } from "fs";');
+
+
+        reset_options();
+        //============================================================
         // Old tests
         bt('');
         test_fragment('   return .5');
@@ -6103,7 +7122,14 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('var a={bing:1},b=2,c=3;', 'var a = {\n        bing: 1\n    },\n    b = 2,\n    c = 3;');
 
 
+    }
 
+    function beautifier_unconverted_tests()
+    {
+        sanitytest = test_obj;
+
+        reset_options();
+        //============================================================
         opts.indent_size = 1;
         opts.indent_char = ' ';
         bt('{ one_char() }', "{\n one_char()\n}");
@@ -6131,6 +7157,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.indent_char = ' ';
         opts.indent_with_tabs = false;
 
+        reset_options();
+        //============================================================
         opts.preserve_newlines = false;
 
         bt('var\na=dont_preserve_newlines;', 'var a = dont_preserve_newlines;');
@@ -6151,6 +7179,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('if (foo) //  comment\n{\n    bar();\n}');
 
 
+        reset_options();
+        //============================================================
         opts.keep_array_indentation = false;
         bt("a = ['a', 'b', 'c',\n   'd', 'e', 'f']",
             "a = ['a', 'b', 'c',\n    'd', 'e', 'f'\n]");
@@ -6292,9 +7322,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 //             "}");
 
 
-        opts.keep_array_indentation = false;
-
-
+        reset_options();
+        //============================================================
         bt('a = //comment\n    /regex/;');
 
         bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}', 'if (a) {\n    b;\n} else {\n    c;\n}');
@@ -6333,11 +7362,15 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('switch (true) {\n    case /swf/i.test(foo):\n        bar();\n}');
         bt('createdAt = {\n    type: Date,\n    default: Date.now\n}');
         bt('switch (createdAt) {\n    case a:\n        Date,\n    default:\n        Date.now\n}');
+
+        reset_options();
+        //============================================================
         opts.space_before_conditional = false;
         bt('if(a) b()');
-        opts.space_before_conditional = true;
 
 
+        reset_options();
+        //============================================================
         opts.preserve_newlines = true;
         bt('var a = 42; // foo\n\nvar b;');
         bt('var a = 42; // foo\n\n\nvar b;');
@@ -6350,6 +7383,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
            ');');
 
 
+        reset_options();
+        //============================================================
         opts.unescape_strings = false;
         test_fragment('"\\x22\\x27", \'\\x22\\x27\', "\\x5c", \'\\x5c\', "\\xff and \\xzz", "unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"');
         opts.unescape_strings = true;
@@ -6361,8 +7396,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"',
            '"\\"\'", \'"\\\'\', "\\\\", \'\\\\\', "\\xff and \\xzz", "unicode \\u0000 \\" \' \\\\ \\uffff \\uzzzz"');
         */
-        opts.unescape_strings = false;
 
+        reset_options();
+        //============================================================
         bt('return function();');
         bt('var a = function();');
         bt('var a = 5 + function();');
@@ -6378,6 +7414,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         bt('/* foo */\n"x"');
 
+        reset_options();
+        //============================================================
         opts.break_chained_methods = false;
         opts.preserve_newlines = false;
         bt('foo\n.bar()\n.baz().cucumber(fat)', 'foo.bar().baz().cucumber(fat)');
@@ -6414,12 +7452,12 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('this.something.xxx = foo.moo.bar()');
         bt('this\n.something\n.xxx = foo.moo\n.bar()', 'this\n    .something\n    .xxx = foo.moo\n    .bar()');
 
-        opts.break_chained_methods = false;
-
+        reset_options();
+        //============================================================
         // Line wrap test intputs
         //.............---------1---------2---------3---------4---------5---------6---------7
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        wrap_input_1=('foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
+        wrap_input_1=('foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
                       'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
                       'return between_return_and_expression_should_never_wrap.but_this_can\n' +
                       'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
@@ -6434,7 +7472,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         //.............---------1---------2---------3---------4---------5---------6---------7
         //.............1234567890123456789012345678901234567890123456789012345678901234567890
         wrap_input_2=('{\n' +
-                      '    foo.bar().baz().cucumber((fat && "sassy") || (leans\n&& mean));\n' +
+                      '    foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
                       '    Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
                       '    return between_return_and_expression_should_never_wrap.but_this_can\n' +
                       '    throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
@@ -6689,8 +7727,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                       '    }\n'+
                       '}');
 
-        opts.wrap_line_length = 0;
-
+        reset_options();
+        //============================================================
         opts.preserve_newlines = false;
         bt('if (foo) // comment\n    bar();');
         bt('if (foo) // comment\n    (bar());');
@@ -6849,8 +7887,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('var a = /*i*/\n"b";', 'var a = /*i*/\n    "b";');
         bt('var a = /*i*/\nb;', 'var a = /*i*/\n    b;');
         bt('{\n\n\n"x"\n}', '{\n\n\n    "x"\n}');
-        bt('if(a &&\nb\n||\nc\n||d\n&&\ne) e = f', 'if (a &&\n    b ||\n    c || d &&\n    e) e = f');
-        bt('if(a &&\n(b\n||\nc\n||d)\n&&\ne) e = f', 'if (a &&\n    (b ||\n        c || d) &&\n    e) e = f');
+        bt('if(a &&\nb\n||\nc\n||d\n&&\ne) e = f', 'if (a &&\n    b ||\n    c ||\n    d &&\n    e) e = f');
+        bt('if(a &&\n(b\n||\nc\n||d)\n&&\ne) e = f', 'if (a &&\n    (b ||\n        c ||\n        d) &&\n    e) e = f');
         test_fragment('\n\n"x"', '"x"');
 
         // this beavior differs between js and python, defaults to unlimited in js, 10 in python
@@ -6860,59 +7898,15 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a = 1;\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nb = 2;',
             'a = 1;\n\n\n\n\n\n\n\nb = 2;');
 
-        // Test the option to have spaces within parens
-        opts.space_in_paren = false;
-        bt('if(p) foo(a,b)', 'if (p) foo(a, b)');
-        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
-           'try {\n    while (true) {\n        willThrow()\n    }\n} catch (result) switch (result) {\n    case 1:\n        ++result\n}');
-        bt('((e/((a+(b)*c)-d))^2)*5;', '((e / ((a + (b) * c) - d)) ^ 2) * 5;');
-        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
-            'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
-        bt('a=[];',
-            'a = [];');
-        bt('a=[b,c,d];',
-            'a = [b, c, d];');
-        bt('a= f[b];',
-            'a = f[b];');
-        opts.space_in_paren = true;
-        bt('if(p) foo(a,b)', 'if ( p ) foo( a, b )');
-        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
-           'try {\n    while ( true ) {\n        willThrow()\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
-        bt('((e/((a+(b)*c)-d))^2)*5;', '( ( e / ( ( a + ( b ) * c ) - d ) ) ^ 2 ) * 5;');
-        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
-            'function f( a, b ) {\n    if ( a ) b()\n}\n\nfunction g( a, b ) {\n    if ( !a ) b()\n}');
-        bt('a=[];',
-            'a = [];');
-        bt('a=[b,c,d];',
-            'a = [ b, c, d ];');
-        bt('a= f[b];',
-            'a = f[ b ];');
-        opts.space_in_empty_paren = true;
-        bt('if(p) foo(a,b)', 'if ( p ) foo( a, b )');
-        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
-           'try {\n    while ( true ) {\n        willThrow( )\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
-        bt('((e/((a+(b)*c)-d))^2)*5;', '( ( e / ( ( a + ( b ) * c ) - d ) ) ^ 2 ) * 5;');
-        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
-            'function f( a, b ) {\n    if ( a ) b( )\n}\n\nfunction g( a, b ) {\n    if ( !a ) b( )\n}');
-        bt('a=[];',
-            'a = [ ];');
-        bt('a=[b,c,d];',
-            'a = [ b, c, d ];');
-        bt('a= f[b];',
-            'a = f[ b ];');
-        opts.space_in_empty_paren = false;
-        opts.space_in_paren = false;
+        reset_options();
+        //============================================================
 
-        // Test template strings
-        bt('`This is a ${template} string.`', '`This is a ${template} string.`');
-        bt('`This\n  is\n  a\n  ${template}\n  string.`', '`This\n  is\n  a\n  ${template}\n  string.`');
-        bt('a = `This is a continuation\\\nstring.`', 'a = `This is a continuation\\\nstring.`');
-        bt('a = "This is a continuation\\\nstring."', 'a = "This is a continuation\\\nstring."');
 
         Urlencoded.run_tests(sanitytest);
     }
 
     beautifier_tests();
+    beautifier_unconverted_tests();
 }
 
 if (typeof exports !== "undefined") {
@@ -6928,11 +7922,12 @@ if (typeof exports !== "undefined") {
     Template: test/data/css/node.mustache
     Data: test/data/css/tests.js
 */
+/*jshint unused:false */
 
 function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_beautify)
 {
 
-    var opts = {
+    var default_opts = {
         indent_size: 4,
         indent_char: ' ',
         preserve_newlines: true,
@@ -6942,9 +7937,20 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         space_before_conditional: true,
         break_chained_methods: false,
         selector_separator: '\n',
-        end_with_newline: false,
-        newline_between_rules: true
+        end_with_newline: false
     };
+    var opts;
+
+    default_opts.indent_size = 1;
+    default_opts.indent_char = '\t';
+    default_opts.selector_separator_newline = true;
+    default_opts.end_with_newline = false;
+    default_opts.newline_between_rules = false;
+
+    function reset_options()
+    {
+        opts = JSON.parse(JSON.stringify(default_opts));
+    }
 
     function test_css_beautifier(input)
     {
@@ -6985,21 +7991,20 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
     }
 
     function unicode_char(value) {
-        return String.fromCharCode(value)
+        return String.fromCharCode(value);
     }
 
     function beautifier_tests()
     {
         sanitytest = test_obj;
 
+        reset_options();
+        //============================================================
         t(".tabs {}");
 
-        opts.indent_size = 1;
-        opts.indent_char = '\t';
-        opts.selector_separator_newline = true;
-        opts.end_with_newline = false;
-        opts.newline_between_rules = false;
 
+        reset_options();
+        //============================================================
         // End With Newline - (eof = "\n")
         opts.end_with_newline = true;
         test_fragment('', '\n');
@@ -7014,15 +8019,24 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         test_fragment('   \n\n.tabs{}\n\n\n\n', '   .tabs {}');
         test_fragment('\n', '');
 
+
+        reset_options();
+        //============================================================
         // Empty braces
         t('.tabs{}', '.tabs {}');
         t('.tabs { }', '.tabs {}');
         t('.tabs    {    }', '.tabs {}');
         t('.tabs    \n{\n    \n  }', '.tabs {}');
 
+
+        reset_options();
+        //============================================================
         //
         t('#cboxOverlay {\n\tbackground: url(images/overlay.png) repeat 0 0;\n\topacity: 0.9;\n\tfilter: alpha(opacity = 90);\n}', '#cboxOverlay {\n\tbackground: url(images/overlay.png) repeat 0 0;\n\topacity: 0.9;\n\tfilter: alpha(opacity=90);\n}');
 
+
+        reset_options();
+        //============================================================
         // Selector Separator - (separator = " ", separator1 = " ")
         opts.selector_separator_newline = false;
         opts.selector_separator = " ";
@@ -7059,6 +8073,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('#bla, #foo{color:black}', '#bla,\n#foo {\n\tcolor: black\n}');
         t('a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}', 'a:first-child,\na:first-child {\n\tcolor: red;\n\tdiv:first-child,\n\tdiv:hover {\n\t\tcolor: black;\n\t}\n}');
 
+
+        reset_options();
+        //============================================================
         // Newline Between Rules - (separator = "\n")
         opts.newline_between_rules = true;
         t('.div {}\n.span {}', '.div {}\n\n.span {}');
@@ -7087,6 +8104,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('a:first-child{color:red;div:first-child{color:black;}}\n.div{height:15px;}', 'a:first-child {\n\tcolor: red;\n\tdiv:first-child {\n\t\tcolor: black;\n\t}\n}\n.div {\n\theight: 15px;\n}');
         t('a:first-child{color:red;div:not(.peq){color:black;}}\n.div{height:15px;}', 'a:first-child {\n\tcolor: red;\n\tdiv:not(.peq) {\n\t\tcolor: black;\n\t}\n}\n.div {\n\theight: 15px;\n}');
 
+
+        reset_options();
+        //============================================================
         // Functions braces
         t('.tabs(){}', '.tabs() {}');
         t('.tabs (){}', '.tabs () {}');
@@ -7097,6 +8117,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('.tabs  (t, t2)  \n{\n  key: val(p1  ,p2);  \n  }', '.tabs (t, t2) {\n\tkey: val(p1, p2);\n}');
         t('.box-shadow(@shadow: 0 1px 3px rgba(0, 0, 0, .25)) {\n\t-webkit-box-shadow: @shadow;\n\t-moz-box-shadow: @shadow;\n\tbox-shadow: @shadow;\n}');
 
+
+        reset_options();
+        //============================================================
         // Comments
         t('/* test */');
         t('.tabs{/* test */}', '.tabs {\n\t/* test */\n}');
@@ -7116,6 +8139,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('.tabs{width:10px;//end of line comment\nheight:10px;}', '.tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px;\n}');
         t('.tabs{width:10px;//end of line comment\nheight:10px;//another\n}', '.tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px; //another\n}');
 
+
+        reset_options();
+        //============================================================
         // Psuedo-classes vs Variables
         t('@page :first {}');
 
@@ -7123,6 +8149,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('@page:first {}', '@page: first {}');
         t('@page: first {}');
 
+
+        reset_options();
+        //============================================================
         // SASS/SCSS
 
         // Basic Interpolation
@@ -7134,8 +8163,20 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '\tmargin: 1.6rem #{$margin}rem 1.6rem 0;\n' +
             '}');
 
+
+        reset_options();
+        //============================================================
         //
 
+
+    }
+
+    function beautifier_unconverted_tests()
+    {
+        sanitytest = test_obj;
+
+        reset_options();
+        //============================================================
         // test basic css beautifier
         t(".tabs {}");
         t(".tabs{color:red;}", ".tabs {\n\tcolor: red;\n}");
@@ -7257,6 +8298,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
     }
 
     beautifier_tests();
+    beautifier_unconverted_tests();
 }
 
 if (typeof exports !== "undefined") {
@@ -7272,11 +8314,12 @@ if (typeof exports !== "undefined") {
     Template: test/data/html/node.mustache
     Data: test/data/html/tests.js
 */
+/*jshint unused:false */
 
 function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_beautify)
 {
 
-    var opts = {
+    var default_opts = {
         indent_size: 4,
         indent_char: ' ',
         preserve_newlines: true,
@@ -7288,6 +8331,21 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         selector_separator: '\n',
         end_with_newline: false
     };
+    var opts;
+
+    default_opts.indent_size = 4;
+    default_opts.indent_char = ' ';
+    default_opts.indent_with_tabs = false;
+    default_opts.preserve_newlines = true;
+    default_opts.jslint_happy = false;
+    default_opts.keep_array_indentation = false;
+    default_opts.brace_style = 'collapse';
+    default_opts.extra_liners = ['html', 'head', '/html'];
+
+    function reset_options()
+    {
+        opts = JSON.parse(JSON.stringify(default_opts));
+    }
 
     function test_html_beautifier(input)
     {
@@ -7334,24 +8392,20 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
     }
 
     function unicode_char(value) {
-        return String.fromCharCode(value)
+        return String.fromCharCode(value);
     }
 
     function beautifier_tests()
     {
         sanitytest = test_obj;
 
+        reset_options();
+        //============================================================
         bth('');
 
-        opts.indent_size = 4;
-        opts.indent_char = ' ';
-        opts.indent_with_tabs = false;
-        opts.preserve_newlines = true;
-        opts.jslint_happy = false;
-        opts.keep_array_indentation = false;
-        opts.brace_style = 'collapse';
-        opts.extra_liners = ['html', 'head', '/html'];
 
+        reset_options();
+        //============================================================
         // End With Newline - (eof = "\n")
         opts.end_with_newline = true;
         test_fragment('', '\n');
@@ -7365,27 +8419,36 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('\n', '');
 
 
+        reset_options();
+        //============================================================
         // Custom Extra Liners (empty) - ()
         opts.extra_liners = [];
         test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n        <p>x</p>\n    </div>\n</body>\n</html>');
 
 
+        reset_options();
+        //============================================================
         // Custom Extra Liners (default) - ()
         opts.extra_liners = null;
         test_fragment('<html><head></head><body></body></html>', '<html>\n\n<head></head>\n\n<body></body>\n\n</html>');
 
 
+        reset_options();
+        //============================================================
         // Custom Extra Liners (p, string) - ()
         opts.extra_liners = 'p,/p';
         test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n\n        <p>x\n\n        </p>\n    </div>\n</body>\n</html>');
 
 
+        reset_options();
+        //============================================================
         // Custom Extra Liners (p) - ()
         opts.extra_liners = ['p', '/p'];
         test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n\n        <p>x\n\n        </p>\n    </div>\n</body>\n</html>');
 
 
-
+        reset_options();
+        //============================================================
         // Tests for script and style types (issue 453, 821
         bth(
             '<script type="text/unknown"><div></div></script>',
@@ -7482,47 +8545,66 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '</style>');
 
 
-        // Attribute Wrap - (eof = "\n", indent_attr = "    ", over80 = "\n")
+        reset_options();
+        //============================================================
+        // Attribute Wrap - (indent_attr = "\n    ", indent_over80 = "\n    ")
         opts.wrap_attributes = 'force';
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n    attr1="123"\n    data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n    attr0\n    attr1="123"\n    data-attr2="hello    t here"\n    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n    attr1="123"\n    data-attr2="hello    t here" />');
         test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n    attr2="bar" />');
+        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n    rel="stylesheet"\n    type="text/css">');
 
-        // Attribute Wrap - (eof = "\n", indent_attr = "    ", over80 = "\n")
+        // Attribute Wrap - (indent_attr = "\n    ", indent_over80 = "\n    ")
         opts.wrap_attributes = 'force';
         opts.wrap_line_length = 80;
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n    attr1="123"\n    data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n    attr0\n    attr1="123"\n    data-attr2="hello    t here"\n    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n    attr1="123"\n    data-attr2="hello    t here" />');
         test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n    attr2="bar" />');
+        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n    rel="stylesheet"\n    type="text/css">');
 
-        // Attribute Wrap - (eof = "\n", indent_attr = "        ", over80 = "\n")
+        // Attribute Wrap - (indent_attr = "\n        ", indent_over80 = "\n        ")
         opts.wrap_attributes = 'force';
         opts.wrap_attributes_indent_size = 8;
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n        attr1="123"\n        data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n        attr0\n        attr1="123"\n        data-attr2="hello    t here"\n        heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n        attr1="123"\n        data-attr2="hello    t here" />');
         test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n        attr2="bar" />');
+        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n        rel="stylesheet"\n        type="text/css">');
 
-        // Attribute Wrap - (eof = " ", indent_attr = "", over80 = "\n")
+        // Attribute Wrap - (indent_attr = " ", indent_over80 = "\n")
         opts.wrap_attributes = 'auto';
         opts.wrap_line_length = 80;
+        opts.wrap_attributes_indent_size = 0;
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here"\nheymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
         test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo" attr2="bar" />');
+        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\nrel="stylesheet" type="text/css">');
 
-        // Attribute Wrap - (eof = " ", indent_attr = "", over80 = " ")
+        // Attribute Wrap - (indent_attr = " ", indent_over80 = "\n    ")
+        opts.wrap_attributes = 'auto';
+        opts.wrap_line_length = 80;
+        opts.wrap_attributes_indent_size = 4;
+        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
+        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here"\n    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
+        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo" attr2="bar" />');
+        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n    rel="stylesheet" type="text/css">');
+
+        // Attribute Wrap - (indent_attr = " ", indent_over80 = " ")
         opts.wrap_attributes = 'auto';
         opts.wrap_line_length = 0;
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
         test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo" attr2="bar" />');
+        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">');
 
 
-
+        reset_options();
+        //============================================================
         // Handlebars Indenting Off
         opts.indent_handlebars = false;
         test_fragment(
@@ -7533,6 +8615,8 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<div>\n    {{#each thing}} {{name}} {{/each}}\n</div>');
 
 
+        reset_options();
+        //============================================================
         // Handlebars Indenting On - (content = "{{field}}")
         opts.indent_handlebars = true;
         test_fragment('{{page-title}}');
@@ -7754,7 +8838,8 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div class=\'{{#if thingIs \'value\'}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}\'></div>');
 
 
-
+        reset_options();
+        //============================================================
         // Handlebars Else tag indenting
         opts.indent_handlebars = true;
         test_fragment(
@@ -7763,22 +8848,29 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('{{#if test}}<span></span>{{else}}<span></span>{{/if}}');
 
 
-
+        reset_options();
+        //============================================================
         // Unclosed html elements
         test_fragment('<source>\n<source>');
         test_fragment('<br>\n<br>');
         test_fragment('<input>\n<input>');
         test_fragment('<meta>\n<meta>');
         test_fragment('<link>\n<link>');
+        test_fragment('<colgroup>\n    <col>\n    <col>\n</colgroup>');
 
 
-
+        reset_options();
+        //============================================================
         // Unformatted tags
         test_fragment('<ol>\n    <li>b<pre>c</pre></li>\n</ol>');
         test_fragment('<ol>\n    <li>b<code>c</code></li>\n</ol>');
+        test_fragment('<ul>\n    <li>\n        <span class="octicon octicon-person"></span>\n        <a href="/contact/">Kontakt</a>\n    </li>\n</ul>');
+        test_fragment('<div class="searchform"><input type="text" value="" name="s" id="s" /><input type="submit" id="searchsubmit" value="Search" /></div>');
+        test_fragment('<div class="searchform"><input type="text" value="" name="s" id="s"><input type="submit" id="searchsubmit" value="Search"></div>');
 
 
-
+        reset_options();
+        //============================================================
         // Php formatting
         test_fragment('<h1 class="content-page-header"><?=$view["name"]; ?></h1>');
         test_fragment(
@@ -7791,6 +8883,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment(
             '<?php ?>\n' +
             '<!DOCTYPE html>\n' +
+            '\n' +
             '<html>\n' +
             '\n' +
             '<head></head>\n' +
@@ -7800,7 +8893,8 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '</html>');
 
 
-
+        reset_options();
+        //============================================================
         // underscore.js  formatting
         test_fragment(
             '<div class="col-sm-9">\n' +
@@ -7810,7 +8904,8 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '</div>');
 
 
-
+        reset_options();
+        //============================================================
         // Indent with tabs
         opts.indent_with_tabs = true;
         test_fragment(
@@ -7818,7 +8913,8 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<div>\n\t<div>\n\t</div>\n</div>');
 
 
-
+        reset_options();
+        //============================================================
         // Indent without tabs
         opts.indent_with_tabs = false;
         test_fragment(
@@ -7826,10 +8922,19 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<div>\n    <div>\n    </div>\n</div>');
 
 
-
+        reset_options();
+        //============================================================
         // New Test Suite
 
 
+    }
+
+    function beautifier_unconverted_tests()
+    {
+        sanitytest = test_obj;
+
+        reset_options();
+        //============================================================
         opts.end_with_newline = true;
         test_fragment('', '\n');
         test_fragment('<div></div>\n');
@@ -8054,6 +9159,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
     }
 
     beautifier_tests();
+    beautifier_unconverted_tests();
 }
 
 if (typeof exports !== "undefined") {
@@ -8076,10 +9182,10 @@ if (typeof exports !== "undefined") {
 // alert(t.results_raw());        // html unescaped
 
 
-function SanityTest (func, name_of_test) {
+function SanityTest(func, name_of_test) {
     var tl = new TitleLogger(WScript.ScriptName + ": ");
 
-    var test_func = func || function (x) {
+    var test_func = func || function(x) {
         return x;
     };
 
@@ -8123,7 +9229,7 @@ function SanityTest (func, name_of_test) {
                 results = _localize("All %S tests passed.").replace("%S", n_succeeded);
             }
         } else {
-            for (var i = 0 ; i < failures.length; i++) {
+            for (var i = 0; i < failures.length; i++) {
                 var f = failures[i];
                 if (f[0]) {
                     f[0] = f[0] + ' ';
@@ -8147,47 +9253,45 @@ function SanityTest (func, name_of_test) {
 
     this.prettyprint = function(something, quote_strings) {
         var type = typeof something;
-        switch(type.toLowerCase()) {
-        case 'string':
-            if (quote_strings) {
-                return "'" + something.replace("'", "\\'") + "'";
-            } else {
-                return something;
-            }
-        case 'number':
-            return '' + something;
-        case 'boolean':
-            return something ? 'true' : 'false';
-        case 'undefined':
-            return 'undefined';
-        case 'object':
-            if (something instanceof Array) {
-                var x = [];
-                var expected_index = 0;
-                for (var k in something) {
-                    if (k === expected_index) {
-                        x.push(this.prettyprint(something[k], true));
-                        expected_index += 1;
-                    } else {
-                        x.push('\n' + k + ': ' + this.prettyprint(something[k], true));
-                    }
+        switch (type.toLowerCase()) {
+            case 'string':
+                if (quote_strings) {
+                    return "'" + something.replace("'", "\\'") + "'";
                 }
-                return '[' + x.join(', ') + ']';
-            } else {
+                return something;
+            case 'number':
+                return '' + something;
+            case 'boolean':
+                return something ? 'true' : 'false';
+            case 'undefined':
+                return 'undefined';
+            case 'object':
+                if (something instanceof Array) {
+                    var x = [];
+                    var expected_index = 0;
+                    for (var k in something) {
+                        if (k === expected_index) {
+                            x.push(this.prettyprint(something[k], true));
+                            expected_index += 1;
+                        } else {
+                            x.push('\n' + k + ': ' + this.prettyprint(something[k], true));
+                        }
+                    }
+                    return '[' + x.join(', ') + ']';
+                }
                 return 'object: ' + something;
-            }
-        default:
-            return type + ': ' + something;
+            default:
+                return type + ': ' + something;
         }
     };
 
 
-    this.lazy_escape = function (str) {
+    this.lazy_escape = function(str) {
         return str.replace(/</g, '&lt;').replace(/\>/g, '&gt;').replace(/\n/g, '<br />');
     };
 
 
-    this.log = function () {
+    this.log = function() {
         if (window.console) {
             if (console.firebug) {
                 console.log.apply(console, Array.prototype.slice.call(arguments));
