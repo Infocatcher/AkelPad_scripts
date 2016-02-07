@@ -531,7 +531,7 @@ if (!Object.values) {
     var OPERATOR_POSITION = {
         before_newline: 'before-newline',
         after_newline: 'after-newline',
-        preserve_newline: 'preserve-newline',
+        preserve_newline: 'preserve-newline'
     };
 
     var OPERATOR_POSITION_BEFORE_OR_PRESERVE = [OPERATOR_POSITION.before_newline, OPERATOR_POSITION.preserve_newline];
@@ -9444,7 +9444,8 @@ function convertSource(file, text) {
 			.replace(
 				"['TK_WORD', 'TK_RESERVED'].indexOf(last_type) === -1",
 				"last_type !== 'TK_WORD' && last_type !== 'TK_RESERVED'"
-			);
+			)
+			.replace(/(preserve_newline: 'preserve-newline'),(\s*\};)/, "$1$2");
 	}
 	return text;
 }
