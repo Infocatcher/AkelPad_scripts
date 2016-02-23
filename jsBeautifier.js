@@ -9242,7 +9242,7 @@ function SanityTest(func, name_of_test) {
             failures.push([test_name, parameters, expected_value, result]);
         }
         if((n_succeeded + n_failed) % 10 == 0)
-            tl.log("Test: " + n_succeeded + "/" + n_failed);
+            tl.log("Test: " + n_succeeded + (n_failed ? "/" + n_failed : ""));
     };
 
 
@@ -9458,7 +9458,7 @@ function convertSource(file, text) {
 			)
 			.replace(
 				/\sfailures\.push\([^()]+\);\r\n\s*\}\r\n/,
-				'$&        if((n_succeeded + n_failed) % 10 == 0)\r\n            tl.log("Test: " + n_succeeded + "/" + n_failed);\r\n'
+				'$&        if((n_succeeded + n_failed) % 10 == 0)\r\n            tl.log("Test: " + n_succeeded + (n_failed ? "/" + n_failed : ""));\r\n'
 			)
 			.replace(
 				/\sresults \+= n_failed \+ [^\r\n]+\r\n\s*\}\r\n/,
