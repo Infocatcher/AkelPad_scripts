@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2016-02-04 20:09:51 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2016-02-23 02:53:59 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -2954,26 +2954,32 @@ if (!Object.values) {
                 print.newLine();
             } else if (ch === '@') {
                 print.preserveSingleSpace();
-                output.push(ch);
 
-                // strip trailing space, if present, for hash property checks
-                var variableOrRule = peekString(": ,;{}()[]/='\"");
+                // deal with less propery mixins @{...}
+                if (peek() === '{') {
+                    output.push(eatString('}'));
+                } else {
+                    output.push(ch);
 
-                if (variableOrRule.match(/[ :]$/)) {
-                    // we have a variable or pseudo-class, add it and insert one space before continuing
-                    next();
-                    variableOrRule = eatString(": ").replace(/\s$/, '');
-                    output.push(variableOrRule);
-                    print.singleSpace();
-                }
+                    // strip trailing space, if present, for hash property checks
+                    var variableOrRule = peekString(": ,;{}()[]/='\"");
 
-                variableOrRule = variableOrRule.replace(/\s$/, '');
+                    if (variableOrRule.match(/[ :]$/)) {
+                        // we have a variable or pseudo-class, add it and insert one space before continuing
+                        next();
+                        variableOrRule = eatString(": ").replace(/\s$/, '');
+                        output.push(variableOrRule);
+                        print.singleSpace();
+                    }
 
-                // might be a nesting at-rule
-                if (variableOrRule in css_beautify.NESTED_AT_RULE) {
-                    nestedLevel += 1;
-                    if (variableOrRule in css_beautify.CONDITIONAL_GROUP_RULE) {
-                        enteringConditionalGroup = true;
+                    variableOrRule = variableOrRule.replace(/\s$/, '');
+
+                    // might be a nesting at-rule
+                    if (variableOrRule in css_beautify.NESTED_AT_RULE) {
+                        nestedLevel += 1;
+                        if (variableOrRule in css_beautify.CONDITIONAL_GROUP_RULE) {
+                            enteringConditionalGroup = true;
+                        }
                     }
                 }
             } else if (ch === '#' && peek() === '{') {
@@ -8138,6 +8144,26 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('.tabs{width:10px;//end of line comment\n}', '.tabs {\n\twidth: 10px; //end of line comment\n}');
         t('.tabs{width:10px;//end of line comment\nheight:10px;}', '.tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px;\n}');
         t('.tabs{width:10px;//end of line comment\nheight:10px;//another\n}', '.tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px; //another\n}');
+
+
+        reset_options();
+        //============================================================
+        // Handle LESS property name interpolation
+        t('tag {\n\t@{prop}: none;\n}');
+        t('tag{@{prop}:none;}', 'tag {\n\t@{prop}: none;\n}');
+        t('tag{ @{prop}: none;}', 'tag {\n\t@{prop}: none;\n}');
+
+        // can also be part of property name
+        t('tag {\n\tdynamic-@{prop}: none;\n}');
+        t('tag{dynamic-@{prop}:none;}', 'tag {\n\tdynamic-@{prop}: none;\n}');
+        t('tag{ dynamic-@{prop}: none;}', 'tag {\n\tdynamic-@{prop}: none;\n}');
+
+
+        reset_options();
+        //============================================================
+        // Handle LESS property name interpolation, test #631
+        t('.generate-columns(@n, @i: 1) when (@i =< @n) {\n\t.column-@{i} {\n\t\twidth: (@i * 100% / @n);\n\t}\n\t.generate-columns(@n, (@i + 1));\n}');
+        t('.generate-columns(@n,@i:1) when (@i =< @n){.column-@{i}{width:(@i * 100% / @n);}.generate-columns(@n,(@i + 1));}', '.generate-columns(@n, @i: 1) when (@i =< @n) {\n\t.column-@{i} {\n\t\twidth: (@i * 100% / @n);\n\t}\n\t.generate-columns(@n, (@i + 1));\n}');
 
 
         reset_options();
