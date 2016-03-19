@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2016-02-23 02:53:59 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2016-02-25 19:49:50 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -6620,6 +6620,22 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    (Math.random() * 0x1000000000).toString(36),\n' +
             '    new Date().getTime()\n' +
             '].join("-");');
+
+
+        reset_options();
+        //============================================================
+        // Test non-positionable-ops
+        bt('a += 2;');
+        bt('a -= 2;');
+        bt('a *= 2;');
+        bt('a /= 2;');
+        bt('a %= 2;');
+        bt('a &= 2;');
+        bt('a ^= 2;');
+        bt('a |= 2;');
+        bt('a **= 2;');
+        bt('a <<= 2;');
+        bt('a >>= 2;');
 
 
         reset_options();
