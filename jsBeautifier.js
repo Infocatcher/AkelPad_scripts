@@ -42,6 +42,7 @@
 //   -e4x=true                     - handle E4X XML literals
 //   -endWithNewline=false         - end output with a newline
 //   -newlineBetweenRules=true     - add extra newline between CSS rules (only for HTML)
+//   -selectorSepNewline=true      - separate selectors with newline or not (e.g. "a,\nbr" or "a, br")
 //   -commaFirst=false             - put commas at the beginning of new line instead of end
 //   -maxChar=70                   - maximum amount of characters per line (only for HTML), deprecated, use -wrapLineLength instead
 //   -unformattedTags=["a"]        - list of tags, that shouldn't be reformatted (only for HTML)
@@ -125,6 +126,7 @@ var wrapLineLength         = getArg("wrapLineLength");
 var e4x                    = getArg("e4x");
 var endWithNewline         = getArg("endWithNewline");
 var newlineBetweenRules    = getArg("newlineBetweenRules", false);
+var selectorSepNewline     = getArg("selectorSepNewline");
 var commaFirst             = getArg("commaFirst", false);
 var maxChar                = getArg("maxChar");
 var unformattedTags        = getArg("unformattedTags");
@@ -195,15 +197,17 @@ function beautify(source, syntax) { // Based on beautify function
 		wrap_line_length:         wrapLineLength,
 		e4x:                      e4x,
 		end_with_newline:         endWithNewline,
-		newline_between_rules:    newlineBetweenRules,
 		comma_first:              commaFirst,
-		// for style_html():
+		// for HTML:
 		max_char:                 maxChar,
 		unformatted:              unformattedTags,
 		indent_inner_html:        indentInnerHTML,
 		indent_head_inner_html:   indentHeadInnerHTML,
 		indent_body_inner_html:   indentBodyInnerHTML,
-		extra_liners:             extraLines
+		extra_liners:             extraLines,
+		// for CSS
+		selector_separator_newline: selectorSepNewline,
+		newline_between_rules:    newlineBetweenRules
 	};
 	var rawArgs = getRawArgs();
 	for(var rawArg in rawArgs)
