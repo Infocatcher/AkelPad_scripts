@@ -45,7 +45,9 @@
 //   -commaFirst=false             - put commas at the beginning of new line instead of end
 //   -maxChar=70                   - maximum amount of characters per line (only for HTML), deprecated, use -wrapLineLength instead
 //   -unformattedTags=["a"]        - list of tags, that shouldn't be reformatted (only for HTML)
-//   -indentInnerHTML=true         - indent <head> and <body> sections (only for HTML)
+//   -indentInnerHTML=true         - indent content inside <html> (only for HTML)
+//   -indentHeadInnerHTML=true     - indent content inside <head> (only for HTML)
+//   -indentBodyInnerHTML=true     - indent content inside <body> (only for HTML)
 //   -extraLines="head,body,/html" - list of tags that should have an extra newline before them (only for HTML)
 //   -detectPackers=true           - detect packers
 //   -css=true                     - force beautify CSS (just automatically wrap code into <style>...</style>)
@@ -127,6 +129,8 @@ var commaFirst             = getArg("commaFirst", false);
 var maxChar                = getArg("maxChar");
 var unformattedTags        = getArg("unformattedTags");
 var indentInnerHTML        = getArg("indentInnerHTML");
+var indentHeadInnerHTML    = getArg("indentHeadInnerHTML");
+var indentBodyInnerHTML    = getArg("indentBodyInnerHTML");
 var extraLines             = getArg("extraLines");
 var detectPackers          = getArg("detectPackers", true);
 var beautifyCSS            = getArg("css", false);
@@ -197,6 +201,8 @@ function beautify(source, syntax) { // Based on beautify function
 		max_char:                 maxChar,
 		unformatted:              unformattedTags,
 		indent_inner_html:        indentInnerHTML,
+		indent_head_inner_html:   indentHeadInnerHTML,
+		indent_body_inner_html:   indentBodyInnerHTML,
 		extra_liners:             extraLines
 	};
 	var rawArgs = getRawArgs();
