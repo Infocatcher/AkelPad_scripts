@@ -39,21 +39,24 @@
 //                 ="separate"     - separate indentation
 //   -unescapeStrings=true         - unescape printable \xNN characters in strings ("example" vs "\x65\x78\x61\x6d\x70\x6c\x65")
 //   -wrapLineLength=70            - lines should wrap at next opportunity after this number of characters
-//   -e4x=true                     - handle E4X XML literals
 //   -endWithNewline=false         - end output with a newline
-//   -newlineBetweenRules=true     - add extra newline between CSS rules (only for HTML)
-//   -selectorSepNewline=true      - separate selectors with newline or not (e.g. "a,\nbr" or "a, br")
-//   -spaceAroundSelectorSep=true  - ensure space around selector separators: '>', '+', '~' (e.g. "a>b" -> "a > b")
 //   -commaFirst=false             - put commas at the beginning of new line instead of end
-//   -maxChar=70                   - maximum amount of characters per line (only for HTML), deprecated, use -wrapLineLength instead
+//   -e4x=true                     - handle E4X XML literals
+//   -detectPackers=true           - detect packers
+
 //   -unformattedTags=["a"]        - list of tags, that shouldn't be reformatted (only for HTML)
 //   -indentInnerHTML=true         - indent content inside <html> (only for HTML)
 //   -indentHeadInnerHTML=true     - indent content inside <head> (only for HTML)
 //   -indentBodyInnerHTML=true     - indent content inside <body> (only for HTML)
 //   -extraLines="head,body,/html" - list of tags that should have an extra newline before them (only for HTML)
-//   -detectPackers=true           - detect packers
+//   -maxChar=70                   - maximum amount of characters per line (only for HTML), deprecated, use -wrapLineLength instead
+//   -newlineBetweenRules=true     - add extra newline between CSS rules (only for CSS)
+//   -selectorSepNewline=true      - separate selectors with newline or not (e.g. "a,\nbr" or "a, br", only for CSS)
+//   -spaceAroundSelectorSep=true  - ensure space around selector separators: '>', '+', '~' (e.g. "a>b" -> "a > b", only for CSS)
+
 //   -css=true                     - force beautify CSS (just automatically wrap code into <style>...</style>)
 //   -keepCSSIndentation=true      - keep initial CSS indentation (only for -css=true)
+
 //   -update=1                     - update source from https://github.com/beautify-web/js-beautify/
 //          =2                     - update source from https://github.com/beautify-web/js-beautify/tree/gh-pages
 //   -forceNoCache                 - prevent caching during update
