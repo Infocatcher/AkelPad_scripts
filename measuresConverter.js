@@ -3382,18 +3382,14 @@ function converterDialog(modal) {
 		}
 		update(force, onlyCurrent ? 1 : 2, maskInclude);
 	}
-	var pendingUpdate;
 	function doPendingUpdate() {
-		var pu = pendingUpdate;
-		if(pu) {
-			pendingUpdate = null;
-			pu.func.apply(this, pu.args);
-		}
+		var pu = update.pendingUpdates && update.pendingUpdates.shift();
+		pu && pu.func.apply(this, pu.args);
 	}
 	function update(force, report, maskInclude) {
+		var pendingUpdates = update.pendingUpdates || (update.pendingUpdates = []);
 		if(asyncUpdater.activeRequests) {
-			if(!pendingUpdate)
-				pendingUpdate = { func: update, args: arguments };
+			pendingUpdates.push({ func: update, args: arguments });
 			return;
 		}
 		if(report == undefined)
@@ -3419,7 +3415,7 @@ function converterDialog(modal) {
 			},
 			function onComplete(state, code) {
 				onCodeUpdated(code);
-				if(update._btnLabel && !pendingUpdate) {
+				if(update._btnLabel && !pendingUpdates.length) {
 					windowText(hWndUpdate, update._btnLabel);
 					//if(curType != "&Currency")
 					setDialogTitle();
