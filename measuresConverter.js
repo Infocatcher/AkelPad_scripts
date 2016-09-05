@@ -2719,13 +2719,15 @@ function converterDialog(modal) {
 				oSys.Call("user32::InvalidateRect", hWnd, 0, true);
 
 				//updateOnStartup && update(false, updateOnStartupReport);
-				if(updateOnStartup) try {
-					new ActiveXObject("htmlfile").parentWindow.setTimeout(function() {
+				if(updateOnStartup) {
+					var upd = function() {
 						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
-					}, 500);
-				}
-				catch(e) {
-					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
+					};
+					var lib = AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/);
+					if(oSys.Call("kernel32::GetFileAttributes" + _TCHAR, lib + "\\timer.js") != -1)
+						AkelPad.Include("timer.js") && setTimeout(upd, 800);
+					else
+						upd();
 				}
 			break;
 			case 7: //WM_SETFOCUS
