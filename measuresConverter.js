@@ -10,6 +10,10 @@
 //// Convert measures (internal) and currency (used cached data from exchange-rates.org, fxexchangerate.com and bitcoincharts.com)
 // Can convert numbers and expressions, pick up selected text
 
+// Required timer.js library (only for -updateOnStartup=true):
+// http://akelpad.sourceforge.net/forum/viewtopic.php?p=24559#24559
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
+
 // Hotkeys:
 //   Enter                             - Ok
 //   Ctrl+Enter (Shift+Enter)          - Convert
