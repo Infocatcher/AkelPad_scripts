@@ -3416,7 +3416,7 @@ function converterDialog(modal) {
 					_localize(errors ? "%S/%T Fail: %F" : "%S/%T")
 						.replace("%S", state.success)
 						.replace("%T", state.total)
-						.replace("%F", state.errors + state.parseErrors)
+						.replace("%F", errors)
 				);
 			},
 			function onComplete(state, code) {
