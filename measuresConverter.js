@@ -1956,7 +1956,7 @@ function saveOfflineCurrencyData(saveMode) {
 	for(var code in currencyRatios) {
 		var data = currencyRatios[code];
 		if(data && data.ratio && data.timestamp)
-			db[db.length] = code + "=" + data.ratio + "=" + data.timestamp;
+			db.push(code + "=" + data.ratio + "=" + data.timestamp);
 	}
 	if(!db.length)
 		return;
@@ -2082,7 +2082,7 @@ function updateCurrencyDataAsync(force, onStart, onProgress, onComplete, maskInc
 			&& now - currencyRatios[code].timestamp < offlineExpire
 		)
 			continue;
-		codes[codes.length] = code;
+		codes.push(code);
 	}
 	var total = codes.length;
 	if(!total) {
@@ -2223,7 +2223,7 @@ function converterDialog(modal) {
 			var selected = [];
 			for(var type in selectedItems) {
 				var entries = selectedItems[type];
-				selected[selected.length] = type + "=" + entries[0] + "=" + entries[1];
+				selected.push(type + "=" + entries[0] + "=" + entries[1]);
 			}
 			selected.length && oSet.Write("selected", 3 /*PO_STRING*/, selected.join("|"));
 			if(_cleanup) {
@@ -2986,7 +2986,7 @@ function converterDialog(modal) {
 				var currencyCode = mo[measure];
 				if(currencyCode == 1)
 					currencyCode = BASE_CURRENCY;
-				sortArr[sortArr.length] = [measure, _localize(measure), currencyCode];
+				sortArr.push([measure, _localize(measure), currencyCode]);
 			}
 			var sortIndx = isCurrency
 				? sortByName ? 1 : 2
