@@ -3400,12 +3400,11 @@ function converterDialog(modal) {
 		}
 		if(report == undefined)
 			report = 2;
+		var btnLabel = update._btnLabel || (update._btnLabel = windowText(hWndUpdate));
 		var startTime = new Date().getTime();
 		updateCurrencyDataAsync(
 			force,
 			function onStart() {
-				if(!update._btnLabel)
-					update._btnLabel = windowText(hWndUpdate);
 				windowText(hWndUpdate, _localize("Update…"));
 			},
 			function onProgress(state, code) {
@@ -3421,8 +3420,8 @@ function converterDialog(modal) {
 			},
 			function onComplete(state, code) {
 				onCodeUpdated(code);
-				if(update._btnLabel && !pendingUpdates.length) {
-					windowText(hWndUpdate, update._btnLabel);
+				if(btnLabel && !pendingUpdates.length) {
+					windowText(hWndUpdate, btnLabel);
 					//if(curType != "&Currency")
 					setDialogTitle();
 				}
