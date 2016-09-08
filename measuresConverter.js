@@ -1772,6 +1772,24 @@ if(updateMaxErrors < 0)
 var curType, curItem, curItem2;
 var selectedItems = {};
 
+if(!Array.prototype.push) {
+	Array.prototype.push = function() {
+		for(var i = 0, len = arguments.length; i < len; ++i)
+			this[this.length] = arguments[i];
+		return this.length;
+	};
+}
+if(!Array.prototype.shift) {
+	Array.prototype.shift = function() {
+		var ret = this[0];
+		var len = this.length - 1;
+		for(var i = 0; i < len; ++i)
+			this[i] = this[i + 1];
+		this.length = len < 0 ? 0 : len;
+		return ret;
+	};
+}
+
 if(from && to && from != to) {
 	var getName = function(s) {
 		return s.toLowerCase()
