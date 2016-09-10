@@ -3296,7 +3296,7 @@ function converterDialog(modal) {
 		var dontRound = roundVal == ROUND_OFF;
 		checked(hWndRound, !dontRound);
 		roundVal = validateRoundValue(roundVal);
-		setEditText(hWndRoundValue, String(dontRound ? ROUND_DEFAULT : roundVal));
+		setEditText(hWndRoundValue, "" + (dontRound ? ROUND_DEFAULT : roundVal));
 		enableRoundValue();
 	}
 	function readRoundValue() {
@@ -3306,7 +3306,7 @@ function converterDialog(modal) {
 			var r2 = validateRoundValue(r);
 			if(r2 != r) {
 				r = r2;
-				setEditText(hWndRoundValue, String(r));
+				setEditText(hWndRoundValue, "" + r);
 			}
 		}
 		if(curType == "&Currency")
@@ -3807,13 +3807,13 @@ function fixPrecision(n) {
 function formatNum(n) {
 	// 1234567.1234567 -> 1 234 567.1 234 567
 	//return Number(n).toLocaleString().replace(/\s*[^\d\s\xa0\u2002\u2003\u2009].*$/, "");
-	return String(n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
+	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
 }
 function toLocaleNum(n) {
 	// Apply locale settings: 1 234 567,1 234 567 (Russian), 1,234,567.1,234,567 (English), etc.
 	if(!localeNumbers.delimiter)
 		localeNumbers();
-	return String(n)
+	return ("" + n)
 		// We may have \xa0 in localeNumbers.delimiter
 		.replace(/\./g,   "\0.\0")
 		.replace(/\xa0/g, "\0 \0")
