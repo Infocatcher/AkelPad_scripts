@@ -175,6 +175,21 @@ function getRawArgs() {
 
 var window = {}; // Fake window object to import things from beautify.js
 
+if(!Array.prototype.indexOf) {
+	// Based on code from https://gist.github.com/revolunet/1908355
+	Array.prototype.indexOf = function(elt /*, from*/) {
+		var len = this.length >>> 0;
+		var from = +(arguments[1]) || 0;
+		from = from < 0 ? Math.ceil(from) : Math.floor(from);
+		if(from < 0)
+			from += len;
+		for(; from < len; ++from)
+			if(from in this && this[from] === elt)
+				return from;
+		return -1;
+	};
+}
+
 //== index.html
 // When update this section, replace all document.getElementById() calls with above options
 // And leave beautify(source, syntax) and runTests() entry points
