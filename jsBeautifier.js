@@ -191,6 +191,7 @@ if(!Array.prototype.indexOf) {
 }
 
 //== index.html
+// https://github.com/beautify-web/js-beautify/blob/master/index.html
 // When update this section, replace all document.getElementById() calls with above options
 // And leave beautify(source, syntax) and runTests() entry points
 
@@ -267,20 +268,21 @@ function runTests() { // Based on run_tests function
 	//return st.results();
 	return st.results_raw();
 }
-function looks_like_html(source)
-{
+function looks_like_html(source) {
     // <foo> - looks like html
     // <!--\nalert('foo!');\n--> - doesn't look like html
 
     var trimmed = source.replace(/^[ \t\n\r]+/, '');
-    var comment_mark = '<!-' + '-';
+    var comment_mark = '<' + '!-' + '-';
     return (trimmed && (trimmed.substring(0, 1) === '<' && trimmed.substring(0, 4) !== comment_mark));
 }
 function unpacker_filter(source) {
-    var trailing_comments = '';
-    var comment = '';
-    var found = false;
+    var trailing_comments = '',
+        comment = '',
+        unpacked = '',
+        found = false;
 
+    // cut trailing comments
     do {
         found = false;
         if (/^\s*\/\*/.test(source)) {
@@ -296,21 +298,14 @@ function unpacker_filter(source) {
         }
     } while (found);
 
-    if (P_A_C_K_E_R.detect(source)) {
-        // P.A.C.K.E.R unpacking may fail, even though it is detected
-        var unpacked = P_A_C_K_E_R.unpack(source);
-        if (unpacked != source) {
-            source = unpacker_filter(unpacked);
+    var unpackers = [P_A_C_K_E_R, Urlencoded, JavascriptObfuscator/*, MyObfuscate*/];
+    for (var i = 0; i < unpackers.length; i++) {
+        if (unpackers[i].detect(source)) {
+            unpacked = unpackers[i].unpack(source);
+            if (unpacked != source) {
+                source = unpacker_filter(unpacked);
+            }
         }
-    }
-    if (Urlencoded.detect(source)) {
-        source = unpacker_filter(Urlencoded.unpack(source))
-    }
-    if (JavascriptObfuscator.detect(source)) {
-        source = unpacker_filter(JavascriptObfuscator.unpack(source))
-    }
-    if (MyObfuscate.detect(source)) {
-        source = unpacker_filter(MyObfuscate.unpack(source))
     }
 
     return trailing_comments + source;
