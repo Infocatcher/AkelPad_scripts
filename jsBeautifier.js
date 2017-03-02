@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2016-09-12 19:02:15 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2017-03-02 19:24:00 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -344,7 +344,7 @@ function detectXMLType(str) {
 
   The MIT License (MIT)
 
-  Copyright (c) 2007-2013 Einar Lielmanis and contributors.
+  Copyright (c) 2007-2017 Einar Lielmanis, Liam Newman, and contributors.
 
   Permission is hereby granted, free of charge, to any person
   obtaining a copy of this software and associated documentation files
@@ -402,8 +402,9 @@ function detectXMLType(str) {
     space_after_anon_function (default false) - should the space before an anonymous function's parens be added, "function()" vs "function ()",
           NOTE: This option is overriden by jslint_happy (i.e. if jslint_happy is true, space_after_anon_function is true by design)
 
-    brace_style (default "collapse") - "collapse-preserve-inline" | "collapse" | "expand" | "end-expand" | "none"
+    brace_style (default "collapse") - "collapse" | "expand" | "end-expand" | "none" | any of the former + ",preserve-inline"
             put braces on the same line as control statements (default), or put braces on own line (Allman / ANSI style), or just put end braces on own line, or attempt to keep them where they are.
+            preserve-inline will try to preserve inline blocks of curly braces
 
     space_before_conditional (default true) - should the space before conditional statement be added, "if(true)" vs "if (true)",
 
@@ -444,6 +445,25 @@ if (!Object.values) {
 }
 
 (function() {
+
+    function mergeOpts(allOptions, targetType) {
+        var finalOpts = {};
+        var name;
+
+        for (name in allOptions) {
+            if (name !== targetType) {
+                finalOpts[name] = allOptions[name];
+            }
+        }
+
+        //merge in the per type settings for the targetType
+        if (targetType in allOptions) {
+            for (name in allOptions[targetType]) {
+                finalOpts[name] = allOptions[targetType][name];
+            }
+        }
+        return finalOpts;
+    }
 
     function js_beautify(js_source_text, options) {
 
@@ -638,18 +658,29 @@ if (!Object.values) {
 
             // Some interpreters have unexpected results with foo = baz || bar;
             options = options ? options : {};
+
+            // Allow the setting of language/file-type specific options
+            // with inheritance of overall settings
+            options = mergeOpts(options, 'js');
+
             opt = {};
 
-            // compatibility
-            if (options.braces_on_own_line !== undefined) { //graceful handling of deprecated option
-                opt.brace_style = options.braces_on_own_line ? "expand" : "collapse";
+            // compatibility, re
+            if (options.brace_style === "expand-strict") { //graceful handling of deprecated option
+                options.brace_style = "expand";
+            } else if (options.brace_style === "collapse-preserve-inline") { //graceful handling of deprecated option
+                options.brace_style = "collapse,preserve-inline";
+            } else if (options.braces_on_own_line !== undefined) { //graceful handling of deprecated option
+                options.brace_style = options.braces_on_own_line ? "expand" : "collapse";
+            } else if (!options.brace_style) //Nothing exists to set it
+            {
+                options.brace_style = "collapse";
             }
-            opt.brace_style = options.brace_style ? options.brace_style : (opt.brace_style ? opt.brace_style : "collapse");
 
-            // graceful handling of deprecated option
-            if (opt.brace_style === "expand-strict") {
-                opt.brace_style = "expand";
-            }
+
+            var brace_style_split = options.brace_style.split(/[^a-zA-Z0-9_\-]+/);
+            opt.brace_style = brace_style_split[0];
+            opt.brace_preserve_inline = brace_style_split[1] ? brace_style_split[1] : false;
 
             opt.indent_size = options.indent_size ? parseInt(options.indent_size, 10) : 4;
             opt.indent_char = options.indent_char ? options.indent_char : ' ';
@@ -733,30 +764,21 @@ if (!Object.values) {
             this.beautify = function() {
 
                 /*jshint onevar:true */
-                var local_token, sweet_code;
+                var sweet_code;
                 Tokenizer = new tokenizer(js_source_text, opt, indent_string);
                 tokens = Tokenizer.tokenize();
                 token_pos = 0;
 
-                function get_local_token() {
-                    local_token = get_token();
-                    return local_token;
-                }
-
-                while (get_local_token()) {
-                    for (var i = 0; i < local_token.comments_before.length; i++) {
-                        // The cleanest handling of inline comments is to treat them as though they aren't there.
-                        // Just continue formatting and the behavior should be logical.
-                        // Also ignore unknown tokens.  Again, this should result in better behavior.
-                        handle_token(local_token.comments_before[i]);
-                    }
-                    handle_token(local_token);
+                current_token = get_token();
+                while (current_token) {
+                    handlers[current_token.type]();
 
                     last_last_text = flags.last_text;
-                    last_type = local_token.type;
-                    flags.last_text = local_token.text;
+                    last_type = current_token.type;
+                    flags.last_text = current_token.text;
 
                     token_pos += 1;
+                    current_token = get_token();
                 }
 
                 sweet_code = output.get_code();
@@ -771,13 +793,24 @@ if (!Object.values) {
                 return sweet_code;
             };
 
-            function handle_token(local_token) {
+            function handle_whitespace_and_comments(local_token, preserve_statement_flags) {
                 var newlines = local_token.newlines;
                 var keep_whitespace = opt.keep_array_indentation && is_array(flags.mode);
+                var temp_token = current_token;
+
+                for (var h = 0; h < local_token.comments_before.length; h++) {
+                    // The cleanest handling of inline comments is to treat them as though they aren't there.
+                    // Just continue formatting and the behavior should be logical.
+                    // Also ignore unknown tokens.  Again, this should result in better behavior.
+                    current_token = local_token.comments_before[h];
+                    handle_whitespace_and_comments(current_token, preserve_statement_flags);
+                    handlers[current_token.type](preserve_statement_flags);
+                }
+                current_token = temp_token;
 
                 if (keep_whitespace) {
                     for (var i = 0; i < newlines; i += 1) {
-                        print_newline(i > 0);
+                        print_newline(i > 0, preserve_statement_flags);
                     }
                 } else {
                     if (opt.max_preserve_newlines && newlines > opt.max_preserve_newlines) {
@@ -786,16 +819,14 @@ if (!Object.values) {
 
                     if (opt.preserve_newlines) {
                         if (local_token.newlines > 1) {
-                            print_newline();
+                            print_newline(false, preserve_statement_flags);
                             for (var j = 1; j < newlines; j += 1) {
-                                print_newline(true);
+                                print_newline(true, preserve_statement_flags);
                             }
                         }
                     }
                 }
 
-                current_token = local_token;
-                handlers[current_token.type]();
             }
 
             // we could use just string.split, but
@@ -858,7 +889,10 @@ if (!Object.values) {
             function print_newline(force_newline, preserve_statement_flags) {
                 if (!preserve_statement_flags) {
                     if (flags.last_text !== ';' && flags.last_text !== ',' && flags.last_text !== '=' && last_type !== 'TK_OPERATOR') {
-                        while (flags.mode === MODE.Statement && !flags.if_block && !flags.do_block) {
+                        var next_token = get_token(1);
+                        while (flags.mode === MODE.Statement &&
+                            !(flags.if_block && next_token && next_token.type === 'TK_RESERVED' && next_token.text === 'else') &&
+                            !flags.do_block) {
                             restore_mode();
                         }
                     }
@@ -962,7 +996,8 @@ if (!Object.values) {
                     (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const']) && current_token.type === 'TK_WORD') ||
                     (last_type === 'TK_RESERVED' && flags.last_text === 'do') ||
                     (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['return', 'throw']) && !current_token.wanted_newline) ||
-                    (last_type === 'TK_RESERVED' && flags.last_text === 'else' && !(current_token.type === 'TK_RESERVED' && current_token.text === 'if')) ||
+                    (last_type === 'TK_RESERVED' && flags.last_text === 'else' &&
+                        !(current_token.type === 'TK_RESERVED' && current_token.text === 'if' && !current_token.comments_before.length)) ||
                     (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)) ||
                     (last_type === 'TK_WORD' && flags.mode === MODE.BlockStatement &&
                         !flags.in_case &&
@@ -976,9 +1011,7 @@ if (!Object.values) {
                     set_mode(MODE.Statement);
                     indent();
 
-                    if (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const']) && current_token.type === 'TK_WORD') {
-                        flags.declaration_statement = true;
-                    }
+                    handle_whitespace_and_comments(current_token, true);
 
                     // Issue #276:
                     // If starting a new statement with [if, for, while, do], push to a new line.
@@ -1027,8 +1060,9 @@ if (!Object.values) {
             }
 
             function handle_start_expr() {
-                if (start_of_statement()) {
-                    // The conditional starts the statement if appropriate.
+                // The conditional starts the statement if appropriate.
+                if (!start_of_statement()) {
+                    handle_whitespace_and_comments(current_token);
                 }
 
                 var next_mode = MODE.Expression;
@@ -1136,6 +1170,8 @@ if (!Object.values) {
                     restore_mode();
                 }
 
+                handle_whitespace_and_comments(current_token);
+
                 if (flags.multiline_frame) {
                     allow_wrap_or_preserved_newline(current_token.text === ']' && is_array(flags.mode) && !opt.keep_array_indentation);
                 }
@@ -1168,12 +1204,14 @@ if (!Object.values) {
             }
 
             function handle_start_block() {
+                handle_whitespace_and_comments(current_token);
+
                 // Check if this is should be treated as a ObjectLiteral
                 var next_token = get_token(1);
                 var second_token = get_token(2);
                 if (second_token && (
                         (in_array(second_token.text, [':', ',']) && in_array(next_token.type, ['TK_STRING', 'TK_WORD', 'TK_RESERVED'])) ||
-                        (in_array(next_token.text, ['get', 'set']) && in_array(second_token.type, ['TK_WORD', 'TK_RESERVED']))
+                        (in_array(next_token.text, ['get', 'set', '...']) && in_array(second_token.type, ['TK_WORD', 'TK_RESERVED']))
                     )) {
                     // We don't support TypeScript,but we didn't break it for a very long time.
                     // We'll try to keep not breaking it.
@@ -1201,9 +1239,26 @@ if (!Object.values) {
                 var empty_anonymous_function = empty_braces && flags.last_word === 'function' &&
                     last_type === 'TK_END_EXPR';
 
+                if (opt.brace_preserve_inline) // check for inline, set inline_frame if so
+                {
+                    // search forward for a newline wanted inside this block
+                    var index = 0;
+                    var check_token = null;
+                    flags.inline_frame = true;
+                    do {
+                        index += 1;
+                        check_token = get_token(index);
+                        if (check_token.wanted_newline) {
+                            flags.inline_frame = false;
+                            break;
+                        }
+                    } while (check_token.type !== 'TK_EOF' &&
+                        !(check_token.type === 'TK_END_BLOCK' && check_token.opened === current_token));
+                }
 
-                if (opt.brace_style === "expand" ||
-                    (opt.brace_style === "none" && current_token.wanted_newline)) {
+                if ((opt.brace_style === "expand" ||
+                        (opt.brace_style === "none" && current_token.wanted_newline)) &&
+                    !flags.inline_frame) {
                     if (last_type !== 'TK_OPERATOR' &&
                         (empty_anonymous_function ||
                             last_type === 'TK_EQUALS' ||
@@ -1212,38 +1267,20 @@ if (!Object.values) {
                     } else {
                         print_newline(false, true);
                     }
-                } else { // collapse
-                    if (opt.brace_style === 'collapse-preserve-inline') {
-                        // search forward for a newline wanted inside this block
-                        var index = 0;
-                        var check_token = null;
-                        flags.inline_frame = true;
-                        do {
-                            index += 1;
-                            check_token = get_token(index);
-                            if (check_token.wanted_newline) {
-                                flags.inline_frame = false;
-                                break;
-                            }
-                        } while (check_token.type !== 'TK_EOF' &&
-                            !(check_token.type === 'TK_END_BLOCK' && check_token.opened === current_token));
-                    }
-
+                } else { // collapse || inline_frame
                     if (is_array(previous_flags.mode) && (last_type === 'TK_START_EXPR' || last_type === 'TK_COMMA')) {
-                        // if we're preserving inline,
-                        // allow newline between comma and next brace.
                         if (last_type === 'TK_COMMA' || opt.space_in_paren) {
                             output.space_before_token = true;
                         }
 
-                        if (opt.brace_style === 'collapse-preserve-inline' &&
-                            (last_type === 'TK_COMMA' || (last_type === 'TK_START_EXPR' && flags.inline_frame))) {
+                        if (last_type === 'TK_COMMA' || (last_type === 'TK_START_EXPR' && flags.inline_frame)) {
                             allow_wrap_or_preserved_newline();
                             previous_flags.multiline_frame = previous_flags.multiline_frame || flags.multiline_frame;
                             flags.multiline_frame = false;
                         }
-                    } else if (last_type !== 'TK_OPERATOR' && last_type !== 'TK_START_EXPR') {
-                        if (last_type === 'TK_START_BLOCK') {
+                    }
+                    if (last_type !== 'TK_OPERATOR' && last_type !== 'TK_START_EXPR') {
+                        if (last_type === 'TK_START_BLOCK' && !flags.inline_frame) {
                             print_newline();
                         } else {
                             output.space_before_token = true;
@@ -1256,21 +1293,24 @@ if (!Object.values) {
 
             function handle_end_block() {
                 // statements must all be closed when their container closes
+                handle_whitespace_and_comments(current_token);
+
                 while (flags.mode === MODE.Statement) {
                     restore_mode();
                 }
+
                 var empty_braces = last_type === 'TK_START_BLOCK';
 
-                if (opt.brace_style === "expand") {
+                if (flags.inline_frame && !empty_braces) { // try inline_frame (only set if opt.braces-preserve-inline) first
+                    output.space_before_token = true;
+                } else if (opt.brace_style === "expand") {
                     if (!empty_braces) {
                         print_newline();
                     }
                 } else {
                     // skip {}
                     if (!empty_braces) {
-                        if (flags.inline_frame) {
-                            output.space_before_token = true;
-                        } else if (is_array(flags.mode) && opt.keep_array_indentation) {
+                        if (is_array(flags.mode) && opt.keep_array_indentation) {
                             // we REALLY need a newline here, but newliner would skip that
                             opt.keep_array_indentation = false;
                             print_newline();
@@ -1301,12 +1341,17 @@ if (!Object.values) {
 
                 if (start_of_statement()) {
                     // The conditional starts the statement if appropriate.
+                    if (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const']) && current_token.type === 'TK_WORD') {
+                        flags.declaration_statement = true;
+                    }
                 } else if (current_token.wanted_newline && !is_expression(flags.mode) &&
                     (last_type !== 'TK_OPERATOR' || (flags.last_text === '--' || flags.last_text === '++')) &&
                     last_type !== 'TK_EQUALS' &&
                     (opt.preserve_newlines || !(last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const', 'set', 'get'])))) {
-
+                    handle_whitespace_and_comments(current_token);
                     print_newline();
+                } else {
+                    handle_whitespace_and_comments(current_token);
                 }
 
                 if (flags.do_block && !flags.do_while) {
@@ -1353,8 +1398,15 @@ if (!Object.values) {
                     return;
                 }
 
+                if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
+                    if (!start_of_object_property()) {
+                        allow_wrap_or_preserved_newline();
+                    }
+                }
+
                 if (current_token.type === 'TK_RESERVED' && current_token.text === 'function') {
-                    if (in_array(flags.last_text, ['}', ';']) || (output.just_added_newline() && !in_array(flags.last_text, ['[', '{', ':', '=', ',']))) {
+                    if (in_array(flags.last_text, ['}', ';']) ||
+                        (output.just_added_newline() && !(in_array(flags.last_text, ['(', '[', '{', ':', '=', ',']) || last_type === 'TK_OPERATOR'))) {
                         // make sure there is a nice clean space of at least one blank line
                         // before a new function definition
                         if (!output.just_added_blankline() && !current_token.comments_before.length) {
@@ -1378,15 +1430,7 @@ if (!Object.values) {
                     } else {
                         print_newline();
                     }
-                }
 
-                if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
-                    if (!start_of_object_property()) {
-                        allow_wrap_or_preserved_newline();
-                    }
-                }
-
-                if (current_token.type === 'TK_RESERVED' && in_array(current_token.text, ['function', 'get', 'set'])) {
                     print_token();
                     flags.last_word = current_token.text;
                     return;
@@ -1396,7 +1440,9 @@ if (!Object.values) {
 
                 if (last_type === 'TK_END_BLOCK') {
 
-                    if (!(current_token.type === 'TK_RESERVED' && in_array(current_token.text, ['else', 'catch', 'finally', 'from']))) {
+                    if (previous_flags.inline_frame) {
+                        prefix = 'SPACE';
+                    } else if (!(current_token.type === 'TK_RESERVED' && in_array(current_token.text, ['else', 'catch', 'finally', 'from']))) {
                         prefix = 'NEWLINE';
                     } else {
                         if (opt.brace_style === "expand" ||
@@ -1441,10 +1487,11 @@ if (!Object.values) {
                 }
 
                 if (current_token.type === 'TK_RESERVED' && in_array(current_token.text, ['else', 'catch', 'finally'])) {
-                    if (!(last_type === 'TK_END_BLOCK' && previous_flags.mode === MODE.BlockStatement) ||
-                        opt.brace_style === "expand" ||
-                        opt.brace_style === "end-expand" ||
-                        (opt.brace_style === "none" && current_token.wanted_newline)) {
+                    if ((!(last_type === 'TK_END_BLOCK' && previous_flags.mode === MODE.BlockStatement) ||
+                            opt.brace_style === "expand" ||
+                            opt.brace_style === "end-expand" ||
+                            (opt.brace_style === "none" && current_token.wanted_newline)) &&
+                        !flags.inline_frame) {
                         print_newline();
                     } else {
                         output.trim(true);
@@ -1499,8 +1546,14 @@ if (!Object.values) {
                     // The conditional starts the statement if appropriate.
                     // Semicolon can be the start (and end) of a statement
                     output.space_before_token = false;
+                } else {
+                    handle_whitespace_and_comments(current_token);
                 }
-                while (flags.mode === MODE.Statement && !flags.if_block && !flags.do_block) {
+
+                var next_token = get_token(1);
+                while (flags.mode === MODE.Statement &&
+                    !(flags.if_block && next_token && next_token.type === 'TK_RESERVED' && next_token.text === 'else') &&
+                    !flags.do_block) {
                     restore_mode();
                 }
 
@@ -1516,14 +1569,17 @@ if (!Object.values) {
                     // The conditional starts the statement if appropriate.
                     // One difference - strings want at least a space before
                     output.space_before_token = true;
-                } else if (last_type === 'TK_RESERVED' || last_type === 'TK_WORD' || flags.inline_frame) {
-                    output.space_before_token = true;
-                } else if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
-                    if (!start_of_object_property()) {
-                        allow_wrap_or_preserved_newline();
-                    }
                 } else {
-                    print_newline();
+                    handle_whitespace_and_comments(current_token);
+                    if (last_type === 'TK_RESERVED' || last_type === 'TK_WORD' || flags.inline_frame) {
+                        output.space_before_token = true;
+                    } else if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
+                        if (!start_of_object_property()) {
+                            allow_wrap_or_preserved_newline();
+                        }
+                    } else {
+                        print_newline();
+                    }
                 }
                 print_token();
             }
@@ -1531,6 +1587,8 @@ if (!Object.values) {
             function handle_equals() {
                 if (start_of_statement()) {
                     // The conditional starts the statement if appropriate.
+                } else {
+                    handle_whitespace_and_comments(current_token);
                 }
 
                 if (flags.declaration_statement) {
@@ -1543,6 +1601,8 @@ if (!Object.values) {
             }
 
             function handle_comma() {
+                handle_whitespace_and_comments(current_token, true);
+
                 print_token();
                 output.space_before_token = true;
                 if (flags.declaration_statement) {
@@ -1577,8 +1637,21 @@ if (!Object.values) {
             }
 
             function handle_operator() {
+                var isGeneratorAsterisk = current_token.text === '*' &&
+                    ((last_type === 'TK_RESERVED' && in_array(flags.last_text, ['function', 'yield'])) ||
+                        (in_array(last_type, ['TK_START_BLOCK', 'TK_COMMA', 'TK_END_BLOCK', 'TK_SEMICOLON']))
+                    );
+                var isUnary = in_array(current_token.text, ['-', '+']) && (
+                    in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) ||
+                    in_array(flags.last_text, Tokenizer.line_starters) ||
+                    flags.last_text === ','
+                );
+
                 if (start_of_statement()) {
                     // The conditional starts the statement if appropriate.
+                } else {
+                    var preserve_statement_flags = !isGeneratorAsterisk;
+                    handle_whitespace_and_comments(current_token, preserve_statement_flags);
                 }
 
                 if (last_type === 'TK_RESERVED' && is_special_word(flags.last_text)) {
@@ -1618,15 +1691,6 @@ if (!Object.values) {
                 var space_before = true;
                 var space_after = true;
                 var in_ternary = false;
-                var isGeneratorAsterisk = current_token.text === '*' &&
-                    ((last_type === 'TK_RESERVED' && in_array(flags.last_text, ['function', 'yield'])) ||
-                        (flags.mode === MODE.ObjectLiteral && in_array(last_type, ['TK_START_BLOCK', 'TK_COMMA'])));
-                var isUnary = in_array(current_token.text, ['-', '+']) && (
-                    in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) ||
-                    in_array(flags.last_text, Tokenizer.line_starters) ||
-                    flags.last_text === ','
-                );
-
                 if (current_token.text === ':') {
                     if (flags.ternary_depth === 0) {
                         // Colon is invalid javascript outside of ternary and object, but do our best to guess what was meant.
@@ -1696,7 +1760,16 @@ if (!Object.values) {
                     }
                 }
 
-                if (in_array(current_token.text, ['--', '++', '!', '~']) || isUnary) {
+                if (isGeneratorAsterisk) {
+                    allow_wrap_or_preserved_newline();
+                    space_before = false;
+                    var next_token = get_token(1);
+                    space_after = next_token && in_array(next_token.type, ['TK_WORD', 'TK_RESERVED']);
+                } else if (current_token.text === '...') {
+                    allow_wrap_or_preserved_newline();
+                    space_before = last_type === 'TK_START_BLOCK';
+                    space_after = false;
+                } else if (in_array(current_token.text, ['--', '++', '!', '~']) || isUnary) {
                     // unary operators (and binary +/- pretending to be unary) special cases
 
                     space_before = false;
@@ -1738,17 +1811,14 @@ if (!Object.values) {
                         // foo(); --bar;
                         print_newline();
                     }
-                } else if (isGeneratorAsterisk) {
-                    allow_wrap_or_preserved_newline();
-                    space_before = false;
-                    space_after = false;
                 }
+
                 output.space_before_token = output.space_before_token || space_before;
                 print_token();
                 output.space_before_token = space_after;
             }
 
-            function handle_block_comment() {
+            function handle_block_comment(preserve_statement_flags) {
                 if (output.raw) {
                     output.add_raw_token(current_token);
                     if (current_token.directives && current_token.directives.preserve === 'end') {
@@ -1759,7 +1829,7 @@ if (!Object.values) {
                 }
 
                 if (current_token.directives) {
-                    print_newline(false, true);
+                    print_newline(false, preserve_statement_flags);
                     print_token();
                     if (current_token.directives.preserve === 'start') {
                         output.raw = true;
@@ -1784,7 +1854,7 @@ if (!Object.values) {
                 var lastIndentLength = lastIndent.length;
 
                 // block comment starts with a new line
-                print_newline(false, true);
+                print_newline(false, preserve_statement_flags);
                 if (lines.length > 1) {
                     javadoc = all_lines_start_with(lines.slice(1), '*');
                     starless = each_line_matches_indent(lines.slice(1), lastIndent);
@@ -1807,24 +1877,26 @@ if (!Object.values) {
                 }
 
                 // for comments of more than one line, make sure there's a new line after
-                print_newline(false, true);
+                print_newline(false, preserve_statement_flags);
             }
 
-            function handle_comment() {
+            function handle_comment(preserve_statement_flags) {
                 if (current_token.wanted_newline) {
-                    print_newline(false, true);
+                    print_newline(false, preserve_statement_flags);
                 } else {
                     output.trim(true);
                 }
 
                 output.space_before_token = true;
                 print_token();
-                print_newline(false, true);
+                print_newline(false, preserve_statement_flags);
             }
 
             function handle_dot() {
                 if (start_of_statement()) {
                     // The conditional starts the statement if appropriate.
+                } else {
+                    handle_whitespace_and_comments(current_token, true);
                 }
 
                 if (last_type === 'TK_RESERVED' && is_special_word(flags.last_text)) {
@@ -1838,11 +1910,11 @@ if (!Object.values) {
                 print_token();
             }
 
-            function handle_unknown() {
+            function handle_unknown(preserve_statement_flags) {
                 print_token();
 
                 if (current_token.text[current_token.text.length - 1] === '\n') {
-                    print_newline();
+                    print_newline(false, preserve_statement_flags);
                 }
             }
 
@@ -1851,6 +1923,7 @@ if (!Object.values) {
                 while (flags.mode === MODE.Statement) {
                     restore_mode();
                 }
+                handle_whitespace_and_comments(current_token);
             }
         }
 
@@ -2133,7 +2206,15 @@ if (!Object.values) {
         var Token = function(type, text, newlines, whitespace_before, parent) {
             this.type = type;
             this.text = text;
-            this.comments_before = [];
+
+            // comments_before are
+            // comments that have a new line before them
+            // and may or may not have a newline after
+            // this is a set of comments before
+            this.comments_before = /* inline comment*/ [];
+
+
+            this.comments_after = []; // no new line before and newline after
             this.newlines = newlines || 0;
             this.wanted_newline = newlines > 0;
             this.whitespace_before = whitespace_before || '';
@@ -2153,11 +2234,11 @@ if (!Object.values) {
             this.positionable_operators = '!= !== % & && * ** + - / : < << <= == === > >= >> >>> ? ^ | ||'.split(' ');
             var punct = this.positionable_operators.concat(
                 // non-positionable operators - these do not follow operator position settings
-                '! %= &= *= **= ++ += , -- -= /= :: <<= = => >>= >>>= ^= |= ~'.split(' '));
+                '! %= &= *= **= ++ += , -- -= /= :: <<= = => >>= >>>= ^= |= ~ ...'.split(' '));
 
             // words which should always start on new line.
             this.line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function,import,export'.split(',');
-            var reserved_words = this.line_starters.concat(['do', 'in', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof', 'yield', 'async', 'await', 'from', 'as']);
+            var reserved_words = this.line_starters.concat(['do', 'in', 'of', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof', 'yield', 'async', 'await', 'from', 'as']);
 
             //  /* ... */ comment ends with nearest */ or end of file
             var block_comment_pattern = /([\s\S]*?)((?:\*\/)|$)/g;
@@ -2317,7 +2398,10 @@ if (!Object.values) {
                         if (allow_decimal && input.peek() === '.') {
                             c += input.next();
                             allow_decimal = false;
-                        } else if (allow_e && input.testChar(/[Ee]/)) {
+                        }
+
+                        // a = 1.e-7 is valid, so we test for . then e in one loop
+                        if (allow_e && input.testChar(/[Ee]/)) {
                             c += input.next();
 
                             if (input.testChar(/[+-]/)) {
@@ -2345,7 +2429,7 @@ if (!Object.values) {
                     if (!(last_token.type === 'TK_DOT' ||
                             (last_token.type === 'TK_RESERVED' && in_array(last_token.text, ['set', 'get']))) &&
                         in_array(c, reserved_words)) {
-                        if (c === 'in') { // hack for 'in' operator
+                        if (c === 'in' || c === 'of') { // hack for 'in' and 'of' operators
                             return [c, 'TK_OPERATOR'];
                         }
                         return [c, 'TK_RESERVED'];
@@ -2524,6 +2608,10 @@ if (!Object.values) {
                                     } else {
                                         parse_string('`', allow_unescaped_newlines, '${');
                                     }
+
+                                    if (input.hasNext()) {
+                                        resulting_string += input.next();
+                                    }
                                 }
                             }
                         };
@@ -2617,6 +2705,10 @@ if (!Object.values) {
                 }
 
                 if (c === '.') {
+                    if (input.peek() === '.' && input.peek(1) === '.') {
+                        c += input.next() + input.next();
+                        return [c, 'TK_OPERATOR'];
+                    }
                     return [c, 'TK_DOT'];
                 }
 
@@ -2737,7 +2829,7 @@ if (!Object.values) {
 
   The MIT License (MIT)
 
-  Copyright (c) 2007-2013 Einar Lielmanis and contributors.
+  Copyright (c) 2007-2017 Einar Lielmanis, Liam Newman, and contributors.
 
   Permission is hereby granted, free of charge, to any person
   obtaining a copy of this software and associated documentation files
@@ -2797,33 +2889,64 @@ if (!Object.values) {
 // http://www.w3.org/TR/css3-syntax/
 
 (function() {
+
+    function mergeOpts(allOptions, targetType) {
+        var finalOpts = {};
+        var name;
+
+        for (name in allOptions) {
+            if (name !== targetType) {
+                finalOpts[name] = allOptions[name];
+            }
+        }
+
+
+        //merge in the per type settings for the targetType
+        if (targetType in allOptions) {
+            for (name in allOptions[targetType]) {
+                finalOpts[name] = allOptions[targetType][name];
+            }
+        }
+        return finalOpts;
+    }
+
+    var lineBreak = /\r\n|[\n\r\u2028\u2029]/;
+    var allLineBreaks = new RegExp(lineBreak.source, 'g');
+
     function css_beautify(source_text, options) {
         options = options || {};
-        source_text = source_text || '';
-        // HACK: newline parsing inconsistent. This brute force normalizes the input.
-        source_text = source_text.replace(/\r\n|[\r\u2028\u2029]/g, '\n');
 
-        var indentSize = options.indent_size || 4;
+        // Allow the setting of language/file-type specific options
+        // with inheritance of overall settings
+        options = mergeOpts(options, 'css');
+
+        source_text = source_text || '';
+
+        var indentSize = options.indent_size ? parseInt(options.indent_size, 10) : 4;
         var indentCharacter = options.indent_char || ' ';
         var selectorSeparatorNewline = (options.selector_separator_newline === undefined) ? true : options.selector_separator_newline;
         var end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
         var newline_between_rules = (options.newline_between_rules === undefined) ? true : options.newline_between_rules;
         var space_around_combinator = (options.space_around_combinator === undefined) ? false : options.space_around_combinator;
         space_around_combinator = space_around_combinator || ((options.space_around_selector_separator === undefined) ? false : options.space_around_selector_separator);
-        var eol = options.eol ? options.eol : '\n';
-
-        // compatibility
-        if (typeof indentSize === "string") {
-            indentSize = parseInt(indentSize, 10);
-        }
+        var eol = options.eol ? options.eol : 'auto';
 
         if (options.indent_with_tabs) {
             indentCharacter = '\t';
             indentSize = 1;
         }
 
+        if (eol === 'auto') {
+            eol = '\n';
+            if (source_text && lineBreak.test(source_text || '')) {
+                eol = source_text.match(lineBreak)[0];
+            }
+        }
+
         eol = eol.replace(/\\r/, '\r').replace(/\\n/, '\n');
 
+        // HACK: newline parsing inconsistent. This brute force normalizes the input.
+        source_text = source_text.replace(allLineBreaks, '\n');
 
         // tokenizer
         var whiteRe = /^\s+$/;
@@ -3111,9 +3234,11 @@ if (!Object.values) {
                     !lookBack("(")) {
                     // 'property: value' delimiter
                     // which could be in a conditional group query
-                    insidePropertyValue = true;
                     output.push(':');
-                    print.singleSpace();
+                    if (!insidePropertyValue) {
+                        insidePropertyValue = true;
+                        print.singleSpace();
+                    }
                 } else {
                     // sass/less parent reference don't use a space
                     // sass nested pseudo-class don't use a space
@@ -3262,7 +3387,7 @@ if (!Object.values) {
 
   The MIT License (MIT)
 
-  Copyright (c) 2007-2013 Einar Lielmanis and contributors.
+  Copyright (c) 2007-2017 Einar Lielmanis, Liam Newman, and contributors.
 
   Permission is hereby granted, free of charge, to any person
   obtaining a copy of this software and associated documentation files
@@ -3306,6 +3431,7 @@ if (!Object.values) {
     brace_style (default "collapse") - "collapse" | "expand" | "end-expand" | "none"
             put braces on the same line as control statements (default), or put braces on own line (Allman / ANSI style), or just put end braces on own line, or attempt to keep them where they are.
     unformatted (defaults to inline tags) - list of tags, that shouldn't be reformatted
+    content_unformatted (defaults to pre tag) - list of tags, that its content shouldn't be reformatted
     indent_scripts (default normal)  - "keep"|"separate"|"normal"
     preserve_newlines (default true) - whether existing line breaks before elements should be preserved
                                         Only works before elements, not inside tags or for text.
@@ -3343,6 +3469,28 @@ if (!Object.values) {
         return s.replace(/\s+$/g, '');
     }
 
+    function mergeOpts(allOptions, targetType) {
+        var finalOpts = {};
+        var name;
+
+        for (name in allOptions) {
+            if (name !== targetType) {
+                finalOpts[name] = allOptions[name];
+            }
+        }
+
+        //merge in the per type settings for the targetType
+        if (targetType in allOptions) {
+            for (name in allOptions[targetType]) {
+                finalOpts[name] = allOptions[targetType][name];
+            }
+        }
+        return finalOpts;
+    }
+
+    var lineBreak = /\r\n|[\n\r\u2028\u2029]/;
+    var allLineBreaks = new RegExp(lineBreak.source, 'g');
+
     function style_html(html_source, options, js_beautify, css_beautify) {
         //Wrapper function to invoke all the necessary constructors and deal with the output.
 
@@ -3355,17 +3503,24 @@ if (!Object.values) {
             wrap_line_length,
             brace_style,
             unformatted,
+            content_unformatted,
             preserve_newlines,
             max_preserve_newlines,
             indent_handlebars,
             wrap_attributes,
             wrap_attributes_indent_size,
             is_wrap_attributes_force,
+            is_wrap_attributes_force_expand_multiline,
+            is_wrap_attributes_force_aligned,
             end_with_newline,
             extra_liners,
             eol;
 
         options = options || {};
+
+        // Allow the setting of language/file-type specific options
+        // with inheritance of overall settings
+        options = mergeOpts(options, 'html');
 
         // backwards compatibility to 1.3.4
         if ((options.wrap_line_length === undefined || parseInt(options.wrap_line_length, 10) === 0) &&
@@ -3389,7 +3544,9 @@ if (!Object.values) {
             'span', 'strong', 'sub', 'sup', 'svg', 'template', 'textarea', 'time', 'u', 'var',
             'video', 'wbr', 'text',
             // prexisting - not sure of full effect of removing, leaving in
-            'acronym', 'address', 'big', 'dt', 'ins', 'small', 'strike', 'tt',
+            'acronym', 'address', 'big', 'dt', 'ins', 'strike', 'tt',
+        ];
+        content_unformatted = options.content_unformatted || [
             'pre',
         ];
         preserve_newlines = (options.preserve_newlines === undefined) ? true : options.preserve_newlines;
@@ -3400,18 +3557,30 @@ if (!Object.values) {
         wrap_attributes = (options.wrap_attributes === undefined) ? 'auto' : options.wrap_attributes;
         wrap_attributes_indent_size = (isNaN(parseInt(options.wrap_attributes_indent_size, 10))) ? indent_size : parseInt(options.wrap_attributes_indent_size, 10);
         is_wrap_attributes_force = wrap_attributes.substr(0, 'force'.length) === 'force';
+        is_wrap_attributes_force_expand_multiline = (wrap_attributes === 'force-expand-multiline');
+        is_wrap_attributes_force_aligned = (wrap_attributes === 'force-aligned');
         end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
         extra_liners = (typeof options.extra_liners === 'object') && options.extra_liners ?
             options.extra_liners.concat() : (typeof options.extra_liners === 'string') ?
             options.extra_liners.split(',') : 'head,body,/html'.split(',');
-        eol = options.eol ? options.eol : '\n';
+        eol = options.eol ? options.eol : 'auto';
 
         if (options.indent_with_tabs) {
             indent_character = '\t';
             indent_size = 1;
         }
 
+        if (eol === 'auto') {
+            eol = '\n';
+            if (html_source && lineBreak.test(html_source || '')) {
+                eol = html_source.match(lineBreak)[0];
+            }
+        }
+
         eol = eol.replace(/\\r/, '\r').replace(/\\n/, '\n');
+
+        // HACK: newline parsing inconsistent. This brute force normalizes the input.
+        html_source = html_source.replace(allLineBreaks, '\n');
 
         function Parser() {
 
@@ -3508,19 +3677,33 @@ if (!Object.values) {
 
             this.get_content = function() { //function to capture regular content between tags
                 var input_char = '',
-                    content = [];
+                    content = [],
+                    handlebarsStarted = 0;
 
-                while (this.input.charAt(this.pos) !== '<') {
+                while (this.input.charAt(this.pos) !== '<' || handlebarsStarted === 2) {
                     if (this.pos >= this.input.length) {
                         return content.length ? content.join('') : ['', 'TK_EOF'];
                     }
 
-                    if (this.traverse_whitespace()) {
+                    if (handlebarsStarted < 2 && this.traverse_whitespace()) {
                         this.space_or_wrap(content);
                         continue;
                     }
 
+                    input_char = this.input.charAt(this.pos);
+
                     if (indent_handlebars) {
+                        if (input_char === '{') {
+                            handlebarsStarted += 1;
+                        } else if (handlebarsStarted < 2) {
+                            handlebarsStarted = 0;
+                        }
+
+                        if (input_char === '}' && handlebarsStarted > 0) {
+                            if (handlebarsStarted-- === 0) {
+                                break;
+                            }
+                        }
                         // Handlebars parsing is complicated.
                         // {{#foo}} and {{/foo}} are formatted tags.
                         // {{something}} should get treated as content, except:
@@ -3538,7 +3721,6 @@ if (!Object.values) {
                         }
                     }
 
-                    input_char = this.input.charAt(this.pos);
                     this.pos++;
                     this.line_char_count++;
                     content.push(input_char); //letter at-a-time (or string) inserted to an array
@@ -3620,10 +3802,13 @@ if (!Object.values) {
                     comment = '',
                     space = false,
                     first_attr = true,
+                    has_wrapped_attrs = false,
                     tag_start, tag_end,
                     tag_start_char,
                     orig_pos = this.pos,
-                    orig_line_char_count = this.line_char_count;
+                    orig_line_char_count = this.line_char_count,
+                    is_tag_closed = false,
+                    tail;
 
                 peek = peek !== undefined ? peek : false;
 
@@ -3647,38 +3832,58 @@ if (!Object.values) {
                     if (input_char === "'" || input_char === '"') {
                         input_char += this.get_unformatted(input_char);
                         space = true;
-
                     }
 
                     if (input_char === '=') { //no space before =
                         space = false;
                     }
-
+                    tail = this.input.substr(this.pos - 1);
+                    if (is_wrap_attributes_force_expand_multiline && has_wrapped_attrs && !is_tag_closed && (input_char === '>' || input_char === '/')) {
+                        if (tail.match(/^\/?\s*>/)) {
+                            space = false;
+                            is_tag_closed = true;
+                            this.print_newline(false, content);
+                            this.print_indentation(content);
+                        }
+                    }
                     if (content.length && content[content.length - 1] !== '=' && input_char !== '>' && space) {
                         //no space after = or before >
                         var wrapped = this.space_or_wrap(content);
                         var indentAttrs = wrapped && input_char !== '/' && !is_wrap_attributes_force;
                         space = false;
-                        if (!first_attr && is_wrap_attributes_force && input_char !== '/') {
-                            this.print_newline(false, content);
-                            this.print_indentation(content);
-                            indentAttrs = true;
+
+                        if (is_wrap_attributes_force && input_char !== '/') {
+                            var force_first_attr_wrap = false;
+                            if (is_wrap_attributes_force_expand_multiline && first_attr) {
+                                var is_only_attribute = tail.match(/^\S*(="([^"]|\\")*")?\s*\/?\s*>/) !== null;
+                                force_first_attr_wrap = !is_only_attribute;
+                            }
+                            if (!first_attr || force_first_attr_wrap) {
+                                this.print_newline(false, content);
+                                this.print_indentation(content);
+                                indentAttrs = true;
+                            }
                         }
                         if (indentAttrs) {
+                            has_wrapped_attrs = true;
+
                             //indent attributes an auto, forced, or forced-align line-wrap
                             var alignment_size = wrap_attributes_indent_size;
-                            if (wrap_attributes === 'force-aligned') {
+                            if (is_wrap_attributes_force_aligned) {
                                 alignment_size = content.indexOf(' ') + 1;
                             }
 
                             for (var count = 0; count < alignment_size; count++) {
-                                content.push(indent_character);
+                                // only ever further indent with spaces since we're trying to align characters
+                                content.push(' ');
                             }
                         }
-                        for (var i = 0; i < content.length; i++) {
-                            if (content[i] === ' ') {
-                                first_attr = false;
-                                break;
+                        if (first_attr) {
+                            for (var i = 0; i < content.length; i++) {
+                                if (content[i] === ' ') {
+                                    first_attr = false;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -3737,8 +3942,12 @@ if (!Object.values) {
                 var tag_index;
                 var tag_offset;
 
+                // must check for space first otherwise the tag could have the first attribute included, and
+                // then not un-indent correctly
                 if (tag_complete.indexOf(' ') !== -1) { //if there's whitespace, thats where the tag name ends
                     tag_index = tag_complete.indexOf(' ');
+                } else if (tag_complete.indexOf('\n') !== -1) { //if there's a line break, thats where the tag name ends
+                    tag_index = tag_complete.indexOf('\n');
                 } else if (tag_complete.charAt(0) === '{') {
                     tag_index = tag_complete.indexOf('}');
                 } else { //otherwise go with the tag ending
@@ -3762,7 +3971,9 @@ if (!Object.values) {
                         this.indent_content = true;
                         this.traverse_whitespace();
                     }
-                } else if (this.is_unformatted(tag_check, unformatted)) { // do not reformat the "unformatted" tags
+                } else if (this.is_unformatted(tag_check, unformatted) ||
+                    this.is_unformatted(tag_check, content_unformatted)) {
+                    // do not reformat the "unformatted" or "content_unformatted" tags
                     comment = this.get_unformatted('</' + tag_check + '>', tag_complete); //...delegate to get_unformatted function
                     content.push(comment);
                     tag_end = this.pos - 1;
@@ -4673,6 +4884,30 @@ if (isNode) {
     Script: test/generate-tests.js
     Template: test/data/javascript/node.mustache
     Data: test/data/javascript/tests.js
+
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2017 Einar Lielmanis, Liam Newman, and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
 */
 /*jshint unused:false */
 
@@ -4729,8 +4964,13 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.eol = '\r\\n';
         expected = expected.replace(/[\n]/g, '\r\n');
         sanitytest.expect(input, expected);
-        input = input.replace(/[\n]/g, '\r\n');
-        sanitytest.expect(input, expected);
+        if (input.indexOf('\n') !== -1) {
+            input = input.replace(/[\n]/g, '\r\n');
+            sanitytest.expect(input, expected);
+            // Ensure support for auto eol detection
+            opts.eol = 'auto';
+            sanitytest.expect(input, expected);
+        }
         opts.eol = '\n';
     }
 
@@ -4761,7 +5001,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         //     indent;
         // }
 
-        if (opts.indent_size === 4 && input) {
+        var current_indent_size = opts.js ? opts.js.indent_size : null;
+        current_indent_size = current_indent_size ? current_indent_size : opts.indent_size;
+        if (current_indent_size === 4 && input) {
             wrapped_input = '{\n' + input.replace(/^(.+)$/mg, '    $1') + '\n    foo = bar;\n}';
             wrapped_expectation = '{\n' + expectation.replace(/^(.+)$/mg, '    $1') + '\n    foo = bar;\n}';
             test_fragment(wrapped_input, wrapped_expectation);
@@ -4932,9 +5174,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         sanitytest = test_obj;
 
 
-        reset_options();
         //============================================================
         // Unicode Support
+        reset_options();
         bt('var ' + unicode_char(3232) + '_' + unicode_char(3232) + ' = "hi";');
         bt(
             'var ' + unicode_char(228) + 'x = {\n' +
@@ -4942,19 +5184,48 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '};');
 
 
-        reset_options();
         //============================================================
         // Test template and continuation strings
-        bt('`This is a ${template} string.`');
-        bt('`This\n  is\n  a\n  ${template}\n  string.`');
-        bt('a = `This is a continuation\\nstring.`');
-        bt('a = "This is a continuation\\nstring."');
-        bt('`SELECT\n  nextval(\'${this.options.schema ? `${this.options.schema}.` : \'\'}"${this.tableName}_${this.autoIncrementField}_seq"\'::regclass\n  ) nextval;`');
-
-
         reset_options();
+        bt('`This is a ${template} string.`');
+        bt(
+            '`This\n' +
+            '  is\n' +
+            '  a\n' +
+            '  ${template}\n' +
+            '  string.`');
+        bt(
+            'a = `This is a continuation\\\n' +
+            'string.`');
+        bt(
+            'a = "This is a continuation\\\n' +
+            'string."');
+        bt(
+            '`SELECT\n' +
+            '  nextval(\'${this.options.schema ? `${this.options.schema}.` : \'\'}"${this.tableName}_${this.autoIncrementField}_seq"\'::regclass\n' +
+            '  ) nextval;`');
+
+        // Tests for #1030
+        bt(
+            'const composeUrl = (host) => {\n' +
+            '    return `${host `test`}`;\n' +
+            '};');
+        bt(
+            'const composeUrl = (host, api, key, data) => {\n' +
+            '    switch (api) {\n' +
+            '        case "Init":\n' +
+            '            return `${host}/vwapi/Init?VWID=${key}&DATA=${encodeURIComponent(\n' +
+            '                Object.keys(data).map((k) => `${k}=${ data[k]}` ).join(";")\n' +
+            '            )}`;\n' +
+            '        case "Pay":\n' +
+            '            return `${host}/vwapi/Pay?SessionId=${par}`;\n' +
+            '    };\n' +
+            '};');
+
+
         //============================================================
         // ES7 Decorators
+        reset_options();
         bt('@foo');
         bt('@foo(bar)');
         bt(
@@ -4963,17 +5234,37 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '})');
 
 
-        reset_options();
         //============================================================
         // ES7 exponential
+        reset_options();
         bt('x ** 2');
         bt('x ** -2');
 
 
+        //============================================================
+        // Spread operator
         reset_options();
+        opts.brace_style = "collapse,preserve-inline";
+        bt('const m = { ...item, c: 3 };');
+        bt(
+            'const m = {\n' +
+            '    ...item,\n' +
+            '    c: 3\n' +
+            '};');
+        bt('const m = { c: 3, ...item };');
+        bt('const m = [...item, 3];');
+        bt('const m = [3, ...item];');
+
+
         //============================================================
         // Object literal shorthand functions
-        bt('return {\n    foo() {\n        return 42;\n    }\n}');
+        reset_options();
+        bt(
+            'return {\n' +
+            '    foo() {\n' +
+            '        return 42;\n' +
+            '    }\n' +
+            '}');
         bt(
             'var foo = {\n' +
             '    * bar() {\n' +
@@ -4982,6 +5273,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '};');
         bt(
             'var foo = {bar(){return 42;},*barGen(){yield 42;}};',
+            //  -- output --
             'var foo = {\n' +
             '    bar() {\n' +
             '        return 42;\n' +
@@ -4991,117 +5283,600 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    }\n' +
             '};');
 
+        // also handle generator shorthand in class - #1013
+        bt(
+            'class A {\n' +
+            '    fn() {\n' +
+            '        return true;\n' +
+            '    }\n' +
+            '\n' +
+            '    * gen() {\n' +
+            '        return true;\n' +
+            '    }\n' +
+            '}');
+        bt(
+            'class A {\n' +
+            '    * gen() {\n' +
+            '        return true;\n' +
+            '    }\n' +
+            '\n' +
+            '    fn() {\n' +
+            '        return true;\n' +
+            '    }\n' +
+            '}');
 
-        reset_options();
+
         //============================================================
         // End With Newline - (eof = "\n")
+        reset_options();
         opts.end_with_newline = true;
         test_fragment('', '\n');
         test_fragment('   return .5', '   return .5\n');
-        test_fragment('   \n\nreturn .5\n\n\n\n', '   return .5\n');
+        test_fragment(
+            '   \n' +
+            '\n' +
+            'return .5\n' +
+            '\n' +
+            '\n' +
+            '\n',
+            //  -- output --
+            '   return .5\n');
         test_fragment('\n');
 
         // End With Newline - (eof = "")
+        reset_options();
         opts.end_with_newline = false;
         test_fragment('');
         test_fragment('   return .5');
-        test_fragment('   \n\nreturn .5\n\n\n\n', '   return .5');
+        test_fragment(
+            '   \n' +
+            '\n' +
+            'return .5\n' +
+            '\n' +
+            '\n' +
+            '\n',
+            //  -- output --
+            '   return .5');
         test_fragment('\n', '');
 
 
+        //============================================================
+        // Support simple language specific option inheritance/overriding - (j = "   ")
         reset_options();
+        opts.js = { 'indent_size': 3 };
+        opts.css = { 'indent_size': 5 };
+        bt(
+            'if (a == b) {\n' +
+            '   test();\n' +
+            '}');
+
+        // Support simple language specific option inheritance/overriding - (j = "    ")
+        reset_options();
+        opts.html = { 'js': { 'indent_size': 3 }, 'css': { 'indent_size': 5 } };
+        bt(
+            'if (a == b) {\n' +
+            '    test();\n' +
+            '}');
+
+        // Support simple language specific option inheritance/overriding - (j = "    ")
+        reset_options();
+        opts.indent_size = 9;
+        opts.html = { 'js': { 'indent_size': 3 }, 'css': { 'indent_size': 5 }, 'indent_size': 2};
+        opts.js = { 'indent_size': 4 };
+        opts.css = { 'indent_size': 3 };
+        bt(
+            'if (a == b) {\n' +
+            '    test();\n' +
+            '}');
+
+
         //============================================================
         // Brace style permutations - (ibo = "", iao = "", ibc = "", iac = "", obo = " ", oao = " ", obc = " ", oac = " ")
-        opts.brace_style = 'collapse-preserve-inline';
-        bt('var a ={a: 2};\nvar a ={a: 2};', 'var a = { a: 2 };\nvar a = { a: 2 };');
-        bt('//case 1\nif (a == 1){}\n//case 2\nelse if (a == 2){}', '//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
+        reset_options();
+        opts.brace_style = 'collapse,preserve-inline';
+        bt(
+            'var a ={a: 2};\n' +
+            'var a ={a: 2};',
+            //  -- output --
+            'var a = { a: 2 };\n' +
+            'var a = { a: 2 };');
+        bt(
+            '//case 1\n' +
+            'if (a == 1){}\n' +
+            '//case 2\n' +
+            'else if (a == 2){}',
+            //  -- output --
+            '//case 1\n' +
+            'if (a == 1) {}\n' +
+            '//case 2\n' +
+            'else if (a == 2) {}');
         bt('if(1){2}else{3}', 'if (1) { 2 } else { 3 }');
         bt('try{a();}catch(b){c();}catch(d){}finally{e();}', 'try { a(); } catch (b) { c(); } catch (d) {} finally { e(); }');
 
         // Brace style permutations - (ibo = "\n", iao = "\n", ibc = "\n", iac = "\n", obo = " ", oao = "\n    ", obc = "\n", oac = " ")
-        opts.brace_style = 'collapse-preserve-inline';
-        bt('var a =\n{\na: 2\n}\n;\nvar a =\n{\na: 2\n}\n;', 'var a = {\n    a: 2\n};\nvar a = {\n    a: 2\n};');
-        bt('//case 1\nif (a == 1)\n{}\n//case 2\nelse if (a == 2)\n{}', '//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
-        bt('if(1)\n{\n2\n}\nelse\n{\n3\n}', 'if (1) {\n    2\n} else {\n    3\n}');
-        bt('try\n{\na();\n}\ncatch(b)\n{\nc();\n}\ncatch(d)\n{}\nfinally\n{\ne();\n}', 'try {\n    a();\n} catch (b) {\n    c();\n} catch (d) {} finally {\n    e();\n}');
+        reset_options();
+        opts.brace_style = 'collapse,preserve-inline';
+        bt(
+            'var a =\n' +
+            '{\n' +
+            'a: 2\n' +
+            '}\n' +
+            ';\n' +
+            'var a =\n' +
+            '{\n' +
+            'a: 2\n' +
+            '}\n' +
+            ';',
+            //  -- output --
+            'var a = {\n' +
+            '    a: 2\n' +
+            '};\n' +
+            'var a = {\n' +
+            '    a: 2\n' +
+            '};');
+        bt(
+            '//case 1\n' +
+            'if (a == 1)\n' +
+            '{}\n' +
+            '//case 2\n' +
+            'else if (a == 2)\n' +
+            '{}',
+            //  -- output --
+            '//case 1\n' +
+            'if (a == 1) {}\n' +
+            '//case 2\n' +
+            'else if (a == 2) {}');
+        bt(
+            'if(1)\n' +
+            '{\n' +
+            '2\n' +
+            '}\n' +
+            'else\n' +
+            '{\n' +
+            '3\n' +
+            '}',
+            //  -- output --
+            'if (1) {\n' +
+            '    2\n' +
+            '} else {\n' +
+            '    3\n' +
+            '}');
+        bt(
+            'try\n' +
+            '{\n' +
+            'a();\n' +
+            '}\n' +
+            'catch(b)\n' +
+            '{\n' +
+            'c();\n' +
+            '}\n' +
+            'catch(d)\n' +
+            '{}\n' +
+            'finally\n' +
+            '{\n' +
+            'e();\n' +
+            '}',
+            //  -- output --
+            'try {\n' +
+            '    a();\n' +
+            '} catch (b) {\n' +
+            '    c();\n' +
+            '} catch (d) {} finally {\n' +
+            '    e();\n' +
+            '}');
 
         // Brace style permutations - (ibo = "", iao = "", ibc = "", iac = "", obo = " ", oao = "\n    ", obc = "\n", oac = " ")
+        reset_options();
         opts.brace_style = 'collapse';
-        bt('var a ={a: 2};\nvar a ={a: 2};', 'var a = {\n    a: 2\n};\nvar a = {\n    a: 2\n};');
-        bt('//case 1\nif (a == 1){}\n//case 2\nelse if (a == 2){}', '//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
-        bt('if(1){2}else{3}', 'if (1) {\n    2\n} else {\n    3\n}');
-        bt('try{a();}catch(b){c();}catch(d){}finally{e();}', 'try {\n    a();\n} catch (b) {\n    c();\n} catch (d) {} finally {\n    e();\n}');
+        bt(
+            'var a ={a: 2};\n' +
+            'var a ={a: 2};',
+            //  -- output --
+            'var a = {\n' +
+            '    a: 2\n' +
+            '};\n' +
+            'var a = {\n' +
+            '    a: 2\n' +
+            '};');
+        bt(
+            '//case 1\n' +
+            'if (a == 1){}\n' +
+            '//case 2\n' +
+            'else if (a == 2){}',
+            //  -- output --
+            '//case 1\n' +
+            'if (a == 1) {}\n' +
+            '//case 2\n' +
+            'else if (a == 2) {}');
+        bt(
+            'if(1){2}else{3}',
+            //  -- output --
+            'if (1) {\n' +
+            '    2\n' +
+            '} else {\n' +
+            '    3\n' +
+            '}');
+        bt(
+            'try{a();}catch(b){c();}catch(d){}finally{e();}',
+            //  -- output --
+            'try {\n' +
+            '    a();\n' +
+            '} catch (b) {\n' +
+            '    c();\n' +
+            '} catch (d) {} finally {\n' +
+            '    e();\n' +
+            '}');
 
         // Brace style permutations - (ibo = "\n", iao = "\n", ibc = "\n", iac = "\n", obo = " ", oao = "\n    ", obc = "\n", oac = " ")
-        opts.brace_style = 'collapse';
-        bt('var a =\n{\na: 2\n}\n;\nvar a =\n{\na: 2\n}\n;', 'var a = {\n    a: 2\n};\nvar a = {\n    a: 2\n};');
-        bt('//case 1\nif (a == 1)\n{}\n//case 2\nelse if (a == 2)\n{}', '//case 1\nif (a == 1) {}\n//case 2\nelse if (a == 2) {}');
-        bt('if(1)\n{\n2\n}\nelse\n{\n3\n}', 'if (1) {\n    2\n} else {\n    3\n}');
-        bt('try\n{\na();\n}\ncatch(b)\n{\nc();\n}\ncatch(d)\n{}\nfinally\n{\ne();\n}', 'try {\n    a();\n} catch (b) {\n    c();\n} catch (d) {} finally {\n    e();\n}');
-
-
         reset_options();
+        opts.brace_style = 'collapse';
+        bt(
+            'var a =\n' +
+            '{\n' +
+            'a: 2\n' +
+            '}\n' +
+            ';\n' +
+            'var a =\n' +
+            '{\n' +
+            'a: 2\n' +
+            '}\n' +
+            ';',
+            //  -- output --
+            'var a = {\n' +
+            '    a: 2\n' +
+            '};\n' +
+            'var a = {\n' +
+            '    a: 2\n' +
+            '};');
+        bt(
+            '//case 1\n' +
+            'if (a == 1)\n' +
+            '{}\n' +
+            '//case 2\n' +
+            'else if (a == 2)\n' +
+            '{}',
+            //  -- output --
+            '//case 1\n' +
+            'if (a == 1) {}\n' +
+            '//case 2\n' +
+            'else if (a == 2) {}');
+        bt(
+            'if(1)\n' +
+            '{\n' +
+            '2\n' +
+            '}\n' +
+            'else\n' +
+            '{\n' +
+            '3\n' +
+            '}',
+            //  -- output --
+            'if (1) {\n' +
+            '    2\n' +
+            '} else {\n' +
+            '    3\n' +
+            '}');
+        bt(
+            'try\n' +
+            '{\n' +
+            'a();\n' +
+            '}\n' +
+            'catch(b)\n' +
+            '{\n' +
+            'c();\n' +
+            '}\n' +
+            'catch(d)\n' +
+            '{}\n' +
+            'finally\n' +
+            '{\n' +
+            'e();\n' +
+            '}',
+            //  -- output --
+            'try {\n' +
+            '    a();\n' +
+            '} catch (b) {\n' +
+            '    c();\n' +
+            '} catch (d) {} finally {\n' +
+            '    e();\n' +
+            '}');
+
+
         //============================================================
         // Comma-first option - (c0 = ",\n", c1 = ",\n    ", c2 = ",\n        ", c3 = ",\n            ", f1 = "    ,\n    ")
+        reset_options();
         opts.comma_first = false;
-        bt('{a:1, b:2}', '{\n    a: 1,\n    b: 2\n}');
-        bt('var a=1, b=c[d], e=6;', 'var a = 1,\n    b = c[d],\n    e = 6;');
-        bt('for(var a=1,b=2,c=3;d<3;d++)\ne', 'for (var a = 1, b = 2, c = 3; d < 3; d++)\n    e');
-        bt('for(var a=1,b=2,\nc=3;d<3;d++)\ne', 'for (var a = 1, b = 2,\n        c = 3; d < 3; d++)\n    e');
-        bt('function foo() {\n    return [\n        "one",\n        "two"\n    ];\n}');
-        bt('a=[[1,2],[4,5],[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    [7, 8]\n]');
-        bt('a=[[1,2],[4,5],[7,8],]', 'a = [\n    [1, 2],\n    [4, 5],\n    [7, 8],\n]');
-        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    [7, 8]\n]');
-        bt('a=[[1,2],[4,5],function(){},function(){},[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    function() {},\n    [7, 8]\n]');
-        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    [7, 8]\n]');
+        bt(
+            '{a:1, b:2}',
+            //  -- output --
+            '{\n' +
+            '    a: 1,\n' +
+            '    b: 2\n' +
+            '}');
+        bt(
+            'var a=1, b=c[d], e=6;',
+            //  -- output --
+            'var a = 1,\n' +
+            '    b = c[d],\n' +
+            '    e = 6;');
+        bt(
+            'for(var a=1,b=2,c=3;d<3;d++)\n' +
+            'e',
+            //  -- output --
+            'for (var a = 1, b = 2, c = 3; d < 3; d++)\n' +
+            '    e');
+        bt(
+            'for(var a=1,b=2,\n' +
+            'c=3;d<3;d++)\n' +
+            'e',
+            //  -- output --
+            'for (var a = 1, b = 2,\n' +
+            '        c = 3; d < 3; d++)\n' +
+            '    e');
+        bt(
+            'function foo() {\n' +
+            '    return [\n' +
+            '        "one",\n' +
+            '        "two"\n' +
+            '    ];\n' +
+            '}');
+        bt(
+            'a=[[1,2],[4,5],[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2],\n' +
+            '    [4, 5],\n' +
+            '    [7, 8]\n' +
+            ']');
+        bt(
+            'a=[[1,2],[4,5],[7,8],]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2],\n' +
+            '    [4, 5],\n' +
+            '    [7, 8],\n' +
+            ']');
+        bt(
+            'a=[[1,2],[4,5],function(){},[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2],\n' +
+            '    [4, 5],\n' +
+            '    function() {},\n' +
+            '    [7, 8]\n' +
+            ']');
+        bt(
+            'a=[[1,2],[4,5],function(){},function(){},[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2],\n' +
+            '    [4, 5],\n' +
+            '    function() {},\n' +
+            '    function() {},\n' +
+            '    [7, 8]\n' +
+            ']');
+        bt(
+            'a=[[1,2],[4,5],function(){},[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2],\n' +
+            '    [4, 5],\n' +
+            '    function() {},\n' +
+            '    [7, 8]\n' +
+            ']');
         bt('a=[b,c,function(){},function(){},d]', 'a = [b, c, function() {}, function() {}, d]');
-        bt('a=[b,c,\nfunction(){},function(){},d]', 'a = [b, c,\n    function() {},\n    function() {},\n    d\n]');
+        bt(
+            'a=[b,c,\n' +
+            'function(){},function(){},d]',
+            //  -- output --
+            'a = [b, c,\n' +
+            '    function() {},\n' +
+            '    function() {},\n' +
+            '    d\n' +
+            ']');
         bt('a=[a[1],b[4],c[d[7]]]', 'a = [a[1], b[4], c[d[7]]]');
         bt('[1,2,[3,4,[5,6],7],8]', '[1, 2, [3, 4, [5, 6], 7], 8]');
-        bt('[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]', '[\n    [\n        ["1", "2"],\n        ["3", "4"]\n    ],\n    [\n        ["5", "6", "7"],\n        ["8", "9", "0"]\n    ],\n    [\n        ["1", "2", "3"],\n        ["4", "5", "6", "7"],\n        ["8", "9", "0"]\n    ]\n]');
+        bt(
+            '[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]',
+            //  -- output --
+            '[\n' +
+            '    [\n' +
+            '        ["1", "2"],\n' +
+            '        ["3", "4"]\n' +
+            '    ],\n' +
+            '    [\n' +
+            '        ["5", "6", "7"],\n' +
+            '        ["8", "9", "0"]\n' +
+            '    ],\n' +
+            '    [\n' +
+            '        ["1", "2", "3"],\n' +
+            '        ["4", "5", "6", "7"],\n' +
+            '        ["8", "9", "0"]\n' +
+            '    ]\n' +
+            ']');
         bt(
             'changeCollection.add({\n' +
             '    name: "Jonathan" // New line inserted after this line on every save\n' +
             '    , age: 25\n' +
             '});',
+            //  -- output --
             'changeCollection.add({\n' +
             '    name: "Jonathan" // New line inserted after this line on every save\n' +
-            '        ,\n    age: 25\n' +
+            '        ,\n' +
+            '    age: 25\n' +
             '});');
+        bt(
+            'changeCollection.add(\n' +
+            '    function() {\n' +
+            '        return true;\n' +
+            '    },\n' +
+            '    function() {\n' +
+            '        return true;\n' +
+            '    }\n' +
+            ');');
 
         // Comma-first option - (c0 = "\n, ", c1 = "\n    , ", c2 = "\n        , ", c3 = "\n            , ", f1 = ", ")
+        reset_options();
         opts.comma_first = true;
-        bt('{a:1, b:2}', '{\n    a: 1\n    , b: 2\n}');
-        bt('var a=1, b=c[d], e=6;', 'var a = 1\n    , b = c[d]\n    , e = 6;');
-        bt('for(var a=1,b=2,c=3;d<3;d++)\ne', 'for (var a = 1, b = 2, c = 3; d < 3; d++)\n    e');
-        bt('for(var a=1,b=2,\nc=3;d<3;d++)\ne', 'for (var a = 1, b = 2\n        , c = 3; d < 3; d++)\n    e');
-        bt('function foo() {\n    return [\n        "one"\n        , "two"\n    ];\n}');
-        bt('a=[[1,2],[4,5],[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , [7, 8]\n]');
-        bt('a=[[1,2],[4,5],[7,8],]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , [7, 8]\n, ]');
-        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , [7, 8]\n]');
-        bt('a=[[1,2],[4,5],function(){},function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , function() {}\n    , [7, 8]\n]');
-        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2]\n    , [4, 5]\n    , function() {}\n    , [7, 8]\n]');
+        bt(
+            '{a:1, b:2}',
+            //  -- output --
+            '{\n' +
+            '    a: 1\n' +
+            '    , b: 2\n' +
+            '}');
+        bt(
+            'var a=1, b=c[d], e=6;',
+            //  -- output --
+            'var a = 1\n' +
+            '    , b = c[d]\n' +
+            '    , e = 6;');
+        bt(
+            'for(var a=1,b=2,c=3;d<3;d++)\n' +
+            'e',
+            //  -- output --
+            'for (var a = 1, b = 2, c = 3; d < 3; d++)\n' +
+            '    e');
+        bt(
+            'for(var a=1,b=2,\n' +
+            'c=3;d<3;d++)\n' +
+            'e',
+            //  -- output --
+            'for (var a = 1, b = 2\n' +
+            '        , c = 3; d < 3; d++)\n' +
+            '    e');
+        bt(
+            'function foo() {\n' +
+            '    return [\n' +
+            '        "one"\n' +
+            '        , "two"\n' +
+            '    ];\n' +
+            '}');
+        bt(
+            'a=[[1,2],[4,5],[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2]\n' +
+            '    , [4, 5]\n' +
+            '    , [7, 8]\n' +
+            ']');
+        bt(
+            'a=[[1,2],[4,5],[7,8],]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2]\n' +
+            '    , [4, 5]\n' +
+            '    , [7, 8]\n' +
+            ', ]');
+        bt(
+            'a=[[1,2],[4,5],function(){},[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2]\n' +
+            '    , [4, 5]\n' +
+            '    , function() {}\n' +
+            '    , [7, 8]\n' +
+            ']');
+        bt(
+            'a=[[1,2],[4,5],function(){},function(){},[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2]\n' +
+            '    , [4, 5]\n' +
+            '    , function() {}\n' +
+            '    , function() {}\n' +
+            '    , [7, 8]\n' +
+            ']');
+        bt(
+            'a=[[1,2],[4,5],function(){},[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2]\n' +
+            '    , [4, 5]\n' +
+            '    , function() {}\n' +
+            '    , [7, 8]\n' +
+            ']');
         bt('a=[b,c,function(){},function(){},d]', 'a = [b, c, function() {}, function() {}, d]');
-        bt('a=[b,c,\nfunction(){},function(){},d]', 'a = [b, c\n    , function() {}\n    , function() {}\n    , d\n]');
+        bt(
+            'a=[b,c,\n' +
+            'function(){},function(){},d]',
+            //  -- output --
+            'a = [b, c\n' +
+            '    , function() {}\n' +
+            '    , function() {}\n' +
+            '    , d\n' +
+            ']');
         bt('a=[a[1],b[4],c[d[7]]]', 'a = [a[1], b[4], c[d[7]]]');
         bt('[1,2,[3,4,[5,6],7],8]', '[1, 2, [3, 4, [5, 6], 7], 8]');
-        bt('[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]', '[\n    [\n        ["1", "2"]\n        , ["3", "4"]\n    ]\n    , [\n        ["5", "6", "7"]\n        , ["8", "9", "0"]\n    ]\n    , [\n        ["1", "2", "3"]\n        , ["4", "5", "6", "7"]\n        , ["8", "9", "0"]\n    ]\n]');
+        bt(
+            '[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]',
+            //  -- output --
+            '[\n' +
+            '    [\n' +
+            '        ["1", "2"]\n' +
+            '        , ["3", "4"]\n' +
+            '    ]\n' +
+            '    , [\n' +
+            '        ["5", "6", "7"]\n' +
+            '        , ["8", "9", "0"]\n' +
+            '    ]\n' +
+            '    , [\n' +
+            '        ["1", "2", "3"]\n' +
+            '        , ["4", "5", "6", "7"]\n' +
+            '        , ["8", "9", "0"]\n' +
+            '    ]\n' +
+            ']');
         bt(
             'changeCollection.add({\n' +
             '    name: "Jonathan" // New line inserted after this line on every save\n' +
             '    , age: 25\n' +
             '});');
+        bt(
+            'changeCollection.add(\n' +
+            '    function() {\n' +
+            '        return true;\n' +
+            '    },\n' +
+            '    function() {\n' +
+            '        return true;\n' +
+            '    }\n' +
+            ');',
+            //  -- output --
+            'changeCollection.add(\n' +
+            '    function() {\n' +
+            '        return true;\n' +
+            '    }\n' +
+            '    , function() {\n' +
+            '        return true;\n' +
+            '    }\n' +
+            ');');
 
 
-        reset_options();
         //============================================================
         // Space in parens tests - (s = "", e = "")
+        reset_options();
         opts.space_in_paren = false;
         opts.space_in_empty_paren = false;
         bt('if(p) foo(a,b);', 'if (p) foo(a, b);');
-        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }', 'try {\n    while (true) {\n        willThrow()\n    }\n} catch (result) switch (result) {\n    case 1:\n        ++result\n}');
+        bt(
+            'try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
+            //  -- output --
+            'try {\n' +
+            '    while (true) {\n' +
+            '        willThrow()\n' +
+            '    }\n' +
+            '} catch (result) switch (result) {\n' +
+            '    case 1:\n' +
+            '        ++result\n' +
+            '}');
         bt('((e/((a+(b)*c)-d))^2)*5;', '((e / ((a + (b) * c) - d)) ^ 2) * 5;');
-        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}', 'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
+        bt(
+            'function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
+            //  -- output --
+            'function f(a, b) {\n' +
+            '    if (a) b()\n' +
+            '}\n' +
+            '\n' +
+            'function g(a, b) {\n' +
+            '    if (!a) b()\n' +
+            '}');
         bt('a=[];', 'a = [];');
         bt('a=[b,c,d];', 'a = [b, c, d];');
         bt('a= f[b];', 'a = f[b];');
@@ -5114,6 +5889,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        dest: "www/gui/build"\n' +
             '    } ]\n' +
             '}',
+            //  -- output --
             '{\n' +
             '    files: [{\n' +
             '        expand: true,\n' +
@@ -5124,12 +5900,32 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}');
 
         // Space in parens tests - (s = "", e = "")
+        reset_options();
         opts.space_in_paren = false;
         opts.space_in_empty_paren = true;
         bt('if(p) foo(a,b);', 'if (p) foo(a, b);');
-        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }', 'try {\n    while (true) {\n        willThrow()\n    }\n} catch (result) switch (result) {\n    case 1:\n        ++result\n}');
+        bt(
+            'try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
+            //  -- output --
+            'try {\n' +
+            '    while (true) {\n' +
+            '        willThrow()\n' +
+            '    }\n' +
+            '} catch (result) switch (result) {\n' +
+            '    case 1:\n' +
+            '        ++result\n' +
+            '}');
         bt('((e/((a+(b)*c)-d))^2)*5;', '((e / ((a + (b) * c) - d)) ^ 2) * 5;');
-        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}', 'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
+        bt(
+            'function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
+            //  -- output --
+            'function f(a, b) {\n' +
+            '    if (a) b()\n' +
+            '}\n' +
+            '\n' +
+            'function g(a, b) {\n' +
+            '    if (!a) b()\n' +
+            '}');
         bt('a=[];', 'a = [];');
         bt('a=[b,c,d];', 'a = [b, c, d];');
         bt('a= f[b];', 'a = f[b];');
@@ -5142,6 +5938,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        dest: "www/gui/build"\n' +
             '    } ]\n' +
             '}',
+            //  -- output --
             '{\n' +
             '    files: [{\n' +
             '        expand: true,\n' +
@@ -5152,12 +5949,32 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}');
 
         // Space in parens tests - (s = " ", e = "")
+        reset_options();
         opts.space_in_paren = true;
         opts.space_in_empty_paren = false;
         bt('if(p) foo(a,b);', 'if ( p ) foo( a, b );');
-        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }', 'try {\n    while ( true ) {\n        willThrow()\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
+        bt(
+            'try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
+            //  -- output --
+            'try {\n' +
+            '    while ( true ) {\n' +
+            '        willThrow()\n' +
+            '    }\n' +
+            '} catch ( result ) switch ( result ) {\n' +
+            '    case 1:\n' +
+            '        ++result\n' +
+            '}');
         bt('((e/((a+(b)*c)-d))^2)*5;', '( ( e / ( ( a + ( b ) * c ) - d ) ) ^ 2 ) * 5;');
-        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}', 'function f( a, b ) {\n    if ( a ) b()\n}\n\nfunction g( a, b ) {\n    if ( !a ) b()\n}');
+        bt(
+            'function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
+            //  -- output --
+            'function f( a, b ) {\n' +
+            '    if ( a ) b()\n' +
+            '}\n' +
+            '\n' +
+            'function g( a, b ) {\n' +
+            '    if ( !a ) b()\n' +
+            '}');
         bt('a=[];', 'a = [];');
         bt('a=[b,c,d];', 'a = [ b, c, d ];');
         bt('a= f[b];', 'a = f[ b ];');
@@ -5172,12 +5989,32 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}');
 
         // Space in parens tests - (s = " ", e = " ")
+        reset_options();
         opts.space_in_paren = true;
         opts.space_in_empty_paren = true;
         bt('if(p) foo(a,b);', 'if ( p ) foo( a, b );');
-        bt('try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }', 'try {\n    while ( true ) {\n        willThrow( )\n    }\n} catch ( result ) switch ( result ) {\n    case 1:\n        ++result\n}');
+        bt(
+            'try{while(true){willThrow()}}catch(result)switch(result){case 1:++result }',
+            //  -- output --
+            'try {\n' +
+            '    while ( true ) {\n' +
+            '        willThrow( )\n' +
+            '    }\n' +
+            '} catch ( result ) switch ( result ) {\n' +
+            '    case 1:\n' +
+            '        ++result\n' +
+            '}');
         bt('((e/((a+(b)*c)-d))^2)*5;', '( ( e / ( ( a + ( b ) * c ) - d ) ) ^ 2 ) * 5;');
-        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}', 'function f( a, b ) {\n    if ( a ) b( )\n}\n\nfunction g( a, b ) {\n    if ( !a ) b( )\n}');
+        bt(
+            'function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
+            //  -- output --
+            'function f( a, b ) {\n' +
+            '    if ( a ) b( )\n' +
+            '}\n' +
+            '\n' +
+            'function g( a, b ) {\n' +
+            '    if ( !a ) b( )\n' +
+            '}');
         bt('a=[];', 'a = [ ];');
         bt('a=[b,c,d];', 'a = [ b, c, d ];');
         bt('a= f[b];', 'a = f[ b ];');
@@ -5192,9 +6029,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}');
 
 
-        reset_options();
         //============================================================
         // operator_position option - ensure no neswlines if preserve_newlines is false - ()
+        reset_options();
         opts.operator_position = 'before-newline';
         opts.preserve_newlines = false;
         bt(
@@ -5234,6 +6071,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'ab;\n' +
             'ac +\n' +
             '-ad',
+            //  -- output --
             'var res = a + b - c / d * e % f;\n' +
             'var res = g & h | i ^ j;\n' +
             'var res = (k && l || m) ? n : o;\n' +
@@ -5242,6 +6080,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'ac + -ad');
 
         // operator_position option - ensure no neswlines if preserve_newlines is false - ()
+        reset_options();
         opts.operator_position = 'after-newline';
         opts.preserve_newlines = false;
         bt(
@@ -5281,6 +6120,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'ab;\n' +
             'ac +\n' +
             '-ad',
+            //  -- output --
             'var res = a + b - c / d * e % f;\n' +
             'var res = g & h | i ^ j;\n' +
             'var res = (k && l || m) ? n : o;\n' +
@@ -5289,6 +6129,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'ac + -ad');
 
         // operator_position option - ensure no neswlines if preserve_newlines is false - ()
+        reset_options();
         opts.operator_position = 'preserve-newline';
         opts.preserve_newlines = false;
         bt(
@@ -5328,6 +6169,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'ab;\n' +
             'ac +\n' +
             '-ad',
+            //  -- output --
             'var res = a + b - c / d * e % f;\n' +
             'var res = g & h | i ^ j;\n' +
             'var res = (k && l || m) ? n : o;\n' +
@@ -5336,9 +6178,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'ac + -ad');
 
 
-        reset_options();
         //============================================================
         // operator_position option - set to 'before-newline' (default value)
+        reset_options();
 
         // comprehensive, various newlines
         bt(
@@ -5371,6 +6213,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'ab;\n' +
             'ac +\n' +
             '-ad',
+            //  -- output --
             'var res = a + b -\n' +
             '    c /\n' +
             '    d * e %\n' +
@@ -5411,6 +6254,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             ': h;\n' +
             'var i = j ? k :\n' +
             'l;',
+            //  -- output --
             'var a = {\n' +
             '    b: bval,\n' +
             '    c: cval,\n' +
@@ -5438,6 +6282,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        anOcean\n' +
             '        || aRiver);\n' +
             '}',
+            //  -- output --
             'var d = 1;\n' +
             'if (a === b &&\n' +
             '    c) {\n' +
@@ -5455,9 +6300,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}');
 
 
-        reset_options();
         //============================================================
         // operator_position option - set to 'after_newline'
+        reset_options();
         opts.operator_position = 'after-newline';
 
         // comprehensive, various newlines
@@ -5491,6 +6336,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'ab;\n' +
             'ac +\n' +
             '-ad',
+            //  -- output --
             'var res = a + b\n' +
             '    - c\n' +
             '    / d * e\n' +
@@ -5530,6 +6376,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             ': h;\n' +
             'var i = j ? k :\n' +
             'l;',
+            //  -- output --
             'var a = {\n' +
             '    b: bval,\n' +
             '    c: cval,\n' +
@@ -5557,6 +6404,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        anOcean\n' +
             '        || aRiver);\n' +
             '}',
+            //  -- output --
             'var d = 1;\n' +
             'if (a === b\n' +
             '    && c) {\n' +
@@ -5574,9 +6422,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}');
 
 
-        reset_options();
         //============================================================
         // operator_position option - set to 'preserve-newline'
+        reset_options();
         opts.operator_position = 'preserve-newline';
 
         // comprehensive, various newlines
@@ -5610,6 +6458,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'ab;\n' +
             'ac +\n' +
             '-ad',
+            //  -- output --
             'var res = a + b\n' +
             '    - c /\n' +
             '    d * e\n' +
@@ -5651,6 +6500,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             ': h;\n' +
             'var i = j ? k :\n' +
             'l;',
+            //  -- output --
             'var a = {\n' +
             '    b: bval,\n' +
             '    c: cval,\n' +
@@ -5680,9 +6530,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}');
 
 
-        reset_options();
         //============================================================
         // Yield tests
+        reset_options();
         bt('yield /foo\\//;');
         bt('result = yield pgClient.query_(queryString);');
         bt('yield [1, 2]');
@@ -5695,30 +6545,46 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('yield *bar();', 'yield* bar();');
 
 
-        reset_options();
         //============================================================
         // Async / await tests
+        reset_options();
         bt('async function foo() {}');
         bt('let w = async function foo() {}');
-        bt('async function foo() {}\nvar x = await foo();');
+        bt(
+            'async function foo() {}\n' +
+            'var x = await foo();');
 
         // async function as an input to another function
         bt('wrapper(async function foo() {})');
 
         // await on inline anonymous function. should have a space after await
         bt(
-            'async function() {\n    var w = await(async function() {\n        return await foo();\n    })();\n}',
-            'async function() {\n    var w = await (async function() {\n        return await foo();\n    })();\n}');
+            'async function() {\n' +
+            '    var w = await(async function() {\n' +
+            '        return await foo();\n' +
+            '    })();\n' +
+            '}',
+            //  -- output --
+            'async function() {\n' +
+            '    var w = await (async function() {\n' +
+            '        return await foo();\n' +
+            '    })();\n' +
+            '}');
 
         // ensure that this doesn't break anyone with the async library
         bt('async.map(function(t) {})');
 
 
-        reset_options();
         //============================================================
         // e4x - Test that e4x literals passed through when e4x-option is enabled
+        reset_options();
         opts.e4x = true;
-        bt('xml=<a b="c"><d/><e>\n foo</e>x</a>;', 'xml = <a b="c"><d/><e>\n foo</e>x</a>;');
+        bt(
+            'xml=<a b="c"><d/><e>\n' +
+            ' foo</e>x</a>;',
+            //  -- output --
+            'xml = <a b="c"><d/><e>\n' +
+            ' foo</e>x</a>;');
         bt('<a b=\'This is a quoted "c".\'/>');
         bt('<a b="This is a quoted \'c\'."/>');
         bt('<a b="A quote \' inside string."/>');
@@ -5726,8 +6592,20 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('<a b=\'Some """ quotes ""  inside string.\'/>');
 
         // Handles inline expressions
-        bt('xml=<{a} b="c"><d/><e v={z}>\n foo</e>x</{a}>;', 'xml = <{a} b="c"><d/><e v={z}>\n foo</e>x</{a}>;');
-        bt('xml=<{a} b="c">\n    <e v={z}>\n foo</e>x</{a}>;', 'xml = <{a} b="c">\n    <e v={z}>\n foo</e>x</{a}>;');
+        bt(
+            'xml=<{a} b="c"><d/><e v={z}>\n' +
+            ' foo</e>x</{a}>;',
+            //  -- output --
+            'xml = <{a} b="c"><d/><e v={z}>\n' +
+            ' foo</e>x</{a}>;');
+        bt(
+            'xml=<{a} b="c">\n' +
+            '    <e v={z}>\n' +
+            ' foo</e>x</{a}>;',
+            //  -- output --
+            'xml = <{a} b="c">\n' +
+            '    <e v={z}>\n' +
+            ' foo</e>x</{a}>;');
 
         // xml literals with special characters in elem names - see http://www.w3.org/TR/REC-xml/#NT-NameChar
         bt('xml = <_:.valid.xml- _:.valid.xml-="123"/>;');
@@ -5736,7 +6614,12 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('xml = <elem someAttr/>;');
 
         // Handles CDATA
-        bt('xml=<![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;', 'xml = <![CDATA[ b="c"><d/><e v={z}>\n foo</e>x/]]>;');
+        bt(
+            'xml=<![CDATA[ b="c"><d/><e v={z}>\n' +
+            ' foo</e>x/]]>;',
+            //  -- output --
+            'xml = <![CDATA[ b="c"><d/><e v={z}>\n' +
+            ' foo</e>x/]]>;');
         bt('xml=<![CDATA[]]>;', 'xml = <![CDATA[]]>;');
         bt('xml=<a b="c"><![CDATA[d/></a></{}]]></a>;', 'xml = <a b="c"><![CDATA[d/></a></{}]]></a>;');
 
@@ -5890,6 +6773,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    }\n' +
             '});\n' +
             'React.render(<MarkdownEditor />, mountNode);',
+            //  -- output --
             'var converter = new Showdown.converter();\n' +
             'var MarkdownEditor = React.createClass({\n' +
             '    getInitialState: function() {\n' +
@@ -5937,6 +6821,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    );\n' +
             'var qwer = <DropDown> A dropdown list <Menu> <MenuItem>Do Something</MenuItem> <MenuItem>Do Something Fun!</MenuItem> <MenuItem>Do Something Else</MenuItem> </Menu> </DropDown>;\n' +
             'render(dropdown);',
+            //  -- output --
             'var content = (\n' +
             '    <Nav>\n' +
             '            {/* child comment, put {} around */}\n' +
@@ -5957,13 +6842,17 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         // as long as nesting matches.
         bt(
             'xml=<a x="jn"><c></b></f><a><d jnj="jnn"><f></a ></nj></a>;',
+            //  -- output --
             'xml = <a x="jn"><c></b></f><a><d jnj="jnn"><f></a ></nj></a>;');
 
         // If xml is not terminated, the remainder of the file is treated
         // as part of the xml-literal (passed through unaltered)
         test_fragment(
-            'xml=<a></b>\nc<b;',
-            'xml = <a></b>\nc<b;');
+            'xml=<a></b>\n' +
+            'c<b;',
+            //  -- output --
+            'xml = <a></b>\n' +
+            'c<b;');
 
         // Issue #646 = whitespace is allowed in attribute declarations
         bt(
@@ -6044,6 +6933,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '       {children}\n' +
             '    </{a + b}>\n' +
             '    );',
+            //  -- output --
             'return (\n' +
             '    <{\n' +
             '        a + b\n' +
@@ -6057,34 +6947,66 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             ');');
 
 
-        reset_options();
         //============================================================
         // e4x disabled
+        reset_options();
         opts.e4x = false;
         bt(
-            'xml=<a b="c"><d/><e>\n foo</e>x</a>;',
-            'xml = < a b = "c" > < d / > < e >\n    foo < /e>x</a > ;');
+            'xml=<a b="c"><d/><e>\n' +
+            ' foo</e>x</a>;',
+            //  -- output --
+            'xml = < a b = "c" > < d / > < e >\n' +
+            '    foo < /e>x</a > ;');
 
 
-        reset_options();
         //============================================================
         // Multiple braces
-        bt('{{}/z/}', '{\n    {}\n    /z/\n}');
-
-
         reset_options();
+        bt(
+            '{{}/z/}',
+            //  -- output --
+            '{\n' +
+            '    {}\n' +
+            '    /z/\n' +
+            '}');
+
+
         //============================================================
         // Beautify preserve formatting
-        bt('/* beautify preserve:start */\n/* beautify preserve:end */');
-        bt('/* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */');
-        bt('var a = 1;\n/* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */');
+        reset_options();
+        bt(
+            '/* beautify preserve:start */\n' +
+            '/* beautify preserve:end */');
+        bt(
+            '/* beautify preserve:start */\n' +
+            '   var a = 1;\n' +
+            '/* beautify preserve:end */');
+        bt(
+            'var a = 1;\n' +
+            '/* beautify preserve:start */\n' +
+            '   var a = 1;\n' +
+            '/* beautify preserve:end */');
         bt('/* beautify preserve:start */     {asdklgh;y;;{}dd2d}/* beautify preserve:end */');
         bt(
-            'var a =  1;\n/* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */',
-            'var a = 1;\n/* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */');
+            'var a =  1;\n' +
+            '/* beautify preserve:start */\n' +
+            '   var a = 1;\n' +
+            '/* beautify preserve:end */',
+            //  -- output --
+            'var a = 1;\n' +
+            '/* beautify preserve:start */\n' +
+            '   var a = 1;\n' +
+            '/* beautify preserve:end */');
         bt(
-            'var a = 1;\n /* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */',
-            'var a = 1;\n/* beautify preserve:start */\n   var a = 1;\n/* beautify preserve:end */');
+            'var a = 1;\n' +
+            ' /* beautify preserve:start */\n' +
+            '   var a = 1;\n' +
+            '/* beautify preserve:end */',
+            //  -- output --
+            'var a = 1;\n' +
+            '/* beautify preserve:start */\n' +
+            '   var a = 1;\n' +
+            '/* beautify preserve:end */');
         bt(
             'var a = {\n' +
             '    /* beautify preserve:start */\n' +
@@ -6103,6 +7025,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    ten   : 10\n' +
             '/* beautify preserve:end */\n' +
             '};',
+            //  -- output --
             'var a = {\n' +
             '    /* beautify preserve:start */\n' +
             '    one   :  1,\n' +
@@ -6121,6 +7044,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    three :  3,\n' +
             '    ten   : 10\n' +
             '};',
+            //  -- output --
             'var a = {\n' +
             '    /*  beautify preserve:start  */\n' +
             '    one: 1,\n' +
@@ -6136,6 +7060,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    three :  3,\n' +
             '    ten   : 10\n' +
             '};',
+            //  -- output --
             'var a = {\n' +
             '    /*beautify preserve:start*/\n' +
             '    one: 1,\n' +
@@ -6151,6 +7076,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    three :  3,\n' +
             '    ten   : 10\n' +
             '};',
+            //  -- output --
             'var a = {\n' +
             '    /*beautify  preserve:start*/\n' +
             '    one: 1,\n' +
@@ -6160,16 +7086,39 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '};');
 
         // Directive: ignore
-        bt('/* beautify ignore:start */\n/* beautify ignore:end */');
-        bt('/* beautify ignore:start */\n   var a,,,{ 1;\n/* beautify ignore:end */');
-        bt('var a = 1;\n/* beautify ignore:start */\n   var a = 1;\n/* beautify ignore:end */');
+        bt(
+            '/* beautify ignore:start */\n' +
+            '/* beautify ignore:end */');
+        bt(
+            '/* beautify ignore:start */\n' +
+            '   var a,,,{ 1;\n' +
+            '/* beautify ignore:end */');
+        bt(
+            'var a = 1;\n' +
+            '/* beautify ignore:start */\n' +
+            '   var a = 1;\n' +
+            '/* beautify ignore:end */');
         bt('/* beautify ignore:start */     {asdklgh;y;+++;dd2d}/* beautify ignore:end */');
         bt(
-            'var a =  1;\n/* beautify ignore:start */\n   var a,,,{ 1;\n/* beautify ignore:end */',
-            'var a = 1;\n/* beautify ignore:start */\n   var a,,,{ 1;\n/* beautify ignore:end */');
+            'var a =  1;\n' +
+            '/* beautify ignore:start */\n' +
+            '   var a,,,{ 1;\n' +
+            '/* beautify ignore:end */',
+            //  -- output --
+            'var a = 1;\n' +
+            '/* beautify ignore:start */\n' +
+            '   var a,,,{ 1;\n' +
+            '/* beautify ignore:end */');
         bt(
-            'var a = 1;\n /* beautify ignore:start */\n   var a,,,{ 1;\n/* beautify ignore:end */',
-            'var a = 1;\n/* beautify ignore:start */\n   var a,,,{ 1;\n/* beautify ignore:end */');
+            'var a = 1;\n' +
+            ' /* beautify ignore:start */\n' +
+            '   var a,,,{ 1;\n' +
+            '/* beautify ignore:end */',
+            //  -- output --
+            'var a = 1;\n' +
+            '/* beautify ignore:start */\n' +
+            '   var a,,,{ 1;\n' +
+            '/* beautify ignore:end */');
         bt(
             'var a = {\n' +
             '    /* beautify ignore:start */\n' +
@@ -6188,6 +7137,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    ten   : 10\n' +
             '/* beautify ignore:end */\n' +
             '};',
+            //  -- output --
             'var a = {\n' +
             '    /* beautify ignore:start */\n' +
             '    one   :  1\n' +
@@ -6210,6 +7160,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    ten   : 10\n' +
             '/* beautify preserve:end */\n' +
             '};',
+            //  -- output --
             'var a = {\n' +
             '    /* beautify preserve:start */\n' +
             '/* beautify preserve:start */\n' +
@@ -6232,6 +7183,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    ten   : 10\n' +
             '/* beautify ignore:end */\n' +
             '};',
+            //  -- output --
             'var a = {\n' +
             '    /* beautify ignore:start */\n' +
             '    one   :  1\n' +
@@ -6258,6 +7210,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    ==The next comment ends the starting ignore==\n' +
             '/* beautify ignore:end */\n' +
             '};',
+            //  -- output --
             'var a = {\n' +
             '    /* beautify ignore:start */\n' +
             '    one   :  1\n' +
@@ -6283,6 +7236,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    ten   : 10\n' +
             '   // This is all preserved\n' +
             '};',
+            //  -- output --
             'var a = {\n' +
             '    /* beautify ignore:start preserve:start */\n' +
             '    one   :  {\n' +
@@ -6307,6 +7261,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '/* beautify preserve:end */\n' +
             '     eleven: 11\n' +
             '};',
+            //  -- output --
             'var a = {\n' +
             '    /* beautify ignore:start preserve:start */\n' +
             '    one   :  {\n' +
@@ -6321,9 +7276,92 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '};');
 
 
+        //============================================================
+        // Comments and  tests
         reset_options();
+
+        // #913
+        bt(
+            'class test {\n' +
+            '    method1() {\n' +
+            '        let resp = null;\n' +
+            '    }\n' +
+            '    /**\n' +
+            '     * @param {String} id\n' +
+            '     */\n' +
+            '    method2(id) {\n' +
+            '        let resp2 = null;\n' +
+            '    }\n' +
+            '}');
+
+        // #1090
+        bt(
+            'for (var i = 0; i < 20; ++i) // loop\n' +
+            '    if (i % 3) {\n' +
+            '        console.log(i);\n' +
+            '    }\n' +
+            'console.log("done");');
+
+        // #1043
+        bt(
+            'var o = {\n' +
+            '    k: 0\n' +
+            '}\n' +
+            '// ...\n' +
+            'foo(o)');
+
+        // #713 and #964
+        bt(
+            'Meteor.call("foo", bar, function(err, result) {\n' +
+            '    Session.set("baz", result.lorem)\n' +
+            '})\n' +
+            '//blah blah');
+
+        // #815
+        bt(
+            'foo()\n' +
+            '// this is a comment\n' +
+            'bar()\n' +
+            '\n' +
+            'const foo = 5\n' +
+            '// comment\n' +
+            'bar()');
+
+        // This shows current behavior.  Note #1069 is not addressed yet.
+        bt(
+            'if (modulus === 2) {\n' +
+            '    // i might be odd here\n' +
+            '    i += (i & 1);\n' +
+            '    // now i is guaranteed to be even\n' +
+            '    // this block is obviously about the statement above\n' +
+            '\n' +
+            '    // #1069 This should attach to the block below\n' +
+            '    // this comment is about the block after it.\n' +
+            '} else {\n' +
+            '    // rounding up using integer arithmetic only\n' +
+            '    if (i % modulus)\n' +
+            '        i += modulus - (i % modulus);\n' +
+            '    // now i is divisible by modulus\n' +
+            '    // behavior of comments should be different for single statements vs block statements/expressions\n' +
+            '}\n' +
+            '\n' +
+            'if (modulus === 2)\n' +
+            '    // i might be odd here\n' +
+            '    i += (i & 1);\n' +
+            '// now i is guaranteed to be even\n' +
+            '// non-braced comments unindent immediately\n' +
+            '\n' +
+            '// this comment is about the block after it.\n' +
+            'else\n' +
+            '    // rounding up using integer arithmetic only\n' +
+            '    if (i % modulus)\n' +
+            '        i += modulus - (i % modulus);\n' +
+            '// behavior of comments should be different for single statements vs block statements/expressions');
+
+
         //============================================================
         // Template Formatting
+        reset_options();
         bt('<?=$view["name"]; ?>');
         bt('a = <?= external() ?>;');
         bt(
@@ -6336,145 +7374,380 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a = <%= external() %>;');
 
 
-        reset_options();
         //============================================================
         // jslint and space after anon function - (f = " ", c = "")
+        reset_options();
         opts.jslint_happy = true;
         opts.space_after_anon_function = true;
         bt(
             'a=typeof(x)',
+            //  -- output --
             'a = typeof (x)');
         bt(
-            'x();\n\nfunction(){}',
-            'x();\n\nfunction () {}');
+            'x();\n' +
+            '\n' +
+            'function(){}',
+            //  -- output --
+            'x();\n' +
+            '\n' +
+            'function () {}');
         bt(
-            'x();\n\nvar x = {\nx: function(){}\n}',
-            'x();\n\nvar x = {\n    x: function () {}\n}');
+            'x();\n' +
+            '\n' +
+            'var x = {\n' +
+            'x: function(){}\n' +
+            '}',
+            //  -- output --
+            'x();\n' +
+            '\n' +
+            'var x = {\n' +
+            '    x: function () {}\n' +
+            '}');
         bt(
-            'function () {\n    var a, b, c, d, e = [],\n        f;\n}');
+            'function () {\n' +
+            '    var a, b, c, d, e = [],\n' +
+            '        f;\n' +
+            '}');
         bt(
             'switch(x) {case 0: case 1: a(); break; default: break}',
-            'switch (x) {\ncase 0:\ncase 1:\n    a();\n    break;\ndefault:\n    break\n}');
-        bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\ncase -1:\n    break;\ncase !y:\n    break;\n}');
+            //  -- output --
+            'switch (x) {\n' +
+            'case 0:\n' +
+            'case 1:\n' +
+            '    a();\n' +
+            '    break;\n' +
+            'default:\n' +
+            '    break\n' +
+            '}');
+        bt(
+            'switch(x){case -1:break;case !y:break;}',
+            //  -- output --
+            'switch (x) {\n' +
+            'case -1:\n' +
+            '    break;\n' +
+            'case !y:\n' +
+            '    break;\n' +
+            '}');
 
         // typical greasemonkey start
-        test_fragment('// comment 2\n(function ()');
+        test_fragment(
+            '// comment 2\n' +
+            '(function ()');
         bt(
             'var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';',
-            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+            //  -- output --
+            'var a2, b2, c2, d2 = 0,\n' +
+            '    c = function () {},\n' +
+            '    d = \'\';');
         bt(
-            'var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';',
-            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+            'var a2, b2, c2, d2 = 0, c = function() {},\n' +
+            'd = \'\';',
+            //  -- output --
+            'var a2, b2, c2, d2 = 0,\n' +
+            '    c = function () {},\n' +
+            '    d = \'\';');
         bt(
             'var o2=$.extend(a);function(){alert(x);}',
-            'var o2 = $.extend(a);\n\nfunction () {\n    alert(x);\n}');
-        bt('function*() {\n    yield 1;\n}', 'function* () {\n    yield 1;\n}');
-        bt('function* x() {\n    yield 1;\n}');
+            //  -- output --
+            'var o2 = $.extend(a);\n' +
+            '\n' +
+            'function () {\n' +
+            '    alert(x);\n' +
+            '}');
+        bt(
+            'function*() {\n' +
+            '    yield 1;\n' +
+            '}',
+            //  -- output --
+            'function* () {\n' +
+            '    yield 1;\n' +
+            '}');
+        bt(
+            'function* x() {\n' +
+            '    yield 1;\n' +
+            '}');
 
         // jslint and space after anon function - (f = " ", c = "")
+        reset_options();
         opts.jslint_happy = true;
         opts.space_after_anon_function = false;
         bt(
             'a=typeof(x)',
+            //  -- output --
             'a = typeof (x)');
         bt(
-            'x();\n\nfunction(){}',
-            'x();\n\nfunction () {}');
+            'x();\n' +
+            '\n' +
+            'function(){}',
+            //  -- output --
+            'x();\n' +
+            '\n' +
+            'function () {}');
         bt(
-            'x();\n\nvar x = {\nx: function(){}\n}',
-            'x();\n\nvar x = {\n    x: function () {}\n}');
+            'x();\n' +
+            '\n' +
+            'var x = {\n' +
+            'x: function(){}\n' +
+            '}',
+            //  -- output --
+            'x();\n' +
+            '\n' +
+            'var x = {\n' +
+            '    x: function () {}\n' +
+            '}');
         bt(
-            'function () {\n    var a, b, c, d, e = [],\n        f;\n}');
+            'function () {\n' +
+            '    var a, b, c, d, e = [],\n' +
+            '        f;\n' +
+            '}');
         bt(
             'switch(x) {case 0: case 1: a(); break; default: break}',
-            'switch (x) {\ncase 0:\ncase 1:\n    a();\n    break;\ndefault:\n    break\n}');
-        bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\ncase -1:\n    break;\ncase !y:\n    break;\n}');
+            //  -- output --
+            'switch (x) {\n' +
+            'case 0:\n' +
+            'case 1:\n' +
+            '    a();\n' +
+            '    break;\n' +
+            'default:\n' +
+            '    break\n' +
+            '}');
+        bt(
+            'switch(x){case -1:break;case !y:break;}',
+            //  -- output --
+            'switch (x) {\n' +
+            'case -1:\n' +
+            '    break;\n' +
+            'case !y:\n' +
+            '    break;\n' +
+            '}');
 
         // typical greasemonkey start
-        test_fragment('// comment 2\n(function ()');
+        test_fragment(
+            '// comment 2\n' +
+            '(function ()');
         bt(
             'var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';',
-            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+            //  -- output --
+            'var a2, b2, c2, d2 = 0,\n' +
+            '    c = function () {},\n' +
+            '    d = \'\';');
         bt(
-            'var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';',
-            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+            'var a2, b2, c2, d2 = 0, c = function() {},\n' +
+            'd = \'\';',
+            //  -- output --
+            'var a2, b2, c2, d2 = 0,\n' +
+            '    c = function () {},\n' +
+            '    d = \'\';');
         bt(
             'var o2=$.extend(a);function(){alert(x);}',
-            'var o2 = $.extend(a);\n\nfunction () {\n    alert(x);\n}');
-        bt('function*() {\n    yield 1;\n}', 'function* () {\n    yield 1;\n}');
-        bt('function* x() {\n    yield 1;\n}');
+            //  -- output --
+            'var o2 = $.extend(a);\n' +
+            '\n' +
+            'function () {\n' +
+            '    alert(x);\n' +
+            '}');
+        bt(
+            'function*() {\n' +
+            '    yield 1;\n' +
+            '}',
+            //  -- output --
+            'function* () {\n' +
+            '    yield 1;\n' +
+            '}');
+        bt(
+            'function* x() {\n' +
+            '    yield 1;\n' +
+            '}');
 
         // jslint and space after anon function - (f = " ", c = "    ")
+        reset_options();
         opts.jslint_happy = false;
         opts.space_after_anon_function = true;
         bt(
             'a=typeof(x)',
+            //  -- output --
             'a = typeof (x)');
         bt(
-            'x();\n\nfunction(){}',
-            'x();\n\nfunction () {}');
+            'x();\n' +
+            '\n' +
+            'function(){}',
+            //  -- output --
+            'x();\n' +
+            '\n' +
+            'function () {}');
         bt(
-            'x();\n\nvar x = {\nx: function(){}\n}',
-            'x();\n\nvar x = {\n    x: function () {}\n}');
+            'x();\n' +
+            '\n' +
+            'var x = {\n' +
+            'x: function(){}\n' +
+            '}',
+            //  -- output --
+            'x();\n' +
+            '\n' +
+            'var x = {\n' +
+            '    x: function () {}\n' +
+            '}');
         bt(
-            'function () {\n    var a, b, c, d, e = [],\n        f;\n}');
+            'function () {\n' +
+            '    var a, b, c, d, e = [],\n' +
+            '        f;\n' +
+            '}');
         bt(
             'switch(x) {case 0: case 1: a(); break; default: break}',
-            'switch (x) {\n    case 0:\n    case 1:\n        a();\n        break;\n    default:\n        break\n}');
-        bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\n    case -1:\n        break;\n    case !y:\n        break;\n}');
+            //  -- output --
+            'switch (x) {\n' +
+            '    case 0:\n' +
+            '    case 1:\n' +
+            '        a();\n' +
+            '        break;\n' +
+            '    default:\n' +
+            '        break\n' +
+            '}');
+        bt(
+            'switch(x){case -1:break;case !y:break;}',
+            //  -- output --
+            'switch (x) {\n' +
+            '    case -1:\n' +
+            '        break;\n' +
+            '    case !y:\n' +
+            '        break;\n' +
+            '}');
 
         // typical greasemonkey start
-        test_fragment('// comment 2\n(function ()');
+        test_fragment(
+            '// comment 2\n' +
+            '(function ()');
         bt(
             'var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';',
-            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+            //  -- output --
+            'var a2, b2, c2, d2 = 0,\n' +
+            '    c = function () {},\n' +
+            '    d = \'\';');
         bt(
-            'var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';',
-            'var a2, b2, c2, d2 = 0,\n    c = function () {},\n    d = \'\';');
+            'var a2, b2, c2, d2 = 0, c = function() {},\n' +
+            'd = \'\';',
+            //  -- output --
+            'var a2, b2, c2, d2 = 0,\n' +
+            '    c = function () {},\n' +
+            '    d = \'\';');
         bt(
             'var o2=$.extend(a);function(){alert(x);}',
-            'var o2 = $.extend(a);\n\nfunction () {\n    alert(x);\n}');
-        bt('function*() {\n    yield 1;\n}', 'function* () {\n    yield 1;\n}');
-        bt('function* x() {\n    yield 1;\n}');
+            //  -- output --
+            'var o2 = $.extend(a);\n' +
+            '\n' +
+            'function () {\n' +
+            '    alert(x);\n' +
+            '}');
+        bt(
+            'function*() {\n' +
+            '    yield 1;\n' +
+            '}',
+            //  -- output --
+            'function* () {\n' +
+            '    yield 1;\n' +
+            '}');
+        bt(
+            'function* x() {\n' +
+            '    yield 1;\n' +
+            '}');
 
         // jslint and space after anon function - (f = "", c = "    ")
+        reset_options();
         opts.jslint_happy = false;
         opts.space_after_anon_function = false;
         bt(
             'a=typeof(x)',
+            //  -- output --
             'a = typeof(x)');
         bt(
-            'x();\n\nfunction(){}',
-            'x();\n\nfunction() {}');
+            'x();\n' +
+            '\n' +
+            'function(){}',
+            //  -- output --
+            'x();\n' +
+            '\n' +
+            'function() {}');
         bt(
-            'x();\n\nvar x = {\nx: function(){}\n}',
-            'x();\n\nvar x = {\n    x: function() {}\n}');
+            'x();\n' +
+            '\n' +
+            'var x = {\n' +
+            'x: function(){}\n' +
+            '}',
+            //  -- output --
+            'x();\n' +
+            '\n' +
+            'var x = {\n' +
+            '    x: function() {}\n' +
+            '}');
         bt(
-            'function () {\n    var a, b, c, d, e = [],\n        f;\n}',
-            'function() {\n    var a, b, c, d, e = [],\n        f;\n}');
+            'function () {\n' +
+            '    var a, b, c, d, e = [],\n' +
+            '        f;\n' +
+            '}',
+            //  -- output --
+            'function() {\n' +
+            '    var a, b, c, d, e = [],\n' +
+            '        f;\n' +
+            '}');
         bt(
             'switch(x) {case 0: case 1: a(); break; default: break}',
-            'switch (x) {\n    case 0:\n    case 1:\n        a();\n        break;\n    default:\n        break\n}');
-        bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\n    case -1:\n        break;\n    case !y:\n        break;\n}');
+            //  -- output --
+            'switch (x) {\n' +
+            '    case 0:\n' +
+            '    case 1:\n' +
+            '        a();\n' +
+            '        break;\n' +
+            '    default:\n' +
+            '        break\n' +
+            '}');
+        bt(
+            'switch(x){case -1:break;case !y:break;}',
+            //  -- output --
+            'switch (x) {\n' +
+            '    case -1:\n' +
+            '        break;\n' +
+            '    case !y:\n' +
+            '        break;\n' +
+            '}');
 
         // typical greasemonkey start
-        test_fragment('// comment 2\n(function()');
+        test_fragment(
+            '// comment 2\n' +
+            '(function()');
         bt(
             'var a2, b2, c2, d2 = 0, c = function() {}, d = \'\';',
-            'var a2, b2, c2, d2 = 0,\n    c = function() {},\n    d = \'\';');
+            //  -- output --
+            'var a2, b2, c2, d2 = 0,\n' +
+            '    c = function() {},\n' +
+            '    d = \'\';');
         bt(
-            'var a2, b2, c2, d2 = 0, c = function() {},\nd = \'\';',
-            'var a2, b2, c2, d2 = 0,\n    c = function() {},\n    d = \'\';');
+            'var a2, b2, c2, d2 = 0, c = function() {},\n' +
+            'd = \'\';',
+            //  -- output --
+            'var a2, b2, c2, d2 = 0,\n' +
+            '    c = function() {},\n' +
+            '    d = \'\';');
         bt(
             'var o2=$.extend(a);function(){alert(x);}',
-            'var o2 = $.extend(a);\n\nfunction() {\n    alert(x);\n}');
-        bt('function*() {\n    yield 1;\n}');
-        bt('function* x() {\n    yield 1;\n}');
+            //  -- output --
+            'var o2 = $.extend(a);\n' +
+            '\n' +
+            'function() {\n' +
+            '    alert(x);\n' +
+            '}');
+        bt(
+            'function*() {\n' +
+            '    yield 1;\n' +
+            '}');
+        bt(
+            'function* x() {\n' +
+            '    yield 1;\n' +
+            '}');
 
 
-        reset_options();
         //============================================================
         // Regression tests
+        reset_options();
 
         // Issue 241
         bt(
@@ -6511,6 +7784,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var test = 1;');
         bt(
             '(function() {if (!window.FOO) window.FOO || (window.FOO = function() {var b = {bar: "zort"};});})();',
+            //  -- output --
             '(function() {\n' +
             '    if (!window.FOO) window.FOO || (window.FOO = function() {\n' +
             '        var b = {\n' +
@@ -6602,6 +7876,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         // Issue 331 - if-else with braces edge case
         bt(
             'if(x){a();}else{b();}if(y){c();}',
+            //  -- output --
             'if (x) {\n' +
             '    a();\n' +
             '} else {\n' +
@@ -6856,10 +8131,68 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    new Date().getTime()\n' +
             '].join("-");');
 
+        // Issue #996 - Input ends with backslash throws exception
+        test_fragment(
+            'sd = 1;\n' +
+            '/');
 
-        reset_options();
+        // Issue #1079 - unbraced if with comments should still look right
+        bt(
+            'if (console.log)\n' +
+            '    for (var i = 0; i < 20; ++i)\n' +
+            '        if (i % 3)\n' +
+            '            console.log(i);\n' +
+            '// all done\n' +
+            'console.log("done");');
+
+        // Issue #1085 - function should not have blank line in a number of cases
+        bt(
+            'var transformer =\n' +
+            '    options.transformer ||\n' +
+            '    globalSettings.transformer ||\n' +
+            '    function(x) {\n' +
+            '        return x;\n' +
+            '    };');
+
+        // Issue #569 - function should not have blank line in a number of cases
+        bt(
+            '(function(global) {\n' +
+            '    "use strict";\n' +
+            '\n' +
+            '    /* jshint ignore:start */\n' +
+            '    include "somefile.js"\n' +
+            '    /* jshint ignore:end */\n' +
+            '}(this));');
+        bt(
+            'function bindAuthEvent(eventName) {\n' +
+            '    self.auth.on(eventName, function(event, meta) {\n' +
+            '        self.emit(eventName, event, meta);\n' +
+            '    });\n' +
+            '}\n' +
+            '["logged_in", "logged_out", "signed_up", "updated_user"].forEach(bindAuthEvent);\n' +
+            '\n' +
+            'function bindBrowserEvent(eventName) {\n' +
+            '    browser.on(eventName, function(event, meta) {\n' +
+            '        self.emit(eventName, event, meta);\n' +
+            '    });\n' +
+            '}\n' +
+            '["navigating"].forEach(bindBrowserEvent);');
+
+        // Issue #892 - new line between chained methods
+        bt(
+            'foo\n' +
+            '    .who()\n' +
+            '\n' +
+            '    .knows()\n' +
+            '    // comment\n' +
+            '    .nothing() // comment\n' +
+            '\n' +
+            '    .more()');
+
+
         //============================================================
         // Test non-positionable-ops
+        reset_options();
         bt('a += 2;');
         bt('a -= 2;');
         bt('a *= 2;');
@@ -6873,10 +8206,254 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a >>= 2;');
 
 
+        //============================================================
+        // brace_style ,preserve-inline tests - (obo = " ", obot = "", oao = "\n", oaot = "    ", obc = "\n", oac = " ", oact = "")
         reset_options();
+        opts.brace_style = 'collapse,preserve-inline';
+        bt('import { asdf } from "asdf";');
+        bt('import { get } from "asdf";');
+        bt('function inLine() { console.log("oh em gee"); }');
+        bt('if (cancer) { console.log("Im sorry but you only have so long to live..."); }');
+        bt('if (ding) { console.log("dong"); } else { console.log("dang"); }');
+        bt(
+            'function kindaComplex() {\n' +
+            '    var a = 2;\n' +
+            '    var obj = {};\n' +
+            '    var obj2 = { a: "a", b: "b" };\n' +
+            '    var obj3 = {\n' +
+            '        c: "c",\n' +
+            '        d: "d",\n' +
+            '        e: "e"\n' +
+            '    };\n' +
+            '}');
+        bt(
+            'function complex() {\n' +
+            '    console.log("wowe");\n' +
+            '    (function() { var a = 2; var b = 3; })();\n' +
+            '    $.each(arr, function(el, idx) { return el; });\n' +
+            '    var obj = {\n' +
+            '        a: function() { console.log("test"); },\n' +
+            '        b() {\n' +
+            '             console.log("test2");\n' +
+            '        }\n' +
+            '    };\n' +
+            '}',
+            //  -- output --
+            'function complex() {\n' +
+            '    console.log("wowe");\n' +
+            '    (function() { var a = 2; var b = 3; })();\n' +
+            '    $.each(arr, function(el, idx) { return el; });\n' +
+            '    var obj = {\n' +
+            '        a: function() { console.log("test"); },\n' +
+            '        b() {\n' +
+            '            console.log("test2");\n' +
+            '        }\n' +
+            '    };\n' +
+            '}');
+
+        // brace_style ,preserve-inline tests - (obo = "\n", obot = "    ", oao = "\n", oaot = "    ", obc = "\n", oac = "\n", oact = "    ")
+        reset_options();
+        opts.brace_style = 'expand,preserve-inline';
+        bt('import { asdf } from "asdf";');
+        bt('import { get } from "asdf";');
+        bt('function inLine() { console.log("oh em gee"); }');
+        bt('if (cancer) { console.log("Im sorry but you only have so long to live..."); }');
+        bt(
+            'if (ding) { console.log("dong"); } else { console.log("dang"); }',
+            //  -- output --
+            'if (ding) { console.log("dong"); }\n' +
+            'else { console.log("dang"); }');
+        bt(
+            'function kindaComplex() {\n' +
+            '    var a = 2;\n' +
+            '    var obj = {};\n' +
+            '    var obj2 = { a: "a", b: "b" };\n' +
+            '    var obj3 = {\n' +
+            '        c: "c",\n' +
+            '        d: "d",\n' +
+            '        e: "e"\n' +
+            '    };\n' +
+            '}',
+            //  -- output --
+            'function kindaComplex()\n' +
+            '{\n' +
+            '    var a = 2;\n' +
+            '    var obj = {};\n' +
+            '    var obj2 = { a: "a", b: "b" };\n' +
+            '    var obj3 = {\n' +
+            '        c: "c",\n' +
+            '        d: "d",\n' +
+            '        e: "e"\n' +
+            '    };\n' +
+            '}');
+        bt(
+            'function complex() {\n' +
+            '    console.log("wowe");\n' +
+            '    (function() { var a = 2; var b = 3; })();\n' +
+            '    $.each(arr, function(el, idx) { return el; });\n' +
+            '    var obj = {\n' +
+            '        a: function() { console.log("test"); },\n' +
+            '        b() {\n' +
+            '             console.log("test2");\n' +
+            '        }\n' +
+            '    };\n' +
+            '}',
+            //  -- output --
+            'function complex()\n' +
+            '{\n' +
+            '    console.log("wowe");\n' +
+            '    (function() { var a = 2; var b = 3; })();\n' +
+            '    $.each(arr, function(el, idx) { return el; });\n' +
+            '    var obj = {\n' +
+            '        a: function() { console.log("test"); },\n' +
+            '        b()\n' +
+            '        {\n' +
+            '            console.log("test2");\n' +
+            '        }\n' +
+            '    };\n' +
+            '}');
+
+        // brace_style ,preserve-inline tests - (obo = " ", obot = "", oao = "\n", oaot = "    ", obc = "\n", oac = "\n", oact = "    ")
+        reset_options();
+        opts.brace_style = 'end-expand,preserve-inline';
+        bt('import { asdf } from "asdf";');
+        bt('import { get } from "asdf";');
+        bt('function inLine() { console.log("oh em gee"); }');
+        bt('if (cancer) { console.log("Im sorry but you only have so long to live..."); }');
+        bt(
+            'if (ding) { console.log("dong"); } else { console.log("dang"); }',
+            //  -- output --
+            'if (ding) { console.log("dong"); }\n' +
+            'else { console.log("dang"); }');
+        bt(
+            'function kindaComplex() {\n' +
+            '    var a = 2;\n' +
+            '    var obj = {};\n' +
+            '    var obj2 = { a: "a", b: "b" };\n' +
+            '    var obj3 = {\n' +
+            '        c: "c",\n' +
+            '        d: "d",\n' +
+            '        e: "e"\n' +
+            '    };\n' +
+            '}');
+        bt(
+            'function complex() {\n' +
+            '    console.log("wowe");\n' +
+            '    (function() { var a = 2; var b = 3; })();\n' +
+            '    $.each(arr, function(el, idx) { return el; });\n' +
+            '    var obj = {\n' +
+            '        a: function() { console.log("test"); },\n' +
+            '        b() {\n' +
+            '             console.log("test2");\n' +
+            '        }\n' +
+            '    };\n' +
+            '}',
+            //  -- output --
+            'function complex() {\n' +
+            '    console.log("wowe");\n' +
+            '    (function() { var a = 2; var b = 3; })();\n' +
+            '    $.each(arr, function(el, idx) { return el; });\n' +
+            '    var obj = {\n' +
+            '        a: function() { console.log("test"); },\n' +
+            '        b() {\n' +
+            '            console.log("test2");\n' +
+            '        }\n' +
+            '    };\n' +
+            '}');
+
+        // brace_style ,preserve-inline tests - (obo = " ", obot = "", oao = "\n", oaot = "    ", obc = "\n", oac = " ", oact = "")
+        reset_options();
+        opts.brace_style = 'none,preserve-inline';
+        bt('import { asdf } from "asdf";');
+        bt('import { get } from "asdf";');
+        bt('function inLine() { console.log("oh em gee"); }');
+        bt('if (cancer) { console.log("Im sorry but you only have so long to live..."); }');
+        bt('if (ding) { console.log("dong"); } else { console.log("dang"); }');
+        bt(
+            'function kindaComplex() {\n' +
+            '    var a = 2;\n' +
+            '    var obj = {};\n' +
+            '    var obj2 = { a: "a", b: "b" };\n' +
+            '    var obj3 = {\n' +
+            '        c: "c",\n' +
+            '        d: "d",\n' +
+            '        e: "e"\n' +
+            '    };\n' +
+            '}');
+        bt(
+            'function complex() {\n' +
+            '    console.log("wowe");\n' +
+            '    (function() { var a = 2; var b = 3; })();\n' +
+            '    $.each(arr, function(el, idx) { return el; });\n' +
+            '    var obj = {\n' +
+            '        a: function() { console.log("test"); },\n' +
+            '        b() {\n' +
+            '             console.log("test2");\n' +
+            '        }\n' +
+            '    };\n' +
+            '}',
+            //  -- output --
+            'function complex() {\n' +
+            '    console.log("wowe");\n' +
+            '    (function() { var a = 2; var b = 3; })();\n' +
+            '    $.each(arr, function(el, idx) { return el; });\n' +
+            '    var obj = {\n' +
+            '        a: function() { console.log("test"); },\n' +
+            '        b() {\n' +
+            '            console.log("test2");\n' +
+            '        }\n' +
+            '    };\n' +
+            '}');
+
+        // brace_style ,preserve-inline tests - (obo = " ", obot = "", oao = "\n", oaot = "    ", obc = "\n", oac = " ", oact = "")
+        reset_options();
+        opts.brace_style = 'collapse-preserve-inline';
+        bt('import { asdf } from "asdf";');
+        bt('import { get } from "asdf";');
+        bt('function inLine() { console.log("oh em gee"); }');
+        bt('if (cancer) { console.log("Im sorry but you only have so long to live..."); }');
+        bt('if (ding) { console.log("dong"); } else { console.log("dang"); }');
+        bt(
+            'function kindaComplex() {\n' +
+            '    var a = 2;\n' +
+            '    var obj = {};\n' +
+            '    var obj2 = { a: "a", b: "b" };\n' +
+            '    var obj3 = {\n' +
+            '        c: "c",\n' +
+            '        d: "d",\n' +
+            '        e: "e"\n' +
+            '    };\n' +
+            '}');
+        bt(
+            'function complex() {\n' +
+            '    console.log("wowe");\n' +
+            '    (function() { var a = 2; var b = 3; })();\n' +
+            '    $.each(arr, function(el, idx) { return el; });\n' +
+            '    var obj = {\n' +
+            '        a: function() { console.log("test"); },\n' +
+            '        b() {\n' +
+            '             console.log("test2");\n' +
+            '        }\n' +
+            '    };\n' +
+            '}',
+            //  -- output --
+            'function complex() {\n' +
+            '    console.log("wowe");\n' +
+            '    (function() { var a = 2; var b = 3; })();\n' +
+            '    $.each(arr, function(el, idx) { return el; });\n' +
+            '    var obj = {\n' +
+            '        a: function() { console.log("test"); },\n' +
+            '        b() {\n' +
+            '            console.log("test2");\n' +
+            '        }\n' +
+            '    };\n' +
+            '}');
+
+
         //============================================================
         // Destructured and related
-        opts.brace_style = 'collapse-preserve-inline';
+        reset_options();
+        opts.brace_style = 'collapse,preserve-inline';
 
         // Issue 382 - import destructured
         bt(
@@ -6912,8 +8489,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}');
 
         // Issue 315 - Short objects
-        bt(
-            'var a = { b: { c: { d: e } } };');
+        bt('var a = { b: { c: { d: e } } };');
         bt(
             'var a = {\n' +
             '    b: {\n' +
@@ -6979,42 +8555,93 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    return something;\n' +
             '}');
 
-        // Issue #996 - Input ends with backslash throws exception
-        test_fragment(
-            'sd = 1;\n' +
-            '/');
 
-
-        reset_options();
         //============================================================
         // Old tests
+        reset_options();
         bt('');
         test_fragment('   return .5');
-        test_fragment('   return .5;\n   a();');
-        test_fragment('    return .5;\n    a();');
-        test_fragment('     return .5;\n     a();');
+        test_fragment(
+            '   return .5;\n' +
+            '   a();');
+        test_fragment(
+            '    return .5;\n' +
+            '    a();');
+        test_fragment(
+            '     return .5;\n' +
+            '     a();');
         test_fragment('   < div');
         bt('a        =          1', 'a = 1');
         bt('a=1', 'a = 1');
         bt('(3) / 2');
         bt('["a", "b"].join("")');
-        bt('a();\n\nb();');
-        bt('var a = 1 var b = 2', 'var a = 1\nvar b = 2');
-        bt('var a=1, b=c[d], e=6;', 'var a = 1,\n    b = c[d],\n    e = 6;');
-        bt('var a,\n    b,\n    c;');
-        bt('let a = 1 let b = 2', 'let a = 1\nlet b = 2');
-        bt('let a=1, b=c[d], e=6;', 'let a = 1,\n    b = c[d],\n    e = 6;');
-        bt('let a,\n    b,\n    c;');
-        bt('const a = 1 const b = 2', 'const a = 1\nconst b = 2');
-        bt('const a=1, b=c[d], e=6;', 'const a = 1,\n    b = c[d],\n    e = 6;');
-        bt('const a,\n    b,\n    c;');
+        bt(
+            'a();\n' +
+            '\n' +
+            'b();');
+        bt(
+            'var a = 1 var b = 2',
+            //  -- output --
+            'var a = 1\n' +
+            'var b = 2');
+        bt(
+            'var a=1, b=c[d], e=6;',
+            //  -- output --
+            'var a = 1,\n' +
+            '    b = c[d],\n' +
+            '    e = 6;');
+        bt(
+            'var a,\n' +
+            '    b,\n' +
+            '    c;');
+        bt(
+            'let a = 1 let b = 2',
+            //  -- output --
+            'let a = 1\n' +
+            'let b = 2');
+        bt(
+            'let a=1, b=c[d], e=6;',
+            //  -- output --
+            'let a = 1,\n' +
+            '    b = c[d],\n' +
+            '    e = 6;');
+        bt(
+            'let a,\n' +
+            '    b,\n' +
+            '    c;');
+        bt(
+            'const a = 1 const b = 2',
+            //  -- output --
+            'const a = 1\n' +
+            'const b = 2');
+        bt(
+            'const a=1, b=c[d], e=6;',
+            //  -- output --
+            'const a = 1,\n' +
+            '    b = c[d],\n' +
+            '    e = 6;');
+        bt(
+            'const a,\n' +
+            '    b,\n' +
+            '    c;');
         bt('a = " 12345 "');
         bt('a = \' 12345 \'');
         bt('if (a == 1) b = 2;');
-        bt('if(1){2}else{3}', 'if (1) {\n    2\n} else {\n    3\n}');
+        bt(
+            'if(1){2}else{3}',
+            //  -- output --
+            'if (1) {\n' +
+            '    2\n' +
+            '} else {\n' +
+            '    3\n' +
+            '}');
         bt('if(1||2);', 'if (1 || 2);');
         bt('(a==1)||(b==2)', '(a == 1) || (b == 2)');
-        bt('var a = 1 if (2) 3;', 'var a = 1\nif (2) 3;');
+        bt(
+            'var a = 1 if (2) 3;',
+            //  -- output --
+            'var a = 1\n' +
+            'if (2) 3;');
         bt('a = a + 1');
         bt('a = a == 1');
         bt('/12345[^678]*9+/.match(a)');
@@ -7035,12 +8662,13 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a = 06789e-10');
         bt('a = e - 10');
         bt('a = 1.3e+10');
+        bt('a = 1.e-7');
         bt('a = -12345.3e+10');
         bt('a = .12345e+10');
         bt('a = 06789e+10');
         bt('a = e + 10');
         bt('a=0e-12345.3e-10', 'a = 0e-12345 .3e-10');
-        bt('a=0.e-12345.3e-10', 'a = 0. e - 12345.3e-10');
+        bt('a=0.e-12345.3e-10', 'a = 0.e-12345 .3e-10');
         bt('a=0x.e-12345.3e-10', 'a = 0x.e - 12345.3e-10');
         bt('a=0x0.e-12345.3e-10', 'a = 0x0.e - 12345.3e-10');
         bt('a=0x0.0e-12345.3e-10', 'a = 0x0 .0e-12345 .3e-10');
@@ -7116,180 +8744,648 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a=0Bg0b0o0', 'a = 0B g0b0o0');
         bt('a = [1, 2, 3, 4]');
         bt('F*(g/=f)*g+b', 'F * (g /= f) * g + b');
-        bt('a.b({c:d})', 'a.b({\n    c: d\n})');
-        bt('a.b\n(\n{\nc:\nd\n}\n)', 'a.b({\n    c: d\n})');
-        bt('a.b({c:"d"})', 'a.b({\n    c: "d"\n})');
-        bt('a.b\n(\n{\nc:\n"d"\n}\n)', 'a.b({\n    c: "d"\n})');
+        bt(
+            'a.b({c:d})',
+            //  -- output --
+            'a.b({\n' +
+            '    c: d\n' +
+            '})');
+        bt(
+            'a.b\n' +
+            '(\n' +
+            '{\n' +
+            'c:\n' +
+            'd\n' +
+            '}\n' +
+            ')',
+            //  -- output --
+            'a.b({\n' +
+            '    c: d\n' +
+            '})');
+        bt(
+            'a.b({c:"d"})',
+            //  -- output --
+            'a.b({\n' +
+            '    c: "d"\n' +
+            '})');
+        bt(
+            'a.b\n' +
+            '(\n' +
+            '{\n' +
+            'c:\n' +
+            '"d"\n' +
+            '}\n' +
+            ')',
+            //  -- output --
+            'a.b({\n' +
+            '    c: "d"\n' +
+            '})');
         bt('a=!b', 'a = !b');
         bt('a=!!b', 'a = !!b');
         bt('a?b:c', 'a ? b : c');
         bt('a?1:2', 'a ? 1 : 2');
         bt('a?(b):c', 'a ? (b) : c');
-        bt('x={a:1,b:w=="foo"?x:y,c:z}', 'x = {\n    a: 1,\n    b: w == "foo" ? x : y,\n    c: z\n}');
+        bt(
+            'x={a:1,b:w=="foo"?x:y,c:z}',
+            //  -- output --
+            'x = {\n' +
+            '    a: 1,\n' +
+            '    b: w == "foo" ? x : y,\n' +
+            '    c: z\n' +
+            '}');
         bt('x=a?b?c?d:e:f:g;', 'x = a ? b ? c ? d : e : f : g;');
-        bt('x=a?b?c?d:{e1:1,e2:2}:f:g;', 'x = a ? b ? c ? d : {\n    e1: 1,\n    e2: 2\n} : f : g;');
+        bt(
+            'x=a?b?c?d:{e1:1,e2:2}:f:g;',
+            //  -- output --
+            'x = a ? b ? c ? d : {\n' +
+            '    e1: 1,\n' +
+            '    e2: 2\n' +
+            '} : f : g;');
         bt('function void(void) {}');
         bt('if(!a)foo();', 'if (!a) foo();');
         bt('a=~a', 'a = ~a');
-        bt('a;/*comment*/b;', 'a; /*comment*/\nb;');
-        bt('a;/* comment */b;', 'a; /* comment */\nb;');
+        bt(
+            'a;/*comment*/b;',
+            //  -- output --
+            'a; /*comment*/\n' +
+            'b;');
+        bt(
+            'a;/* comment */b;',
+            //  -- output --
+            'a; /* comment */\n' +
+            'b;');
 
         // simple comments don't get touched at all
-        test_fragment('a;/*\ncomment\n*/b;', 'a;\n/*\ncomment\n*/\nb;');
-        bt('a;/**\n* javadoc\n*/b;', 'a;\n/**\n * javadoc\n */\nb;');
-        test_fragment('a;/**\n\nno javadoc\n*/b;', 'a;\n/**\n\nno javadoc\n*/\nb;');
+        test_fragment(
+            'a;/*\n' +
+            'comment\n' +
+            '*/b;',
+            //  -- output --
+            'a;\n' +
+            '/*\n' +
+            'comment\n' +
+            '*/\n' +
+            'b;');
+        bt(
+            'a;/**\n' +
+            '* javadoc\n' +
+            '*/b;',
+            //  -- output --
+            'a;\n' +
+            '/**\n' +
+            ' * javadoc\n' +
+            ' */\n' +
+            'b;');
+        test_fragment(
+            'a;/**\n' +
+            '\n' +
+            'no javadoc\n' +
+            '*/b;',
+            //  -- output --
+            'a;\n' +
+            '/**\n' +
+            '\n' +
+            'no javadoc\n' +
+            '*/\n' +
+            'b;');
 
         // comment blocks detected and reindented even w/o javadoc starter
-        bt('a;/*\n* javadoc\n*/b;', 'a;\n/*\n * javadoc\n */\nb;');
+        bt(
+            'a;/*\n' +
+            '* javadoc\n' +
+            '*/b;',
+            //  -- output --
+            'a;\n' +
+            '/*\n' +
+            ' * javadoc\n' +
+            ' */\n' +
+            'b;');
         bt('if(a)break;', 'if (a) break;');
-        bt('if(a){break}', 'if (a) {\n    break\n}');
+        bt(
+            'if(a){break}',
+            //  -- output --
+            'if (a) {\n' +
+            '    break\n' +
+            '}');
         bt('if((a))foo();', 'if ((a)) foo();');
         bt('for(var i=0;;) a', 'for (var i = 0;;) a');
-        bt('for(var i=0;;)\na', 'for (var i = 0;;)\n    a');
+        bt(
+            'for(var i=0;;)\n' +
+            'a',
+            //  -- output --
+            'for (var i = 0;;)\n' +
+            '    a');
         bt('a++;');
         bt('for(;;i++)a()', 'for (;; i++) a()');
-        bt('for(;;i++)\na()', 'for (;; i++)\n    a()');
+        bt(
+            'for(;;i++)\n' +
+            'a()',
+            //  -- output --
+            'for (;; i++)\n' +
+            '    a()');
         bt('for(;;++i)a', 'for (;; ++i) a');
         bt('return(1)', 'return (1)');
-        bt('try{a();}catch(b){c();}finally{d();}', 'try {\n    a();\n} catch (b) {\n    c();\n} finally {\n    d();\n}');
+        bt(
+            'try{a();}catch(b){c();}finally{d();}',
+            //  -- output --
+            'try {\n' +
+            '    a();\n' +
+            '} catch (b) {\n' +
+            '    c();\n' +
+            '} finally {\n' +
+            '    d();\n' +
+            '}');
 
         //  magic function call
         bt('(xx)()');
 
         // another magic function call
         bt('a[1]()');
-        bt('if(a){b();}else if(c) foo();', 'if (a) {\n    b();\n} else if (c) foo();');
-        bt('switch(x) {case 0: case 1: a(); break; default: break}', 'switch (x) {\n    case 0:\n    case 1:\n        a();\n        break;\n    default:\n        break\n}');
-        bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\n    case -1:\n        break;\n    case !y:\n        break;\n}');
+        bt(
+            'if(a){b();}else if(c) foo();',
+            //  -- output --
+            'if (a) {\n' +
+            '    b();\n' +
+            '} else if (c) foo();');
+        bt(
+            'switch(x) {case 0: case 1: a(); break; default: break}',
+            //  -- output --
+            'switch (x) {\n' +
+            '    case 0:\n' +
+            '    case 1:\n' +
+            '        a();\n' +
+            '        break;\n' +
+            '    default:\n' +
+            '        break\n' +
+            '}');
+        bt(
+            'switch(x){case -1:break;case !y:break;}',
+            //  -- output --
+            'switch (x) {\n' +
+            '    case -1:\n' +
+            '        break;\n' +
+            '    case !y:\n' +
+            '        break;\n' +
+            '}');
         bt('a !== b');
-        bt('if (a) b(); else c();', 'if (a) b();\nelse c();');
+        bt(
+            'if (a) b(); else c();',
+            //  -- output --
+            'if (a) b();\n' +
+            'else c();');
 
         // typical greasemonkey start
-        bt('// comment\n(function something() {})');
+        bt(
+            '// comment\n' +
+            '(function something() {})');
 
         // duplicating newlines
-        bt('{\n\n    x();\n\n}');
+        bt(
+            '{\n' +
+            '\n' +
+            '    x();\n' +
+            '\n' +
+            '}');
         bt('if (a in b) foo();');
-        bt('if(X)if(Y)a();else b();else c();', 'if (X)\n    if (Y) a();\n    else b();\nelse c();');
-        bt('if (foo) bar();\nelse break');
+        bt('if (a of b) foo();');
+        bt('if (a of [1, 2, 3]) foo();');
+        bt(
+            'if(X)if(Y)a();else b();else c();',
+            //  -- output --
+            'if (X)\n' +
+            '    if (Y) a();\n' +
+            '    else b();\n' +
+            'else c();');
+        bt(
+            'if (foo) bar();\n' +
+            'else break');
         bt('var a, b;');
         bt('var a = new function();');
         test_fragment('new function');
         bt('var a, b');
-        bt('{a:1, b:2}', '{\n    a: 1,\n    b: 2\n}');
-        bt('a={1:[-1],2:[+1]}', 'a = {\n    1: [-1],\n    2: [+1]\n}');
-        bt('var l = {\'a\':\'1\', \'b\':\'2\'}', 'var l = {\n    \'a\': \'1\',\n    \'b\': \'2\'\n}');
+        bt(
+            '{a:1, b:2}',
+            //  -- output --
+            '{\n' +
+            '    a: 1,\n' +
+            '    b: 2\n' +
+            '}');
+        bt(
+            'a={1:[-1],2:[+1]}',
+            //  -- output --
+            'a = {\n' +
+            '    1: [-1],\n' +
+            '    2: [+1]\n' +
+            '}');
+        bt(
+            'var l = {\'a\':\'1\', \'b\':\'2\'}',
+            //  -- output --
+            'var l = {\n' +
+            '    \'a\': \'1\',\n' +
+            '    \'b\': \'2\'\n' +
+            '}');
         bt('if (template.user[n] in bk) foo();');
         bt('return 45');
-        bt('return this.prevObject ||\n\n    this.constructor(null);');
+        bt(
+            'return this.prevObject ||\n' +
+            '\n' +
+            '    this.constructor(null);');
         bt('If[1]');
         bt('Then[1]');
         bt('a = 1;// comment', 'a = 1; // comment');
         bt('a = 1; // comment');
-        bt('a = 1;\n // comment', 'a = 1;\n// comment');
+        bt(
+            'a = 1;\n' +
+            ' // comment',
+            //  -- output --
+            'a = 1;\n' +
+            '// comment');
         bt('a = [-1, -1, -1]');
+        bt(
+            '// a\n' +
+            '// b\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '// c\n' +
+            '// d');
+        bt(
+            '// func-comment\n' +
+            '\n' +
+            'function foo() {}\n' +
+            '\n' +
+            '// end-func-comment');
 
         // The exact formatting these should have is open for discussion, but they are at least reasonable
-        bt('a = [ // comment\n    -1, -1, -1\n]');
-        bt('var a = [ // comment\n    -1, -1, -1\n]');
-        bt('a = [ // comment\n    -1, // comment\n    -1, -1\n]');
-        bt('var a = [ // comment\n    -1, // comment\n    -1, -1\n]');
-        bt('o = [{a:b},{c:d}]', 'o = [{\n    a: b\n}, {\n    c: d\n}]');
+        bt(
+            'a = [ // comment\n' +
+            '    -1, -1, -1\n' +
+            ']');
+        bt(
+            'var a = [ // comment\n' +
+            '    -1, -1, -1\n' +
+            ']');
+        bt(
+            'a = [ // comment\n' +
+            '    -1, // comment\n' +
+            '    -1, -1\n' +
+            ']');
+        bt(
+            'var a = [ // comment\n' +
+            '    -1, // comment\n' +
+            '    -1, -1\n' +
+            ']');
+        bt(
+            'o = [{a:b},{c:d}]',
+            //  -- output --
+            'o = [{\n' +
+            '    a: b\n' +
+            '}, {\n' +
+            '    c: d\n' +
+            '}]');
 
         // was: extra space appended
-        bt('if (a) {\n    do();\n}');
+        bt(
+            'if (a) {\n' +
+            '    do();\n' +
+            '}');
 
         // if/else statement with empty body
-        bt('if (a) {\n// comment\n}else{\n// comment\n}', 'if (a) {\n    // comment\n} else {\n    // comment\n}');
+        bt(
+            'if (a) {\n' +
+            '// comment\n' +
+            '}else{\n' +
+            '// comment\n' +
+            '}',
+            //  -- output --
+            'if (a) {\n' +
+            '    // comment\n' +
+            '} else {\n' +
+            '    // comment\n' +
+            '}');
 
         // multiple comments indentation
-        bt('if (a) {\n// comment\n// comment\n}', 'if (a) {\n    // comment\n    // comment\n}');
-        bt('if (a) b() else c();', 'if (a) b()\nelse c();');
-        bt('if (a) b() else if c() d();', 'if (a) b()\nelse if c() d();');
+        bt(
+            'if (a) {\n' +
+            '// comment\n' +
+            '// comment\n' +
+            '}',
+            //  -- output --
+            'if (a) {\n' +
+            '    // comment\n' +
+            '    // comment\n' +
+            '}');
+        bt(
+            'if (a) b() else c();',
+            //  -- output --
+            'if (a) b()\n' +
+            'else c();');
+        bt(
+            'if (a) b() else if c() d();',
+            //  -- output --
+            'if (a) b()\n' +
+            'else if c() d();');
         bt('{}');
-        bt('{\n\n}');
-        bt('do { a(); } while ( 1 );', 'do {\n    a();\n} while (1);');
+        bt(
+            '{\n' +
+            '\n' +
+            '}');
+        bt(
+            'do { a(); } while ( 1 );',
+            //  -- output --
+            'do {\n' +
+            '    a();\n' +
+            '} while (1);');
         bt('do {} while (1);');
-        bt('do {\n} while (1);', 'do {} while (1);');
-        bt('do {\n\n} while (1);');
+        bt(
+            'do {\n' +
+            '} while (1);',
+            //  -- output --
+            'do {} while (1);');
+        bt(
+            'do {\n' +
+            '\n' +
+            '} while (1);');
         bt('var a = x(a, b, c)');
-        bt('delete x if (a) b();', 'delete x\nif (a) b();');
-        bt('delete x[x] if (a) b();', 'delete x[x]\nif (a) b();');
+        bt(
+            'delete x if (a) b();',
+            //  -- output --
+            'delete x\n' +
+            'if (a) b();');
+        bt(
+            'delete x[x] if (a) b();',
+            //  -- output --
+            'delete x[x]\n' +
+            'if (a) b();');
         bt('for(var a=1,b=2)d', 'for (var a = 1, b = 2) d');
         bt('for(var a=1,b=2,c=3) d', 'for (var a = 1, b = 2, c = 3) d');
-        bt('for(var a=1,b=2,c=3;d<3;d++)\ne', 'for (var a = 1, b = 2, c = 3; d < 3; d++)\n    e');
-        bt('function x(){(a||b).c()}', 'function x() {\n    (a || b).c()\n}');
-        bt('function x(){return - 1}', 'function x() {\n    return -1\n}');
-        bt('function x(){return ! a}', 'function x() {\n    return !a\n}');
+        bt(
+            'for(var a=1,b=2,c=3;d<3;d++)\n' +
+            'e',
+            //  -- output --
+            'for (var a = 1, b = 2, c = 3; d < 3; d++)\n' +
+            '    e');
+        bt(
+            'function x(){(a||b).c()}',
+            //  -- output --
+            'function x() {\n' +
+            '    (a || b).c()\n' +
+            '}');
+        bt(
+            'function x(){return - 1}',
+            //  -- output --
+            'function x() {\n' +
+            '    return -1\n' +
+            '}');
+        bt(
+            'function x(){return ! a}',
+            //  -- output --
+            'function x() {\n' +
+            '    return !a\n' +
+            '}');
         bt('x => x');
         bt('(x) => x');
-        bt('x => { x }', 'x => {\n    x\n}');
-        bt('(x) => { x }', '(x) => {\n    x\n}');
+        bt(
+            'x => { x }',
+            //  -- output --
+            'x => {\n' +
+            '    x\n' +
+            '}');
+        bt(
+            '(x) => { x }',
+            //  -- output --
+            '(x) => {\n' +
+            '    x\n' +
+            '}');
 
         // a common snippet in jQuery plugins
         bt(
             'settings = $.extend({},defaults,settings);',
+            //  -- output --
             'settings = $.extend({}, defaults, settings);');
         bt('$http().then().finally().default()');
-        bt('$http()\n.then()\n.finally()\n.default()', '$http()\n    .then()\n    .finally()\n    .default()');
+        bt(
+            '$http()\n' +
+            '.then()\n' +
+            '.finally()\n' +
+            '.default()',
+            //  -- output --
+            '$http()\n' +
+            '    .then()\n' +
+            '    .finally()\n' +
+            '    .default()');
         bt('$http().when.in.new.catch().throw()');
-        bt('$http()\n.when\n.in\n.new\n.catch()\n.throw()', '$http()\n    .when\n    .in\n    .new\n    .catch()\n    .throw()');
-        bt('{xxx;}()', '{\n    xxx;\n}()');
-        bt('a = \'a\'\nb = \'b\'');
+        bt(
+            '$http()\n' +
+            '.when\n' +
+            '.in\n' +
+            '.new\n' +
+            '.catch()\n' +
+            '.throw()',
+            //  -- output --
+            '$http()\n' +
+            '    .when\n' +
+            '    .in\n' +
+            '    .new\n' +
+            '    .catch()\n' +
+            '    .throw()');
+        bt(
+            '{xxx;}()',
+            //  -- output --
+            '{\n' +
+            '    xxx;\n' +
+            '}()');
+        bt(
+            'a = \'a\'\n' +
+            'b = \'b\'');
         bt('a = /reg/exp');
         bt('a = /reg/');
         bt('/abc/.test()');
         bt('/abc/i.test()');
-        bt('{/abc/i.test()}', '{\n    /abc/i.test()\n}');
+        bt(
+            '{/abc/i.test()}',
+            //  -- output --
+            '{\n' +
+            '    /abc/i.test()\n' +
+            '}');
         bt('var x=(a)/a;', 'var x = (a) / a;');
         bt('x != -1');
         bt('for (; s-->0;)t', 'for (; s-- > 0;) t');
         bt('for (; s++>0;)u', 'for (; s++ > 0;) u');
         bt('a = s++>s--;', 'a = s++ > s--;');
         bt('a = s++>--s;', 'a = s++ > --s;');
-        bt('{x=#1=[]}', '{\n    x = #1=[]\n}');
-        bt('{a:#1={}}', '{\n    a: #1={}\n}');
-        bt('{a:#1#}', '{\n    a: #1#\n}');
+        bt(
+            '{x=#1=[]}',
+            //  -- output --
+            '{\n' +
+            '    x = #1=[]\n' +
+            '}');
+        bt(
+            '{a:#1={}}',
+            //  -- output --
+            '{\n' +
+            '    a: #1={}\n' +
+            '}');
+        bt(
+            '{a:#1#}',
+            //  -- output --
+            '{\n' +
+            '    a: #1#\n' +
+            '}');
         test_fragment('"incomplete-string');
         test_fragment('\'incomplete-string');
         test_fragment('/incomplete-regex');
         test_fragment('`incomplete-template-string');
-        test_fragment('{a:1},{a:2}', '{\n    a: 1\n}, {\n    a: 2\n}');
-        test_fragment('var ary=[{a:1}, {a:2}];', 'var ary = [{\n    a: 1\n}, {\n    a: 2\n}];');
+        test_fragment(
+            '{a:1},{a:2}',
+            //  -- output --
+            '{\n' +
+            '    a: 1\n' +
+            '}, {\n' +
+            '    a: 2\n' +
+            '}');
+        test_fragment(
+            'var ary=[{a:1}, {a:2}];',
+            //  -- output --
+            'var ary = [{\n' +
+            '    a: 1\n' +
+            '}, {\n' +
+            '    a: 2\n' +
+            '}];');
 
         // incomplete
-        test_fragment('{a:#1', '{\n    a: #1');
+        test_fragment(
+            '{a:#1',
+            //  -- output --
+            '{\n' +
+            '    a: #1');
 
         // incomplete
-        test_fragment('{a:#', '{\n    a: #');
+        test_fragment(
+            '{a:#',
+            //  -- output --
+            '{\n' +
+            '    a: #');
 
         // incomplete
-        test_fragment('}}}', '}\n}\n}');
-        test_fragment('<!--\nvoid();\n// -->');
+        test_fragment(
+            '}}}',
+            //  -- output --
+            '}\n' +
+            '}\n' +
+            '}');
+        test_fragment(
+            '<!--\n' +
+            'void();\n' +
+            '// -->');
 
         // incomplete regexp
         test_fragment('a=/regexp', 'a = /regexp');
-        bt('{a:#1=[],b:#1#,c:#999999#}', '{\n    a: #1=[],\n    b: #1#,\n    c: #999999#\n}');
-        bt('do{x()}while(a>1)', 'do {\n    x()\n} while (a > 1)');
-        bt('x(); /reg/exp.match(something)', 'x();\n/reg/exp.match(something)');
-        test_fragment('something();(', 'something();\n(');
-        test_fragment('#!she/bangs, she bangs\nf=1', '#!she/bangs, she bangs\n\nf = 1');
-        test_fragment('#!she/bangs, she bangs\n\nf=1', '#!she/bangs, she bangs\n\nf = 1');
-        test_fragment('#!she/bangs, she bangs\n\n/* comment */');
-        test_fragment('#!she/bangs, she bangs\n\n\n/* comment */');
+        bt(
+            '{a:#1=[],b:#1#,c:#999999#}',
+            //  -- output --
+            '{\n' +
+            '    a: #1=[],\n' +
+            '    b: #1#,\n' +
+            '    c: #999999#\n' +
+            '}');
+        bt(
+            'do{x()}while(a>1)',
+            //  -- output --
+            'do {\n' +
+            '    x()\n' +
+            '} while (a > 1)');
+        bt(
+            'x(); /reg/exp.match(something)',
+            //  -- output --
+            'x();\n' +
+            '/reg/exp.match(something)');
+        test_fragment(
+            'something();(',
+            //  -- output --
+            'something();\n' +
+            '(');
+        test_fragment(
+            '#!she/bangs, she bangs\n' +
+            'f=1',
+            //  -- output --
+            '#!she/bangs, she bangs\n' +
+            '\n' +
+            'f = 1');
+        test_fragment(
+            '#!she/bangs, she bangs\n' +
+            '\n' +
+            'f=1',
+            //  -- output --
+            '#!she/bangs, she bangs\n' +
+            '\n' +
+            'f = 1');
+        test_fragment(
+            '#!she/bangs, she bangs\n' +
+            '\n' +
+            '/* comment */');
+        test_fragment(
+            '#!she/bangs, she bangs\n' +
+            '\n' +
+            '\n' +
+            '/* comment */');
         test_fragment('#');
         test_fragment('#!');
         bt('function namespace::something()');
-        test_fragment('<!--\nsomething();\n-->');
-        test_fragment('<!--\nif(i<0){bla();}\n-->', '<!--\nif (i < 0) {\n    bla();\n}\n-->');
-        bt('{foo();--bar;}', '{\n    foo();\n    --bar;\n}');
-        bt('{foo();++bar;}', '{\n    foo();\n    ++bar;\n}');
-        bt('{--bar;}', '{\n    --bar;\n}');
-        bt('{++bar;}', '{\n    ++bar;\n}');
+        test_fragment(
+            '<!--\n' +
+            'something();\n' +
+            '-->');
+        test_fragment(
+            '<!--\n' +
+            'if(i<0){bla();}\n' +
+            '-->',
+            //  -- output --
+            '<!--\n' +
+            'if (i < 0) {\n' +
+            '    bla();\n' +
+            '}\n' +
+            '-->');
+        bt(
+            '{foo();--bar;}',
+            //  -- output --
+            '{\n' +
+            '    foo();\n' +
+            '    --bar;\n' +
+            '}');
+        bt(
+            '{foo();++bar;}',
+            //  -- output --
+            '{\n' +
+            '    foo();\n' +
+            '    ++bar;\n' +
+            '}');
+        bt(
+            '{--bar;}',
+            //  -- output --
+            '{\n' +
+            '    --bar;\n' +
+            '}');
+        bt(
+            '{++bar;}',
+            //  -- output --
+            '{\n' +
+            '    ++bar;\n' +
+            '}');
         bt('if(true)++a;', 'if (true) ++a;');
-        bt('if(true)\n++a;', 'if (true)\n    ++a;');
+        bt(
+            'if(true)\n' +
+            '++a;',
+            //  -- output --
+            'if (true)\n' +
+            '    ++a;');
         bt('if(true)--a;', 'if (true) --a;');
-        bt('if(true)\n--a;', 'if (true)\n    --a;');
+        bt(
+            'if(true)\n' +
+            '--a;',
+            //  -- output --
+            'if (true)\n' +
+            '    --a;');
         bt('elem[array]++;');
         bt('elem++ * elem[array]++;');
         bt('elem-- * -elem[array]++;');
@@ -7299,106 +9395,510 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('elem-- - +elem[array]++;');
 
         // Handling of newlines around unary ++ and -- operators
-        bt('{foo\n++bar;}', '{\n    foo\n    ++bar;\n}');
-        bt('{foo++\nbar;}', '{\n    foo++\n    bar;\n}');
+        bt(
+            '{foo\n' +
+            '++bar;}',
+            //  -- output --
+            '{\n' +
+            '    foo\n' +
+            '    ++bar;\n' +
+            '}');
+        bt(
+            '{foo++\n' +
+            'bar;}',
+            //  -- output --
+            '{\n' +
+            '    foo++\n' +
+            '    bar;\n' +
+            '}');
 
         // This is invalid, but harder to guard against. Issue #203.
-        bt('{foo\n++\nbar;}', '{\n    foo\n    ++\n    bar;\n}');
+        bt(
+            '{foo\n' +
+            '++\n' +
+            'bar;}',
+            //  -- output --
+            '{\n' +
+            '    foo\n' +
+            '    ++\n' +
+            '    bar;\n' +
+            '}');
 
         // regexps
-        bt('a(/abc\\/\\/def/);b()', 'a(/abc\\/\\/def/);\nb()');
-        bt('a(/a[b\\[\\]c]d/);b()', 'a(/a[b\\[\\]c]d/);\nb()');
+        bt(
+            'a(/abc\\/\\/def/);b()',
+            //  -- output --
+            'a(/abc\\/\\/def/);\n' +
+            'b()');
+        bt(
+            'a(/a[b\\[\\]c]d/);b()',
+            //  -- output --
+            'a(/a[b\\[\\]c]d/);\n' +
+            'b()');
 
         // incomplete char class
         test_fragment('a(/a[b\\[');
 
         // allow unescaped / in char classes
-        bt('a(/[a/b]/);b()', 'a(/[a/b]/);\nb()');
+        bt(
+            'a(/[a/b]/);b()',
+            //  -- output --
+            'a(/[a/b]/);\n' +
+            'b()');
         bt('typeof /foo\\//;');
         bt('throw /foo\\//;');
         bt('do /foo\\//;');
         bt('return /foo\\//;');
-        bt('switch (a) {\n    case /foo\\//:\n        b\n}');
-        bt('if (a) /foo\\//\nelse /foo\\//;');
+        bt(
+            'switch (a) {\n' +
+            '    case /foo\\//:\n' +
+            '        b\n' +
+            '}');
+        bt(
+            'if (a) /foo\\//\n' +
+            'else /foo\\//;');
         bt('if (foo) /regex/.test();');
         bt('for (index in [1, 2, 3]) /^test$/i.test(s)');
-        bt('function foo() {\n    return [\n        "one",\n        "two"\n    ];\n}');
-        bt('a=[[1,2],[4,5],[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    [7, 8]\n]');
-        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    [7, 8]\n]');
-        bt('a=[[1,2],[4,5],function(){},function(){},[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    function() {},\n    [7, 8]\n]');
-        bt('a=[[1,2],[4,5],function(){},[7,8]]', 'a = [\n    [1, 2],\n    [4, 5],\n    function() {},\n    [7, 8]\n]');
+        bt(
+            'function foo() {\n' +
+            '    return [\n' +
+            '        "one",\n' +
+            '        "two"\n' +
+            '    ];\n' +
+            '}');
+        bt(
+            'a=[[1,2],[4,5],[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2],\n' +
+            '    [4, 5],\n' +
+            '    [7, 8]\n' +
+            ']');
+        bt(
+            'a=[[1,2],[4,5],function(){},[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2],\n' +
+            '    [4, 5],\n' +
+            '    function() {},\n' +
+            '    [7, 8]\n' +
+            ']');
+        bt(
+            'a=[[1,2],[4,5],function(){},function(){},[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2],\n' +
+            '    [4, 5],\n' +
+            '    function() {},\n' +
+            '    function() {},\n' +
+            '    [7, 8]\n' +
+            ']');
+        bt(
+            'a=[[1,2],[4,5],function(){},[7,8]]',
+            //  -- output --
+            'a = [\n' +
+            '    [1, 2],\n' +
+            '    [4, 5],\n' +
+            '    function() {},\n' +
+            '    [7, 8]\n' +
+            ']');
         bt('a=[b,c,function(){},function(){},d]', 'a = [b, c, function() {}, function() {}, d]');
-        bt('a=[b,c,\nfunction(){},function(){},d]', 'a = [b, c,\n    function() {},\n    function() {},\n    d\n]');
+        bt(
+            'a=[b,c,\n' +
+            'function(){},function(){},d]',
+            //  -- output --
+            'a = [b, c,\n' +
+            '    function() {},\n' +
+            '    function() {},\n' +
+            '    d\n' +
+            ']');
         bt('a=[a[1],b[4],c[d[7]]]', 'a = [a[1], b[4], c[d[7]]]');
         bt('[1,2,[3,4,[5,6],7],8]', '[1, 2, [3, 4, [5, 6], 7], 8]');
-        bt('[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]', '[\n    [\n        ["1", "2"],\n        ["3", "4"]\n    ],\n    [\n        ["5", "6", "7"],\n        ["8", "9", "0"]\n    ],\n    [\n        ["1", "2", "3"],\n        ["4", "5", "6", "7"],\n        ["8", "9", "0"]\n    ]\n]');
-        bt('{[x()[0]];indent;}', '{\n    [x()[0]];\n    indent;\n}');
-        bt('/*\n foo trailing space    \n * bar trailing space   \n**/');
-        bt('{\n    /*\n    foo    \n    * bar    \n    */\n}');
+        bt(
+            '[[["1","2"],["3","4"]],[["5","6","7"],["8","9","0"]],[["1","2","3"],["4","5","6","7"],["8","9","0"]]]',
+            //  -- output --
+            '[\n' +
+            '    [\n' +
+            '        ["1", "2"],\n' +
+            '        ["3", "4"]\n' +
+            '    ],\n' +
+            '    [\n' +
+            '        ["5", "6", "7"],\n' +
+            '        ["8", "9", "0"]\n' +
+            '    ],\n' +
+            '    [\n' +
+            '        ["1", "2", "3"],\n' +
+            '        ["4", "5", "6", "7"],\n' +
+            '        ["8", "9", "0"]\n' +
+            '    ]\n' +
+            ']');
+        bt(
+            '{[x()[0]];indent;}',
+            //  -- output --
+            '{\n' +
+            '    [x()[0]];\n' +
+            '    indent;\n' +
+            '}');
+        bt(
+            '/*\n' +
+            ' foo trailing space    \n' +
+            ' * bar trailing space   \n' +
+            '**/');
+        bt(
+            '{\n' +
+            '    /*\n' +
+            '    foo    \n' +
+            '    * bar    \n' +
+            '    */\n' +
+            '}');
         bt('return ++i');
         bt('return !!x');
         bt('return !x');
         bt('return [1,2]', 'return [1, 2]');
         bt('return;');
-        bt('return\nfunc');
+        bt(
+            'return\n' +
+            'func');
         bt('catch(e)', 'catch (e)');
-        bt('var a=1,b={foo:2,bar:3},{baz:4,wham:5},c=4;', 'var a = 1,\n    b = {\n        foo: 2,\n        bar: 3\n    },\n    {\n        baz: 4,\n        wham: 5\n    }, c = 4;');
-        bt('var a=1,b={foo:2,bar:3},{baz:4,wham:5},\nc=4;', 'var a = 1,\n    b = {\n        foo: 2,\n        bar: 3\n    },\n    {\n        baz: 4,\n        wham: 5\n    },\n    c = 4;');
+        bt(
+            'var a=1,b={foo:2,bar:3},{baz:4,wham:5},c=4;',
+            //  -- output --
+            'var a = 1,\n' +
+            '    b = {\n' +
+            '        foo: 2,\n' +
+            '        bar: 3\n' +
+            '    },\n' +
+            '    {\n' +
+            '        baz: 4,\n' +
+            '        wham: 5\n' +
+            '    }, c = 4;');
+        bt(
+            'var a=1,b={foo:2,bar:3},{baz:4,wham:5},\n' +
+            'c=4;',
+            //  -- output --
+            'var a = 1,\n' +
+            '    b = {\n' +
+            '        foo: 2,\n' +
+            '        bar: 3\n' +
+            '    },\n' +
+            '    {\n' +
+            '        baz: 4,\n' +
+            '        wham: 5\n' +
+            '    },\n' +
+            '    c = 4;');
 
         // inline comment
         bt(
             'function x(/*int*/ start, /*string*/ foo)',
+            //  -- output --
             'function x( /*int*/ start, /*string*/ foo)');
 
         // javadoc comment
-        bt('/**\n* foo\n*/', '/**\n * foo\n */');
-        bt('{\n/**\n* foo\n*/\n}', '{\n    /**\n     * foo\n     */\n}');
+        bt(
+            '/**\n' +
+            '* foo\n' +
+            '*/',
+            //  -- output --
+            '/**\n' +
+            ' * foo\n' +
+            ' */');
+        bt(
+            '{\n' +
+            '/**\n' +
+            '* foo\n' +
+            '*/\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    /**\n' +
+            '     * foo\n' +
+            '     */\n' +
+            '}');
 
         // starless block comment
-        bt('/**\nfoo\n*/');
-        bt('/**\nfoo\n**/');
-        bt('/**\nfoo\nbar\n**/');
-        bt('/**\nfoo\n\nbar\n**/');
-        bt('/**\nfoo\n    bar\n**/');
-        bt('{\n/**\nfoo\n*/\n}', '{\n    /**\n    foo\n    */\n}');
-        bt('{\n/**\nfoo\n**/\n}', '{\n    /**\n    foo\n    **/\n}');
-        bt('{\n/**\nfoo\nbar\n**/\n}', '{\n    /**\n    foo\n    bar\n    **/\n}');
-        bt('{\n/**\nfoo\n\nbar\n**/\n}', '{\n    /**\n    foo\n\n    bar\n    **/\n}');
-        bt('{\n/**\nfoo\n    bar\n**/\n}', '{\n    /**\n    foo\n        bar\n    **/\n}');
-        bt('{\n    /**\n    foo\nbar\n    **/\n}');
-        bt('var a,b,c=1,d,e,f=2;', 'var a, b, c = 1,\n    d, e, f = 2;');
-        bt('var a,b,c=[],d,e,f=2;', 'var a, b, c = [],\n    d, e, f = 2;');
-        bt('function() {\n    var a, b, c, d, e = [],\n        f;\n}');
-        bt('do/regexp/;\nwhile(1);', 'do /regexp/;\nwhile (1);');
-        bt('var a = a,\na;\nb = {\nb\n}', 'var a = a,\n    a;\nb = {\n    b\n}');
-        bt('var a = a,\n    /* c */\n    b;');
-        bt('var a = a,\n    // c\n    b;');
+        bt(
+            '/**\n' +
+            'foo\n' +
+            '*/');
+        bt(
+            '/**\n' +
+            'foo\n' +
+            '**/');
+        bt(
+            '/**\n' +
+            'foo\n' +
+            'bar\n' +
+            '**/');
+        bt(
+            '/**\n' +
+            'foo\n' +
+            '\n' +
+            'bar\n' +
+            '**/');
+        bt(
+            '/**\n' +
+            'foo\n' +
+            '    bar\n' +
+            '**/');
+        bt(
+            '{\n' +
+            '/**\n' +
+            'foo\n' +
+            '*/\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    /**\n' +
+            '    foo\n' +
+            '    */\n' +
+            '}');
+        bt(
+            '{\n' +
+            '/**\n' +
+            'foo\n' +
+            '**/\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    /**\n' +
+            '    foo\n' +
+            '    **/\n' +
+            '}');
+        bt(
+            '{\n' +
+            '/**\n' +
+            'foo\n' +
+            'bar\n' +
+            '**/\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    /**\n' +
+            '    foo\n' +
+            '    bar\n' +
+            '    **/\n' +
+            '}');
+        bt(
+            '{\n' +
+            '/**\n' +
+            'foo\n' +
+            '\n' +
+            'bar\n' +
+            '**/\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    /**\n' +
+            '    foo\n' +
+            '\n' +
+            '    bar\n' +
+            '    **/\n' +
+            '}');
+        bt(
+            '{\n' +
+            '/**\n' +
+            'foo\n' +
+            '    bar\n' +
+            '**/\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    /**\n' +
+            '    foo\n' +
+            '        bar\n' +
+            '    **/\n' +
+            '}');
+        bt(
+            '{\n' +
+            '    /**\n' +
+            '    foo\n' +
+            'bar\n' +
+            '    **/\n' +
+            '}');
+        bt(
+            'var a,b,c=1,d,e,f=2;',
+            //  -- output --
+            'var a, b, c = 1,\n' +
+            '    d, e, f = 2;');
+        bt(
+            'var a,b,c=[],d,e,f=2;',
+            //  -- output --
+            'var a, b, c = [],\n' +
+            '    d, e, f = 2;');
+        bt(
+            'function() {\n' +
+            '    var a, b, c, d, e = [],\n' +
+            '        f;\n' +
+            '}');
+        bt(
+            'do/regexp/;\n' +
+            'while(1);',
+            //  -- output --
+            'do /regexp/;\n' +
+            'while (1);');
+        bt(
+            'var a = a,\n' +
+            'a;\n' +
+            'b = {\n' +
+            'b\n' +
+            '}',
+            //  -- output --
+            'var a = a,\n' +
+            '    a;\n' +
+            'b = {\n' +
+            '    b\n' +
+            '}');
+        bt(
+            'var a = a,\n' +
+            '    /* c */\n' +
+            '    b;');
+        bt(
+            'var a = a,\n' +
+            '    // c\n' +
+            '    b;');
 
         // weird element referencing
         bt('foo.("bar");');
-        bt('if (a) a()\nelse b()\nnewline()');
-        bt('if (a) a()\nnewline()');
+        bt(
+            'if (a) a()\n' +
+            'else b()\n' +
+            'newline()');
+        bt(
+            'if (a) a()\n' +
+            'newline()');
         bt('a=typeof(x)', 'a = typeof(x)');
-        bt('var a = function() {\n        return null;\n    },\n    b = false;');
-        bt('var a = function() {\n    func1()\n}');
-        bt('var a = function() {\n    func1()\n}\nvar b = function() {\n    func2()\n}');
+        bt(
+            'var a = function() {\n' +
+            '        return null;\n' +
+            '    },\n' +
+            '    b = false;');
+        bt(
+            'var a = function() {\n' +
+            '    func1()\n' +
+            '}');
+        bt(
+            'var a = function() {\n' +
+            '    func1()\n' +
+            '}\n' +
+            'var b = function() {\n' +
+            '    func2()\n' +
+            '}');
 
         // code with and without semicolons
         bt(
-            'var whatever = require("whatever");\nfunction() {\n    a = 6;\n}',
-            'var whatever = require("whatever");\n\nfunction() {\n    a = 6;\n}');
-        bt('var whatever = require("whatever")\nfunction() {\n    a = 6\n}', 'var whatever = require("whatever")\n\nfunction() {\n    a = 6\n}');
-        bt('{"x":[{"a":1,"b":3},\n7,8,8,8,8,{"b":99},{"a":11}]}', '{\n    "x": [{\n            "a": 1,\n            "b": 3\n        },\n        7, 8, 8, 8, 8, {\n            "b": 99\n        }, {\n            "a": 11\n        }\n    ]\n}');
-        bt('{"x":[{"a":1,"b":3},7,8,8,8,8,{"b":99},{"a":11}]}', '{\n    "x": [{\n        "a": 1,\n        "b": 3\n    }, 7, 8, 8, 8, 8, {\n        "b": 99\n    }, {\n        "a": 11\n    }]\n}');
-        bt('{"1":{"1a":"1b"},"2"}', '{\n    "1": {\n        "1a": "1b"\n    },\n    "2"\n}');
-        bt('{a:{a:b},c}', '{\n    a: {\n        a: b\n    },\n    c\n}');
-        bt('{[y[a]];keep_indent;}', '{\n    [y[a]];\n    keep_indent;\n}');
-        bt('if (x) {y} else { if (x) {y}}', 'if (x) {\n    y\n} else {\n    if (x) {\n        y\n    }\n}');
-        bt('if (foo) one()\ntwo()\nthree()');
-        bt('if (1 + foo() && bar(baz()) / 2) one()\ntwo()\nthree()');
-        bt('if (1 + foo() && bar(baz()) / 2) one();\ntwo();\nthree();');
-        bt('var a=1,b={bang:2},c=3;', 'var a = 1,\n    b = {\n        bang: 2\n    },\n    c = 3;');
-        bt('var a={bing:1},b=2,c=3;', 'var a = {\n        bing: 1\n    },\n    b = 2,\n    c = 3;');
+            'var whatever = require("whatever");\n' +
+            'function() {\n' +
+            '    a = 6;\n' +
+            '}',
+            //  -- output --
+            'var whatever = require("whatever");\n' +
+            '\n' +
+            'function() {\n' +
+            '    a = 6;\n' +
+            '}');
+        bt(
+            'var whatever = require("whatever")\n' +
+            'function() {\n' +
+            '    a = 6\n' +
+            '}',
+            //  -- output --
+            'var whatever = require("whatever")\n' +
+            '\n' +
+            'function() {\n' +
+            '    a = 6\n' +
+            '}');
+        bt(
+            '{"x":[{"a":1,"b":3},\n' +
+            '7,8,8,8,8,{"b":99},{"a":11}]}',
+            //  -- output --
+            '{\n' +
+            '    "x": [{\n' +
+            '            "a": 1,\n' +
+            '            "b": 3\n' +
+            '        },\n' +
+            '        7, 8, 8, 8, 8, {\n' +
+            '            "b": 99\n' +
+            '        }, {\n' +
+            '            "a": 11\n' +
+            '        }\n' +
+            '    ]\n' +
+            '}');
+        bt(
+            '{"x":[{"a":1,"b":3},7,8,8,8,8,{"b":99},{"a":11}]}',
+            //  -- output --
+            '{\n' +
+            '    "x": [{\n' +
+            '        "a": 1,\n' +
+            '        "b": 3\n' +
+            '    }, 7, 8, 8, 8, 8, {\n' +
+            '        "b": 99\n' +
+            '    }, {\n' +
+            '        "a": 11\n' +
+            '    }]\n' +
+            '}');
+        bt(
+            '{"1":{"1a":"1b"},"2"}',
+            //  -- output --
+            '{\n' +
+            '    "1": {\n' +
+            '        "1a": "1b"\n' +
+            '    },\n' +
+            '    "2"\n' +
+            '}');
+        bt(
+            '{a:{a:b},c}',
+            //  -- output --
+            '{\n' +
+            '    a: {\n' +
+            '        a: b\n' +
+            '    },\n' +
+            '    c\n' +
+            '}');
+        bt(
+            '{[y[a]];keep_indent;}',
+            //  -- output --
+            '{\n' +
+            '    [y[a]];\n' +
+            '    keep_indent;\n' +
+            '}');
+        bt(
+            'if (x) {y} else { if (x) {y}}',
+            //  -- output --
+            'if (x) {\n' +
+            '    y\n' +
+            '} else {\n' +
+            '    if (x) {\n' +
+            '        y\n' +
+            '    }\n' +
+            '}');
+        bt(
+            'if (foo) one()\n' +
+            'two()\n' +
+            'three()');
+        bt(
+            'if (1 + foo() && bar(baz()) / 2) one()\n' +
+            'two()\n' +
+            'three()');
+        bt(
+            'if (1 + foo() && bar(baz()) / 2) one();\n' +
+            'two();\n' +
+            'three();');
+        bt(
+            'var a=1,b={bang:2},c=3;',
+            //  -- output --
+            'var a = 1,\n' +
+            '    b = {\n' +
+            '        bang: 2\n' +
+            '    },\n' +
+            '    c = 3;');
+        bt(
+            'var a={bing:1},b=2,c=3;',
+            //  -- output --
+            'var a = {\n' +
+            '        bing: 1\n' +
+            '    },\n' +
+            '    b = 2,\n' +
+            '    c = 3;');
 
 
     }
@@ -7454,7 +9954,6 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         opts.preserve_newlines = true;
         bt('var\na=do_preserve_newlines;', 'var\n    a = do_preserve_newlines;');
-        bt('// a\n// b\n\n// c\n// d');
         bt('if (foo) //  comment\n{\n    bar();\n}');
 
 
@@ -7612,8 +10111,6 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         beautify_brace_tests('collapse');
         beautify_brace_tests('end-expand');
         beautify_brace_tests('none');
-
-        bt('// func-comment\n\nfunction foo() {}\n\n// end-func-comment');
 
         test_fragment('roo = {\n    /*\n    ****\n      FOO\n    ****\n    */\n    BAR: 0\n};');
 
@@ -8122,6 +10619,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'if (foo)\n    if (bar)\n        if (baz)\n            whee();\na();');
         bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\nelse\na();',
             'if (foo)\n    if (bar)\n        if (baz)\n            whee();\n        else\n            a();');
+        bt('if (foo)\nbar();\nelse\ncar();',
+            'if (foo)\n    bar();\nelse\n    car();');
         bt('if (foo) bar();\nelse\ncar();',
             'if (foo) bar();\nelse\n    car();');
 
@@ -8214,6 +10713,30 @@ if (typeof exports !== "undefined") {
     Script: test/generate-tests.js
     Template: test/data/css/node.mustache
     Data: test/data/css/tests.js
+
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2017 Einar Lielmanis, Liam Newman, and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
 */
 /*jshint unused:false */
 
@@ -8270,8 +10793,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         opts.eol = '\r\\n';
         expected = expected.replace(/[\n]/g, '\r\n');
         sanitytest.expect(input, expected);
-        input = input.replace(/[\n]/g, '\r\n');
-        sanitytest.expect(input, expected);
+        if (input.indexOf('\n') !== -1) {
+            input = input.replace(/[\n]/g, '\r\n');
+            sanitytest.expect(input, expected);
+            // Ensure support for auto eol detection
+            opts.eol = 'auto';
+            sanitytest.expect(input, expected);
+        }
         opts.eol = '\n';
     }
 
@@ -8298,41 +10826,110 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t(".tabs {}");
 
 
-        reset_options();
         //============================================================
         // End With Newline - (eof = "\n")
+        reset_options();
         opts.end_with_newline = true;
         test_fragment('', '\n');
         test_fragment('   .tabs{}', '   .tabs {}\n');
-        test_fragment('   \n\n.tabs{}\n\n\n\n', '   .tabs {}\n');
+        test_fragment(
+            '   \n' +
+            '\n' +
+            '.tabs{}\n' +
+            '\n' +
+            '\n' +
+            '\n',
+            //  -- output --
+            '   .tabs {}\n');
         test_fragment('\n');
 
         // End With Newline - (eof = "")
+        reset_options();
         opts.end_with_newline = false;
         test_fragment('');
         test_fragment('   .tabs{}', '   .tabs {}');
-        test_fragment('   \n\n.tabs{}\n\n\n\n', '   .tabs {}');
+        test_fragment(
+            '   \n' +
+            '\n' +
+            '.tabs{}\n' +
+            '\n' +
+            '\n' +
+            '\n',
+            //  -- output --
+            '   .tabs {}');
         test_fragment('\n', '');
 
 
-        reset_options();
         //============================================================
         // Empty braces
+        reset_options();
         t('.tabs{}', '.tabs {}');
         t('.tabs { }', '.tabs {}');
         t('.tabs    {    }', '.tabs {}');
-        t('.tabs    \n{\n    \n  }', '.tabs {}');
+        t(
+            '.tabs    \n' +
+            '{\n' +
+            '    \n' +
+            '  }',
+            //  -- output --
+            '.tabs {}');
 
 
-        reset_options();
         //============================================================
         //
-        t('#cboxOverlay {\n\tbackground: url(images/overlay.png) repeat 0 0;\n\topacity: 0.9;\n\tfilter: alpha(opacity = 90);\n}', '#cboxOverlay {\n\tbackground: url(images/overlay.png) repeat 0 0;\n\topacity: 0.9;\n\tfilter: alpha(opacity=90);\n}');
-
-
         reset_options();
+        t(
+            '#cboxOverlay {\n' +
+            '\tbackground: url(images/overlay.png) repeat 0 0;\n' +
+            '\topacity: 0.9;\n' +
+            '\tfilter: alpha(opacity = 90);\n' +
+            '}',
+            //  -- output --
+            '#cboxOverlay {\n' +
+            '\tbackground: url(images/overlay.png) repeat 0 0;\n' +
+            '\topacity: 0.9;\n' +
+            '\tfilter: alpha(opacity=90);\n' +
+            '}');
+
+
+        //============================================================
+        // Support simple language specific option inheritance/overriding - (c = "     ")
+        reset_options();
+        opts.indent_char = ' ';
+        opts.indent_size = 4;
+        opts.js = { 'indent_size': 3 };
+        opts.css = { 'indent_size': 5 };
+        t(
+            '.selector {\n' +
+            '     font-size: 12px;\n' +
+            '}');
+
+        // Support simple language specific option inheritance/overriding - (c = "    ")
+        reset_options();
+        opts.indent_char = ' ';
+        opts.indent_size = 4;
+        opts.html = { 'js': { 'indent_size': 3 }, 'css': { 'indent_size': 5 } };
+        t(
+            '.selector {\n' +
+            '    font-size: 12px;\n' +
+            '}');
+
+        // Support simple language specific option inheritance/overriding - (c = "   ")
+        reset_options();
+        opts.indent_char = ' ';
+        opts.indent_size = 9;
+        opts.html = { 'js': { 'indent_size': 3 }, 'css': { 'indent_size': 8 }, 'indent_size': 2};
+        opts.js = { 'indent_size': 5 };
+        opts.css = { 'indent_size': 3 };
+        t(
+            '.selector {\n' +
+            '   font-size: 12px;\n' +
+            '}');
+
+
         //============================================================
         // Space Around Combinator - (space = " ")
+        reset_options();
         opts.space_around_combinator = true;
         t('a>b{}', 'a > b {}');
         t('a~b{}', 'a ~ b {}');
@@ -8344,26 +10941,31 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('a + b > c{}', 'a + b > c {}');
         t(
             'a > b{width: calc(100% + 45px);}',
+            //  -- output --
             'a > b {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
         t(
             'a ~ b{width: calc(100% + 45px);}',
+            //  -- output --
             'a ~ b {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b{width: calc(100% + 45px);}',
+            //  -- output --
             'a + b {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b > c{width: calc(100% + 45px);}',
+            //  -- output --
             'a + b > c {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
 
         // Space Around Combinator - (space = "")
+        reset_options();
         opts.space_around_combinator = false;
         t('a>b{}', 'a>b {}');
         t('a~b{}', 'a~b {}');
@@ -8375,26 +10977,31 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('a + b > c{}', 'a+b>c {}');
         t(
             'a > b{width: calc(100% + 45px);}',
+            //  -- output --
             'a>b {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
         t(
             'a ~ b{width: calc(100% + 45px);}',
+            //  -- output --
             'a~b {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b{width: calc(100% + 45px);}',
+            //  -- output --
             'a+b {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b > c{width: calc(100% + 45px);}',
+            //  -- output --
             'a+b>c {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
 
         // Space Around Combinator - (space = " ")
+        reset_options();
         opts.space_around_selector_separator = true;
         t('a>b{}', 'a > b {}');
         t('a~b{}', 'a ~ b {}');
@@ -8406,154 +11013,720 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('a + b > c{}', 'a + b > c {}');
         t(
             'a > b{width: calc(100% + 45px);}',
+            //  -- output --
             'a > b {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
         t(
             'a ~ b{width: calc(100% + 45px);}',
+            //  -- output --
             'a ~ b {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b{width: calc(100% + 45px);}',
+            //  -- output --
             'a + b {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b > c{width: calc(100% + 45px);}',
+            //  -- output --
             'a + b > c {\n' +
             '\twidth: calc(100% + 45px);\n' +
             '}');
 
 
-        reset_options();
         //============================================================
         // Selector Separator - (separator = " ", separator1 = " ")
+        reset_options();
         opts.selector_separator_newline = false;
         opts.selector_separator = " ";
-        t('#bla, #foo{color:green}', '#bla, #foo {\n\tcolor: green\n}');
-        t('@media print {.tab{}}', '@media print {\n\t.tab {}\n}');
-        t('@media print {.tab,.bat{}}', '@media print {\n\t.tab, .bat {}\n}');
-        t('#bla, #foo{color:black}', '#bla, #foo {\n\tcolor: black\n}');
-        t('a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}', 'a:first-child, a:first-child {\n\tcolor: red;\n\tdiv:first-child, div:hover {\n\t\tcolor: black;\n\t}\n}');
+        t(
+            '#bla, #foo{color:green}',
+            //  -- output --
+            '#bla, #foo {\n' +
+            '\tcolor: green\n' +
+            '}');
+        t(
+            '@media print {.tab{}}',
+            //  -- output --
+            '@media print {\n' +
+            '\t.tab {}\n' +
+            '}');
+        t(
+            '@media print {.tab,.bat{}}',
+            //  -- output --
+            '@media print {\n' +
+            '\t.tab, .bat {}\n' +
+            '}');
+        t(
+            '#bla, #foo{color:black}',
+            //  -- output --
+            '#bla, #foo {\n' +
+            '\tcolor: black\n' +
+            '}');
+        t(
+            'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
+            //  -- output --
+            'a:first-child, a:first-child {\n' +
+            '\tcolor: red;\n' +
+            '\tdiv:first-child, div:hover {\n' +
+            '\t\tcolor: black;\n' +
+            '\t}\n' +
+            '}');
 
         // Selector Separator - (separator = " ", separator1 = " ")
+        reset_options();
         opts.selector_separator_newline = false;
         opts.selector_separator = "  ";
-        t('#bla, #foo{color:green}', '#bla, #foo {\n\tcolor: green\n}');
-        t('@media print {.tab{}}', '@media print {\n\t.tab {}\n}');
-        t('@media print {.tab,.bat{}}', '@media print {\n\t.tab, .bat {}\n}');
-        t('#bla, #foo{color:black}', '#bla, #foo {\n\tcolor: black\n}');
-        t('a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}', 'a:first-child, a:first-child {\n\tcolor: red;\n\tdiv:first-child, div:hover {\n\t\tcolor: black;\n\t}\n}');
+        t(
+            '#bla, #foo{color:green}',
+            //  -- output --
+            '#bla, #foo {\n' +
+            '\tcolor: green\n' +
+            '}');
+        t(
+            '@media print {.tab{}}',
+            //  -- output --
+            '@media print {\n' +
+            '\t.tab {}\n' +
+            '}');
+        t(
+            '@media print {.tab,.bat{}}',
+            //  -- output --
+            '@media print {\n' +
+            '\t.tab, .bat {}\n' +
+            '}');
+        t(
+            '#bla, #foo{color:black}',
+            //  -- output --
+            '#bla, #foo {\n' +
+            '\tcolor: black\n' +
+            '}');
+        t(
+            'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
+            //  -- output --
+            'a:first-child, a:first-child {\n' +
+            '\tcolor: red;\n' +
+            '\tdiv:first-child, div:hover {\n' +
+            '\t\tcolor: black;\n' +
+            '\t}\n' +
+            '}');
 
         // Selector Separator - (separator = "\n", separator1 = "\n\t")
+        reset_options();
         opts.selector_separator_newline = true;
         opts.selector_separator = " ";
-        t('#bla, #foo{color:green}', '#bla,\n#foo {\n\tcolor: green\n}');
-        t('@media print {.tab{}}', '@media print {\n\t.tab {}\n}');
-        t('@media print {.tab,.bat{}}', '@media print {\n\t.tab,\n\t.bat {}\n}');
-        t('#bla, #foo{color:black}', '#bla,\n#foo {\n\tcolor: black\n}');
-        t('a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}', 'a:first-child,\na:first-child {\n\tcolor: red;\n\tdiv:first-child,\n\tdiv:hover {\n\t\tcolor: black;\n\t}\n}');
+        t(
+            '#bla, #foo{color:green}',
+            //  -- output --
+            '#bla,\n' +
+            '#foo {\n' +
+            '\tcolor: green\n' +
+            '}');
+        t(
+            '@media print {.tab{}}',
+            //  -- output --
+            '@media print {\n' +
+            '\t.tab {}\n' +
+            '}');
+        t(
+            '@media print {.tab,.bat{}}',
+            //  -- output --
+            '@media print {\n' +
+            '\t.tab,\n' +
+            '\t.bat {}\n' +
+            '}');
+        t(
+            '#bla, #foo{color:black}',
+            //  -- output --
+            '#bla,\n' +
+            '#foo {\n' +
+            '\tcolor: black\n' +
+            '}');
+        t(
+            'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
+            //  -- output --
+            'a:first-child,\n' +
+            'a:first-child {\n' +
+            '\tcolor: red;\n' +
+            '\tdiv:first-child,\n' +
+            '\tdiv:hover {\n' +
+            '\t\tcolor: black;\n' +
+            '\t}\n' +
+            '}');
 
         // Selector Separator - (separator = "\n", separator1 = "\n\t")
+        reset_options();
         opts.selector_separator_newline = true;
         opts.selector_separator = "  ";
-        t('#bla, #foo{color:green}', '#bla,\n#foo {\n\tcolor: green\n}');
-        t('@media print {.tab{}}', '@media print {\n\t.tab {}\n}');
-        t('@media print {.tab,.bat{}}', '@media print {\n\t.tab,\n\t.bat {}\n}');
-        t('#bla, #foo{color:black}', '#bla,\n#foo {\n\tcolor: black\n}');
-        t('a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}', 'a:first-child,\na:first-child {\n\tcolor: red;\n\tdiv:first-child,\n\tdiv:hover {\n\t\tcolor: black;\n\t}\n}');
+        t(
+            '#bla, #foo{color:green}',
+            //  -- output --
+            '#bla,\n' +
+            '#foo {\n' +
+            '\tcolor: green\n' +
+            '}');
+        t(
+            '@media print {.tab{}}',
+            //  -- output --
+            '@media print {\n' +
+            '\t.tab {}\n' +
+            '}');
+        t(
+            '@media print {.tab,.bat{}}',
+            //  -- output --
+            '@media print {\n' +
+            '\t.tab,\n' +
+            '\t.bat {}\n' +
+            '}');
+        t(
+            '#bla, #foo{color:black}',
+            //  -- output --
+            '#bla,\n' +
+            '#foo {\n' +
+            '\tcolor: black\n' +
+            '}');
+        t(
+            'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
+            //  -- output --
+            'a:first-child,\n' +
+            'a:first-child {\n' +
+            '\tcolor: red;\n' +
+            '\tdiv:first-child,\n' +
+            '\tdiv:hover {\n' +
+            '\t\tcolor: black;\n' +
+            '\t}\n' +
+            '}');
 
 
-        reset_options();
         //============================================================
         // Newline Between Rules - (separator = "\n")
+        reset_options();
         opts.newline_between_rules = true;
-        t('.div {}\n.span {}', '.div {}\n\n.span {}');
-        t('.div{}\n   \n.span{}', '.div {}\n\n.span {}');
-        t('.div {}    \n  \n.span { } \n', '.div {}\n\n.span {}');
-        t('.div {\n    \n} \n  .span {\n }  ', '.div {}\n\n.span {}');
-        t('.selector1 {\n\tmargin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n}\n.div{height:15px;}', '.selector1 {\n\tmargin: 0;\n\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n}\n\n.div {\n\theight: 15px;\n}');
-        t('.tabs{width:10px;//end of line comment\nheight:10px;//another\n}\n.div{height:15px;}', '.tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px; //another\n}\n\n.div {\n\theight: 15px;\n}');
-        t('#foo {\n\tbackground-image: url(foo@2x.png);\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n.div{height:15px;}', '#foo {\n\tbackground-image: url(foo@2x.png);\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n\n.div {\n\theight: 15px;\n}');
-        t('@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n.div{height:15px;}', '@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n\n.div {\n\theight: 15px;\n}');
-        t('@font-face {\n\tfont-family: "Bitstream Vera Serif Bold";\n\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n}\n@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo.png);\n\t}\n\t@media screen and (min-device-pixel-ratio: 2) {\n\t\t@font-face {\n\t\t\tfont-family: "Helvetica Neue"\n\t\t}\n\t\t#foo:hover {\n\t\t\tbackground-image: url(foo@2x.png);\n\t\t}\n\t}\n}', '@font-face {\n\tfont-family: "Bitstream Vera Serif Bold";\n\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n}\n\n@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo.png);\n\t}\n\t@media screen and (min-device-pixel-ratio: 2) {\n\t\t@font-face {\n\t\t\tfont-family: "Helvetica Neue"\n\t\t}\n\t\t#foo:hover {\n\t\t\tbackground-image: url(foo@2x.png);\n\t\t}\n\t}\n}');
-        t('a:first-child{color:red;div:first-child{color:black;}}\n.div{height:15px;}', 'a:first-child {\n\tcolor: red;\n\tdiv:first-child {\n\t\tcolor: black;\n\t}\n}\n\n.div {\n\theight: 15px;\n}');
-        t('a:first-child{color:red;div:not(.peq){color:black;}}\n.div{height:15px;}', 'a:first-child {\n\tcolor: red;\n\tdiv:not(.peq) {\n\t\tcolor: black;\n\t}\n}\n\n.div {\n\theight: 15px;\n}');
+        t(
+            '.div {}\n' +
+            '.span {}',
+            //  -- output --
+            '.div {}\n' +
+            '\n' +
+            '.span {}');
+        t(
+            '.div{}\n' +
+            '   \n' +
+            '.span{}',
+            //  -- output --
+            '.div {}\n' +
+            '\n' +
+            '.span {}');
+        t(
+            '.div {}    \n' +
+            '  \n' +
+            '.span { } \n',
+            //  -- output --
+            '.div {}\n' +
+            '\n' +
+            '.span {}');
+        t(
+            '.div {\n' +
+            '    \n' +
+            '} \n' +
+            '  .span {\n' +
+            ' }  ',
+            //  -- output --
+            '.div {}\n' +
+            '\n' +
+            '.span {}');
+        t(
+            '.selector1 {\n' +
+            '\tmargin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            '.selector1 {\n' +
+            '\tmargin: 0;\n' +
+            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '}\n' +
+            '\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
+        t(
+            '.tabs{width:10px;//end of line comment\n' +
+            'height:10px;//another\n' +
+            '}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            '.tabs {\n' +
+            '\twidth: 10px; //end of line comment\n' +
+            '\theight: 10px; //another\n' +
+            '}\n' +
+            '\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
+        t(
+            '#foo {\n' +
+            '\tbackground-image: url(foo@2x.png);\n' +
+            '\t@font-face {\n' +
+            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '\t}\n' +
+            '}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            '#foo {\n' +
+            '\tbackground-image: url(foo@2x.png);\n' +
+            '\t@font-face {\n' +
+            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '\t}\n' +
+            '}\n' +
+            '\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
+        t(
+            '@media screen {\n' +
+            '\t#foo:hover {\n' +
+            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '\t}\n' +
+            '\t@font-face {\n' +
+            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '\t}\n' +
+            '}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            '@media screen {\n' +
+            '\t#foo:hover {\n' +
+            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '\t}\n' +
+            '\t@font-face {\n' +
+            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '\t}\n' +
+            '}\n' +
+            '\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
+        t(
+            '@font-face {\n' +
+            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '}\n' +
+            '@media screen {\n' +
+            '\t#foo:hover {\n' +
+            '\t\tbackground-image: url(foo.png);\n' +
+            '\t}\n' +
+            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
+            '\t\t@font-face {\n' +
+            '\t\t\tfont-family: "Helvetica Neue"\n' +
+            '\t\t}\n' +
+            '\t\t#foo:hover {\n' +
+            '\t\t\tbackground-image: url(foo@2x.png);\n' +
+            '\t\t}\n' +
+            '\t}\n' +
+            '}',
+            //  -- output --
+            '@font-face {\n' +
+            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '}\n' +
+            '\n' +
+            '@media screen {\n' +
+            '\t#foo:hover {\n' +
+            '\t\tbackground-image: url(foo.png);\n' +
+            '\t}\n' +
+            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
+            '\t\t@font-face {\n' +
+            '\t\t\tfont-family: "Helvetica Neue"\n' +
+            '\t\t}\n' +
+            '\t\t#foo:hover {\n' +
+            '\t\t\tbackground-image: url(foo@2x.png);\n' +
+            '\t\t}\n' +
+            '\t}\n' +
+            '}');
+        t(
+            'a:first-child{color:red;div:first-child{color:black;}}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            'a:first-child {\n' +
+            '\tcolor: red;\n' +
+            '\tdiv:first-child {\n' +
+            '\t\tcolor: black;\n' +
+            '\t}\n' +
+            '}\n' +
+            '\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
+        t(
+            'a:first-child{color:red;div:not(.peq){color:black;}}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            'a:first-child {\n' +
+            '\tcolor: red;\n' +
+            '\tdiv:not(.peq) {\n' +
+            '\t\tcolor: black;\n' +
+            '\t}\n' +
+            '}\n' +
+            '\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
 
         // Newline Between Rules - (separator = "")
-        opts.newline_between_rules = false;
-        t('.div {}\n.span {}');
-        t('.div{}\n   \n.span{}', '.div {}\n.span {}');
-        t('.div {}    \n  \n.span { } \n', '.div {}\n.span {}');
-        t('.div {\n    \n} \n  .span {\n }  ', '.div {}\n.span {}');
-        t('.selector1 {\n\tmargin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n}\n.div{height:15px;}', '.selector1 {\n\tmargin: 0;\n\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n}\n.div {\n\theight: 15px;\n}');
-        t('.tabs{width:10px;//end of line comment\nheight:10px;//another\n}\n.div{height:15px;}', '.tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px; //another\n}\n.div {\n\theight: 15px;\n}');
-        t('#foo {\n\tbackground-image: url(foo@2x.png);\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n.div{height:15px;}', '#foo {\n\tbackground-image: url(foo@2x.png);\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n.div {\n\theight: 15px;\n}');
-        t('@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n.div{height:15px;}', '@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: "Bitstream Vera Serif Bold";\n\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n\t}\n}\n.div {\n\theight: 15px;\n}');
-        t('@font-face {\n\tfont-family: "Bitstream Vera Serif Bold";\n\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n}\n@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo.png);\n\t}\n\t@media screen and (min-device-pixel-ratio: 2) {\n\t\t@font-face {\n\t\t\tfont-family: "Helvetica Neue"\n\t\t}\n\t\t#foo:hover {\n\t\t\tbackground-image: url(foo@2x.png);\n\t\t}\n\t}\n}');
-        t('a:first-child{color:red;div:first-child{color:black;}}\n.div{height:15px;}', 'a:first-child {\n\tcolor: red;\n\tdiv:first-child {\n\t\tcolor: black;\n\t}\n}\n.div {\n\theight: 15px;\n}');
-        t('a:first-child{color:red;div:not(.peq){color:black;}}\n.div{height:15px;}', 'a:first-child {\n\tcolor: red;\n\tdiv:not(.peq) {\n\t\tcolor: black;\n\t}\n}\n.div {\n\theight: 15px;\n}');
-
-
         reset_options();
+        opts.newline_between_rules = false;
+        t(
+            '.div {}\n' +
+            '.span {}');
+        t(
+            '.div{}\n' +
+            '   \n' +
+            '.span{}',
+            //  -- output --
+            '.div {}\n' +
+            '.span {}');
+        t(
+            '.div {}    \n' +
+            '  \n' +
+            '.span { } \n',
+            //  -- output --
+            '.div {}\n' +
+            '.span {}');
+        t(
+            '.div {\n' +
+            '    \n' +
+            '} \n' +
+            '  .span {\n' +
+            ' }  ',
+            //  -- output --
+            '.div {}\n' +
+            '.span {}');
+        t(
+            '.selector1 {\n' +
+            '\tmargin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            '.selector1 {\n' +
+            '\tmargin: 0;\n' +
+            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '}\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
+        t(
+            '.tabs{width:10px;//end of line comment\n' +
+            'height:10px;//another\n' +
+            '}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            '.tabs {\n' +
+            '\twidth: 10px; //end of line comment\n' +
+            '\theight: 10px; //another\n' +
+            '}\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
+        t(
+            '#foo {\n' +
+            '\tbackground-image: url(foo@2x.png);\n' +
+            '\t@font-face {\n' +
+            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '\t}\n' +
+            '}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            '#foo {\n' +
+            '\tbackground-image: url(foo@2x.png);\n' +
+            '\t@font-face {\n' +
+            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '\t}\n' +
+            '}\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
+        t(
+            '@media screen {\n' +
+            '\t#foo:hover {\n' +
+            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '\t}\n' +
+            '\t@font-face {\n' +
+            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '\t}\n' +
+            '}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            '@media screen {\n' +
+            '\t#foo:hover {\n' +
+            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '\t}\n' +
+            '\t@font-face {\n' +
+            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '\t}\n' +
+            '}\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
+        t(
+            '@font-face {\n' +
+            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '}\n' +
+            '@media screen {\n' +
+            '\t#foo:hover {\n' +
+            '\t\tbackground-image: url(foo.png);\n' +
+            '\t}\n' +
+            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
+            '\t\t@font-face {\n' +
+            '\t\t\tfont-family: "Helvetica Neue"\n' +
+            '\t\t}\n' +
+            '\t\t#foo:hover {\n' +
+            '\t\t\tbackground-image: url(foo@2x.png);\n' +
+            '\t\t}\n' +
+            '\t}\n' +
+            '}');
+        t(
+            'a:first-child{color:red;div:first-child{color:black;}}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            'a:first-child {\n' +
+            '\tcolor: red;\n' +
+            '\tdiv:first-child {\n' +
+            '\t\tcolor: black;\n' +
+            '\t}\n' +
+            '}\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
+        t(
+            'a:first-child{color:red;div:not(.peq){color:black;}}\n' +
+            '.div{height:15px;}',
+            //  -- output --
+            'a:first-child {\n' +
+            '\tcolor: red;\n' +
+            '\tdiv:not(.peq) {\n' +
+            '\t\tcolor: black;\n' +
+            '\t}\n' +
+            '}\n' +
+            '.div {\n' +
+            '\theight: 15px;\n' +
+            '}');
+
+
         //============================================================
         // Functions braces
+        reset_options();
         t('.tabs(){}', '.tabs() {}');
         t('.tabs (){}', '.tabs () {}');
-        t('.tabs (pa, pa(1,2)), .cols { }', '.tabs (pa, pa(1, 2)),\n.cols {}');
-        t('.tabs(pa, pa(1,2)), .cols { }', '.tabs(pa, pa(1, 2)),\n.cols {}');
+        t(
+            '.tabs (pa, pa(1,2)), .cols { }',
+            //  -- output --
+            '.tabs (pa, pa(1, 2)),\n' +
+            '.cols {}');
+        t(
+            '.tabs(pa, pa(1,2)), .cols { }',
+            //  -- output --
+            '.tabs(pa, pa(1, 2)),\n' +
+            '.cols {}');
         t('.tabs (   )   {    }', '.tabs () {}');
         t('.tabs(   )   {    }', '.tabs() {}');
-        t('.tabs  (t, t2)  \n{\n  key: val(p1  ,p2);  \n  }', '.tabs (t, t2) {\n\tkey: val(p1, p2);\n}');
-        t('.box-shadow(@shadow: 0 1px 3px rgba(0, 0, 0, .25)) {\n\t-webkit-box-shadow: @shadow;\n\t-moz-box-shadow: @shadow;\n\tbox-shadow: @shadow;\n}');
+        t(
+            '.tabs  (t, t2)  \n' +
+            '{\n' +
+            '  key: val(p1  ,p2);  \n' +
+            '  }',
+            //  -- output --
+            '.tabs (t, t2) {\n' +
+            '\tkey: val(p1, p2);\n' +
+            '}');
+        t(
+            '.box-shadow(@shadow: 0 1px 3px rgba(0, 0, 0, .25)) {\n' +
+            '\t-webkit-box-shadow: @shadow;\n' +
+            '\t-moz-box-shadow: @shadow;\n' +
+            '\tbox-shadow: @shadow;\n' +
+            '}');
 
 
-        reset_options();
         //============================================================
         // Comments
+        reset_options();
         t('/* test */');
-        t('.tabs{/* test */}', '.tabs {\n\t/* test */\n}');
-        t('.tabs{/* test */}', '.tabs {\n\t/* test */\n}');
-        t('/* header */.tabs {}', '/* header */\n\n.tabs {}');
-        t('.tabs {\n/* non-header */\nwidth:10px;}', '.tabs {\n\t/* non-header */\n\twidth: 10px;\n}');
+        t(
+            '.tabs{/* test */}',
+            //  -- output --
+            '.tabs {\n' +
+            '\t/* test */\n' +
+            '}');
+        t(
+            '.tabs{/* test */}',
+            //  -- output --
+            '.tabs {\n' +
+            '\t/* test */\n' +
+            '}');
+        t(
+            '/* header */.tabs {}',
+            //  -- output --
+            '/* header */\n' +
+            '\n' +
+            '.tabs {}');
+        t(
+            '.tabs {\n' +
+            '/* non-header */\n' +
+            'width:10px;}',
+            //  -- output --
+            '.tabs {\n' +
+            '\t/* non-header */\n' +
+            '\twidth: 10px;\n' +
+            '}');
         t('/* header');
         t('// comment');
-        t('.selector1 {\n\tmargin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n}', '.selector1 {\n\tmargin: 0;\n\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n}');
+        t(
+            '.selector1 {\n' +
+            '\tmargin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '}',
+            //  -- output --
+            '.selector1 {\n' +
+            '\tmargin: 0;\n' +
+            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '}');
 
         // single line comment support (less/sass)
-        t('.tabs{\n// comment\nwidth:10px;\n}', '.tabs {\n\t// comment\n\twidth: 10px;\n}');
-        t('.tabs{// comment\nwidth:10px;\n}', '.tabs {\n\t// comment\n\twidth: 10px;\n}');
-        t('//comment\n.tabs{width:10px;}', '//comment\n.tabs {\n\twidth: 10px;\n}');
-        t('.tabs{//comment\n//2nd single line comment\nwidth:10px;}', '.tabs {\n\t//comment\n\t//2nd single line comment\n\twidth: 10px;\n}');
-        t('.tabs{width:10px;//end of line comment\n}', '.tabs {\n\twidth: 10px; //end of line comment\n}');
-        t('.tabs{width:10px;//end of line comment\nheight:10px;}', '.tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px;\n}');
-        t('.tabs{width:10px;//end of line comment\nheight:10px;//another\n}', '.tabs {\n\twidth: 10px; //end of line comment\n\theight: 10px; //another\n}');
+        t(
+            '.tabs{\n' +
+            '// comment\n' +
+            'width:10px;\n' +
+            '}',
+            //  -- output --
+            '.tabs {\n' +
+            '\t// comment\n' +
+            '\twidth: 10px;\n' +
+            '}');
+        t(
+            '.tabs{// comment\n' +
+            'width:10px;\n' +
+            '}',
+            //  -- output --
+            '.tabs {\n' +
+            '\t// comment\n' +
+            '\twidth: 10px;\n' +
+            '}');
+        t(
+            '//comment\n' +
+            '.tabs{width:10px;}',
+            //  -- output --
+            '//comment\n' +
+            '.tabs {\n' +
+            '\twidth: 10px;\n' +
+            '}');
+        t(
+            '.tabs{//comment\n' +
+            '//2nd single line comment\n' +
+            'width:10px;}',
+            //  -- output --
+            '.tabs {\n' +
+            '\t//comment\n' +
+            '\t//2nd single line comment\n' +
+            '\twidth: 10px;\n' +
+            '}');
+        t(
+            '.tabs{width:10px;//end of line comment\n' +
+            '}',
+            //  -- output --
+            '.tabs {\n' +
+            '\twidth: 10px; //end of line comment\n' +
+            '}');
+        t(
+            '.tabs{width:10px;//end of line comment\n' +
+            'height:10px;}',
+            //  -- output --
+            '.tabs {\n' +
+            '\twidth: 10px; //end of line comment\n' +
+            '\theight: 10px;\n' +
+            '}');
+        t(
+            '.tabs{width:10px;//end of line comment\n' +
+            'height:10px;//another\n' +
+            '}',
+            //  -- output --
+            '.tabs {\n' +
+            '\twidth: 10px; //end of line comment\n' +
+            '\theight: 10px; //another\n' +
+            '}');
 
 
-        reset_options();
         //============================================================
         // Handle LESS property name interpolation
-        t('tag {\n\t@{prop}: none;\n}');
-        t('tag{@{prop}:none;}', 'tag {\n\t@{prop}: none;\n}');
-        t('tag{ @{prop}: none;}', 'tag {\n\t@{prop}: none;\n}');
+        reset_options();
+        t(
+            'tag {\n' +
+            '\t@{prop}: none;\n' +
+            '}');
+        t(
+            'tag{@{prop}:none;}',
+            //  -- output --
+            'tag {\n' +
+            '\t@{prop}: none;\n' +
+            '}');
+        t(
+            'tag{ @{prop}: none;}',
+            //  -- output --
+            'tag {\n' +
+            '\t@{prop}: none;\n' +
+            '}');
 
         // can also be part of property name
-        t('tag {\n\tdynamic-@{prop}: none;\n}');
-        t('tag{dynamic-@{prop}:none;}', 'tag {\n\tdynamic-@{prop}: none;\n}');
-        t('tag{ dynamic-@{prop}: none;}', 'tag {\n\tdynamic-@{prop}: none;\n}');
+        t(
+            'tag {\n' +
+            '\tdynamic-@{prop}: none;\n' +
+            '}');
+        t(
+            'tag{dynamic-@{prop}:none;}',
+            //  -- output --
+            'tag {\n' +
+            '\tdynamic-@{prop}: none;\n' +
+            '}');
+        t(
+            'tag{ dynamic-@{prop}: none;}',
+            //  -- output --
+            'tag {\n' +
+            '\tdynamic-@{prop}: none;\n' +
+            '}');
 
 
-        reset_options();
         //============================================================
         // Handle LESS property name interpolation, test #631
-        t('.generate-columns(@n, @i: 1) when (@i =< @n) {\n\t.column-@{i} {\n\t\twidth: (@i * 100% / @n);\n\t}\n\t.generate-columns(@n, (@i + 1));\n}');
-        t('.generate-columns(@n,@i:1) when (@i =< @n){.column-@{i}{width:(@i * 100% / @n);}.generate-columns(@n,(@i + 1));}', '.generate-columns(@n, @i: 1) when (@i =< @n) {\n\t.column-@{i} {\n\t\twidth: (@i * 100% / @n);\n\t}\n\t.generate-columns(@n, (@i + 1));\n}');
-
-
         reset_options();
+        t(
+            '.generate-columns(@n, @i: 1) when (@i =< @n) {\n' +
+            '\t.column-@{i} {\n' +
+            '\t\twidth: (@i * 100% / @n);\n' +
+            '\t}\n' +
+            '\t.generate-columns(@n, (@i + 1));\n' +
+            '}');
+        t(
+            '.generate-columns(@n,@i:1) when (@i =< @n){.column-@{i}{width:(@i * 100% / @n);}.generate-columns(@n,(@i + 1));}',
+            //  -- output --
+            '.generate-columns(@n, @i: 1) when (@i =< @n) {\n' +
+            '\t.column-@{i} {\n' +
+            '\t\twidth: (@i * 100% / @n);\n' +
+            '\t}\n' +
+            '\t.generate-columns(@n, (@i + 1));\n' +
+            '}');
+
+
         //============================================================
         // Psuedo-classes vs Variables
+        reset_options();
         t('@page :first {}');
 
         // Assume the colon goes with the @name. If we're in LESS, this is required regardless of the at-string.
@@ -8561,12 +11734,17 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('@page: first {}');
 
 
-        reset_options();
         //============================================================
         // SASS/SCSS
+        reset_options();
 
         // Basic Interpolation
-        t('p {\n\t$font-size: 12px;\n\t$line-height: 30px;\n\tfont: #{$font-size}/#{$line-height};\n}');
+        t(
+            'p {\n' +
+            '\t$font-size: 12px;\n' +
+            '\t$line-height: 30px;\n' +
+            '\tfont: #{$font-size}/#{$line-height};\n' +
+            '}');
         t('p.#{$name} {}');
         t(
             '@mixin itemPropertiesCoverItem($items, $margin) {\n' +
@@ -8584,15 +11762,22 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}');
 
 
-        reset_options();
         //============================================================
         // Proper handling of colon in selectors
+        reset_options();
         opts.selector_separator_newline = false;
         t('a :b {}');
         t('a ::b {}');
         t('a:b {}');
         t('a::b {}');
-        t('a {}, a::b {}, a   ::b {}, a:b {}, a   :b {}', 'a {}\n, a::b {}\n, a ::b {}\n, a:b {}\n, a :b {}');
+        t(
+            'a {}, a::b {}, a   ::b {}, a:b {}, a   :b {}',
+            //  -- output --
+            'a {}\n' +
+            ', a::b {}\n' +
+            ', a ::b {}\n' +
+            ', a:b {}\n' +
+            ', a :b {}');
         t(
             '.card-blue ::-webkit-input-placeholder {\n' +
             '\tcolor: #87D1FF;\n' +
@@ -8603,9 +11788,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}');
 
 
-        reset_options();
         //============================================================
         // Regresssion Tests
+        reset_options();
         opts.selector_separator_newline = false;
         t(
             '@media(min-width:768px) {\n' +
@@ -8616,11 +11801,15 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '\t\t/* property: value */\n' +
             '\t}\n' +
             '}');
+        t(
+            '.fa-rotate-270 {\n' +
+            '\tfilter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);\n' +
+            '}');
 
 
-        reset_options();
         //============================================================
         //
+        reset_options();
 
 
     }
@@ -8767,6 +11956,30 @@ if (typeof exports !== "undefined") {
     Script: test/generate-tests.js
     Template: test/data/html/node.mustache
     Data: test/data/html/tests.js
+
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2017 Einar Lielmanis, Liam Newman, and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
 */
 /*jshint unused:false */
 
@@ -8824,8 +12037,13 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         opts.eol = '\r\n';
         expected = expected.replace(/[\n]/g, '\r\n');
         sanitytest.expect(input, expected);
-        input = input.replace(/[\n]/g, '\r\n');
-        sanitytest.expect(input, expected);
+        if (input.indexOf('\n') !== -1) {
+            input = input.replace(/[\n]/g, '\r\n');
+            sanitytest.expect(input, expected);
+            // Ensure support for auto eol detection
+            opts.eol = 'auto';
+            sanitytest.expect(input, expected);
+        }
         opts.eol = '\n';
     }
 
@@ -8858,125 +12076,191 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         bth('');
 
 
-        reset_options();
         //============================================================
         // Handle inline and block elements differently - ()
+        reset_options();
         test_fragment(
             '<body><h1>Block</h1></body>',
+            //  -- output --
             '<body>\n' +
             '    <h1>Block</h1>\n' +
             '</body>');
         test_fragment('<body><i>Inline</i></body>');
 
 
-        reset_options();
         //============================================================
         // End With Newline - (eof = "\n")
+        reset_options();
         opts.end_with_newline = true;
         test_fragment('', '\n');
         test_fragment('<div></div>', '<div></div>\n');
         test_fragment('\n');
 
         // End With Newline - (eof = "")
+        reset_options();
         opts.end_with_newline = false;
         test_fragment('');
         test_fragment('<div></div>');
         test_fragment('\n', '');
 
 
-        reset_options();
         //============================================================
         // Custom Extra Liners (empty) - ()
-        opts.extra_liners = [];
-        test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n        <p>x</p>\n    </div>\n</body>\n</html>');
-
-
         reset_options();
+        opts.extra_liners = [];
+        test_fragment(
+            '<html><head><meta></head><body><div><p>x</p></div></body></html>',
+            //  -- output --
+            '<html>\n' +
+            '<head>\n' +
+            '    <meta>\n' +
+            '</head>\n' +
+            '<body>\n' +
+            '    <div>\n' +
+            '        <p>x</p>\n' +
+            '    </div>\n' +
+            '</body>\n' +
+            '</html>');
+
+
         //============================================================
         // Custom Extra Liners (default) - ()
-        opts.extra_liners = null;
-        test_fragment('<html><head></head><body></body></html>', '<html>\n\n<head></head>\n\n<body></body>\n\n</html>');
-
-
         reset_options();
+        opts.extra_liners = null;
+        test_fragment(
+            '<html><head></head><body></body></html>',
+            //  -- output --
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+
+
         //============================================================
         // Custom Extra Liners (p, string) - ()
-        opts.extra_liners = 'p,/p';
-        test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n\n        <p>x\n\n        </p>\n    </div>\n</body>\n</html>');
-
-
         reset_options();
+        opts.extra_liners = 'p,/p';
+        test_fragment(
+            '<html><head><meta></head><body><div><p>x</p></div></body></html>',
+            //  -- output --
+            '<html>\n' +
+            '<head>\n' +
+            '    <meta>\n' +
+            '</head>\n' +
+            '<body>\n' +
+            '    <div>\n' +
+            '\n' +
+            '        <p>x\n' +
+            '\n' +
+            '        </p>\n' +
+            '    </div>\n' +
+            '</body>\n' +
+            '</html>');
+
+
         //============================================================
         // Custom Extra Liners (p) - ()
-        opts.extra_liners = ['p', '/p'];
-        test_fragment('<html><head><meta></head><body><div><p>x</p></div></body></html>', '<html>\n<head>\n    <meta>\n</head>\n<body>\n    <div>\n\n        <p>x\n\n        </p>\n    </div>\n</body>\n</html>');
-
-
         reset_options();
+        opts.extra_liners = ['p', '/p'];
+        test_fragment(
+            '<html><head><meta></head><body><div><p>x</p></div></body></html>',
+            //  -- output --
+            '<html>\n' +
+            '<head>\n' +
+            '    <meta>\n' +
+            '</head>\n' +
+            '<body>\n' +
+            '    <div>\n' +
+            '\n' +
+            '        <p>x\n' +
+            '\n' +
+            '        </p>\n' +
+            '    </div>\n' +
+            '</body>\n' +
+            '</html>');
+
+
         //============================================================
-        // Tests for script and style types (issue 453, 821
+        // Tests for script and style types (issue 453, 821)
+        reset_options();
         bth(
             '<script type="text/unknown"><div></div></script>',
+            //  -- output --
             '<script type="text/unknown">\n' +
             '    <div></div>\n' +
             '</script>');
         bth(
             '<script type="text/javascript"><div></div></script>',
+            //  -- output --
             '<script type="text/javascript">\n' +
             '    < div > < /div>\n' +
             '</script>');
         bth(
             '<script><div></div></script>',
+            //  -- output --
             '<script>\n' +
             '    < div > < /div>\n' +
             '</script>');
         bth(
             '<script>var foo = "bar";</script>',
+            //  -- output --
             '<script>\n' +
             '    var foo = "bar";\n' +
             '</script>');
         bth(
             '<script type="text/javascript">var foo = "bar";</script>',
+            //  -- output --
             '<script type="text/javascript">\n' +
             '    var foo = "bar";\n' +
             '</script>');
         bth(
             '<script type="application/javascript">var foo = "bar";</script>',
+            //  -- output --
             '<script type="application/javascript">\n' +
             '    var foo = "bar";\n' +
             '</script>');
         bth(
             '<script type="application/javascript;version=1.8">var foo = "bar";</script>',
+            //  -- output --
             '<script type="application/javascript;version=1.8">\n' +
             '    var foo = "bar";\n' +
             '</script>');
         bth(
             '<script type="application/x-javascript">var foo = "bar";</script>',
+            //  -- output --
             '<script type="application/x-javascript">\n' +
             '    var foo = "bar";\n' +
             '</script>');
         bth(
             '<script type="application/ecmascript">var foo = "bar";</script>',
+            //  -- output --
             '<script type="application/ecmascript">\n' +
             '    var foo = "bar";\n' +
             '</script>');
         bth(
             '<script type="dojo/aspect">this.domNode.style.display="none";</script>',
+            //  -- output --
             '<script type="dojo/aspect">\n' +
             '    this.domNode.style.display = "none";\n' +
             '</script>');
         bth(
             '<script type="dojo/method">this.domNode.style.display="none";</script>',
+            //  -- output --
             '<script type="dojo/method">\n' +
             '    this.domNode.style.display = "none";\n' +
             '</script>');
         bth(
             '<script type="text/javascript1.5">var foo = "bar";</script>',
+            //  -- output --
             '<script type="text/javascript1.5">\n' +
             '    var foo = "bar";\n' +
             '</script>');
         bth(
             '<script type="application/json">{"foo":"bar"}</script>',
+            //  -- output --
             '<script type="application/json">\n' +
             '    {\n' +
             '        "foo": "bar"\n' +
@@ -8984,6 +12268,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '</script>');
         bth(
             '<script type="application/ld+json">{"foo":"bar"}</script>',
+            //  -- output --
             '<script type="application/ld+json">\n' +
             '    {\n' +
             '        "foo": "bar"\n' +
@@ -8991,21 +12276,25 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '</script>');
         bth(
             '<style type="text/unknown"><tag></tag></style>',
+            //  -- output --
             '<style type="text/unknown">\n' +
             '    <tag></tag>\n' +
             '</style>');
         bth(
             '<style type="text/css"><tag></tag></style>',
+            //  -- output --
             '<style type="text/css">\n' +
             '    <tag></tag>\n' +
             '</style>');
         bth(
             '<style><tag></tag></style>',
+            //  -- output --
             '<style>\n' +
             '    <tag></tag>\n' +
             '</style>');
         bth(
             '<style>.selector {font-size:12px;}</style>',
+            //  -- output --
             '<style>\n' +
             '    .selector {\n' +
             '        font-size: 12px;\n' +
@@ -9013,6 +12302,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '</style>');
         bth(
             '<style type="text/css">.selector {font-size:12px;}</style>',
+            //  -- output --
             '<style type="text/css">\n' +
             '    .selector {\n' +
             '        font-size: 12px;\n' +
@@ -9020,151 +12310,644 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '</style>');
 
 
-        reset_options();
         //============================================================
-        // Attribute Wrap - (indent_attr = "\n    ", indent_over80 = "\n    ")
-        opts.wrap_attributes = 'force';
-        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n    attr1="123"\n    data-attr2="hello    t here">This is some text</div>');
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n    attr0\n    attr1="123"\n    data-attr2="hello    t here"\n    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
-        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n    attr1="123"\n    data-attr2="hello    t here" />');
-        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n    attr2="bar" />');
-        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n    rel="stylesheet"\n    type="text/css">');
+        // Attribute Wrap alignment with spaces - ()
+        reset_options();
+        opts.wrap_attributes = 'force-aligned';
+        opts.indent_with_tabs = true;
+        test_fragment(
+            '<div><div a="1" b="2"><div>test</div></div></div>',
+            //  -- output --
+            '<div>\n' +
+            '\t<div a="1"\n' +
+            '\t     b="2">\n' +
+            '\t\t<div>test</div>\n' +
+            '\t</div>\n' +
+            '</div>');
 
-        // Attribute Wrap - (indent_attr = "\n    ", indent_over80 = "\n    ")
+
+        //============================================================
+        // Attribute Wrap de-indent - ()
+        reset_options();
+        opts.wrap_attributes = 'force-aligned';
+        opts.indent_with_tabs = false;
+        bth(
+            '<div a="1" b="2"><div>test</div></div>',
+            //  -- output --
+            '<div a="1"\n' +
+            '     b="2">\n' +
+            '    <div>test</div>\n' +
+            '</div>');
+
+
+        //============================================================
+        // Attribute Wrap - (indent_attr = "\n    ", indent_attr_first = " ", indent_end = "", indent_end_selfclosing = " ", indent_over80 = "\n    ")
+        reset_options();
+        opts.wrap_attributes = 'force';
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here">This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            //  -- output --
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '    attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here"\n' +
+            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here" />');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root attr1="foo"\n' +
+            '    attr2="bar" />');
+        test_fragment(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '    rel="stylesheet"\n' +
+            '    type="text/css">');
+
+        // Attribute Wrap - (indent_attr = "\n    ", indent_attr_first = " ", indent_end = "", indent_end_selfclosing = " ", indent_over80 = "\n    ")
+        reset_options();
         opts.wrap_attributes = 'force';
         opts.wrap_line_length = 80;
-        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n    attr1="123"\n    data-attr2="hello    t here">This is some text</div>');
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n    attr0\n    attr1="123"\n    data-attr2="hello    t here"\n    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
-        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n    attr1="123"\n    data-attr2="hello    t here" />');
-        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n    attr2="bar" />');
-        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n    rel="stylesheet"\n    type="text/css">');
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here">This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            //  -- output --
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '    attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here"\n' +
+            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here" />');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root attr1="foo"\n' +
+            '    attr2="bar" />');
+        test_fragment(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '    rel="stylesheet"\n' +
+            '    type="text/css">');
 
-        // Attribute Wrap - (indent_attr = "\n        ", indent_over80 = "\n        ")
+        // Attribute Wrap - (indent_attr = "\n        ", indent_attr_first = " ", indent_end = "", indent_end_selfclosing = " ", indent_over80 = "\n        ")
+        reset_options();
         opts.wrap_attributes = 'force';
         opts.wrap_attributes_indent_size = 8;
-        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n        attr1="123"\n        data-attr2="hello    t here">This is some text</div>');
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n        attr0\n        attr1="123"\n        data-attr2="hello    t here"\n        heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
-        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n        attr1="123"\n        data-attr2="hello    t here" />');
-        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n        attr2="bar" />');
-        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n        rel="stylesheet"\n        type="text/css">');
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div attr0\n' +
+            '        attr1="123"\n' +
+            '        data-attr2="hello    t here">This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            //  -- output --
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '        attr0\n' +
+            '        attr1="123"\n' +
+            '        data-attr2="hello    t here"\n' +
+            '        heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img attr0\n' +
+            '        attr1="123"\n' +
+            '        data-attr2="hello    t here" />');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root attr1="foo"\n' +
+            '        attr2="bar" />');
+        test_fragment(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '        rel="stylesheet"\n' +
+            '        type="text/css">');
 
-        // Attribute Wrap - (indent_attr = " ", indent_over80 = "\n")
+        // Attribute Wrap - (indent_attr = " ", indent_attr_first = " ", indent_end = "", indent_end_selfclosing = " ", indent_over80 = "\n")
+        reset_options();
         opts.wrap_attributes = 'auto';
         opts.wrap_line_length = 80;
         opts.wrap_attributes_indent_size = 0;
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here"\nheymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            //  -- output --
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here"\n' +
+            'heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
-        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo" attr2="bar" />');
-        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\nrel="stylesheet" type="text/css">');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root attr1="foo" attr2="bar" />');
+        test_fragment(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            'rel="stylesheet" type="text/css">');
 
-        // Attribute Wrap - (indent_attr = " ", indent_over80 = "\n    ")
+        // Attribute Wrap - (indent_attr = " ", indent_attr_first = " ", indent_end = "", indent_end_selfclosing = " ", indent_over80 = "\n    ")
+        reset_options();
         opts.wrap_attributes = 'auto';
         opts.wrap_line_length = 80;
         opts.wrap_attributes_indent_size = 4;
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here"\n    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            //  -- output --
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here"\n' +
+            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
-        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo" attr2="bar" />');
-        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n    rel="stylesheet" type="text/css">');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root attr1="foo" attr2="bar" />');
+        test_fragment(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '    rel="stylesheet" type="text/css">');
 
-        // Attribute Wrap - (indent_attr = " ", indent_over80 = " ")
+        // Attribute Wrap - (indent_attr = " ", indent_attr_first = " ", indent_end = "", indent_end_selfclosing = " ", indent_over80 = " ")
+        reset_options();
         opts.wrap_attributes = 'auto';
         opts.wrap_line_length = 0;
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
         test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
-        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo" attr2="bar" />');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root attr1="foo" attr2="bar" />');
         test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">');
 
-        // Attribute Wrap - (indent_attr = "\n     ", indent_attr_faligned = " ", indent_over80 = "\n     ")
+        // Attribute Wrap - (indent_attr = "\n     ", indent_attr_faligned = " ", indent_attr_first = " ", indent_end = "", indent_end_selfclosing = " ", indent_over80 = "\n     ")
+        reset_options();
         opts.wrap_attributes = 'force-aligned';
-        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n     attr1="123"\n     data-attr2="hello    t here">This is some text</div>');
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n     attr0\n     attr1="123"\n     data-attr2="hello    t here"\n     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
-        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n     attr1="123"\n     data-attr2="hello    t here" />');
-        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n      attr2="bar" />');
-        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n      rel="stylesheet"\n      type="text/css">');
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div attr0\n' +
+            '     attr1="123"\n' +
+            '     data-attr2="hello    t here">This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            //  -- output --
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '     attr0\n' +
+            '     attr1="123"\n' +
+            '     data-attr2="hello    t here"\n' +
+            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img attr0\n' +
+            '     attr1="123"\n' +
+            '     data-attr2="hello    t here" />');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root attr1="foo"\n' +
+            '      attr2="bar" />');
+        test_fragment(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '      rel="stylesheet"\n' +
+            '      type="text/css">');
 
-        // Attribute Wrap - (indent_attr = "\n     ", indent_attr_faligned = " ", indent_over80 = "\n     ")
+        // Attribute Wrap - (indent_attr = "\n     ", indent_attr_faligned = " ", indent_attr_first = " ", indent_end = "", indent_end_selfclosing = " ", indent_over80 = "\n     ")
+        reset_options();
         opts.wrap_attributes = 'force-aligned';
         opts.wrap_line_length = 80;
-        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n     attr1="123"\n     data-attr2="hello    t here">This is some text</div>');
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n     attr0\n     attr1="123"\n     data-attr2="hello    t here"\n     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
-        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n     attr1="123"\n     data-attr2="hello    t here" />');
-        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n      attr2="bar" />');
-        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n      rel="stylesheet"\n      type="text/css">');
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div attr0\n' +
+            '     attr1="123"\n' +
+            '     data-attr2="hello    t here">This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            //  -- output --
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '     attr0\n' +
+            '     attr1="123"\n' +
+            '     data-attr2="hello    t here"\n' +
+            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img attr0\n' +
+            '     attr1="123"\n' +
+            '     data-attr2="hello    t here" />');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root attr1="foo"\n' +
+            '      attr2="bar" />');
+        test_fragment(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '      rel="stylesheet"\n' +
+            '      type="text/css">');
 
-        // Attribute Wrap - (indent_attr = "\n     ", indent_attr_faligned = " ", indent_over80 = "\n     ")
+        // Attribute Wrap - (indent_attr = "\n     ", indent_attr_faligned = " ", indent_attr_first = " ", indent_end = "", indent_end_selfclosing = " ", indent_over80 = "\n     ")
+        reset_options();
         opts.wrap_attributes = 'force-aligned';
         opts.wrap_attributes_indent_size = 8;
-        test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>', '<div attr0\n     attr1="123"\n     data-attr2="hello    t here">This is some text</div>');
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n     attr0\n     attr1="123"\n     data-attr2="hello    t here"\n     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
-        test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0\n     attr1="123"\n     data-attr2="hello    t here" />');
-        test_fragment('<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>', '<?xml version="1.0" encoding="UTF-8" ?>\n<root attr1="foo"\n      attr2="bar" />');
-        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">', '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n      rel="stylesheet"\n      type="text/css">');
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div attr0\n' +
+            '     attr1="123"\n' +
+            '     data-attr2="hello    t here">This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            //  -- output --
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '     attr0\n' +
+            '     attr1="123"\n' +
+            '     data-attr2="hello    t here"\n' +
+            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img attr0\n' +
+            '     attr1="123"\n' +
+            '     data-attr2="hello    t here" />');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root attr1="foo"\n' +
+            '      attr2="bar" />');
+        test_fragment(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '      rel="stylesheet"\n' +
+            '      type="text/css">');
 
-
+        // Attribute Wrap - (indent_attr = "\n    ", indent_attr_first = "\n    ", indent_end = "\n", indent_end_selfclosing = "\n", indent_over80 = "\n    ")
         reset_options();
+        opts.wrap_attributes = 'force-expand-multiline';
+        opts.wrap_attributes_indent_size = 4;
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div\n' +
+            '    attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here"\n' +
+            '>This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            //  -- output --
+            '<div\n' +
+            '    lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '    attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here"\n' +
+            '    heymanimreallylongtoowhocomesupwiththesenames="false"\n' +
+            '>This is some text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img\n' +
+            '    attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here"\n' +
+            '/>');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root\n' +
+            '    attr1="foo"\n' +
+            '    attr2="bar"\n' +
+            '/>');
+        test_fragment(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link\n' +
+            '    href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '    rel="stylesheet"\n' +
+            '    type="text/css"\n' +
+            '>');
+
+        // Attribute Wrap - (indent_attr = "\n    ", indent_attr_first = "\n    ", indent_end = "\n", indent_end_selfclosing = "\n", indent_over80 = "\n    ")
+        reset_options();
+        opts.wrap_attributes = 'force-expand-multiline';
+        opts.wrap_attributes_indent_size = 4;
+        opts.wrap_line_length = 80;
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div\n' +
+            '    attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here"\n' +
+            '>This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            //  -- output --
+            '<div\n' +
+            '    lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '    attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here"\n' +
+            '    heymanimreallylongtoowhocomesupwiththesenames="false"\n' +
+            '>This is some text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img\n' +
+            '    attr0\n' +
+            '    attr1="123"\n' +
+            '    data-attr2="hello    t here"\n' +
+            '/>');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root\n' +
+            '    attr1="foo"\n' +
+            '    attr2="bar"\n' +
+            '/>');
+        test_fragment(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link\n' +
+            '    href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '    rel="stylesheet"\n' +
+            '    type="text/css"\n' +
+            '>');
+
+        // Attribute Wrap - (indent_attr = "\n        ", indent_attr_first = "\n        ", indent_end = "\n", indent_end_selfclosing = "\n", indent_over80 = "\n        ")
+        reset_options();
+        opts.wrap_attributes = 'force-expand-multiline';
+        opts.wrap_attributes_indent_size = 8;
+        test_fragment('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div\n' +
+            '        attr0\n' +
+            '        attr1="123"\n' +
+            '        data-attr2="hello    t here"\n' +
+            '>This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            //  -- output --
+            '<div\n' +
+            '        lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '        attr0\n' +
+            '        attr1="123"\n' +
+            '        data-attr2="hello    t here"\n' +
+            '        heymanimreallylongtoowhocomesupwiththesenames="false"\n' +
+            '>This is some text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img\n' +
+            '        attr0\n' +
+            '        attr1="123"\n' +
+            '        data-attr2="hello    t here"\n' +
+            '/>');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root\n' +
+            '        attr1="foo"\n' +
+            '        attr2="bar"\n' +
+            '/>');
+        test_fragment(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link\n' +
+            '        href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '        rel="stylesheet"\n' +
+            '        type="text/css"\n' +
+            '>');
+
+
         //============================================================
         // Handlebars Indenting Off
+        reset_options();
         opts.indent_handlebars = false;
         test_fragment(
-            '{{#if 0}}\n    <div>\n    </div>\n{{/if}}',
-            '{{#if 0}}\n<div>\n</div>\n{{/if}}');
+            '{{#if 0}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 0}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}');
         test_fragment(
-            '<div>\n{{#each thing}}\n    {{name}}\n{{/each}}\n</div>',
-            '<div>\n    {{#each thing}} {{name}} {{/each}}\n</div>');
+            '<div>\n' +
+            '{{#each thing}}\n' +
+            '    {{name}}\n' +
+            '{{/each}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    {{#each thing}} {{name}} {{/each}}\n' +
+            '</div>');
 
 
-        reset_options();
         //============================================================
         // Handlebars Indenting On - (content = "{{field}}")
+        reset_options();
         opts.indent_handlebars = true;
         test_fragment('{{page-title}}');
         test_fragment('{{#if 0}}{{/if}}');
         test_fragment('{{#if 0}}{{field}}{{/if}}');
-        test_fragment('{{#if 0}}\n{{/if}}');
+        test_fragment(
+            '{{#if 0}}\n' +
+            '{{/if}}');
         test_fragment(
             '{{#if     words}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{/if}}');
         test_fragment(
             '{{#if     words}}{{field}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{field}}{{/if}}');
         test_fragment(
             '{{#if     words}}{{field}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{field}}{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
         test_fragment(
-            '{{#if 1}}\n<div>\n</div>\n{{/if}}',
-            '{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
-        test_fragment('<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '<div>\n{{#if 1}}\n{{/if}}\n</div>',
-            '<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if}}\n{{#each}}\n{{#if}}\n{{field}}\n{{/if}}\n{{#if}}\n{{field}}\n{{/if}}\n{{/each}}\n{{/if}}',
-            '{{#if}}\n    {{#each}}\n        {{#if}}\n            {{field}}\n        {{/if}}\n        {{#if}}\n            {{field}}\n        {{/if}}\n    {{/each}}\n{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{field}}\n    {{else}}\n    {{field}}\n{{/if}}',
-            '{{#if 1}}\n    {{field}}\n{{else}}\n    {{field}}\n{{/if}}');
+            '<div>\n' +
+            '{{#if 1}}\n' +
+            '{{/if}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{else}}\n    {{/if}}',
-            '{{#if 1}}\n{{else}}\n{{/if}}');
+            '{{#if}}\n' +
+            '{{#each}}\n' +
+            '{{#if}}\n' +
+            '{{field}}\n' +
+            '{{/if}}\n' +
+            '{{#if}}\n' +
+            '{{field}}\n' +
+            '{{/if}}\n' +
+            '{{/each}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if}}\n' +
+            '    {{#each}}\n' +
+            '        {{#if}}\n' +
+            '            {{field}}\n' +
+            '        {{/if}}\n' +
+            '        {{#if}}\n' +
+            '            {{field}}\n' +
+            '        {{/if}}\n' +
+            '    {{/each}}\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if thing}}\n{{#if otherthing}}\n    {{field}}\n    {{else}}\n{{field}}\n    {{/if}}\n       {{else}}\n{{field}}\n{{/if}}',
-            '{{#if thing}}\n    {{#if otherthing}}\n        {{field}}\n    {{else}}\n        {{field}}\n    {{/if}}\n{{else}}\n    {{field}}\n{{/if}}');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{field}}\n' +
+            '    {{else}}\n' +
+            '    {{field}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    {{field}}\n' +
+            '{{else}}\n' +
+            '    {{field}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{else}}\n' +
+            '    {{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '{{else}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n' +
+            '{{#if otherthing}}\n' +
+            '    {{field}}\n' +
+            '    {{else}}\n' +
+            '{{field}}\n' +
+            '    {{/if}}\n' +
+            '       {{else}}\n' +
+            '{{field}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if thing}}\n' +
+            '    {{#if otherthing}}\n' +
+            '        {{field}}\n' +
+            '    {{else}}\n' +
+            '        {{field}}\n' +
+            '    {{/if}}\n' +
+            '{{else}}\n' +
+            '    {{field}}\n' +
+            '{{/if}}');
         test_fragment(
             '<div{{somestyle}}></div>',
+            //  -- output --
             '<div {{somestyle}}></div>');
         test_fragment(
             '<div{{#if test}}class="foo"{{/if}}>{{field}}</div>',
+            //  -- output --
             '<div {{#if test}} class="foo" {{/if}}>{{field}}</div>');
         test_fragment(
             '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{field}}</div>',
+            //  -- output --
             '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{field}}</div>');
         test_fragment(
             '<span{{#if condition}}class="foo"{{/if}}>{{field}}</span>',
+            //  -- output --
             '<span {{#if condition}} class="foo" {{/if}}>{{field}}</span>');
         test_fragment('<div unformatted="{{#if}}{{field}}{{/if}}">{{field}}</div>');
         test_fragment('<div unformatted="{{#if  }}    {{field}}{{/if}}">{{field}}</div>');
@@ -9172,54 +12955,142 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div class="{{#if thingIs \'value\'}}{{field}}{{/if}}"></div>');
         test_fragment('<div class=\'{{#if thingIs "value"}}{{field}}{{/if}}\'></div>');
         test_fragment('<div class=\'{{#if thingIs \'value\'}}{{field}}{{/if}}\'></div>');
+        test_fragment('<span>{{condition < 0 ? "result1" : "result2"}}</span>');
+        test_fragment('<span>{{condition1 && condition2 && condition3 && condition4 < 0 ? "resForTrue" : "resForFalse"}}</span>');
 
         // Handlebars Indenting On - (content = "{{! comment}}")
+        reset_options();
         opts.indent_handlebars = true;
         test_fragment('{{page-title}}');
         test_fragment('{{#if 0}}{{/if}}');
         test_fragment('{{#if 0}}{{! comment}}{{/if}}');
-        test_fragment('{{#if 0}}\n{{/if}}');
+        test_fragment(
+            '{{#if 0}}\n' +
+            '{{/if}}');
         test_fragment(
             '{{#if     words}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{/if}}');
         test_fragment(
             '{{#if     words}}{{! comment}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{! comment}}{{/if}}');
         test_fragment(
             '{{#if     words}}{{! comment}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{! comment}}{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
         test_fragment(
-            '{{#if 1}}\n<div>\n</div>\n{{/if}}',
-            '{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
-        test_fragment('<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '<div>\n{{#if 1}}\n{{/if}}\n</div>',
-            '<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if}}\n{{#each}}\n{{#if}}\n{{! comment}}\n{{/if}}\n{{#if}}\n{{! comment}}\n{{/if}}\n{{/each}}\n{{/if}}',
-            '{{#if}}\n    {{#each}}\n        {{#if}}\n            {{! comment}}\n        {{/if}}\n        {{#if}}\n            {{! comment}}\n        {{/if}}\n    {{/each}}\n{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{! comment}}\n    {{else}}\n    {{! comment}}\n{{/if}}',
-            '{{#if 1}}\n    {{! comment}}\n{{else}}\n    {{! comment}}\n{{/if}}');
+            '<div>\n' +
+            '{{#if 1}}\n' +
+            '{{/if}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{else}}\n    {{/if}}',
-            '{{#if 1}}\n{{else}}\n{{/if}}');
+            '{{#if}}\n' +
+            '{{#each}}\n' +
+            '{{#if}}\n' +
+            '{{! comment}}\n' +
+            '{{/if}}\n' +
+            '{{#if}}\n' +
+            '{{! comment}}\n' +
+            '{{/if}}\n' +
+            '{{/each}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if}}\n' +
+            '    {{#each}}\n' +
+            '        {{#if}}\n' +
+            '            {{! comment}}\n' +
+            '        {{/if}}\n' +
+            '        {{#if}}\n' +
+            '            {{! comment}}\n' +
+            '        {{/if}}\n' +
+            '    {{/each}}\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if thing}}\n{{#if otherthing}}\n    {{! comment}}\n    {{else}}\n{{! comment}}\n    {{/if}}\n       {{else}}\n{{! comment}}\n{{/if}}',
-            '{{#if thing}}\n    {{#if otherthing}}\n        {{! comment}}\n    {{else}}\n        {{! comment}}\n    {{/if}}\n{{else}}\n    {{! comment}}\n{{/if}}');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{! comment}}\n' +
+            '    {{else}}\n' +
+            '    {{! comment}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    {{! comment}}\n' +
+            '{{else}}\n' +
+            '    {{! comment}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{else}}\n' +
+            '    {{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '{{else}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n' +
+            '{{#if otherthing}}\n' +
+            '    {{! comment}}\n' +
+            '    {{else}}\n' +
+            '{{! comment}}\n' +
+            '    {{/if}}\n' +
+            '       {{else}}\n' +
+            '{{! comment}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if thing}}\n' +
+            '    {{#if otherthing}}\n' +
+            '        {{! comment}}\n' +
+            '    {{else}}\n' +
+            '        {{! comment}}\n' +
+            '    {{/if}}\n' +
+            '{{else}}\n' +
+            '    {{! comment}}\n' +
+            '{{/if}}');
         test_fragment(
             '<div{{somestyle}}></div>',
+            //  -- output --
             '<div {{somestyle}}></div>');
         test_fragment(
             '<div{{#if test}}class="foo"{{/if}}>{{! comment}}</div>',
+            //  -- output --
             '<div {{#if test}} class="foo" {{/if}}>{{! comment}}</div>');
         test_fragment(
             '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{! comment}}</div>',
+            //  -- output --
             '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{! comment}}</div>');
         test_fragment(
             '<span{{#if condition}}class="foo"{{/if}}>{{! comment}}</span>',
+            //  -- output --
             '<span {{#if condition}} class="foo" {{/if}}>{{! comment}}</span>');
         test_fragment('<div unformatted="{{#if}}{{! comment}}{{/if}}">{{! comment}}</div>');
         test_fragment('<div unformatted="{{#if  }}    {{! comment}}{{/if}}">{{! comment}}</div>');
@@ -9227,54 +13098,142 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div class="{{#if thingIs \'value\'}}{{! comment}}{{/if}}"></div>');
         test_fragment('<div class=\'{{#if thingIs "value"}}{{! comment}}{{/if}}\'></div>');
         test_fragment('<div class=\'{{#if thingIs \'value\'}}{{! comment}}{{/if}}\'></div>');
+        test_fragment('<span>{{condition < 0 ? "result1" : "result2"}}</span>');
+        test_fragment('<span>{{condition1 && condition2 && condition3 && condition4 < 0 ? "resForTrue" : "resForFalse"}}</span>');
 
         // Handlebars Indenting On - (content = "{{!-- comment--}}")
+        reset_options();
         opts.indent_handlebars = true;
         test_fragment('{{page-title}}');
         test_fragment('{{#if 0}}{{/if}}');
         test_fragment('{{#if 0}}{{!-- comment--}}{{/if}}');
-        test_fragment('{{#if 0}}\n{{/if}}');
+        test_fragment(
+            '{{#if 0}}\n' +
+            '{{/if}}');
         test_fragment(
             '{{#if     words}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{/if}}');
         test_fragment(
             '{{#if     words}}{{!-- comment--}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{!-- comment--}}{{/if}}');
         test_fragment(
             '{{#if     words}}{{!-- comment--}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{!-- comment--}}{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
         test_fragment(
-            '{{#if 1}}\n<div>\n</div>\n{{/if}}',
-            '{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
-        test_fragment('<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '<div>\n{{#if 1}}\n{{/if}}\n</div>',
-            '<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if}}\n{{#each}}\n{{#if}}\n{{!-- comment--}}\n{{/if}}\n{{#if}}\n{{!-- comment--}}\n{{/if}}\n{{/each}}\n{{/if}}',
-            '{{#if}}\n    {{#each}}\n        {{#if}}\n            {{!-- comment--}}\n        {{/if}}\n        {{#if}}\n            {{!-- comment--}}\n        {{/if}}\n    {{/each}}\n{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{!-- comment--}}\n    {{else}}\n    {{!-- comment--}}\n{{/if}}',
-            '{{#if 1}}\n    {{!-- comment--}}\n{{else}}\n    {{!-- comment--}}\n{{/if}}');
+            '<div>\n' +
+            '{{#if 1}}\n' +
+            '{{/if}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{else}}\n    {{/if}}',
-            '{{#if 1}}\n{{else}}\n{{/if}}');
+            '{{#if}}\n' +
+            '{{#each}}\n' +
+            '{{#if}}\n' +
+            '{{!-- comment--}}\n' +
+            '{{/if}}\n' +
+            '{{#if}}\n' +
+            '{{!-- comment--}}\n' +
+            '{{/if}}\n' +
+            '{{/each}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if}}\n' +
+            '    {{#each}}\n' +
+            '        {{#if}}\n' +
+            '            {{!-- comment--}}\n' +
+            '        {{/if}}\n' +
+            '        {{#if}}\n' +
+            '            {{!-- comment--}}\n' +
+            '        {{/if}}\n' +
+            '    {{/each}}\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if thing}}\n{{#if otherthing}}\n    {{!-- comment--}}\n    {{else}}\n{{!-- comment--}}\n    {{/if}}\n       {{else}}\n{{!-- comment--}}\n{{/if}}',
-            '{{#if thing}}\n    {{#if otherthing}}\n        {{!-- comment--}}\n    {{else}}\n        {{!-- comment--}}\n    {{/if}}\n{{else}}\n    {{!-- comment--}}\n{{/if}}');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{!-- comment--}}\n' +
+            '    {{else}}\n' +
+            '    {{!-- comment--}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    {{!-- comment--}}\n' +
+            '{{else}}\n' +
+            '    {{!-- comment--}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{else}}\n' +
+            '    {{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '{{else}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n' +
+            '{{#if otherthing}}\n' +
+            '    {{!-- comment--}}\n' +
+            '    {{else}}\n' +
+            '{{!-- comment--}}\n' +
+            '    {{/if}}\n' +
+            '       {{else}}\n' +
+            '{{!-- comment--}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if thing}}\n' +
+            '    {{#if otherthing}}\n' +
+            '        {{!-- comment--}}\n' +
+            '    {{else}}\n' +
+            '        {{!-- comment--}}\n' +
+            '    {{/if}}\n' +
+            '{{else}}\n' +
+            '    {{!-- comment--}}\n' +
+            '{{/if}}');
         test_fragment(
             '<div{{somestyle}}></div>',
+            //  -- output --
             '<div {{somestyle}}></div>');
         test_fragment(
             '<div{{#if test}}class="foo"{{/if}}>{{!-- comment--}}</div>',
+            //  -- output --
             '<div {{#if test}} class="foo" {{/if}}>{{!-- comment--}}</div>');
         test_fragment(
             '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{!-- comment--}}</div>',
+            //  -- output --
             '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{!-- comment--}}</div>');
         test_fragment(
             '<span{{#if condition}}class="foo"{{/if}}>{{!-- comment--}}</span>',
+            //  -- output --
             '<span {{#if condition}} class="foo" {{/if}}>{{!-- comment--}}</span>');
         test_fragment('<div unformatted="{{#if}}{{!-- comment--}}{{/if}}">{{!-- comment--}}</div>');
         test_fragment('<div unformatted="{{#if  }}    {{!-- comment--}}{{/if}}">{{!-- comment--}}</div>');
@@ -9282,54 +13241,142 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div class="{{#if thingIs \'value\'}}{{!-- comment--}}{{/if}}"></div>');
         test_fragment('<div class=\'{{#if thingIs "value"}}{{!-- comment--}}{{/if}}\'></div>');
         test_fragment('<div class=\'{{#if thingIs \'value\'}}{{!-- comment--}}{{/if}}\'></div>');
+        test_fragment('<span>{{condition < 0 ? "result1" : "result2"}}</span>');
+        test_fragment('<span>{{condition1 && condition2 && condition3 && condition4 < 0 ? "resForTrue" : "resForFalse"}}</span>');
 
         // Handlebars Indenting On - (content = "{pre{{field1}} {{field2}} {{field3}}post")
+        reset_options();
         opts.indent_handlebars = true;
         test_fragment('{{page-title}}');
         test_fragment('{{#if 0}}{{/if}}');
         test_fragment('{{#if 0}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}');
-        test_fragment('{{#if 0}}\n{{/if}}');
+        test_fragment(
+            '{{#if 0}}\n' +
+            '{{/if}}');
         test_fragment(
             '{{#if     words}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{/if}}');
         test_fragment(
             '{{#if     words}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}',
+            //  -- output --
             '{{#if words}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}');
         test_fragment(
             '{{#if     words}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}',
+            //  -- output --
             '{{#if words}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
         test_fragment(
-            '{{#if 1}}\n<div>\n</div>\n{{/if}}',
-            '{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
-        test_fragment('<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '<div>\n{{#if 1}}\n{{/if}}\n</div>',
-            '<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if}}\n{{#each}}\n{{#if}}\n{pre{{field1}} {{field2}} {{field3}}post\n{{/if}}\n{{#if}}\n{pre{{field1}} {{field2}} {{field3}}post\n{{/if}}\n{{/each}}\n{{/if}}',
-            '{{#if}}\n    {{#each}}\n        {{#if}}\n            {pre{{field1}} {{field2}} {{field3}}post\n        {{/if}}\n        {{#if}}\n            {pre{{field1}} {{field2}} {{field3}}post\n        {{/if}}\n    {{/each}}\n{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {pre{{field1}} {{field2}} {{field3}}post\n    {{else}}\n    {pre{{field1}} {{field2}} {{field3}}post\n{{/if}}',
-            '{{#if 1}}\n    {pre{{field1}} {{field2}} {{field3}}post\n{{else}}\n    {pre{{field1}} {{field2}} {{field3}}post\n{{/if}}');
+            '<div>\n' +
+            '{{#if 1}}\n' +
+            '{{/if}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{else}}\n    {{/if}}',
-            '{{#if 1}}\n{{else}}\n{{/if}}');
+            '{{#if}}\n' +
+            '{{#each}}\n' +
+            '{{#if}}\n' +
+            '{pre{{field1}} {{field2}} {{field3}}post\n' +
+            '{{/if}}\n' +
+            '{{#if}}\n' +
+            '{pre{{field1}} {{field2}} {{field3}}post\n' +
+            '{{/if}}\n' +
+            '{{/each}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if}}\n' +
+            '    {{#each}}\n' +
+            '        {{#if}}\n' +
+            '            {pre{{field1}} {{field2}} {{field3}}post\n' +
+            '        {{/if}}\n' +
+            '        {{#if}}\n' +
+            '            {pre{{field1}} {{field2}} {{field3}}post\n' +
+            '        {{/if}}\n' +
+            '    {{/each}}\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if thing}}\n{{#if otherthing}}\n    {pre{{field1}} {{field2}} {{field3}}post\n    {{else}}\n{pre{{field1}} {{field2}} {{field3}}post\n    {{/if}}\n       {{else}}\n{pre{{field1}} {{field2}} {{field3}}post\n{{/if}}',
-            '{{#if thing}}\n    {{#if otherthing}}\n        {pre{{field1}} {{field2}} {{field3}}post\n    {{else}}\n        {pre{{field1}} {{field2}} {{field3}}post\n    {{/if}}\n{{else}}\n    {pre{{field1}} {{field2}} {{field3}}post\n{{/if}}');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {pre{{field1}} {{field2}} {{field3}}post\n' +
+            '    {{else}}\n' +
+            '    {pre{{field1}} {{field2}} {{field3}}post\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    {pre{{field1}} {{field2}} {{field3}}post\n' +
+            '{{else}}\n' +
+            '    {pre{{field1}} {{field2}} {{field3}}post\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{else}}\n' +
+            '    {{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '{{else}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n' +
+            '{{#if otherthing}}\n' +
+            '    {pre{{field1}} {{field2}} {{field3}}post\n' +
+            '    {{else}}\n' +
+            '{pre{{field1}} {{field2}} {{field3}}post\n' +
+            '    {{/if}}\n' +
+            '       {{else}}\n' +
+            '{pre{{field1}} {{field2}} {{field3}}post\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if thing}}\n' +
+            '    {{#if otherthing}}\n' +
+            '        {pre{{field1}} {{field2}} {{field3}}post\n' +
+            '    {{else}}\n' +
+            '        {pre{{field1}} {{field2}} {{field3}}post\n' +
+            '    {{/if}}\n' +
+            '{{else}}\n' +
+            '    {pre{{field1}} {{field2}} {{field3}}post\n' +
+            '{{/if}}');
         test_fragment(
             '<div{{somestyle}}></div>',
+            //  -- output --
             '<div {{somestyle}}></div>');
         test_fragment(
             '<div{{#if test}}class="foo"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</div>',
+            //  -- output --
             '<div {{#if test}} class="foo" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</div>');
         test_fragment(
             '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</div>',
+            //  -- output --
             '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</div>');
         test_fragment(
             '<span{{#if condition}}class="foo"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</span>',
+            //  -- output --
             '<span {{#if condition}} class="foo" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</span>');
         test_fragment('<div unformatted="{{#if}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}">{pre{{field1}} {{field2}} {{field3}}post</div>');
         test_fragment('<div unformatted="{{#if  }}    {pre{{field1}} {{field2}} {{field3}}post{{/if}}">{pre{{field1}} {{field2}} {{field3}}post</div>');
@@ -9337,208 +13384,1190 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         test_fragment('<div class="{{#if thingIs \'value\'}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}"></div>');
         test_fragment('<div class=\'{{#if thingIs "value"}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}\'></div>');
         test_fragment('<div class=\'{{#if thingIs \'value\'}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}\'></div>');
+        test_fragment('<span>{{condition < 0 ? "result1" : "result2"}}</span>');
+        test_fragment('<span>{{condition1 && condition2 && condition3 && condition4 < 0 ? "resForTrue" : "resForFalse"}}</span>');
 
         // Handlebars Indenting On - (content = "{{! \n mult-line\ncomment  \n     with spacing\n}}")
+        reset_options();
         opts.indent_handlebars = true;
         test_fragment('{{page-title}}');
         test_fragment('{{#if 0}}{{/if}}');
-        test_fragment('{{#if 0}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}');
-        test_fragment('{{#if 0}}\n{{/if}}');
+        test_fragment(
+            '{{#if 0}}{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}');
+        test_fragment(
+            '{{#if 0}}\n' +
+            '{{/if}}');
         test_fragment(
             '{{#if     words}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{/if}}');
         test_fragment(
-            '{{#if     words}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}',
-            '{{#if words}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}');
+            '{{#if     words}}{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}',
+            //  -- output --
+            '{{#if words}}{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}');
         test_fragment(
-            '{{#if     words}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}',
-            '{{#if words}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+            '{{#if     words}}{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}',
+            //  -- output --
+            '{{#if words}}{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}');
         test_fragment(
-            '{{#if 1}}\n<div>\n</div>\n{{/if}}',
-            '{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
-        test_fragment('<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '<div>\n{{#if 1}}\n{{/if}}\n</div>',
-            '<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if}}\n{{#each}}\n{{#if}}\n{{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}\n{{#if}}\n{{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}\n{{/each}}\n{{/if}}',
-            '{{#if}}\n    {{#each}}\n        {{#if}}\n            {{! \n mult-line\ncomment  \n     with spacing\n}}\n        {{/if}}\n        {{#if}}\n            {{! \n mult-line\ncomment  \n     with spacing\n}}\n        {{/if}}\n    {{/each}}\n{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n    {{else}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}',
-            '{{#if 1}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n{{else}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}');
+            '<div>\n' +
+            '{{#if 1}}\n' +
+            '{{/if}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{else}}\n    {{/if}}',
-            '{{#if 1}}\n{{else}}\n{{/if}}');
+            '{{#if}}\n' +
+            '{{#each}}\n' +
+            '{{#if}}\n' +
+            '{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '{{/if}}\n' +
+            '{{#if}}\n' +
+            '{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '{{/if}}\n' +
+            '{{/each}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if}}\n' +
+            '    {{#each}}\n' +
+            '        {{#if}}\n' +
+            '            {{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '        {{/if}}\n' +
+            '        {{#if}}\n' +
+            '            {{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '        {{/if}}\n' +
+            '    {{/each}}\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if thing}}\n{{#if otherthing}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n    {{else}}\n{{! \n mult-line\ncomment  \n     with spacing\n}}\n    {{/if}}\n       {{else}}\n{{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}',
-            '{{#if thing}}\n    {{#if otherthing}}\n        {{! \n mult-line\ncomment  \n     with spacing\n}}\n    {{else}}\n        {{! \n mult-line\ncomment  \n     with spacing\n}}\n    {{/if}}\n{{else}}\n    {{! \n mult-line\ncomment  \n     with spacing\n}}\n{{/if}}');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '    {{else}}\n' +
+            '    {{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    {{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '{{else}}\n' +
+            '    {{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{else}}\n' +
+            '    {{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '{{else}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n' +
+            '{{#if otherthing}}\n' +
+            '    {{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '    {{else}}\n' +
+            '{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '    {{/if}}\n' +
+            '       {{else}}\n' +
+            '{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if thing}}\n' +
+            '    {{#if otherthing}}\n' +
+            '        {{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '    {{else}}\n' +
+            '        {{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '    {{/if}}\n' +
+            '{{else}}\n' +
+            '    {{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '{{/if}}');
         test_fragment(
             '<div{{somestyle}}></div>',
+            //  -- output --
             '<div {{somestyle}}></div>');
         test_fragment(
-            '<div{{#if test}}class="foo"{{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</div>',
-            '<div {{#if test}} class="foo" {{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</div>');
+            '<div{{#if test}}class="foo"{{/if}}>{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}</div>',
+            //  -- output --
+            '<div {{#if test}} class="foo" {{/if}}>{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}</div>');
         test_fragment(
-            '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</div>',
-            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</div>');
+            '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}</div>',
+            //  -- output --
+            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}</div>');
         test_fragment(
-            '<span{{#if condition}}class="foo"{{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</span>',
-            '<span {{#if condition}} class="foo" {{/if}}>{{! \n mult-line\ncomment  \n     with spacing\n}}</span>');
-        test_fragment('<div unformatted="{{#if}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}">{{! \n mult-line\ncomment  \n     with spacing\n}}</div>');
-        test_fragment('<div unformatted="{{#if  }}    {{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}">{{! \n mult-line\ncomment  \n     with spacing\n}}</div>');
-        test_fragment('<div class="{{#if thingIs "value"}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}"></div>');
-        test_fragment('<div class="{{#if thingIs \'value\'}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}"></div>');
-        test_fragment('<div class=\'{{#if thingIs "value"}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}\'></div>');
-        test_fragment('<div class=\'{{#if thingIs \'value\'}}{{! \n mult-line\ncomment  \n     with spacing\n}}{{/if}}\'></div>');
+            '<span{{#if condition}}class="foo"{{/if}}>{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}</span>',
+            //  -- output --
+            '<span {{#if condition}} class="foo" {{/if}}>{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}</span>');
+        test_fragment(
+            '<div unformatted="{{#if}}{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}">{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}</div>');
+        test_fragment(
+            '<div unformatted="{{#if  }}    {{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}">{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}</div>');
+        test_fragment(
+            '<div class="{{#if thingIs "value"}}{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}"></div>');
+        test_fragment(
+            '<div class="{{#if thingIs \'value\'}}{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}"></div>');
+        test_fragment(
+            '<div class=\'{{#if thingIs "value"}}{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}\'></div>');
+        test_fragment(
+            '<div class=\'{{#if thingIs \'value\'}}{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}\'></div>');
+        test_fragment('<span>{{condition < 0 ? "result1" : "result2"}}</span>');
+        test_fragment('<span>{{condition1 && condition2 && condition3 && condition4 < 0 ? "resForTrue" : "resForFalse"}}</span>');
 
         // Handlebars Indenting On - (content = "{{!-- \n mult-line\ncomment  \n     with spacing\n--}}")
+        reset_options();
         opts.indent_handlebars = true;
         test_fragment('{{page-title}}');
         test_fragment('{{#if 0}}{{/if}}');
-        test_fragment('{{#if 0}}{{!-- \n mult-line\ncomment  \n     with spacing\n--}}{{/if}}');
-        test_fragment('{{#if 0}}\n{{/if}}');
+        test_fragment(
+            '{{#if 0}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}');
+        test_fragment(
+            '{{#if 0}}\n' +
+            '{{/if}}');
         test_fragment(
             '{{#if     words}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{/if}}');
         test_fragment(
-            '{{#if     words}}{{!-- \n mult-line\ncomment  \n     with spacing\n--}}{{/if}}',
-            '{{#if words}}{{!-- \n mult-line\ncomment  \n     with spacing\n--}}{{/if}}');
+            '{{#if     words}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}',
+            //  -- output --
+            '{{#if words}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}');
         test_fragment(
-            '{{#if     words}}{{!-- \n mult-line\ncomment  \n     with spacing\n--}}{{/if}}',
-            '{{#if words}}{{!-- \n mult-line\ncomment  \n     with spacing\n--}}{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+            '{{#if     words}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}',
+            //  -- output --
+            '{{#if words}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}');
         test_fragment(
-            '{{#if 1}}\n<div>\n</div>\n{{/if}}',
-            '{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
-        test_fragment('<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '<div>\n{{#if 1}}\n{{/if}}\n</div>',
-            '<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if}}\n{{#each}}\n{{#if}}\n{{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n{{/if}}\n{{#if}}\n{{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n{{/if}}\n{{/each}}\n{{/if}}',
-            '{{#if}}\n    {{#each}}\n        {{#if}}\n            {{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n        {{/if}}\n        {{#if}}\n            {{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n        {{/if}}\n    {{/each}}\n{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n    {{else}}\n    {{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n{{/if}}',
-            '{{#if 1}}\n    {{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n{{else}}\n    {{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n{{/if}}');
+            '<div>\n' +
+            '{{#if 1}}\n' +
+            '{{/if}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{else}}\n    {{/if}}',
-            '{{#if 1}}\n{{else}}\n{{/if}}');
+            '{{#if}}\n' +
+            '{{#each}}\n' +
+            '{{#if}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '{{/if}}\n' +
+            '{{#if}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '{{/if}}\n' +
+            '{{/each}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if}}\n' +
+            '    {{#each}}\n' +
+            '        {{#if}}\n' +
+            '            {{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '        {{/if}}\n' +
+            '        {{#if}}\n' +
+            '            {{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '        {{/if}}\n' +
+            '    {{/each}}\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if thing}}\n{{#if otherthing}}\n    {{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n    {{else}}\n{{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n    {{/if}}\n       {{else}}\n{{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n{{/if}}',
-            '{{#if thing}}\n    {{#if otherthing}}\n        {{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n    {{else}}\n        {{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n    {{/if}}\n{{else}}\n    {{!-- \n mult-line\ncomment  \n     with spacing\n--}}\n{{/if}}');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '    {{else}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '{{else}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{else}}\n' +
+            '    {{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '{{else}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n' +
+            '{{#if otherthing}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '    {{else}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '    {{/if}}\n' +
+            '       {{else}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if thing}}\n' +
+            '    {{#if otherthing}}\n' +
+            '        {{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '    {{else}}\n' +
+            '        {{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '    {{/if}}\n' +
+            '{{else}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '{{/if}}');
         test_fragment(
             '<div{{somestyle}}></div>',
+            //  -- output --
             '<div {{somestyle}}></div>');
         test_fragment(
-            '<div{{#if test}}class="foo"{{/if}}>{{!-- \n mult-line\ncomment  \n     with spacing\n--}}</div>',
-            '<div {{#if test}} class="foo" {{/if}}>{{!-- \n mult-line\ncomment  \n     with spacing\n--}}</div>');
+            '<div{{#if test}}class="foo"{{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}</div>',
+            //  -- output --
+            '<div {{#if test}} class="foo" {{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}</div>');
         test_fragment(
-            '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{!-- \n mult-line\ncomment  \n     with spacing\n--}}</div>',
-            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{!-- \n mult-line\ncomment  \n     with spacing\n--}}</div>');
+            '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}</div>',
+            //  -- output --
+            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}</div>');
         test_fragment(
-            '<span{{#if condition}}class="foo"{{/if}}>{{!-- \n mult-line\ncomment  \n     with spacing\n--}}</span>',
-            '<span {{#if condition}} class="foo" {{/if}}>{{!-- \n mult-line\ncomment  \n     with spacing\n--}}</span>');
-        test_fragment('<div unformatted="{{#if}}{{!-- \n mult-line\ncomment  \n     with spacing\n--}}{{/if}}">{{!-- \n mult-line\ncomment  \n     with spacing\n--}}</div>');
-        test_fragment('<div unformatted="{{#if  }}    {{!-- \n mult-line\ncomment  \n     with spacing\n--}}{{/if}}">{{!-- \n mult-line\ncomment  \n     with spacing\n--}}</div>');
-        test_fragment('<div class="{{#if thingIs "value"}}{{!-- \n mult-line\ncomment  \n     with spacing\n--}}{{/if}}"></div>');
-        test_fragment('<div class="{{#if thingIs \'value\'}}{{!-- \n mult-line\ncomment  \n     with spacing\n--}}{{/if}}"></div>');
-        test_fragment('<div class=\'{{#if thingIs "value"}}{{!-- \n mult-line\ncomment  \n     with spacing\n--}}{{/if}}\'></div>');
-        test_fragment('<div class=\'{{#if thingIs \'value\'}}{{!-- \n mult-line\ncomment  \n     with spacing\n--}}{{/if}}\'></div>');
+            '<span{{#if condition}}class="foo"{{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}</span>',
+            //  -- output --
+            '<span {{#if condition}} class="foo" {{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}</span>');
+        test_fragment(
+            '<div unformatted="{{#if}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}">{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}</div>');
+        test_fragment(
+            '<div unformatted="{{#if  }}    {{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}">{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}</div>');
+        test_fragment(
+            '<div class="{{#if thingIs "value"}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}"></div>');
+        test_fragment(
+            '<div class="{{#if thingIs \'value\'}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}"></div>');
+        test_fragment(
+            '<div class=\'{{#if thingIs "value"}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}\'></div>');
+        test_fragment(
+            '<div class=\'{{#if thingIs \'value\'}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}\'></div>');
+        test_fragment('<span>{{condition < 0 ? "result1" : "result2"}}</span>');
+        test_fragment('<span>{{condition1 && condition2 && condition3 && condition4 < 0 ? "resForTrue" : "resForFalse"}}</span>');
 
         // Handlebars Indenting On - (content = "{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}")
+        reset_options();
         opts.indent_handlebars = true;
         test_fragment('{{page-title}}');
         test_fragment('{{#if 0}}{{/if}}');
-        test_fragment('{{#if 0}}{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}{{/if}}');
-        test_fragment('{{#if 0}}\n{{/if}}');
+        test_fragment(
+            '{{#if 0}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}');
+        test_fragment(
+            '{{#if 0}}\n' +
+            '{{/if}}');
         test_fragment(
             '{{#if     words}}{{/if}}',
+            //  -- output --
             '{{#if words}}{{/if}}');
         test_fragment(
-            '{{#if     words}}{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}{{/if}}',
-            '{{#if words}}{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}{{/if}}');
+            '{{#if     words}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}',
+            //  -- output --
+            '{{#if words}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}');
         test_fragment(
-            '{{#if     words}}{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}{{/if}}',
-            '{{#if words}}{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+            '{{#if     words}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}',
+            //  -- output --
+            '{{#if words}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}');
         test_fragment(
-            '{{#if 1}}\n<div>\n</div>\n{{/if}}',
-            '{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
-        test_fragment('<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '<div>\n{{#if 1}}\n{{/if}}\n</div>',
-            '<div>\n    {{#if 1}}\n    {{/if}}\n</div>');
+            '{{#if 1}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if}}\n{{#each}}\n{{#if}}\n{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n{{/if}}\n{{#if}}\n{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n{{/if}}\n{{/each}}\n{{/if}}',
-            '{{#if}}\n    {{#each}}\n        {{#if}}\n            {{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n        {{/if}}\n        {{#if}}\n            {{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n        {{/if}}\n    {{/each}}\n{{/if}}');
-        test_fragment('{{#if 1}}\n    <div>\n    </div>\n{{/if}}');
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n    {{else}}\n    {{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n{{/if}}',
-            '{{#if 1}}\n    {{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n{{else}}\n    {{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n{{/if}}');
+            '<div>\n' +
+            '{{#if 1}}\n' +
+            '{{/if}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
         test_fragment(
-            '{{#if 1}}\n    {{else}}\n    {{/if}}',
-            '{{#if 1}}\n{{else}}\n{{/if}}');
+            '{{#if}}\n' +
+            '{{#each}}\n' +
+            '{{#if}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '{{/if}}\n' +
+            '{{#if}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '{{/if}}\n' +
+            '{{/each}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if}}\n' +
+            '    {{#each}}\n' +
+            '        {{#if}}\n' +
+            '            {{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '        {{/if}}\n' +
+            '        {{#if}}\n' +
+            '            {{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '        {{/if}}\n' +
+            '    {{/each}}\n' +
+            '{{/if}}');
         test_fragment(
-            '{{#if thing}}\n{{#if otherthing}}\n    {{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n    {{else}}\n{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n    {{/if}}\n       {{else}}\n{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n{{/if}}',
-            '{{#if thing}}\n    {{#if otherthing}}\n        {{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n    {{else}}\n        {{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n    {{/if}}\n{{else}}\n    {{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}\n{{/if}}');
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '    {{else}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '{{else}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{else}}\n' +
+            '    {{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '{{else}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n' +
+            '{{#if otherthing}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '    {{else}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '    {{/if}}\n' +
+            '       {{else}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if thing}}\n' +
+            '    {{#if otherthing}}\n' +
+            '        {{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '    {{else}}\n' +
+            '        {{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '    {{/if}}\n' +
+            '{{else}}\n' +
+            '    {{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '{{/if}}');
         test_fragment(
             '<div{{somestyle}}></div>',
+            //  -- output --
             '<div {{somestyle}}></div>');
         test_fragment(
-            '<div{{#if test}}class="foo"{{/if}}>{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}</div>',
-            '<div {{#if test}} class="foo" {{/if}}>{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}</div>');
+            '<div{{#if test}}class="foo"{{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}</div>',
+            //  -- output --
+            '<div {{#if test}} class="foo" {{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}</div>');
         test_fragment(
-            '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}</div>',
-            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}</div>');
+            '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}</div>',
+            //  -- output --
+            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}</div>');
         test_fragment(
-            '<span{{#if condition}}class="foo"{{/if}}>{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}</span>',
-            '<span {{#if condition}} class="foo" {{/if}}>{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}</span>');
-        test_fragment('<div unformatted="{{#if}}{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}{{/if}}">{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}</div>');
-        test_fragment('<div unformatted="{{#if  }}    {{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}{{/if}}">{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}</div>');
-        test_fragment('<div class="{{#if thingIs "value"}}{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}{{/if}}"></div>');
-        test_fragment('<div class="{{#if thingIs \'value\'}}{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}{{/if}}"></div>');
-        test_fragment('<div class=\'{{#if thingIs "value"}}{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}{{/if}}\'></div>');
-        test_fragment('<div class=\'{{#if thingIs \'value\'}}{{!-- \n mult-line\ncomment \n{{#> component}}\n mult-line\ncomment  \n     with spacing\n {{/ component}}--}}{{/if}}\'></div>');
+            '<span{{#if condition}}class="foo"{{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}</span>',
+            //  -- output --
+            '<span {{#if condition}} class="foo" {{/if}}>{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}</span>');
+        test_fragment(
+            '<div unformatted="{{#if}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}">{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}</div>');
+        test_fragment(
+            '<div unformatted="{{#if  }}    {{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}">{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}</div>');
+        test_fragment(
+            '<div class="{{#if thingIs "value"}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}"></div>');
+        test_fragment(
+            '<div class="{{#if thingIs \'value\'}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}"></div>');
+        test_fragment(
+            '<div class=\'{{#if thingIs "value"}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}\'></div>');
+        test_fragment(
+            '<div class=\'{{#if thingIs \'value\'}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}\'></div>');
+        test_fragment('<span>{{condition < 0 ? "result1" : "result2"}}</span>');
+        test_fragment('<span>{{condition1 && condition2 && condition3 && condition4 < 0 ? "resForTrue" : "resForFalse"}}</span>');
 
-
+        // Handlebars Indenting On - (content = "content")
         reset_options();
+        opts.indent_handlebars = true;
+        opts.wrap_line_length = 80;
+        test_fragment('{{page-title}}');
+        test_fragment('{{#if 0}}{{/if}}');
+        test_fragment('{{#if 0}}content{{/if}}');
+        test_fragment(
+            '{{#if 0}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if     words}}{{/if}}',
+            //  -- output --
+            '{{#if words}}{{/if}}');
+        test_fragment(
+            '{{#if     words}}content{{/if}}',
+            //  -- output --
+            '{{#if words}}content{{/if}}');
+        test_fragment(
+            '{{#if     words}}content{{/if}}',
+            //  -- output --
+            '{{#if words}}content{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        test_fragment(
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
+        test_fragment(
+            '<div>\n' +
+            '{{#if 1}}\n' +
+            '{{/if}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
+        test_fragment(
+            '{{#if}}\n' +
+            '{{#each}}\n' +
+            '{{#if}}\n' +
+            'content\n' +
+            '{{/if}}\n' +
+            '{{#if}}\n' +
+            'content\n' +
+            '{{/if}}\n' +
+            '{{/each}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if}}\n' +
+            '    {{#each}}\n' +
+            '        {{#if}}\n' +
+            '            content\n' +
+            '        {{/if}}\n' +
+            '        {{#if}}\n' +
+            '            content\n' +
+            '        {{/if}}\n' +
+            '    {{/each}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    content\n' +
+            '    {{else}}\n' +
+            '    content\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    content\n' +
+            '{{else}}\n' +
+            '    content\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if 1}}\n' +
+            '    {{else}}\n' +
+            '    {{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '{{else}}\n' +
+            '{{/if}}');
+        test_fragment(
+            '{{#if thing}}\n' +
+            '{{#if otherthing}}\n' +
+            '    content\n' +
+            '    {{else}}\n' +
+            'content\n' +
+            '    {{/if}}\n' +
+            '       {{else}}\n' +
+            'content\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if thing}}\n' +
+            '    {{#if otherthing}}\n' +
+            '        content\n' +
+            '    {{else}}\n' +
+            '        content\n' +
+            '    {{/if}}\n' +
+            '{{else}}\n' +
+            '    content\n' +
+            '{{/if}}');
+        test_fragment(
+            '<div{{somestyle}}></div>',
+            //  -- output --
+            '<div {{somestyle}}></div>');
+        test_fragment(
+            '<div{{#if test}}class="foo"{{/if}}>content</div>',
+            //  -- output --
+            '<div {{#if test}} class="foo" {{/if}}>content</div>');
+        test_fragment(
+            '<div{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>content</div>',
+            //  -- output --
+            '<div {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>content</div>');
+        test_fragment(
+            '<span{{#if condition}}class="foo"{{/if}}>content</span>',
+            //  -- output --
+            '<span {{#if condition}} class="foo" {{/if}}>content</span>');
+        test_fragment('<div unformatted="{{#if}}content{{/if}}">content</div>');
+        test_fragment('<div unformatted="{{#if  }}    content{{/if}}">content</div>');
+        test_fragment('<div class="{{#if thingIs "value"}}content{{/if}}"></div>');
+        test_fragment('<div class="{{#if thingIs \'value\'}}content{{/if}}"></div>');
+        test_fragment('<div class=\'{{#if thingIs "value"}}content{{/if}}\'></div>');
+        test_fragment('<div class=\'{{#if thingIs \'value\'}}content{{/if}}\'></div>');
+        test_fragment('<span>{{condition < 0 ? "result1" : "result2"}}</span>');
+        test_fragment('<span>{{condition1 && condition2 && condition3 && condition4 < 0 ? "resForTrue" : "resForFalse"}}</span>');
+
+
         //============================================================
         // Handlebars Else tag indenting
+        reset_options();
         opts.indent_handlebars = true;
         test_fragment(
             '{{#if test}}<div></div>{{else}}<div></div>{{/if}}',
-            '{{#if test}}\n    <div></div>\n{{else}}\n    <div></div>\n{{/if}}');
+            //  -- output --
+            '{{#if test}}\n' +
+            '    <div></div>\n' +
+            '{{else}}\n' +
+            '    <div></div>\n' +
+            '{{/if}}');
         test_fragment('{{#if test}}<span></span>{{else}}<span></span>{{/if}}');
 
 
-        reset_options();
         //============================================================
         // Unclosed html elements
-        test_fragment('<source>\n<source>');
-        test_fragment('<br>\n<br>');
-        test_fragment('<input>\n<input>');
-        test_fragment('<meta>\n<meta>');
-        test_fragment('<link>\n<link>');
-        test_fragment('<colgroup>\n    <col>\n    <col>\n</colgroup>');
-
-
         reset_options();
+        test_fragment(
+            '<source>\n' +
+            '<source>');
+        test_fragment(
+            '<br>\n' +
+            '<br>');
+        test_fragment(
+            '<input>\n' +
+            '<input>');
+        test_fragment(
+            '<meta>\n' +
+            '<meta>');
+        test_fragment(
+            '<link>\n' +
+            '<link>');
+        test_fragment(
+            '<colgroup>\n' +
+            '    <col>\n' +
+            '    <col>\n' +
+            '</colgroup>');
+
+
         //============================================================
         // Unformatted tags
-        test_fragment('<ol>\n    <li>b<pre>c</pre></li>\n</ol>');
-        test_fragment('<ol>\n    <li>b<code>c</code></li>\n</ol>');
-        test_fragment('<ul>\n    <li>\n        <span class="octicon octicon-person"></span>\n        <a href="/contact/">Kontakt</a>\n    </li>\n</ul>');
+        reset_options();
+        test_fragment(
+            '<ol>\n' +
+            '    <li>b<pre>c</pre></li>\n' +
+            '</ol>',
+            //  -- output --
+            '<ol>\n' +
+            '    <li>b\n' +
+            '        <pre>c</pre>\n' +
+            '    </li>\n' +
+            '</ol>');
+        test_fragment(
+            '<ol>\n' +
+            '    <li>b<code>c</code></li>\n' +
+            '</ol>');
+        test_fragment(
+            '<ul>\n' +
+            '    <li>\n' +
+            '        <span class="octicon octicon-person"></span>\n' +
+            '        <a href="/contact/">Kontakt</a>\n' +
+            '    </li>\n' +
+            '</ul>');
         test_fragment('<div class="searchform"><input type="text" value="" name="s" id="s" /><input type="submit" id="searchsubmit" value="Search" /></div>');
         test_fragment('<div class="searchform"><input type="text" value="" name="s" id="s"><input type="submit" id="searchsubmit" value="Search"></div>');
 
 
+        //============================================================
+        // File starting with comment
         reset_options();
+        test_fragment(
+            '<!--sample comment -->\n' +
+            '\n' +
+            '<html>\n' +
+            '<body>\n' +
+            '    <span>a span</span>\n' +
+            '</body>\n' +
+            '\n' +
+            '</html>');
+
+
         //============================================================
         // Php formatting
-        test_fragment('<h1 class="content-page-header"><?=$view["name"]; ?></h1>', '<h1 class="content-page-header">\n    <?=$view["name"]; ?>\n</h1>');
+        reset_options();
+        test_fragment(
+            '<h1 class="content-page-header"><?=$view["name"]; ?></h1>',
+            //  -- output --
+            '<h1 class="content-page-header">\n' +
+            '    <?=$view["name"]; ?>\n' +
+            '</h1>');
         test_fragment(
             '<?php\n' +
             'for($i = 1; $i <= 100; $i++;) {\n' +
@@ -9559,9 +14588,66 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '</html>');
 
 
+        //============================================================
+        // Support simple language specific option inheritance/overriding - (h = "    ", c = "     ", j = "   ")
         reset_options();
+        opts.js = { 'indent_size': 3 };
+        opts.css = { 'indent_size': 5 };
+        test_fragment(
+            '<head>\n' +
+            '    <script>\n' +
+            '        if (a == b) {\n' +
+            '           test();\n' +
+            '        }\n' +
+            '    </script>\n' +
+            '    <style>\n' +
+            '        .selector {\n' +
+            '             font-size: 12px;\n' +
+            '        }\n' +
+            '    </style>\n' +
+            '</head>');
+
+        // Support simple language specific option inheritance/overriding - (h = "    ", c = "     ", j = "   ")
+        reset_options();
+        opts.html = { 'js': { 'indent_size': 3 }, 'css': { 'indent_size': 5 } };
+        test_fragment(
+            '<head>\n' +
+            '    <script>\n' +
+            '        if (a == b) {\n' +
+            '           test();\n' +
+            '        }\n' +
+            '    </script>\n' +
+            '    <style>\n' +
+            '        .selector {\n' +
+            '             font-size: 12px;\n' +
+            '        }\n' +
+            '    </style>\n' +
+            '</head>');
+
+        // Support simple language specific option inheritance/overriding - (h = "  ", c = "     ", j = "   ")
+        reset_options();
+        opts.indent_size = 9;
+        opts.html = { 'js': { 'indent_size': 3 }, 'css': { 'indent_size': 5 }, 'indent_size': 2};
+        opts.js = { 'indent_size': 5 };
+        opts.css = { 'indent_size': 3 };
+        test_fragment(
+            '<head>\n' +
+            '  <script>\n' +
+            '    if (a == b) {\n' +
+            '       test();\n' +
+            '    }\n' +
+            '  </script>\n' +
+            '  <style>\n' +
+            '    .selector {\n' +
+            '         font-size: 12px;\n' +
+            '    }\n' +
+            '  </style>\n' +
+            '</head>');
+
+
         //============================================================
         // underscore.js  formatting
+        reset_options();
         test_fragment(
             '<div class="col-sm-9">\n' +
             '    <textarea id="notes" class="form-control" rows="3">\n' +
@@ -9570,53 +14656,233 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '</div>');
 
 
-        reset_options();
         //============================================================
         // Indent with tabs
+        reset_options();
         opts.indent_with_tabs = true;
         test_fragment(
-            '<div>\n<div>\n</div>\n</div>',
-            '<div>\n\t<div>\n\t</div>\n</div>');
+            '<div>\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '\t<div>\n' +
+            '\t</div>\n' +
+            '</div>');
 
 
-        reset_options();
         //============================================================
         // Indent without tabs
+        reset_options();
         opts.indent_with_tabs = false;
         test_fragment(
-            '<div>\n<div>\n</div>\n</div>',
-            '<div>\n    <div>\n    </div>\n</div>');
+            '<div>\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '</div>');
 
 
-        reset_options();
         //============================================================
         // Indent body inner html by default
-        test_fragment('<html>\n<body>\n<div></div>\n</body>\n\n</html>', '<html>\n<body>\n    <div></div>\n</body>\n\n</html>');
-
-
         reset_options();
+        test_fragment(
+            '<html>\n' +
+            '<body>\n' +
+            '<div></div>\n' +
+            '</body>\n' +
+            '\n' +
+            '</html>',
+            //  -- output --
+            '<html>\n' +
+            '<body>\n' +
+            '    <div></div>\n' +
+            '</body>\n' +
+            '\n' +
+            '</html>');
+
+
         //============================================================
         // indent_body_inner_html set to false prevents indent of body inner html
-        opts.indent_body_inner_html = false;
-        test_fragment('<html>\n<body>\n<div></div>\n</body>\n\n</html>');
-
-
         reset_options();
+        opts.indent_body_inner_html = false;
+        test_fragment(
+            '<html>\n' +
+            '<body>\n' +
+            '<div></div>\n' +
+            '</body>\n' +
+            '\n' +
+            '</html>');
+
+
         //============================================================
         // Indent head inner html by default
-        test_fragment('<html>\n\n<head>\n<meta>\n</head>\n\n</html>', '<html>\n\n<head>\n    <meta>\n</head>\n\n</html>');
-
-
         reset_options();
+        test_fragment(
+            '<html>\n' +
+            '\n' +
+            '<head>\n' +
+            '<meta>\n' +
+            '</head>\n' +
+            '\n' +
+            '</html>',
+            //  -- output --
+            '<html>\n' +
+            '\n' +
+            '<head>\n' +
+            '    <meta>\n' +
+            '</head>\n' +
+            '\n' +
+            '</html>');
+
+
         //============================================================
         // indent_head_inner_html set to false prevents indent of head inner html
-        opts.indent_head_inner_html = false;
-        test_fragment('<html>\n\n<head>\n<meta>\n</head>\n\n</html>');
-
-
         reset_options();
+        opts.indent_head_inner_html = false;
+        test_fragment(
+            '<html>\n' +
+            '\n' +
+            '<head>\n' +
+            '<meta>\n' +
+            '</head>\n' +
+            '\n' +
+            '</html>');
+
+
+        //============================================================
+        // content_unformatted to prevent formatting content
+        reset_options();
+        opts.content_unformatted = ['script', 'style', 'p', 'span', 'br'];
+        test_fragment(
+            '<html><body><h1>A</h1><script>if(1){f();}</script><style>.a{display:none;}</style></body></html>',
+            //  -- output --
+            '<html>\n' +
+            '<body>\n' +
+            '    <h1>A</h1>\n' +
+            '    <script>if(1){f();}</script>\n' +
+            '    <style>.a{display:none;}</style>\n' +
+            '</body>\n' +
+            '\n' +
+            '</html>');
+        test_fragment(
+            '<div><p>Beautify me</p></div><p><p>But not me</p></p>',
+            //  -- output --
+            '<div>\n' +
+            '    <p>Beautify me</p>\n' +
+            '</div>\n' +
+            '<p><p>But not me</p></p>');
+        test_fragment(
+            '<div><p\n' +
+            '  class="beauty-me"\n' +
+            '>Beautify me</p></div><p><p\n' +
+            '  class="iamalreadybeauty"\n' +
+            '>But not me</p></p>',
+            //  -- output --
+            '<div>\n' +
+            '    <p class="beauty-me">Beautify me</p>\n' +
+            '</div>\n' +
+            '<p><p\n' +
+            '  class="iamalreadybeauty"\n' +
+            '>But not me</p></p>');
+        test_fragment('<div><span>blabla<div>something here</div></span></div>');
+        test_fragment('<div><br /></div>');
+        test_fragment(
+            '<div><pre>var a=1;\n' +
+            'var b=a;</pre></div>',
+            //  -- output --
+            '<div>\n' +
+            '    <pre>var a=1; var b=a;</pre>\n' +
+            '</div>');
+        test_fragment(
+            '<div><pre>\n' +
+            'var a=1;\n' +
+            'var b=a;\n' +
+            '</pre></div>',
+            //  -- output --
+            '<div>\n' +
+            '    <pre>\n' +
+            '        var a=1; var b=a;\n' +
+            '    </pre>\n' +
+            '</div>');
+
+
+        //============================================================
+        // default content_unformatted
+        reset_options();
+        test_fragment(
+            '<html><body><h1>A</h1><script>if(1){f();}</script><style>.a{display:none;}</style></body></html>',
+            //  -- output --
+            '<html>\n' +
+            '<body>\n' +
+            '    <h1>A</h1>\n' +
+            '    <script>\n' +
+            '        if (1) {\n' +
+            '            f();\n' +
+            '        }\n' +
+            '    </script>\n' +
+            '    <style>\n' +
+            '        .a {\n' +
+            '            display: none;\n' +
+            '        }\n' +
+            '    </style>\n' +
+            '</body>\n' +
+            '\n' +
+            '</html>');
+        test_fragment(
+            '<div><p>Beautify me</p></div><p><p>But not me</p></p>',
+            //  -- output --
+            '<div>\n' +
+            '    <p>Beautify me</p>\n' +
+            '</div>\n' +
+            '<p>\n' +
+            '    <p>But not me</p>\n' +
+            '</p>');
+        test_fragment(
+            '<div><p\n' +
+            '  class="beauty-me"\n' +
+            '>Beautify me</p></div><p><p\n' +
+            '  class="iamalreadybeauty"\n' +
+            '>But not me</p></p>',
+            //  -- output --
+            '<div>\n' +
+            '    <p class="beauty-me">Beautify me</p>\n' +
+            '</div>\n' +
+            '<p>\n' +
+            '    <p class="iamalreadybeauty">But not me</p>\n' +
+            '</p>');
+        test_fragment('<div><span>blabla<div>something here</div></span></div>');
+        test_fragment('<div><br /></div>');
+        test_fragment(
+            '<div><pre>var a=1;\n' +
+            'var b=a;</pre></div>',
+            //  -- output --
+            '<div>\n' +
+            '    <pre>var a=1;\n' +
+            'var b=a;</pre>\n' +
+            '</div>');
+        test_fragment(
+            '<div><pre>\n' +
+            'var a=1;\n' +
+            'var b=a;\n' +
+            '</pre></div>',
+            //  -- output --
+            '<div>\n' +
+            '    <pre>\n' +
+            'var a=1;\n' +
+            'var b=a;\n' +
+            '</pre>\n' +
+            '</div>');
+
+
         //============================================================
         // New Test Suite
+        reset_options();
 
 
     }
@@ -9926,10 +15192,13 @@ function SanityTest(func, name_of_test) {
                 if (f[0]) {
                     f[0] = f[0] + ' ';
                 }
-                results += '---- ' + f[0] + 'input -------\n' + this.prettyprint(f[1]) + '\n';
-                results += '---- ' + f[0] + 'expected ----\n' + this.prettyprint(f[2]) + '\n';
-                results += '---- ' + f[0] + 'output ------\n' + this.prettyprint(f[3]) + '\n\n';
-
+                results += '==== ' + f[0] + '============================================================\n';
+                results += '---- input -------\n' + this.prettyprint(f[1]) + '\n';
+                results += '---- expected ----\n' + this.prettyprint(f[2]) + '\n';
+                results += '---- output ------\n' + this.prettyprint(f[3]) + '\n';
+                results += '---- expected-ws ------\n' + this.prettyprint_whitespace(f[2]) + '\n';
+                results += '---- output-ws ------\n' + this.prettyprint_whitespace(f[3]) + '\n';
+                results += '================================================================\n\n';
             }
             results += n_failed + ' tests failed.\n';
         }
@@ -9942,6 +15211,14 @@ function SanityTest(func, name_of_test) {
         return this.lazy_escape(this.results_raw());
     };
 
+    this.prettyprint_whitespace = function(something, quote_strings) {
+        return (this.prettyprint(something, quote_strings)
+            .replace(/\r\n/g, '\\r\n')
+            .replace(/\n/g, '\\n\n')
+            .replace(/\r/g, '\\r\n')
+            .replace(/ /g, '_')
+            .replace(/\t/g, '===|'));
+    };
 
     this.prettyprint = function(something, quote_strings) {
         var type = typeof something;
