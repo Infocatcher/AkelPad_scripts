@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2017-03-02 19:24:00 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2017-04-04 17:59:21 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -2864,6 +2864,7 @@ if (!Object.values) {
     The options are (default in brackets):
         indent_size (4)                         — indentation size,
         indent_char (space)                     — character to indent with,
+        preserve_newlines (default false)       - whether existing line breaks should be preserved,
         selector_separator_newline (true)       - separate selectors with newline or
                                                   not (e.g. "a,\nbr" or "a, br")
         end_with_newline (false)                - end with a newline
@@ -2919,8 +2920,10 @@ if (!Object.values) {
 
         source_text = source_text || '';
 
+        var newlinesFromLastWSEat = 0;
         var indentSize = options.indent_size ? parseInt(options.indent_size, 10) : 4;
         var indentCharacter = options.indent_char || ' ';
+        var preserve_newlines = (options.preserve_newlines === undefined) ? false : options.preserve_newlines;
         var selectorSeparatorNewline = (options.selector_separator_newline === undefined) ? true : options.selector_separator_newline;
         var end_with_newline = (options.end_with_newline === undefined) ? false : options.end_with_newline;
         var newline_between_rules = (options.newline_between_rules === undefined) ? true : options.newline_between_rules;
@@ -2991,12 +2994,16 @@ if (!Object.values) {
             return str;
         }
 
-        function eatWhitespace() {
-            var result = '';
+        function eatWhitespace(preserve_newlines_local) {
+            var result = 0;
             while (whiteRe.test(peek())) {
                 next();
-                result += ch;
+                if (ch === '\n' && preserve_newlines_local && preserve_newlines) {
+                    print.newLine(true);
+                    result++;
+                }
             }
+            newlinesFromLastWSEat = result;
             return result;
         }
 
@@ -3077,12 +3084,18 @@ if (!Object.values) {
         print["{"] = function(ch) {
             print.singleSpace();
             output.push(ch);
-            print.newLine();
+            if (!eatWhitespace(true)) {
+                print.newLine();
+            }
         };
-        print["}"] = function(ch) {
-            print.newLine();
-            output.push(ch);
-            print.newLine();
+        print["}"] = function(newline) {
+            if (newline) {
+                print.newLine();
+            }
+            output.push('}');
+            if (!eatWhitespace(true)) {
+                print.newLine();
+            }
         };
 
         print._lastCharWhitespace = function() {
@@ -3093,8 +3106,9 @@ if (!Object.values) {
             if (output.length) {
                 if (!keepWhitespace && output[output.length - 1] !== '\n') {
                     print.trim();
+                } else if (output[output.length - 1] === basebaseIndentString) {
+                    output.pop();
                 }
-
                 output.push('\n');
 
                 if (basebaseIndentString) {
@@ -3196,9 +3210,9 @@ if (!Object.values) {
                     eatWhitespace();
                     next();
                     print.singleSpace();
-                    output.push("{}");
-                    print.newLine();
-                    if (newline_between_rules && indentLevel === 0) {
+                    output.push("{");
+                    print['}'](false);
+                    if (newlinesFromLastWSEat < 2 && newline_between_rules && indentLevel === 0) {
                         print.newLine(true);
                     }
                 } else {
@@ -3215,13 +3229,13 @@ if (!Object.values) {
                 }
             } else if (ch === '}') {
                 outdent();
-                print["}"](ch);
+                print["}"](true);
                 insideRule = false;
                 insidePropertyValue = false;
                 if (nestedLevel) {
                     nestedLevel--;
                 }
-                if (newline_between_rules && indentLevel === 0) {
+                if (newlinesFromLastWSEat < 2 && newline_between_rules && indentLevel === 0) {
                     print.newLine(true);
                 }
             } else if (ch === ":") {
@@ -3259,7 +3273,9 @@ if (!Object.values) {
             } else if (ch === ';') {
                 insidePropertyValue = false;
                 output.push(ch);
-                print.newLine();
+                if (!eatWhitespace(true)) {
+                    print.newLine();
+                }
             } else if (ch === '(') { // may be a url
                 if (lookBack("url")) {
                     output.push(ch);
@@ -3282,8 +3298,7 @@ if (!Object.values) {
                 parenLevel--;
             } else if (ch === ',') {
                 output.push(ch);
-                eatWhitespace();
-                if (selectorSeparatorNewline && !insidePropertyValue && parenLevel < 1) {
+                if (!eatWhitespace(true) && selectorSeparatorNewline && !insidePropertyValue && parenLevel < 1) {
                     print.newLine();
                 } else {
                     print.singleSpace();
@@ -3310,8 +3325,10 @@ if (!Object.values) {
                 output.push(ch);
             } else if (ch === '=') { // no whitespace before or after
                 eatWhitespace();
-                ch = '=';
-                output.push(ch);
+                output.push('=');
+                if (whiteRe.test(ch)) {
+                    ch = '';
+                }
             } else {
                 print.preserveSingleSpace();
                 output.push(ch);
@@ -10760,6 +10777,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
     default_opts.end_with_newline = false;
     default_opts.newline_between_rules = false;
     default_opts.space_around_combinator = false;
+    default_opts.preserve_newlines = false;
     default_opts.space_around_selector_separator = false;
 
     function reset_options()
@@ -11118,8 +11136,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t(
             '#bla, #foo{color:green}',
             //  -- output --
-            '#bla,\n' +
-            '#foo {\n' +
+            '#bla,\n#foo {\n' +
             '\tcolor: green\n' +
             '}');
         t(
@@ -11132,24 +11149,20 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media print {.tab,.bat{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab,\n' +
-            '\t.bat {}\n' +
+            '\t.tab,\n\t.bat {}\n' +
             '}');
         t(
             '#bla, #foo{color:black}',
             //  -- output --
-            '#bla,\n' +
-            '#foo {\n' +
+            '#bla,\n#foo {\n' +
             '\tcolor: black\n' +
             '}');
         t(
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
             //  -- output --
-            'a:first-child,\n' +
-            'a:first-child {\n' +
+            'a:first-child,\na:first-child {\n' +
             '\tcolor: red;\n' +
-            '\tdiv:first-child,\n' +
-            '\tdiv:hover {\n' +
+            '\tdiv:first-child,\n\tdiv:hover {\n' +
             '\t\tcolor: black;\n' +
             '\t}\n' +
             '}');
@@ -11161,8 +11174,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t(
             '#bla, #foo{color:green}',
             //  -- output --
-            '#bla,\n' +
-            '#foo {\n' +
+            '#bla,\n#foo {\n' +
             '\tcolor: green\n' +
             '}');
         t(
@@ -11175,25 +11187,195 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media print {.tab,.bat{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab,\n' +
-            '\t.bat {}\n' +
+            '\t.tab,\n\t.bat {}\n' +
             '}');
         t(
             '#bla, #foo{color:black}',
             //  -- output --
-            '#bla,\n' +
-            '#foo {\n' +
+            '#bla,\n#foo {\n' +
             '\tcolor: black\n' +
             '}');
         t(
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
             //  -- output --
-            'a:first-child,\n' +
-            'a:first-child {\n' +
+            'a:first-child,\na:first-child {\n' +
             '\tcolor: red;\n' +
-            '\tdiv:first-child,\n' +
-            '\tdiv:hover {\n' +
+            '\tdiv:first-child,\n\tdiv:hover {\n' +
             '\t\tcolor: black;\n' +
+            '\t}\n' +
+            '}');
+
+
+        //============================================================
+        // Preserve Newlines - (separator_input = "\n\n", separator_output = "\n\n")
+        reset_options();
+        opts.preserve_newlines = true;
+        t('.div {}\n\n.span {}');
+        t(
+            '#bla, #foo{\n' +
+            '\tcolor:black;\n\n\tfont-size: 12px;\n' +
+            '}',
+            //  -- output --
+            '#bla,\n' +
+            '#foo {\n' +
+            '\tcolor: black;\n\n\tfont-size: 12px;\n' +
+            '}');
+
+        // Preserve Newlines - (separator_input = "\n\n", separator_output = "\n")
+        reset_options();
+        opts.preserve_newlines = false;
+        t('.div {}\n\n.span {}', '.div {}\n.span {}');
+        t(
+            '#bla, #foo{\n' +
+            '\tcolor:black;\n\n\tfont-size: 12px;\n' +
+            '}',
+            //  -- output --
+            '#bla,\n' +
+            '#foo {\n' +
+            '\tcolor: black;\n\tfont-size: 12px;\n' +
+            '}');
+
+
+        //============================================================
+        // Preserve Newlines and newline_between_rules
+        reset_options();
+        opts.preserve_newlines = true;
+        opts.newline_between_rules = true;
+        t(
+            '.div {}.span {}',
+            //  -- output --
+            '.div {}\n' +
+            '\n' +
+            '.span {}');
+        t(
+            '#bla, #foo{\n' +
+            '\tcolor:black;\n' +
+            '\tfont-size: 12px;\n' +
+            '}',
+            //  -- output --
+            '#bla,\n' +
+            '#foo {\n' +
+            '\tcolor: black;\n' +
+            '\tfont-size: 12px;\n' +
+            '}');
+        t(
+            '#bla, #foo{\n' +
+            '\tcolor:black;\n' +
+            '\n' +
+            '\n' +
+            '\tfont-size: 12px;\n' +
+            '}',
+            //  -- output --
+            '#bla,\n' +
+            '#foo {\n' +
+            '\tcolor: black;\n' +
+            '\n' +
+            '\n' +
+            '\tfont-size: 12px;\n' +
+            '}');
+        t(
+            '#bla,\n' +
+            '\n' +
+            '#foo {\n' +
+            '\tcolor: black;\n' +
+            '\tfont-size: 12px;\n' +
+            '}');
+        t(
+            'a {\n' +
+            '\tb: c;\n' +
+            '\n' +
+            '\n' +
+            '\td: {\n' +
+            '\t\te: f;\n' +
+            '\t}\n' +
+            '}');
+        t(
+            '.div {}\n' +
+            '\n' +
+            '.span {}');
+        t(
+            '.div {\n' +
+            '\ta: 1;\n' +
+            '\n' +
+            '\n' +
+            '\tb: 2;\n' +
+            '}\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '.span {\n' +
+            '\ta: 1;\n' +
+            '}');
+        t(
+            '.div {\n' +
+            '\n' +
+            '\n' +
+            '\ta: 1;\n' +
+            '\n' +
+            '\n' +
+            '\tb: 2;\n' +
+            '}\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '.span {\n' +
+            '\ta: 1;\n' +
+            '}');
+        t(
+            '@media screen {\n' +
+            '\t.div {\n' +
+            '\t\ta: 1;\n' +
+            '\n' +
+            '\n' +
+            '\t\tb: 2;\n' +
+            '\t}\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\t.span {\n' +
+            '\t\ta: 1;\n' +
+            '\t}\n' +
+            '}\n' +
+            '\n' +
+            '.div {}\n' +
+            '\n' +
+            '.span {}');
+
+
+        //============================================================
+        // Preserve Newlines and add tabs
+        reset_options();
+        opts.preserve_newlines = true;
+        t(
+            '.tool-tip {\n' +
+            '\tposition: relative;\n' +
+            '\n' +
+            '\t\t\n' +
+            '\t.tool-tip-content {\n' +
+            '\t\t&>* {\n' +
+            '\t\t\tmargin-top: 0;\n' +
+            '\t\t}\n' +
+            '\t\t\n' +
+            '\n' +
+            '\t\t.mixin-box-shadow(.2rem .2rem .5rem rgba(0, 0, 0, .15));\n' +
+            '\t\tpadding: 1rem;\n' +
+            '\t\tposition: absolute;\n' +
+            '\t\tz-index: 10;\n' +
+            '\t}\n' +
+            '}',
+            //  -- output --
+            '.tool-tip {\n' +
+            '\tposition: relative;\n' +
+            '\n' +
+            '\n' +
+            '\t.tool-tip-content {\n' +
+            '\t\t&>* {\n' +
+            '\t\t\tmargin-top: 0;\n' +
+            '\t\t}\n' +
+            '\n\n\t\t.mixin-box-shadow(.2rem .2rem .5rem rgba(0, 0, 0, .15));\n' +
+            '\t\tpadding: 1rem;\n' +
+            '\t\tposition: absolute;\n' +
+            '\t\tz-index: 10;\n' +
             '\t}\n' +
             '}');
 
@@ -11207,24 +11389,21 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}',
             //  -- output --
             '.div {}\n' +
-            '\n' +
-            '.span {}');
+            '\n.span {}');
         t(
             '.div{}\n' +
             '   \n' +
             '.span{}',
             //  -- output --
             '.div {}\n' +
-            '\n' +
-            '.span {}');
+            '\n.span {}');
         t(
             '.div {}    \n' +
             '  \n' +
             '.span { } \n',
             //  -- output --
             '.div {}\n' +
-            '\n' +
-            '.span {}');
+            '\n.span {}');
         t(
             '.div {\n' +
             '    \n' +
@@ -11233,8 +11412,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             ' }  ',
             //  -- output --
             '.div {}\n' +
-            '\n' +
-            '.span {}');
+            '\n.span {}');
         t(
             '.selector1 {\n' +
             '\tmargin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
@@ -11245,8 +11423,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '\tmargin: 0;\n' +
             '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
-            '\n' +
-            '.div {\n' +
+            '\n.div {\n' +
             '\theight: 15px;\n' +
             '}');
         t(
@@ -11259,8 +11436,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '\twidth: 10px; //end of line comment\n' +
             '\theight: 10px; //another\n' +
             '}\n' +
-            '\n' +
-            '.div {\n' +
+            '\n.div {\n' +
             '\theight: 15px;\n' +
             '}');
         t(
@@ -11280,8 +11456,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\t}\n' +
             '}\n' +
-            '\n' +
-            '.div {\n' +
+            '\n.div {\n' +
             '\theight: 15px;\n' +
             '}');
         t(
@@ -11305,8 +11480,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\t}\n' +
             '}\n' +
-            '\n' +
-            '.div {\n' +
+            '\n.div {\n' +
             '\theight: 15px;\n' +
             '}');
         t(
@@ -11332,8 +11506,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '\tfont-family: "Bitstream Vera Serif Bold";\n' +
             '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
-            '\n' +
-            '@media screen {\n' +
+            '\n@media screen {\n' +
             '\t#foo:hover {\n' +
             '\t\tbackground-image: url(foo.png);\n' +
             '\t}\n' +
@@ -11356,8 +11529,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '\t\tcolor: black;\n' +
             '\t}\n' +
             '}\n' +
-            '\n' +
-            '.div {\n' +
+            '\n.div {\n' +
             '\theight: 15px;\n' +
             '}');
         t(
@@ -11370,8 +11542,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '\t\tcolor: black;\n' +
             '\t}\n' +
             '}\n' +
-            '\n' +
-            '.div {\n' +
+            '\n.div {\n' +
             '\theight: 15px;\n' +
             '}');
 
