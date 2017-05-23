@@ -45,6 +45,7 @@
 //   -detectPackers=true           - detect packers
 
 //   -unformattedTags=["a"]        - list of tags, that shouldn't be reformatted (only for HTML)
+//   -voidElements=["br"]          - list of HTML void elements - aka self-closing tags - aka singletons
 //   -indentInnerHTML=true         - indent content inside <html> (only for HTML)
 //   -indentHeadInnerHTML=true     - indent content inside <head> (only for HTML)
 //   -indentBodyInnerHTML=true     - indent content inside <body> (only for HTML)
@@ -135,6 +136,7 @@ var spaceAroundSelectorSep = getArg("spaceAroundSelectorSep", true);
 var commaFirst             = getArg("commaFirst", false);
 var maxChar                = getArg("maxChar");
 var unformattedTags        = getArg("unformattedTags");
+var voidElements           = getArg("voidElements");
 var indentInnerHTML        = getArg("indentInnerHTML");
 var indentHeadInnerHTML    = getArg("indentHeadInnerHTML");
 var indentBodyInnerHTML    = getArg("indentBodyInnerHTML");
@@ -222,6 +224,7 @@ function beautify(source, syntax) { // Based on beautify function
 		// for HTML:
 		max_char:                        maxChar,
 		unformatted:                     unformattedTags,
+		void_elements:                   voidElements,
 		indent_inner_html:               indentInnerHTML,
 		indent_head_inner_html:          indentHeadInnerHTML,
 		indent_body_inner_html:          indentBodyInnerHTML,
