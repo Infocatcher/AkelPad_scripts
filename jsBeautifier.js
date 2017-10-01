@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2017-05-22 19:19:42 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2017-10-01 18:39:37 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -428,25 +428,6 @@ function detectXMLType(str) {
 
 */
 
-// Object.values polyfill found here:
-// http://tokenposts.blogspot.com.au/2012/04/javascript-objectkeys-browser.html
-// This is required for early versions of IE.
-if (!Object.values) {
-    Object.values = function(o) {
-        if (o !== Object(o)) {
-            throw new TypeError('Object.values called on a non-object');
-        }
-        var k = [],
-            p;
-        for (p in o) {
-            if (Object.prototype.hasOwnProperty.call(o, p)) {
-                k.push(o[p]);
-            }
-        }
-        return k;
-    };
-}
-
 (function() {
 var legacy_beautify_js =
 /******/ (function(modules) { // webpackBootstrap
@@ -662,10 +643,18 @@ function ltrim(s) {
 //     return s.replace(/\s+$/g, '');
 // }
 
+
+function generateMapFromStrings(list) {
+    var result = {};
+    for (var x = 0; x < list.length; x++) {
+        // make the mapped names underscored instead of dash
+        result[list[x].replace(/-/g, '_')] = list[x];
+    }
+    return result;
+}
+
 function sanitizeOperatorPosition(opPosition) {
     opPosition = opPosition || OPERATOR_POSITION.before_newline;
-
-    var validPositionValues = Object.values(OPERATOR_POSITION);
 
     if (!in_array(opPosition, validPositionValues)) {
         throw new Error("Invalid Option Value: The option 'operator_position' must be one of the following values\n" +
@@ -676,11 +665,10 @@ function sanitizeOperatorPosition(opPosition) {
     return opPosition;
 }
 
-var OPERATOR_POSITION = {
-    before_newline: 'before-newline',
-    after_newline: 'after-newline',
-    preserve_newline: 'preserve-newline'
-};
+var validPositionValues = ['before-newline', 'after-newline', 'preserve-newline'];
+
+// Generate map from array
+var OPERATOR_POSITION = generateMapFromStrings(validPositionValues);
 
 var OPERATOR_POSITION_BEFORE_OR_PRESERVE = [OPERATOR_POSITION.before_newline, OPERATOR_POSITION.preserve_newline];
 
@@ -792,6 +780,7 @@ function Beautifier(js_source_text, options) {
     opt.indent_char = options.indent_char ? options.indent_char : ' ';
     opt.eol = options.eol ? options.eol : 'auto';
     opt.preserve_newlines = (options.preserve_newlines === undefined) ? true : options.preserve_newlines;
+    opt.unindent_chained_methods = (options.unindent_chained_methods === undefined) ? false : options.unindent_chained_methods;
     opt.break_chained_methods = (options.break_chained_methods === undefined) ? false : options.break_chained_methods;
     opt.max_preserve_newlines = (options.max_preserve_newlines === undefined) ? 0 : parseInt(options.max_preserve_newlines, 10);
     opt.space_in_paren = (options.space_in_paren === undefined) ? false : options.space_in_paren;
@@ -947,7 +936,7 @@ function Beautifier(js_source_text, options) {
         return out;
     }
 
-    var newline_restricted_tokens = ['break', 'continue', 'return', 'throw'];
+    var newline_restricted_tokens = ['break', 'continue', 'return', 'throw', 'yield'];
 
     function allow_wrap_or_preserved_newline(force_linewrap) {
         force_linewrap = (force_linewrap === undefined) ? false : force_linewrap;
@@ -1079,7 +1068,7 @@ function Beautifier(js_source_text, options) {
         if (flag_store.length > 0) {
             previous_flags = flags;
             flags = flag_store.pop();
-            if (previous_flags.mode === MODE.Statement) {
+            if (previous_flags.mode === MODE.Statement && !opt.unindent_chained_methods) {
                 remove_redundant_indentation(output, previous_flags);
             }
         }
@@ -1094,7 +1083,7 @@ function Beautifier(js_source_text, options) {
         if (
             (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['var', 'let', 'const']) && current_token.type === 'TK_WORD') ||
             (last_type === 'TK_RESERVED' && flags.last_text === 'do') ||
-            (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['return', 'throw']) && !current_token.wanted_newline) ||
+            (last_type === 'TK_RESERVED' && in_array(flags.last_text, newline_restricted_tokens) && !current_token.wanted_newline) ||
             (last_type === 'TK_RESERVED' && flags.last_text === 'else' &&
                 !(current_token.type === 'TK_RESERVED' && current_token.text === 'if' && !current_token.comments_before.length)) ||
             (last_type === 'TK_END_EXPR' && (previous_flags.mode === MODE.ForInitializer || previous_flags.mode === MODE.Conditional)) ||
@@ -1108,7 +1097,9 @@ function Beautifier(js_source_text, options) {
         ) {
 
             set_mode(MODE.Statement);
-            indent();
+            if (!opt.unindent_chained_methods) {
+                indent();
+            }
 
             handle_whitespace_and_comments(current_token, true);
 
@@ -1228,8 +1219,8 @@ function Beautifier(js_source_text, options) {
             }
         }
 
-        // Should be a space between await and an IIFE
-        if (current_token.text === '(' && last_type === 'TK_RESERVED' && flags.last_word === 'await') {
+        // Should be a space between await and an IIFE, or async and an arrow function
+        if (current_token.text === '(' && last_type === 'TK_RESERVED' && in_array(flags.last_word, ['await', 'async'])) {
             output.space_before_token = true;
         }
 
@@ -1514,7 +1505,9 @@ function Beautifier(js_source_text, options) {
                 }
             }
             if (last_type === 'TK_RESERVED' || last_type === 'TK_WORD') {
-                if (last_type === 'TK_RESERVED' && in_array(flags.last_text, ['get', 'set', 'new', 'return', 'export', 'async'])) {
+                if (last_type === 'TK_RESERVED' && (
+                        in_array(flags.last_text, ['get', 'set', 'new', 'export', 'async']) ||
+                        in_array(flags.last_text, newline_restricted_tokens))) {
                     output.space_before_token = true;
                 } else if (last_type === 'TK_RESERVED' && flags.last_text === 'default' && last_last_text === 'export') {
                     output.space_before_token = true;
@@ -4270,7 +4263,7 @@ if (typeof define === "function" && define.amd) {
     brace_style (default "collapse") - "collapse" | "expand" | "end-expand" | "none"
             put braces on the same line as control statements (default), or put braces on own line (Allman / ANSI style), or just put end braces on own line, or attempt to keep them where they are.
     unformatted (defaults to inline tags) - list of tags, that shouldn't be reformatted
-    content_unformatted (defaults to pre tag) - list of tags, that its content shouldn't be reformatted
+    content_unformatted (defaults to pre tag) - list of tags, whose content shouldn't be reformatted
     indent_scripts (default normal)  - "keep"|"separate"|"normal"
     preserve_newlines (default true) - whether existing line breaks before elements should be preserved
                                         Only works before elements, not inside tags or for text.
@@ -6947,6 +6940,38 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
 
         //============================================================
+        // Unindent chained functions - ()
+        reset_options();
+        opts.unindent_chained_methods = true;
+        bt(
+            'f().f().f()\n' +
+            '    .f().f();',
+            //  -- output --
+            'f().f().f()\n' +
+            '.f().f();');
+        bt(
+            'f()\n' +
+            '    .f()\n' +
+            '    .f();',
+            //  -- output --
+            'f()\n' +
+            '.f()\n' +
+            '.f();');
+        bt(
+            'f(function() {\n' +
+            '    f()\n' +
+            '        .f()\n' +
+            '        .f();\n' +
+            '});',
+            //  -- output --
+            'f(function() {\n' +
+            '    f()\n' +
+            '    .f()\n' +
+            '    .f();\n' +
+            '});');
+
+
+        //============================================================
         // Space in parens tests - (s = "", e = "")
         reset_options();
         opts.space_in_paren = false;
@@ -7633,6 +7658,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('yield /foo\\//;');
         bt('result = yield pgClient.query_(queryString);');
         bt('yield [1, 2]');
+        bt('yield function() {};');
         bt('yield* bar();');
 
         // yield should have no space between yield and star
@@ -7670,6 +7696,44 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         // ensure that this doesn't break anyone with the async library
         bt('async.map(function(t) {})');
+
+        // async on arrow function. should have a space after async
+        bt(
+            'async() => {}',
+            //  -- output --
+            'async () => {}');
+
+        // async on arrow function. should have a space after async
+        bt(
+            'async() => {\n' +
+            '    return 5;\n' +
+            '}',
+            //  -- output --
+            'async () => {\n' +
+            '    return 5;\n' +
+            '}');
+
+        // async on arrow function returning expression. should have a space after async
+        bt(
+            'async() => 5;',
+            //  -- output --
+            'async () => 5;');
+
+        // async on arrow function returning object literal. should have a space after async
+        bt(
+            'async(x) => ({\n' +
+            '    foo: "5"\n' +
+            '})',
+            //  -- output --
+            'async (x) => ({\n' +
+            '    foo: "5"\n' +
+            '})');
+        bt(
+            'async (x) => {\n' +
+            '    return x * 2;\n' +
+            '}');
+        bt('async () => 5;');
+        bt('async x => x * 2;');
 
 
         //============================================================
