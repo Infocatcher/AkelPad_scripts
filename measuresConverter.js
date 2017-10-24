@@ -2061,8 +2061,11 @@ var asyncUpdater = {
 		};
 		var url = getRequestURL(code);
 		request.open("GET", url, true);
-		if(typeof request.setRequestHeader != "undefined")
+		if(typeof request.setRequestHeader != "undefined") {
 			request.setRequestHeader("Accept-Language", "en-us,en;q=0.5");
+			request.setRequestHeader("Pragma", "no-cache");
+			request.setRequestHeader("Cache-Control", "no-cache");
+		}
 		++this.activeRequests;
 		request.send(null);
 		return request;
