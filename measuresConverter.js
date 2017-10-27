@@ -1881,7 +1881,7 @@ var missingCurrencies = {
 		"LRD", "MKD", "MNT", "MRO", "MVR", "NAD", "PGK", "SBD", "SDG", "SHP",
 		"SKK", "SLL", "STD", "SVC", "TOP", "UZS", "VUV", "WST", "YER"
 	],
-	"fxexchangerate.com": ["AMD", "RSD"]
+	"fxexchangerate.com": []
 };
 function available(server, code) {
 	var missing = missingCurrencies[server];
