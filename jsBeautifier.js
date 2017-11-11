@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2017-10-01 18:39:37 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2017-11-11 20:23:12 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -766,15 +766,22 @@ function Beautifier(js_source_text, options) {
         options.brace_style = "collapse,preserve-inline";
     } else if (options.braces_on_own_line !== undefined) { //graceful handling of deprecated option
         options.brace_style = options.braces_on_own_line ? "expand" : "collapse";
-    } else if (!options.brace_style) //Nothing exists to set it
-    {
+    } else if (!options.brace_style) { //Nothing exists to set it
         options.brace_style = "collapse";
     }
 
-
+    //preserve-inline in delimited string will trigger brace_preserve_inline, everything
+    //else is considered a brace_style and the last one only will have an effect
     var brace_style_split = options.brace_style.split(/[^a-zA-Z0-9_\-]+/);
-    opt.brace_style = brace_style_split[0];
-    opt.brace_preserve_inline = brace_style_split[1] ? brace_style_split[1] : false;
+    opt.brace_preserve_inline = false; //Defaults in case one or other was not specified in meta-option
+    opt.brace_style = "collapse";
+    for (var bs = 0; bs < brace_style_split.length; bs++) {
+        if (brace_style_split[bs] === "preserve-inline") {
+            opt.brace_preserve_inline = true;
+        } else {
+            opt.brace_style = brace_style_split[bs];
+        }
+    }
 
     opt.indent_size = options.indent_size ? parseInt(options.indent_size, 10) : 4;
     opt.indent_char = options.indent_char ? options.indent_char : ' ';
@@ -3500,7 +3507,7 @@ function Beautifier(source_text, options) {
             preindent_index += 1;
         }
         baseIndentString = source_text.substring(0, preindent_index);
-        js_source_text = source_text.substring(preindent_index);
+        source_text = source_text.substring(preindent_index);
     }
 
 
@@ -3749,7 +3756,9 @@ function Beautifier(source_text, options) {
                 if (whiteRe.test(ch)) {
                     ch = '';
                 }
-
+            } else if (ch === '!') { // !important
+                print_string(' ');
+                print_string(ch);
             } else {
                 preserveSingleSpace(isAfterSpace);
                 print_string(ch);
@@ -12441,6 +12450,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '\n' +
             '.span {}');
         t(
+            'html {}\n' +
+            '\n' +
+            '/*this is a comment*/');
+        t(
             '.div {\n' +
             '\ta: 1;\n' +
             '\n' +
@@ -13119,6 +13132,31 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t(
             '.fa-rotate-270 {\n' +
             '\tfilter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);\n' +
+            '}');
+
+
+        //============================================================
+        // Important
+        reset_options();
+        t(
+            'a {\n' +
+            '\tcolor: blue  !important;\n' +
+            '}',
+            //  -- output --
+            'a {\n' +
+            '\tcolor: blue !important;\n' +
+            '}');
+        t(
+            'a {\n' +
+            '\tcolor: blue!important;\n' +
+            '}',
+            //  -- output --
+            'a {\n' +
+            '\tcolor: blue !important;\n' +
+            '}');
+        t(
+            'a {\n' +
+            '\tcolor: blue !important;\n' +
             '}');
 
 
