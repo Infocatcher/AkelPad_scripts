@@ -79,6 +79,9 @@
 
 function _localize(s) {
 	var strings = {
+		"Nothing to beautify!": {
+			ru: "Нечего обрабатывать!"
+		},
 		"All %S tests passed.": {
 			ru: "Все %S тестов пройдены."
 		},
@@ -16723,6 +16726,11 @@ function beautifyAkelEdit() {
 		res = runTests();
 		var icon = /tests failed/.test(res) ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/;
 		AkelPad.MessageBox(hMainWnd, res, WScript.ScriptName, icon);
+		return;
+	}
+
+	if(!src) {
+		AkelPad.MessageBox(hMainWnd, _localize("Nothing to beautify!"), WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
 		return;
 	}
 
