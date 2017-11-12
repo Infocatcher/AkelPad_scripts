@@ -61,7 +61,9 @@
 //   -update=1                     - update source from https://github.com/beautify-web/js-beautify/
 //          =2                     - update source from https://github.com/beautify-web/js-beautify/tree/gh-pages
 //   -forceNoCache                 - prevent caching during update
-//   -test                         - force run the tests
+//   -test=1                       - force run the tests
+//        =-1                      - run the tests, if called for empty source (+ see -onlySelected argument)
+//        =0                       - don't run tests
 
 // You also can pass any arguments to js_beautify()/html_beautify() using "_raw_" prefix, example:
 //   -_raw_indent_handlebars=true - add "indent_handlebars: true" to options object
@@ -144,7 +146,7 @@ var extraLines             = getArg("extraLines");
 var detectPackers          = getArg("detectPackers", true);
 var beautifyCSS            = getArg("css", false);
 var keepCSSIndentation     = getArg("keepCSSIndentation", true);
-var test                   = getArg("test", false);
+var test                   = getArg("test", -1);
 var update                 = getArg("update", 0);
 var forceNoCache           = getArg("forceNoCache", true);
 
@@ -153,6 +155,8 @@ if(getArg("bracesOnOwnLine") !== undefined && getArg("braceStyle") === undefined
 	braceStyle = getArg("bracesOnOwnLine") ? "expand" : "collapse";
 if(getArg("spaceAfterAnonFunc") !== undefined && getArg("jsLintHappy") === undefined)
 	jsLintHappy = getArg("spaceAfterAnonFunc");
+if(typeof test == "boolean")
+	test = test ? 1 : -1;
 
 var indentChar = indentSize == 1
 	? "\t"
@@ -16705,7 +16709,7 @@ function handleArgs() {
 }
 function beautifyAkelEdit() {
 	var res;
-	if(!test) {
+	if(test <= 0) {
 		var newLine = 2; //"\n"
 		var src = AkelPad.GetSelText(newLine);
 		if(!src && !onlySelected) {
@@ -16715,7 +16719,7 @@ function beautifyAkelEdit() {
 		if(!AkelPad.IsAkelEdit())
 			src = src.replace(/\r/g, "\n");
 	}
-	if(test || !src) {
+	if(test > 0 || test == -1 && !src) {
 		res = runTests();
 		var icon = /tests failed/.test(res) ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/;
 		AkelPad.MessageBox(hMainWnd, res, WScript.ScriptName, icon);
