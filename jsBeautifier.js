@@ -82,6 +82,9 @@ function _localize(s) {
 		"Nothing to beautify!": {
 			ru: "Нечего обрабатывать!"
 		},
+		"Code not changed!": {
+			ru: "Код оставлен без изменений!"
+		},
 		"All %S tests passed.": {
 			ru: "Все %S тестов пройдены."
 		},
@@ -16769,7 +16772,12 @@ function beautifyAkelEdit() {
 	}
 	if(!res)
 		return;
-	if(action == ACT_INSERT && res != src) {
+	if(res == src) {
+		AkelPad.MessageBox(hMainWnd, _localize("Code not changed!"), WScript.ScriptName, 64 /*MB_ICONINFORMATION*/);
+		return;
+	}
+
+	if(action == ACT_INSERT) {
 		if(AkelPad.GetEditReadOnly(hWndEdit))
 			action = ACT_INSERT_NEW_DOC;
 		else {
