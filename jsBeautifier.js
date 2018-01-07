@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2017-11-11 20:23:12 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2018-01-07 21:57:52 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -5647,7 +5647,7 @@ var JavascriptObfuscator = {
                 var var_name = matches[1];
                 var strings = JavascriptObfuscator._smart_split(matches[2]);
                 str = str.substring(matches[0].length);
-                for (var k in strings) {
+                for (var k = 0, l = strings.length; k < l; ++k) {
                     str = str.replace(new RegExp(var_name + '\\[' + k + '\\]', 'g'),
                         JavascriptObfuscator._fix_quotes(JavascriptObfuscator._unescape(strings[k])));
                 }
@@ -16828,6 +16828,13 @@ function convertSource(file, text) {
 				"last_type !== 'TK_WORD' && last_type !== 'TK_RESERVED'"
 			)
 			.replace(/(preserve_newline: 'preserve-newline'),(\s*\};)/, "$1$2");
+	}
+	else if(file == "js/lib/unpackers/javascriptobfuscator_unpacker.js") {
+		text = text
+			.replace(
+				"for (var k in strings) {", // Our Array.prototype.indexOf is visible here
+				"for (var k = 0, l = strings.length; k < l; ++k) {"
+			);
 	}
 	else if(file.substr(0, 18) == "js/test/generated/") {
 		text = text
