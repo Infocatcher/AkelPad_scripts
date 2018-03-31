@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/master 2018-01-07 21:57:52 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/master 2018-03-31 20:10:57 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -3722,6 +3722,7 @@ function Beautifier(source_text, options) {
                             print_string(eatString(')'));
                         } else {
                             pos--;
+                            parenLevel++;
                         }
                     }
                 } else {
@@ -4552,8 +4553,8 @@ function Beautifier(html_source, options, js_beautify, css_beautify) {
 
                 // Doctype and xml elements
                 '!doctype', '?xml',
-                // ?php tag
-                '?php',
+                // ?php and ?= tags
+                '?php', '?=',
                 // other tags that were in this list, keeping just in case
                 'basefont', 'isindex'
             ],
@@ -4881,10 +4882,8 @@ function Beautifier(html_source, options, js_beautify, css_beautify) {
 
             // must check for space first otherwise the tag could have the first attribute included, and
             // then not un-indent correctly
-            if (tag_complete.indexOf(' ') !== -1) { //if there's whitespace, thats where the tag name ends
-                tag_index = tag_complete.indexOf(' ');
-            } else if (tag_complete.indexOf('\n') !== -1) { //if there's a line break, thats where the tag name ends
-                tag_index = tag_complete.indexOf('\n');
+            if (tag_complete.search(/\s/) !== -1) { //if there's whitespace, thats where the tag name ends
+                tag_index = tag_complete.search(/\s/);
             } else if (tag_complete.charAt(0) === '{') {
                 tag_index = tag_complete.indexOf('}');
             } else { //otherwise go with the tag ending
@@ -5148,6 +5147,11 @@ function Beautifier(html_source, options, js_beautify, css_beautify) {
             //at this point we have an  tag; is its first child something we want to remain
             //unformatted?
             var next_tag = this.get_tag(true /* peek. */ );
+
+            next_tag = next_tag || '';
+            if (typeof next_tag !== 'string') {
+                next_tag = next_tag[0];
+            }
 
             // test next_tag to see if it is just html tag (no external content)
             var tag = (next_tag || "").match(/^\s*<\s*\/?([a-z]*)\s*[^>]*>\s*$/);
@@ -13063,6 +13067,22 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
 
 
         //============================================================
+        // Handle LESS function parameters
+        reset_options();
+        t(
+            'div{.px2rem(width,12);}',
+            //  -- output --
+            'div {\n' +
+            '\t.px2rem(width, 12);\n' +
+            '}');
+        t(
+            'div {\n' +
+            '\tbackground: url("//test.com/dummy.png");\n' +
+            '\t.px2rem(width, 12);\n' +
+            '}');
+
+
+        //============================================================
         // Psuedo-classes vs Variables
         reset_options();
         t('@page :first {}');
@@ -13280,6 +13300,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         //variables
         t("@myvar:10px;.tabs{width:10px;}", "@myvar: 10px;\n.tabs {\n\twidth: 10px;\n}");
         t("@myvar:10px; .tabs{width:10px;}", "@myvar: 10px;\n.tabs {\n\twidth: 10px;\n}");
+
+        //mixins
+        t("div{.px2rem(width,12);}", "div {\n\t.px2rem(width, 12);\n}");
+        // mixin next to 'background: url("...")' should not add a line break after the comma
+        t("div {\n\tbackground: url(\"//test.com/dummy.png\");\n\t.px2rem(width, 12);\n}");
 
         // test options
         opts.indent_size = 2;
@@ -15963,6 +15988,17 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
 
         //============================================================
+        // Regression Tests
+        reset_options();
+
+        // #1202
+        test_fragment('<a class="js-open-move-from-header" href="#">5A - IN-SPRINT TESTING</a>');
+        test_fragment('<a ">9</a">');
+        test_fragment('<a href="javascript:;" id="_h_url_paid_pro3" onmousedown="_h_url_click_paid_pro(this);" rel="nofollow" class="pro-title" itemprop="name">WA GlassKote</a>');
+        test_fragment('<a href="/b/yergey-brewing-a-beer-has-no-name/1745600">"A Beer Has No Name"</a>');
+
+
+        //============================================================
         // Php formatting
         reset_options();
         test_fragment(
@@ -15989,6 +16025,15 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<body></body>\n' +
             '\n' +
             '</html>');
+        test_fragment(
+            '<?= "A" ?>\n' +
+            '<?= "B" ?>\n' +
+            '<?= "C" ?>');
+        test_fragment(
+            '<?php\n' +
+            'echo "A";\n' +
+            '?>\n' +
+            '<span>Test</span>');
 
 
         //============================================================
