@@ -201,6 +201,12 @@ if(!Array.prototype.indexOf) {
 		return -1;
 	};
 }
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/Trim#Polyfill
+if(!String.prototype.trim) {
+	String.prototype.trim = function () {
+		return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, "");
+	};
+}
 
 //== index.html
 // https://github.com/beautify-web/js-beautify/blob/master/index.html
