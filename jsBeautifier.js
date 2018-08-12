@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/gh-pages 2018-08-12 14:30:04 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/gh-pages 2018-08-12 16:47:35 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -27684,7 +27684,7 @@ if (typeof exports !== "undefined") {
 
 
 function SanityTest(func, name_of_test) {
-    var tl = new TitleLogger(WScript.ScriptName + ": ");
+  var tl = new TitleLogger(WScript.ScriptName + ": ");
 
   var test_func = func || function(x) {
     return x;
@@ -27712,9 +27712,13 @@ function SanityTest(func, name_of_test) {
     // proper array checking is a pain. i'll maybe do it later, compare strings representations instead
     if ((result === expected_value) || (expected_value instanceof Array && result.join(', ') === expected_value.join(', '))) {
       n_succeeded += 1;
+      if((n_succeeded + n_failed) % 10 == 0)
+        tl.log("Test: " + n_succeeded + (n_failed ? "/" + n_failed : ""));
       return true;
     } else {
       n_failed += 1;
+      if((n_succeeded + n_failed) % 10 == 0)
+        tl.log("Test: " + n_succeeded + (n_failed ? "/" + n_failed : ""));
       failures.push([test_name, parameters, expected_value, result]);
       return false;
     }
@@ -27745,7 +27749,7 @@ function SanityTest(func, name_of_test) {
       }
       results += n_failed + ' tests failed.\n';
     }
-        tl.restore();
+    tl.restore();
     return results;
   };
 
@@ -27950,15 +27954,15 @@ function convertSource(file, text) {
 			// Patch to provide simple progress
 			.replace(
 				/\sfunction SanityTest *\([^()]*\) *\{\r\n/,
-				'$&    var tl = new TitleLogger(WScript.ScriptName + ": ");\r\n'
+				'$&  var tl = new TitleLogger(WScript.ScriptName + ": ");\r\n'
 			)
 			.replace(
-				/\sfailures\.push\([^()]+\);\r\n\s*\}\r\n/,
-				'$&        if((n_succeeded + n_failed) % 10 == 0)\r\n            tl.log("Test: " + n_succeeded + (n_failed ? "/" + n_failed : ""));\r\n'
+				/([ \t]+)(n_succeeded|n_failed) \+= 1;\r\n/g,
+				'$&$1if((n_succeeded + n_failed) % 10 == 0)\r\n$1  tl.log("Test: " + n_succeeded + (n_failed ? "/" + n_failed : ""));\r\n'
 			)
 			.replace(
 				/\sresults \+= n_failed \+ [^\r\n]+\r\n\s*\}\r\n/,
-				"$&        tl.restore();\r\n"
+				"$&    tl.restore();\r\n"
 			);
 	}
 	else if(file == "js/lib/beautify.js") {
