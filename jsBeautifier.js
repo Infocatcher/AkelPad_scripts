@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/gh-pages 2018-08-12 16:47:35 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/gh-pages 2018-08-12 17:13:10 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -6605,7 +6605,7 @@ Tokenizer.prototype._read_raw_content = function(previous_token, open_token) { /
     if (resulting_string) {
       return this.create_token(TOKEN.TEXT, resulting_string);
     }
-  } else if (previous_token.type === TOKEN.TAG_CLOSE && (previous_token.opened.text[0] === '<')) {
+  } else if (previous_token.type === TOKEN.TAG_CLOSE && (previous_token.opened.text.charAt(0) === '<')) {
     var tag_name = previous_token.opened.text.substr(1).toLowerCase();
     if (tag_name === 'script' || tag_name === 'style' ||
       this._opts.content_unformatted.indexOf(tag_name) !== -1 ||
@@ -27983,15 +27983,15 @@ function convertSource(file, text) {
 			)
 			.replace(/(preserve_newline: 'preserve-newline'),(\s*\};)/, "$1$2")
 			.replace(
-				/token\.text\[([^\[\]]+)\]/g,
-				"token.text.charAt($1)"
+				/(token(\.opened)?\.text)\[([^\[\]]+)\]/g,
+				"$1.charAt($3)"
 			);
 	}
 	else if(file == "js/lib/beautify-html.js") {
 		text = text
 			.replace(
-				/token\.text\[([^\[\]]+)\]/g,
-				"token.text.charAt($1)"
+				/(token(\.opened)?\.text)\[([^\[\]]+)\]/g,
+				"$1.charAt($3)"
 			);
 	}
 	else if(file == "js/lib/unpackers/javascriptobfuscator_unpacker.js") {
