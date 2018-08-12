@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/gh-pages 2018-08-12 14:05:54 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/gh-pages 2018-08-12 14:30:04 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -2006,7 +2006,7 @@ function Beautifier(js_source_text, options) {
   function handle_unknown(preserve_statement_flags) {
     print_token();
 
-    if (current_token.text[current_token.text.length - 1] === '\n') {
+    if (current_token.text.charAt(current_token.text.length - 1) === '\n') {
       print_newline(false, preserve_statement_flags);
     }
   }
@@ -5789,7 +5789,7 @@ function Beautifier(html_source, options, js_beautify, css_beautify) {
         alignment_string = '',
         custom_beautifier = false;
 
-      tag_start_char = raw_token.text[0];
+      tag_start_char = raw_token.text.charAt(0);
       if (tag_start_char === '<') {
         tag_check = raw_token.text.match(/^<([^\s>]*)/)[1];
       } else {
@@ -5892,7 +5892,7 @@ function Beautifier(html_source, options, js_beautify, css_beautify) {
             } else if (raw_token.type === TOKEN.TEXT) {
               space = true;
             } else if (raw_token.type === TOKEN.TAG_CLOSE) {
-              space = raw_token.text[0] === '/'; // space before />, no space before >
+              space = raw_token.text.charAt(0) === '/'; // space before />, no space before >
             } else {
               space = raw_token.newlines || raw_token.whitespace_before !== '';
             }
@@ -6427,8 +6427,8 @@ Tokenizer.prototype.is_opening = function(current_token) {
 Tokenizer.prototype.is_closing = function(current_token, open_token) {
   return current_token.type === TOKEN.TAG_CLOSE &&
     (open_token && (
-      ((current_token.text === '>' || current_token.text === '/>') && open_token.text[0] === '<') ||
-      (current_token.text === '}}' && open_token.text[0] === '{' && open_token.text[1] === '{')));
+      ((current_token.text === '>' || current_token.text === '/>') && open_token.text.charAt(0) === '<') ||
+      (current_token.text === '}}' && open_token.text.charAt(0) === '{' && open_token.text.charAt(1) === '{')));
 };
 
 Tokenizer.prototype.reset = function() {
@@ -6532,13 +6532,13 @@ Tokenizer.prototype._read_comment = function(c) { // jshint unused:false
 
 Tokenizer.prototype._read_open_close = function(c, open_token) { // jshint unused:false
   var resulting_string = null;
-  if (open_token && open_token.text[0] === '<' && (c === '>' || (c === '/' && this._input.peek(1) === '>'))) {
+  if (open_token && open_token.text.charAt(0) === '<' && (c === '>' || (c === '/' && this._input.peek(1) === '>'))) {
     resulting_string = this._input.next();
     if (this._input.peek() === '>') {
       resulting_string += this._input.next();
     }
     return this.create_token(TOKEN.TAG_CLOSE, resulting_string);
-  } else if (open_token && open_token.text[0] === '{' && c === '}' && this._input.peek(1) === '}') {
+  } else if (open_token && open_token.text.charAt(0) === '{' && c === '}' && this._input.peek(1) === '}') {
     this._input.next();
     this._input.next();
     return this.create_token(TOKEN.TAG_CLOSE, '}}');
@@ -6559,7 +6559,7 @@ Tokenizer.prototype._read_open_close = function(c, open_token) { // jshint unuse
 };
 
 Tokenizer.prototype._read_attribute = function(c, previous_token, open_token) { // jshint unused:false
-  if (open_token && open_token.text[0] === '<') {
+  if (open_token && open_token.text.charAt(0) === '<') {
     if (c === '=') {
       return this.create_token(TOKEN.EQUALS, this._input.next());
     } else if (c === '"' || c === "'") {
@@ -6600,7 +6600,7 @@ Tokenizer.prototype._read_attribute = function(c, previous_token, open_token) { 
 
 Tokenizer.prototype._read_raw_content = function(previous_token, open_token) { // jshint unused:false
   var resulting_string = '';
-  if (open_token && open_token.text[0] === '{') {
+  if (open_token && open_token.text.charAt(0) === '{') {
     resulting_string = this._input.readUntil(/}}/g);
     if (resulting_string) {
       return this.create_token(TOKEN.TEXT, resulting_string);
@@ -27967,7 +27967,18 @@ function convertSource(file, text) {
 				"['TK_WORD', 'TK_RESERVED'].indexOf(last_type) === -1",
 				"last_type !== 'TK_WORD' && last_type !== 'TK_RESERVED'"
 			)
-			.replace(/(preserve_newline: 'preserve-newline'),(\s*\};)/, "$1$2");
+			.replace(/(preserve_newline: 'preserve-newline'),(\s*\};)/, "$1$2")
+			.replace(
+				/token\.text\[([^\[\]]+)\]/g,
+				"token.text.charAt($1)"
+			);
+	}
+	else if(file == "js/lib/beautify-html.js") {
+		text = text
+			.replace(
+				/token\.text\[([^\[\]]+)\]/g,
+				"token.text.charAt($1)"
+			);
 	}
 	else if(file == "js/lib/unpackers/javascriptobfuscator_unpacker.js") {
 		text = text
