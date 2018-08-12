@@ -27871,8 +27871,18 @@ function beautifyAkelEdit() {
 	}
 	if(test > 0 || test == -1 && !src) {
 		res = runTests();
-		var icon = /tests failed/.test(res) ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/;
-		AkelPad.MessageBox(hMainWnd, res, WScript.ScriptName, icon);
+		var failed = /\d+ tests failed/.test(res) && RegExp.lastMatch;
+		var icon = failed ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/;
+		AkelPad.MessageBox(hMainWnd, failed || res, WScript.ScriptName, icon);
+		if(failed) {
+			if(AkelPad.GetTextRange(0, -1)) { // Non-empty doc?
+				AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+				AkelPad.SetSel(0, -1);
+			}
+			AkelPad.ReplaceSel(res);
+			AkelPad.SetSel(0, 0);
+			isCoderRunning() && AkelPad.Call("Coder::Settings", 1, ".js");
+		}
 		return;
 	}
 
