@@ -34,6 +34,7 @@
 //   -updateOnStartupReport=1      - 0 - don't show, 1 - only errors, 2 - always
 //   -updateMaxErrors=4            - abort update, if reached many errors (use -1 to ignore errors)
 //   -convertNumbers=true          - convert numbers (1234.5 -> 1 234,5)
+//   -displayCalcErrors=true       - always display calculation errors (e.g. for "1++2")
 //   -roundMeasures=3              - round measures (number or special ROUND_OFF value)
 //   -roundCurrencies=2            - round currencies (number or special ROUND_OFF value)
 //   -sortMeasures=true            - sort measures alphabetically
@@ -1754,6 +1755,7 @@ var updateOnStartup       = getArg("updateOnStartup", true);
 var updateOnStartupReport = getArg("updateOnStartupReport", 1);
 var updateMaxErrors       = getArg("updateMaxErrors", 4);
 var convertNumbers        = getArg("convertNumbers", true);
+var displayCalcErrors     = getArg("displayCalcErrors");
 var sortMeasures          = getArg("sortMeasures");
 var sortByName            = getArg("sortByName");
 var roundMeasures         = getArg("roundMeasures");
@@ -3753,27 +3755,27 @@ function calcNum(val, showErrors, hWnd, hWndEdit) {
 			dialogTitle,
 			16 /*MB_ICONERROR*/
 		);
-		//if(hWndEdit && showErrors) {
-		//	//hWndEdit && AkelPad.SendMessage(hWndEdit, 0x1504 /*EM_HIDEBALLOONTIP*/, 0, 0);
-		//	//typedef struct tagEDITBALLOONTIP {
-		//	//  DWORD   cbStruct;
-		//	//  LPCWSTR pszTitle;
-		//	//  LPCWSTR pszText;
-		//	//  INT     ttiIcon;
-		//	//} EDITBALLOONTIP, *PEDITBALLOONTIP;
-		//	var lpTitle = AkelPad.MemStrPtr(_localize("Error"));
-		//	var lpText = AkelPad.MemStrPtr(e.name ? e.name + "\n" + e.message : e);
-		//	var sizeofEditBalloonTip = 4 + 4 + 4 + 4;
-		//	var lpTip = AkelPad.MemAlloc(sizeofEditBalloonTip);
-		//	AkelPad.MemCopy(lpTip,      sizeofEditBalloonTip, 3 /*DT_DWORD*/);
-		//	AkelPad.MemCopy(lpTip + 4,  lpTitle,              3 /*DT_DWORD*/);
-		//	AkelPad.MemCopy(lpTip + 8,  lpText,               3 /*DT_DWORD*/);
-		//	AkelPad.MemCopy(lpTip + 12, 2 /*TTI_WARNING*/,    3 /*DT_DWORD*/);
-		//	AkelPad.SendMessage(hWndEdit, 0x1503 /*EM_SHOWBALLOONTIP*/, 0, lpTip);
-		//	AkelPad.MemFree(lpTitle);
-		//	AkelPad.MemFree(lpText);
-		//	AkelPad.MemFree(lpTip);
-		//}
+		if(hWndEdit && displayCalcErrors) {
+			//hWndEdit && AkelPad.SendMessage(hWndEdit, 0x1504 /*EM_HIDEBALLOONTIP*/, 0, 0);
+			//typedef struct tagEDITBALLOONTIP {
+			//  DWORD   cbStruct;
+			//  LPCWSTR pszTitle;
+			//  LPCWSTR pszText;
+			//  INT     ttiIcon;
+			//} EDITBALLOONTIP, *PEDITBALLOONTIP;
+			var lpTitle = AkelPad.MemStrPtr(_localize("Error"));
+			var lpText = AkelPad.MemStrPtr(e.name ? e.name + "\n" + e.message : e);
+			var sizeofEditBalloonTip = 4 + 4 + 4 + 4;
+			var lpTip = AkelPad.MemAlloc(sizeofEditBalloonTip);
+			AkelPad.MemCopy(lpTip,      sizeofEditBalloonTip, 3 /*DT_DWORD*/);
+			AkelPad.MemCopy(lpTip + 4,  lpTitle,              3 /*DT_DWORD*/);
+			AkelPad.MemCopy(lpTip + 8,  lpText,               3 /*DT_DWORD*/);
+			AkelPad.MemCopy(lpTip + 12, 2 /*TTI_WARNING*/,    3 /*DT_DWORD*/);
+			AkelPad.SendMessage(hWndEdit, 0x1503 /*EM_SHOWBALLOONTIP*/, 0, lpTip);
+			AkelPad.MemFree(lpTitle);
+			AkelPad.MemFree(lpText);
+			AkelPad.MemFree(lpTip);
+		}
 		return undefined;
 	}
 	return num;
