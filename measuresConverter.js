@@ -3790,7 +3790,10 @@ function isExpression(str) {
 	return true;
 }
 function prepareExpression(str) {
-	return str.replace(/[\s\xa0]/g, "").replace(/,/g, ".");
+	return str
+		.replace(/[\s\xa0]/g, "")
+		.replace(/,/g, ".")
+		.replace(/[-+*\/]\s*$/, ""); // Looks like non-terminated expression (e.g. "2+2*")
 }
 function numToStr(n) {
 	var roundVal = curType == "&Currency" ? roundCurrencies : roundMeasures;
