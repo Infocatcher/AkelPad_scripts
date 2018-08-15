@@ -3791,9 +3791,9 @@ function isExpression(str) {
 }
 function prepareExpression(str) {
 	return str
-		.replace(/[\s\xa0]/g, "")
-		.replace(/,/g, ".")
-		.replace(/[-+*\/]\s*$/, ""); // Looks like non-terminated expression (e.g. "2+2*")
+		.replace(/(\d)[\s\xa0]+/g, "$1") // 12 345 -> 12345
+		.replace(/(\d),/g, "$1.") // 1,23 -> 1.23
+		.replace(/[-+*\/,.]\s*$/, ""); // Looks like non-terminated expression (e.g. "2+2*")
 }
 function numToStr(n) {
 	var roundVal = curType == "&Currency" ? roundCurrencies : roundMeasures;
