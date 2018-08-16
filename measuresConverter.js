@@ -2763,8 +2763,12 @@ function converterDialog(modal) {
 			case 256: //WM_KEYDOWN
 				var ctrl = ctrlPressed();
 				var shift = shiftPressed();
-				if(wParam == 27 /*VK_ESCAPE*/) // Escape
-					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
+				if(wParam == 27 /*VK_ESCAPE*/) { // Escape
+					if(!calcNum._hasTipFor)
+						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
+					else
+						AkelPad.SendMessage(hWndValue, 0x1504 /*EM_HIDEBALLOONTIP*/, 0, 0);
+				}
 				else if(wParam == 13 /*VK_RETURN*/) {
 					if(ctrl || shift) // Ctrl+Enter, Shift+Enter
 						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_CONVERT, 0);
@@ -3734,6 +3738,7 @@ function setRedraw(hWnd, bRedraw) {
 	bRedraw && oSys.Call("user32::InvalidateRect", hWnd, 0, true);
 }
 function calcNum(val, showErrors, hWnd, hWndEdit) {
+	var origVal = val;
 	val = val.replace(/^\s+|\s+$/g, "");
 	if(!val)
 		return undefined;
@@ -3755,7 +3760,7 @@ function calcNum(val, showErrors, hWnd, hWndEdit) {
 			dialogTitle,
 			16 /*MB_ICONERROR*/
 		);
-		if(hWndEdit && displayCalcErrors) {
+		if(hWndEdit && displayCalcErrors && calcNum._hasTipFor != origVal) {
 			//hWndEdit && AkelPad.SendMessage(hWndEdit, 0x1504 /*EM_HIDEBALLOONTIP*/, 0, 0);
 			//typedef struct tagEDITBALLOONTIP {
 			//  DWORD   cbStruct;
@@ -3771,13 +3776,15 @@ function calcNum(val, showErrors, hWnd, hWndEdit) {
 			AkelPad.MemCopy(lpTip + 4,  lpTitle,              3 /*DT_DWORD*/);
 			AkelPad.MemCopy(lpTip + 8,  lpText,               3 /*DT_DWORD*/);
 			AkelPad.MemCopy(lpTip + 12, 2 /*TTI_WARNING*/,    3 /*DT_DWORD*/);
-			AkelPad.SendMessage(hWndEdit, 0x1503 /*EM_SHOWBALLOONTIP*/, 0, lpTip);
+			if(AkelPad.SendMessage(hWndEdit, 0x1503 /*EM_SHOWBALLOONTIP*/, 0, lpTip))
+				calcNum._hasTipFor = origVal;
 			AkelPad.MemFree(lpTitle);
 			AkelPad.MemFree(lpText);
 			AkelPad.MemFree(lpTip);
 		}
 		return undefined;
 	}
+	calcNum._hasTipFor = undefined;
 	return num;
 }
 function isExpression(str) {
