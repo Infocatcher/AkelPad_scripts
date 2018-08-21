@@ -10,7 +10,10 @@
 
 //===================
 // Special expressions:
-// =someExpression() => "someExpression() = result"
+//   =someExpression()  =>  "someExpression() = result"
+//   someExpression()=  =>  "someExpression() = result"
+// Example:
+//   2+2=  =>  "2+2 = 4"
 
 // Usage:
 //   Call("Scripts::Main", 1, "insertEval.js")
