@@ -120,8 +120,8 @@ function calc(expr, forceAsk) {
 		expr = utils.prompt(_localize("Expression:"), expr);
 	if(!expr)
 		return;
-	if(/^\s*=\s*/.test(expr)) {
-		expr = expr.substr(RegExp.lastMatch.length);
+	if(/^\s*=\s*/.test(expr) || /\s*=\s*$/.test(expr)) { // =2+2 (legacy) or 2+2= (since 2018-08-21)
+		expr = RegExp.rightContext || RegExp.leftContext;
 		var extOutput = true;
 	}
 	var isHex = /^0x[\da-f]/i.test(expr);
