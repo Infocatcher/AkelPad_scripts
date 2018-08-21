@@ -123,7 +123,7 @@ function calc(expr, forceAsk) {
 		expr = utils.prompt(_localize("Expression:"), expr);
 	if(!expr)
 		return;
-	if(/^\s*=\s*/.test(expr) || /\s*=\s*$/.test(expr)) { // =2+2 (legacy) or 2+2= (since 2018-08-21)
+	if(/^\s*=\s*/.test(expr) || /[ \t]*=\s*$/.test(expr)) { // =2+2 (legacy) or 2+2= (since 2018-08-21)
 		expr = RegExp.rightContext || RegExp.leftContext;
 		var extOutput = true;
 	}
@@ -150,7 +150,7 @@ function calc(expr, forceAsk) {
 		return;
 	}
 	if(extOutput)
-		res = expr + " = " + res;
+		res = expr + (/[\r\n]$/.test(expr) ? "= " : " = ") + res;
 	if(res == AkelPad.GetSelText())
 		return;
 	if(!AkelPad.GetEditReadOnly(AkelPad.GetEditWnd()))
