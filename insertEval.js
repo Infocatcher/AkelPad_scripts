@@ -146,8 +146,12 @@ function calc(expr, forceAsk) {
 	if(!newExpr)
 		return; // Cancel
 	if(newExpr != res) {
-		calc(newExpr);
-		return;
+		if(newExpr == "=")
+			extOutput = true;
+		else {
+			calc(newExpr);
+			return;
+		}
 	}
 	if(extOutput)
 		res = expr + (/[\r\n]$/.test(expr) ? "= " : " = ") + res;
