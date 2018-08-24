@@ -81,14 +81,13 @@ var utils = {
 	},
 
 	hex: function(n) {
-		n = +n;
-		return (n < 0 ? "-" : "") + "0x" + Math.abs(n).toString(16);
+		return "0x" + (+n).toString(16);
 	},
 	oct: function(n) {
-		return "0" + (+n).toString(8);
+		return "0o" + (+n).toString(8);
 	},
 	bin: function(n) {
-		return "b" + (+n).toString(2);
+		return "0b" + (+n).toString(2);
 	},
 	p: function(n) {
 		return ("" + n).replace(/(\d)(?=(?:\d{3})+(?:\D|$))/g, "$1 ");
