@@ -51,14 +51,14 @@ var window = document.parentWindow;
 
 var utils = {
 	alert: function(msg, icon, addTitle) {
-		AkelPad.MessageBox(hMainWnd, String(msg), dialogTitle + (addTitle ? " :: " + addTitle : ""), icon || 48 /*MB_ICONEXCLAMATION*/);
+		AkelPad.MessageBox(hMainWnd, "" + msg, dialogTitle + (addTitle ? " :: " + addTitle : ""), icon || 48 /*MB_ICONEXCLAMATION*/);
 	},
 	prompt: function(msg, defaultVel) {
-		var ret = AkelPad.InputBox(hMainWnd, dialogTitle, String(msg), defaultVel);
+		var ret = AkelPad.InputBox(hMainWnd, dialogTitle, "" + msg, defaultVel);
 		return ret == undefined ? null : ret;
 	},
 	confirm: function(msg) {
-		return AkelPad.MessageBox(hMainWnd, String(msg), dialogTitle, 33 /*MB_OKCANCEL|MB_ICONQUESTION*/) == 1 /*IDOK*/;
+		return AkelPad.MessageBox(hMainWnd, "" + msg, dialogTitle, 33 /*MB_OKCANCEL|MB_ICONQUESTION*/) == 1 /*IDOK*/;
 	},
 	setTimeout: function(func, delay) {
 		return window.setTimeout(func, delay);
@@ -81,22 +81,22 @@ var utils = {
 	},
 
 	hex: function(n) {
-		n = Number(n);
+		n = +n;
 		return (n < 0 ? "-" : "") + "0x" + Math.abs(n).toString(16);
 	},
 	oct: function(n) {
-		return "0" + Number(n).toString(8);
+		return "0" + (+n).toString(8);
 	},
 	bin: function(n) {
-		return "b" + Number(n).toString(2);
+		return "b" + (+n).toString(2);
 	},
 	p: function(n) {
-		return String(n).replace(/(\d)(?=(?:\d{3})+(?:\D|$))/g, "$1 ");
+		return ("" + n).replace(/(\d)(?=(?:\d{3})+(?:\D|$))/g, "$1 ");
 	},
 
 	append: function(s) {
 		var sep = "\n";
-		s = String(s);
+		s += "";
 
 		var hWndEdit = AkelPad.GetEditWnd();
 		setRedraw(hWndEdit, false);
@@ -141,7 +141,7 @@ function calc(expr, forceAsk) {
 	if(isHex && typeof res == "number")
 		res = utils.hex(res);
 	else
-		res = String(res);
+		res += "";
 	var newExpr = utils.prompt(_localize("Result:"), res);
 	if(!newExpr)
 		return; // Cancel
