@@ -116,6 +116,9 @@ var utils = {
 			this._logMsgs.push(arguments[i]);
 	}
 };
+utils.h = utils.hex;
+utils.o = utils.oct;
+utils.b = utils.bin;
 utils.window = utils;
 
 function calc(expr, forceAsk) {
