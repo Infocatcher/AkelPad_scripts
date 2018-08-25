@@ -66,6 +66,12 @@ var utils = {
 	setInterval: function(func, delay) {
 		return window.setInterval(func, delay);
 	},
+	clearTimeout: function(id) {
+		window.clearTimeout(id);
+	},
+	clearInterval: function(id) {
+		window.clearInterval(id);
+	},
 	document: {
 		open: function() {},
 		write: function(s) {
