@@ -173,27 +173,15 @@ if(hMainWnd) {
 	calc(AkelPad.GetSelText());
 	if(utils._logMsgs.length) {
 		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+		var hWndEdit = AkelPad.GetEditWnd();
+		setRedraw(hWndEdit, false);
+		AkelPad.SetSel(0, -1);
+		AkelPad.ReplaceSel(utils._logMsgs.join("\n"));
 		AkelPad.SetSel(0, 0);
-		insertNoScroll(utils._logMsgs.join("\n"), true);
+		setRedraw(hWndEdit, true);
 	}
 }
 
-function insertNoScroll(str, selectAll) {
-	var lpPoint = AkelPad.MemAlloc(8 /*sizeof(POINT)*/);
-	if(!lpPoint)
-		return;
-	var hWndEdit = AkelPad.GetEditWnd();
-	setRedraw(hWndEdit, false);
-	AkelPad.SendMessage(hWndEdit, 1245 /*EM_GETSCROLLPOS*/, 0, lpPoint);
-
-	selectAll && AkelPad.SetSel(0, -1);
-	AkelPad.ReplaceSel(str);
-	AkelPad.SetSel(0, 0);
-
-	AkelPad.SendMessage(hWndEdit, 1246 /*EM_SETSCROLLPOS*/, 0, lpPoint);
-	setRedraw(hWndEdit, true);
-	AkelPad.MemFree(lpPoint);
-}
 function setRedraw(hWnd, bRedraw) {
 	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
 	bRedraw && oSys.Call("user32::InvalidateRect", hWnd, 0, true);
