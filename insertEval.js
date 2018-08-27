@@ -53,8 +53,8 @@ var utils = {
 	alert: function(msg, icon, addTitle) {
 		AkelPad.MessageBox(hMainWnd, "" + msg, dialogTitle + (addTitle ? " :: " + addTitle : ""), icon || 48 /*MB_ICONEXCLAMATION*/);
 	},
-	prompt: function(msg, defaultVel) {
-		var ret = AkelPad.InputBox(hMainWnd, dialogTitle, "" + msg, defaultVel);
+	prompt: function(msg, defaultVal) {
+		var ret = AkelPad.InputBox(hMainWnd, dialogTitle, "" + msg, defaultVal);
 		return ret == undefined ? null : ret;
 	},
 	confirm: function(msg) {
