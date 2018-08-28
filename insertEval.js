@@ -162,6 +162,7 @@ function calc(expr, forceAsk) {
 		res = utils.hex(res);
 	else
 		res += "";
+	utils._openLog();
 	var newExpr = utils.prompt(_localize("Result:"), res);
 	if(!newExpr)
 		return; // Cancel
@@ -181,10 +182,7 @@ function calc(expr, forceAsk) {
 		AkelPad.ReplaceSel(res);
 }
 
-if(hMainWnd) {
-	calc(AkelPad.GetSelText());
-	utils._openLog();
-}
+hMainWnd && calc(AkelPad.GetSelText());
 
 function setRedraw(hWnd, bRedraw) {
 	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
