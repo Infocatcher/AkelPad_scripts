@@ -178,6 +178,7 @@ if(hMainWnd) {
 		AkelPad.SetSel(0, -1);
 		AkelPad.ReplaceSel(utils._logMsgs.join("\n"));
 		AkelPad.SetSel(0, 0);
+		isCoderRunning() && AkelPad.Call("Coder::Settings", 1, ".js");
 		setRedraw(hWndEdit, true);
 	}
 }
@@ -185,4 +186,9 @@ if(hMainWnd) {
 function setRedraw(hWnd, bRedraw) {
 	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
 	bRedraw && oSys.Call("user32::InvalidateRect", hWnd, 0, true);
+}
+function isCoderRunning() {
+	return AkelPad.IsPluginRunning("Coder::HighLight")
+		|| AkelPad.IsPluginRunning("Coder::AutoComplete")
+		|| AkelPad.IsPluginRunning("Coder::CodeFold");
 }
