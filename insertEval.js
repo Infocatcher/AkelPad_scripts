@@ -119,6 +119,18 @@ var utils = {
 	_log: function() {
 		for(var i = 0, l = arguments.length; i < l; i++)
 			this._logMsgs.push(arguments[i]);
+	},
+	_openLog: function() {
+		if(!this._logMsgs.length)
+			return;
+		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+		var hWndEdit = AkelPad.GetEditWnd();
+		setRedraw(hWndEdit, false);
+		AkelPad.SetSel(0, -1);
+		AkelPad.ReplaceSel(utils._logMsgs.join("\n"));
+		AkelPad.SetSel(0, 0);
+		isCoderRunning() && AkelPad.Call("Coder::Settings", 1, ".js");
+		setRedraw(hWndEdit, true);
 	}
 };
 utils.h = utils.hex;
@@ -171,16 +183,7 @@ function calc(expr, forceAsk) {
 
 if(hMainWnd) {
 	calc(AkelPad.GetSelText());
-	if(utils._logMsgs.length) {
-		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
-		var hWndEdit = AkelPad.GetEditWnd();
-		setRedraw(hWndEdit, false);
-		AkelPad.SetSel(0, -1);
-		AkelPad.ReplaceSel(utils._logMsgs.join("\n"));
-		AkelPad.SetSel(0, 0);
-		isCoderRunning() && AkelPad.Call("Coder::Settings", 1, ".js");
-		setRedraw(hWndEdit, true);
-	}
+	utils._openLog();
 }
 
 function setRedraw(hWnd, bRedraw) {
