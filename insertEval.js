@@ -19,6 +19,8 @@
 //   Call("Scripts::Main", 1, "insertEval.js")
 //===================
 
+var useLogPlugin = true;
+
 function _localize(s) {
 	var strings = {
 		"Expression:": {
@@ -117,8 +119,13 @@ var utils = {
 
 	_logMsgs: [],
 	_log: function() {
-		for(var i = 0, l = arguments.length; i < l; i++)
-			this._logMsgs.push(arguments[i]);
+		//for(var i = 0, l = arguments.length; i < l; i++)
+		//	this._logMsgs.push(arguments[i]);
+		var s = Array.prototype.join.call(arguments, "\n");
+		if(useLogPlugin)
+			AkelPad.Call("Log::Output", 4, s, s.length, 2, 0, ".js");
+		else
+			this._logMsgs.push(s);
 	},
 	_openLog: function() {
 		if(!this._logMsgs.length)
