@@ -77,15 +77,15 @@ var utils = {
 	document: {
 		open: function() {},
 		write: function(s) {
-			utils.alert(s, null, "document.write");
+			utils._log("document.write():\n" + s);
 		},
 		writeln: function(s) {
-			utils.alert(s, null, "document.writeln");
+			utils._log("document.writeln():\n" + s);
 		},
 		close: function() {}
 	},
 	print: function(s) {
-		utils.alert(s, null, "print");
+		this._log("print():\n" + s);
 	},
 
 	hex: function(n) {
