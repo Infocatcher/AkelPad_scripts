@@ -187,6 +187,10 @@ function calc(expr, forceAsk) {
 		return;
 	if(!AkelPad.GetEditReadOnly(AkelPad.GetEditWnd()))
 		AkelPad.ReplaceSel(res);
+	else {
+		utils._log(res);
+		utils._openLog();
+	}
 }
 
 hMainWnd && calc(AkelPad.GetSelText());
