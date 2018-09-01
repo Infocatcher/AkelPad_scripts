@@ -45,6 +45,15 @@ var oSys = AkelPad.SystemFunction();
 var dialogTitle = WScript.ScriptName.replace(/^[!-\-_]+/, "");
 dialogTitle = dialogTitle.charAt(0).toUpperCase() + dialogTitle.substr(1);
 
+if(
+	useLogPlugin
+	&& oSys.Call(
+		"kernel32::GetFileAttributes" + _TCHAR,
+		AkelPad.GetAkelDir(4 /*ADTYPE_PLUGS*/) + "\\Log.dll"
+	) == -1
+)
+	useLogPlugin = false;
+
 var document = new ActiveXObject("htmlfile");
 // Initialize document (we can't use something like document.documentElement without this):
 document.open();
