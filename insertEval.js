@@ -161,7 +161,7 @@ function calc(expr, forceAsk) {
 		expr = RegExp.rightContext || RegExp.leftContext;
 		var extOutput = true;
 	}
-	var isHex = /^0x[\da-f]/i.test(expr);
+	var isHex = /^\s*0x[\da-f]/i.test(expr);
 	var res;
 	try {
 		with(Math) with(WScript) with(utils) with(AkelPad)
@@ -172,7 +172,7 @@ function calc(expr, forceAsk) {
 		calc(expr, true);
 		return;
 	}
-	if(isHex && typeof res == "number")
+	if(isHex && typeof res == "number" && isFinite(res))
 		res = utils.hex(res);
 	else
 		res += "";
