@@ -14,6 +14,11 @@
 //   someExpression()=  =>  "someExpression() = result"
 // Example:
 //   2+2=  =>  "2+2 = 4"
+// Converters:
+//   2*8=b   =>  "2*8 = 0b10000" (or =0b)
+//   2*8=o   =>  "2*8 = 0o20"    (or =0o)
+//   2*8=x   =>  "2*8 = 0x10"    (or =0x or =h)
+//   1234=p  =>  "1234 = 1 234"
 
 // Usage:
 //   Call("Scripts::Main", 1, "insertEval.js")
@@ -147,7 +152,7 @@ var utils = {
 		setRedraw(hWndEdit, true);
 	}
 };
-utils.h = utils.hex;
+utils.h = utils.x = utils.hex;
 utils.o = utils.oct;
 utils.b = utils.bin;
 utils.window = utils;
@@ -157,11 +162,17 @@ function calc(expr, forceAsk) {
 		expr = utils.prompt(_localize("Expression:"), expr);
 	if(!expr)
 		return;
-	if(/^\s*=\s*/.test(expr) || /[ \t]*=\s*$/.test(expr)) { // =2+2 (legacy) or 2+2= (since 2018-08-21)
+	var resType = RegExp.$1 = ""; // Force reset
+	// =2+2 (legacy)
+	// 2+2= (since 2018-08-21)
+	// 2+2=b -> 0b100 (since 2018-09-03)
+	if(/^\s*=\s*/.test(expr) || /[ \t]*=\s*(0?[xob]|h|p)?$/i.test(expr)) {
 		expr = RegExp.rightContext || RegExp.leftContext;
+		resType = RegExp.$1.replace(/^0/, "").toLowerCase();
 		var extOutput = true;
 	}
-	var isHex = /^\s*0x[\da-f]/i.test(expr);
+	if(!resType && /^\s*0x[\da-f]/i.test(expr))
+		resType = "x";
 	var res;
 	try {
 		with(Math) with(WScript) with(utils) with(AkelPad)
@@ -172,8 +183,8 @@ function calc(expr, forceAsk) {
 		calc(expr, true);
 		return;
 	}
-	if(isHex && typeof res == "number" && isFinite(res))
-		res = utils.hex(res);
+	if(resType && typeof utils[resType] == "function" && typeof res == "number" && isFinite(res))
+		res = utils[resType](res);
 	else
 		res += "";
 	utils._openLog();
