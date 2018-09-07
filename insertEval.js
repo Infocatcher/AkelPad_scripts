@@ -22,9 +22,10 @@
 
 // Usage:
 //   Call("Scripts::Main", 1, "insertEval.js")
+//   Call("Scripts::Main", 1, "insertEval.js", "-useLogPlugin=false")
 //===================
 
-var useLogPlugin = true;
+var useLogPlugin = AkelPad.GetArgValue("useLogPlugin", true);
 
 function _localize(s) {
 	var strings = {
