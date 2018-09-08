@@ -299,7 +299,7 @@ function getTempFile(hWndEdit, file) {
 	}
 	else {
 		fileExt = getCurrentExtension();
-		fileName = "akelpad-temp";
+		fileName = "AkelPad_winMergeTabs_temp";
 	}
 	var tmpDir = expandVariables(tempDir);
 	if(!fso.FolderExists(tmpDir))
