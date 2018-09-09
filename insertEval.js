@@ -25,6 +25,7 @@
 //   Call("Scripts::Main", 1, "insertEval.js", "-useLogPlugin=false")
 //===================
 
+(function(evalWrapper) {
 var useLogPlugin = AkelPad.GetArgValue("useLogPlugin", true);
 
 function _localize(s) {
@@ -176,8 +177,7 @@ function calc(expr, forceAsk) {
 		resType = "x";
 	var res;
 	try {
-		with(Math) with(WScript) with(utils) with(AkelPad)
-			res = eval(expr);
+		res = evalWrapper(expr, utils);
 	}
 	catch(e) {
 		AkelPad.MessageBox(hMainWnd, e.name + "\n" + e.message, dialogTitle, 16 /*MB_ICONERROR*/);
@@ -223,3 +223,7 @@ function isCoderRunning() {
 		|| AkelPad.IsPluginRunning("Coder::AutoComplete")
 		|| AkelPad.IsPluginRunning("Coder::CodeFold");
 }
+})(function evalWrapper(expr, utils) {
+	with(Math) with(WScript) with(utils) with(AkelPad)
+		return eval(expr);
+});
