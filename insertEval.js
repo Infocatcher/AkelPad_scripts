@@ -22,11 +22,12 @@
 
 // Usage:
 //   Call("Scripts::Main", 1, "insertEval.js")
-//   Call("Scripts::Main", 1, "insertEval.js", "-useLogPlugin=false")
+//   Call("Scripts::Main", 1, "insertEval.js", "-useLogPlugin=false -useSpaces=false")
 //===================
 
 (function(evalWrapper) {
 var useLogPlugin = AkelPad.GetArgValue("useLogPlugin", true);
+var useSpaces = AkelPad.GetArgValue("useSpaces", true);
 
 function _localize(s) {
 	var strings = {
@@ -200,8 +201,10 @@ function calc(expr, forceAsk) {
 			return;
 		}
 	}
-	if(extOutput)
-		res = expr + (/[\r\n]$/.test(expr) ? "= " : " = ") + res;
+	if(extOutput) {
+		var sp = useSpaces ? " " : "";
+		res = expr + (/[\r\n]$/.test(expr) ? "=" : sp + "=") + sp + res;
+	}
 	if(res == AkelPad.GetSelText())
 		return;
 	if(!AkelPad.GetEditReadOnly(AkelPad.GetEditWnd()))
