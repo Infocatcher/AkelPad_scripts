@@ -20,6 +20,12 @@
 //   2*8=x   =>  "2*8 = 0x10"    (or =0x or =h)
 //   1234=p  =>  "1234 = 1 234"
 
+// Arguments:
+//   -useLogPlugin=true   - use Log plugin to show results of _log() calls and for read-only documents
+//                =false  - show results in new document (as in old versions)
+//   -useSpaces=true      - 2+2= => "2+2 = 4"
+//             =false     - 2+2= => "2+2=4"
+
 // Usage:
 //   Call("Scripts::Main", 1, "insertEval.js")
 //   Call("Scripts::Main", 1, "insertEval.js", "-useLogPlugin=false -useSpaces=false")
