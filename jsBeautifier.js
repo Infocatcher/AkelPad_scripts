@@ -201,6 +201,20 @@ if(!Array.prototype.indexOf) {
 		return -1;
 	};
 }
+if(!Array.prototype.some) {
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some#Polyfill
+	Array.prototype.some = function(fun, thisArg) {
+		if(this == null)
+			throw new TypeError("Array.prototype.some called on null or undefined");
+		if(typeof fun !== "function")
+			throw new TypeError();
+		var t = Object(this);
+		for(var i = 0, len = t.length >>> 0; i < len; ++i)
+			if(i in t && fun.call(thisArg, t[i], i, t))
+				return true;
+		return false;
+	};
+}
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/Trim#Polyfill
 if(!String.prototype.trim) {
 	String.prototype.trim = function () {
