@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/gh-pages 2018-10-19 14:35:47 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/gh-pages 2018-10-18 08:35:32 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -33377,9 +33377,9 @@ function selfUpdate() {
 		request.open("GET", rssUrl + noCache, false);
 		request.send(null);
 		var text = request.responseText;
-		if(/<updated>(\d{4})-(\d+)-(\d+)T(\d+):(\d+):(\d+)-(\d+):(\d+)<\/updated>/.test(text)) {
+		if(/<updated>(\d{4})-(\d+)-(\d+)T(\d+):(\d+):(\d+)Z<\/updated>/.test(text)) {
 			var r = RegExp;
-			var d = new Date(Date.UTC(+r.$1, +r.$2 - 1, +r.$3, +r.$4 + +r.$7, +r.$5 + +r.$8, +r.$6));
+			var d = new Date(Date.UTC(+r.$1, +r.$2 - 1, +r.$3, +r.$4, +r.$5, +r.$6));
 		}
 		else {
 			var d = new Date();
