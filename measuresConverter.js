@@ -3451,6 +3451,7 @@ function converterDialog(modal) {
 					windowText(hWndUpdate, btnLabel);
 					//if(curType != "&Currency")
 					setDialogTitle();
+					saveOffline && saveOfflineCurrencyData(true);
 				}
 				if(
 					!report
