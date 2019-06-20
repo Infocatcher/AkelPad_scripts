@@ -742,6 +742,8 @@ function selectScriptDialog(modal) {
 
 		dlgW = curW;
 		dlgH = curH;
+
+		oSys.Call("user32::InvalidateRect", hWnd, 0, true);
 	}
 	function getWindowRect(hWnd, hWndParent) {
 		var lpRect = AkelPad.MemAlloc(16); //sizeof(RECT)
