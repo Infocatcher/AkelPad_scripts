@@ -2485,6 +2485,8 @@ function converterDialog(modal) {
 		dlgH = curH;
 		if(checked(hWndActShow))
 			outputH = curH - dlgMinH - 12;
+
+		oSys.Call("user32::InvalidateRect", hWnd, 0, true);
 	}
 	function showOutput(show) {
 		handleResize = false;
