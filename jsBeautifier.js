@@ -6,7 +6,7 @@
 // Version: 0.2.8 - 2015-06-21
 // Author: Infocatcher
 // Based on scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/gh-pages 2018-10-18 08:35:32 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2019-08-06 18:14:27 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -581,7 +581,8 @@ var legacy_beautify_js =
 
 
 
-var Beautifier = __webpack_require__(1).Beautifier;
+var Beautifier = __webpack_require__(1).Beautifier,
+  Options = __webpack_require__(5).Options;
 
 function js_beautify(js_source_text, options) {
   var beautifier = new Beautifier(js_source_text, options);
@@ -589,6 +590,9 @@ function js_beautify(js_source_text, options) {
 }
 
 module.exports = js_beautify;
+module.exports.defaultOptions = function() {
+  return new Options();
+};
 
 
 /***/ }),
@@ -635,21 +639,6 @@ var line_starters = __webpack_require__(7).line_starters;
 var positionable_operators = __webpack_require__(7).positionable_operators;
 var TOKEN = __webpack_require__(7).TOKEN;
 
-function remove_redundant_indentation(output, frame) {
-  // This implementation is effective but has some issues:
-  //     - can cause line wrap to happen too soon due to indent removal
-  //           after wrap points are calculated
-  // These issues are minor compared to ugly indentation.
-
-  if (frame.multiline_frame ||
-    frame.mode === MODE.ForInitializer ||
-    frame.mode === MODE.Conditional) {
-    return;
-  }
-
-  // remove one indent from each line inside this section
-  output.remove_indent(frame.start_line_index);
-}
 
 function in_array(what, arr) {
   return arr.indexOf(what) !== -1;
@@ -694,6 +683,22 @@ var MODE = {
   Conditional: 'Conditional', //'(COND-EXPRESSION)',
   Expression: 'Expression' //'(EXPRESSION)'
 };
+
+function remove_redundant_indentation(output, frame) {
+  // This implementation is effective but has some issues:
+  //     - can cause line wrap to happen too soon due to indent removal
+  //           after wrap points are calculated
+  // These issues are minor compared to ugly indentation.
+
+  if (frame.multiline_frame ||
+    frame.mode === MODE.ForInitializer ||
+    frame.mode === MODE.Conditional) {
+    return;
+  }
+
+  // remove one indent from each line inside this section
+  output.remove_indent(frame.start_line_index);
+}
 
 // we could use just string.split, but
 // IE doesn't like returning empty strings
@@ -789,6 +794,7 @@ Beautifier.prototype.create_flags = function(flags_base, mode) {
     in_case: false, // we're on the exact line with "case 0:"
     case_body: false, // the indented case-action block
     indentation_level: next_indent_level,
+    alignment: 0,
     line_indent_level: flags_base ? flags_base.line_indent_level : next_indent_level,
     start_line_index: this._output.get_line_number(),
     ternary_depth: 0
@@ -961,11 +967,7 @@ Beautifier.prototype.allow_wrap_or_preserved_newline = function(current_token, f
       // between them and the following expression.
       return;
     }
-    var proposed_line_length = this._output.current_line.get_character_count() + current_token.text.length +
-      (this._output.space_before_token ? 1 : 0);
-    if (proposed_line_length >= this._options.wrap_line_length) {
-      this.print_newline(false, true);
-    }
+    this._output.set_wrap_point();
   }
 };
 
@@ -988,16 +990,19 @@ Beautifier.prototype.print_newline = function(force_newline, preserve_statement_
 
 Beautifier.prototype.print_token_line_indentation = function(current_token) {
   if (this._output.just_added_newline()) {
-    if (this._options.keep_array_indentation && is_array(this._flags.mode) && current_token.newlines) {
+    if (this._options.keep_array_indentation &&
+      current_token.newlines &&
+      (current_token.text === '[' || is_array(this._flags.mode))) {
+      this._output.current_line.set_indent(-1);
       this._output.current_line.push(current_token.whitespace_before);
       this._output.space_before_token = false;
-    } else if (this._output.set_indent(this._flags.indentation_level)) {
+    } else if (this._output.set_indent(this._flags.indentation_level, this._flags.alignment)) {
       this._flags.line_indent_level = this._flags.indentation_level;
     }
   }
 };
 
-Beautifier.prototype.print_token = function(current_token, printable_token) {
+Beautifier.prototype.print_token = function(current_token) {
   if (this._output.raw) {
     this._output.add_raw_token(current_token);
     return;
@@ -1023,20 +1028,24 @@ Beautifier.prototype.print_token = function(current_token, printable_token) {
     }
   }
 
-  printable_token = printable_token || current_token.text;
   this.print_token_line_indentation(current_token);
-  this._output.add_token(printable_token);
+  this._output.non_breaking_space = true;
+  this._output.add_token(current_token.text);
+  if (this._output.previous_token_wrapped) {
+    this._flags.multiline_frame = true;
+  }
 };
 
 Beautifier.prototype.indent = function() {
   this._flags.indentation_level += 1;
+  this._output.set_indent(this._flags.indentation_level, this._flags.alignment);
 };
 
 Beautifier.prototype.deindent = function() {
   if (this._flags.indentation_level > 0 &&
     ((!this._flags.parent) || this._flags.indentation_level > this._flags.parent.indentation_level)) {
     this._flags.indentation_level -= 1;
-
+    this._output.set_indent(this._flags.indentation_level, this._flags.alignment);
   }
 };
 
@@ -1049,6 +1058,7 @@ Beautifier.prototype.set_mode = function(mode) {
   }
 
   this._flags = this.create_flags(this._previous_flags, mode);
+  this._output.set_indent(this._flags.indentation_level, this._flags.alignment);
 };
 
 
@@ -1059,6 +1069,7 @@ Beautifier.prototype.restore_mode = function() {
     if (this._previous_flags.mode === MODE.Statement) {
       remove_redundant_indentation(this._output, this._previous_flags);
     }
+    this._output.set_indent(this._flags.indentation_level, this._flags.alignment);
   }
 };
 
@@ -1116,8 +1127,8 @@ Beautifier.prototype.handle_start_expr = function(current_token) {
       if (reserved_array(this._flags.last_token, line_starters)) {
         this._output.space_before_token = true;
       }
-      this.set_mode(next_mode);
       this.print_token(current_token);
+      this.set_mode(next_mode);
       this.indent();
       if (this._options.space_in_paren) {
         this._output.space_before_token = true;
@@ -1169,13 +1180,24 @@ Beautifier.prototype.handle_start_expr = function(current_token) {
       // function name() vs function name ()
       // function* name() vs function* name ()
       // async name() vs async name ()
-      if (this._options.space_after_named_function) {
+      // In ES6, you can also define the method properties of an object
+      // var obj = {a: function() {}}
+      // It can be abbreviated
+      // var obj = {a() {}}
+      // var obj = { a() {}} vs var obj = { a () {}}
+      // var obj = { * a() {}} vs var obj = { * a () {}}
+      var peek_back_two = this._tokens.peek(-3);
+      if (this._options.space_after_named_function && peek_back_two) {
         // peek starts at next character so -1 is current token
         var peek_back_three = this._tokens.peek(-4);
-        var peek_back_two = this._tokens.peek(-3);
         if (reserved_array(peek_back_two, ['async', 'function']) ||
-          (reserved_array(peek_back_three, ['async', 'function']) && peek_back_two.text === '*')) {
+          (peek_back_two.text === '*' && reserved_array(peek_back_three, ['async', 'function']))) {
           this._output.space_before_token = true;
+        } else if (this._flags.mode === MODE.ObjectLiteral) {
+          if ((peek_back_two.text === '{' || peek_back_two.text === ',') ||
+            (peek_back_two.text === '*' && (peek_back_three.text === '{' || peek_back_three.text === ','))) {
+            this._output.space_before_token = true;
+          }
         }
       }
     } else {
@@ -1193,10 +1215,8 @@ Beautifier.prototype.handle_start_expr = function(current_token) {
       (this._flags.last_token.text === '*' &&
         (in_array(this._last_last_text, ['function', 'yield']) ||
           (this._flags.mode === MODE.ObjectLiteral && in_array(this._last_last_text, ['{', ',']))))) {
-
       this._output.space_before_token = this._options.space_after_anon_function;
     }
-
   }
 
   if (this._flags.last_token.text === ';' || this._flags.last_token.type === TOKEN.START_BLOCK) {
@@ -1207,8 +1227,8 @@ Beautifier.prototype.handle_start_expr = function(current_token) {
     this.allow_wrap_or_preserved_newline(current_token, current_token.newlines);
   }
 
-  this.set_mode(next_mode);
   this.print_token(current_token);
+  this.set_mode(next_mode);
   if (this._options.space_in_paren) {
     this._output.space_before_token = true;
   }
@@ -1240,13 +1260,10 @@ Beautifier.prototype.handle_end_expr = function(current_token) {
       this._output.space_before_token = true;
     }
   }
-  if (current_token.text === ']' && this._options.keep_array_indentation) {
-    this.print_token(current_token);
-    this.restore_mode();
-  } else {
-    this.restore_mode();
-    this.print_token(current_token);
-  }
+  this.deindent();
+  this.print_token(current_token);
+  this.restore_mode();
+
   remove_redundant_indentation(this._output, this._previous_flags);
 
   // do {} while () // no statement required after
@@ -1267,6 +1284,8 @@ Beautifier.prototype.handle_start_block = function(current_token) {
   if (this._flags.last_word === 'switch' && this._flags.last_token.type === TOKEN.END_EXPR) {
     this.set_mode(MODE.BlockStatement);
     this._flags.in_case_statement = true;
+  } else if (this._flags.case_body) {
+    this.set_mode(MODE.BlockStatement);
   } else if (second_token && (
       (in_array(second_token.text, [':', ',']) && in_array(next_token.type, [TOKEN.STRING, TOKEN.WORD, TOKEN.RESERVED])) ||
       (in_array(next_token.text, ['get', 'set', '...']) && in_array(second_token.type, [TOKEN.WORD, TOKEN.RESERVED]))
@@ -1347,6 +1366,11 @@ Beautifier.prototype.handle_start_block = function(current_token) {
   }
   this.print_token(current_token);
   this.indent();
+
+  // Except for specific cases, open braces are followed by a new line.
+  if (!empty_braces && !(this._options.brace_preserve_inline && this._flags.inline_frame)) {
+    this.print_newline();
+  }
 };
 
 Beautifier.prototype.handle_end_block = function(current_token) {
@@ -1447,11 +1471,12 @@ Beautifier.prototype.handle_word = function(current_token) {
 
   if (this._flags.in_case_statement && reserved_array(current_token, ['case', 'default'])) {
     this.print_newline();
-    if (this._flags.case_body || this._options.jslint_happy) {
+    if (this._flags.last_token.type !== TOKEN.END_BLOCK && (this._flags.case_body || this._options.jslint_happy)) {
       // switch cases following one another
       this.deindent();
-      this._flags.case_body = false;
     }
+    this._flags.case_body = false;
+
     this.print_token(current_token);
     this._flags.in_case = true;
     return;
@@ -1749,11 +1774,16 @@ Beautifier.prototype.handle_operator = function(current_token) {
   }
 
   if (current_token.text === ':' && this._flags.in_case) {
-    this._flags.case_body = true;
-    this.indent();
     this.print_token(current_token);
-    this.print_newline();
+
     this._flags.in_case = false;
+    this._flags.case_body = true;
+    if (this._tokens.peek().type !== TOKEN.START_BLOCK) {
+      this.indent();
+      this.print_newline();
+    } else {
+      this._output.space_before_token = true;
+    }
     return;
   }
 
@@ -1916,8 +1946,12 @@ Beautifier.prototype.handle_block_comment = function(current_token, preserve_sta
     this.print_token(current_token);
     this._output.space_before_token = true;
     return;
+  } else {
+    this.print_block_commment(current_token, preserve_statement_flags);
   }
+};
 
+Beautifier.prototype.print_block_commment = function(current_token, preserve_statement_flags) {
   var lines = split_linebreaks(current_token.text);
   var j; // iterator for this case
   var javadoc = false;
@@ -1927,30 +1961,45 @@ Beautifier.prototype.handle_block_comment = function(current_token, preserve_sta
 
   // block comment starts with a new line
   this.print_newline(false, preserve_statement_flags);
-  if (lines.length > 1) {
-    javadoc = all_lines_start_with(lines.slice(1), '*');
-    starless = each_line_matches_indent(lines.slice(1), lastIndent);
-  }
 
   // first line always indented
-  this.print_token(current_token, lines[0]);
-  for (j = 1; j < lines.length; j++) {
-    this.print_newline(false, true);
-    if (javadoc) {
-      // javadoc: reformat and re-indent
-      this.print_token(current_token, ' ' + ltrim(lines[j]));
-    } else if (starless && lines[j].length > lastIndentLength) {
-      // starless: re-indent non-empty content, avoiding trim
-      this.print_token(current_token, lines[j].substring(lastIndentLength));
-    } else {
-      // normal comments output raw
-      this._output.add_token(lines[j]);
-    }
-  }
-
-  // for comments of more than one line, make sure there's a new line after
+  this.print_token_line_indentation(current_token);
+  this._output.add_token(lines[0]);
   this.print_newline(false, preserve_statement_flags);
+
+
+  if (lines.length > 1) {
+    lines = lines.slice(1);
+    javadoc = all_lines_start_with(lines, '*');
+    starless = each_line_matches_indent(lines, lastIndent);
+
+    if (javadoc) {
+      this._flags.alignment = 1;
+    }
+
+    for (j = 0; j < lines.length; j++) {
+      if (javadoc) {
+        // javadoc: reformat and re-indent
+        this.print_token_line_indentation(current_token);
+        this._output.add_token(ltrim(lines[j]));
+      } else if (starless && lines[j]) {
+        // starless: re-indent non-empty content, avoiding trim
+        this.print_token_line_indentation(current_token);
+        this._output.add_token(lines[j].substring(lastIndentLength));
+      } else {
+        // normal comments output raw
+        this._output.current_line.set_indent(-1);
+        this._output.add_token(lines[j]);
+      }
+
+      // for comments on their own line or  more than one line, make sure there's a new line after
+      this.print_newline(false, preserve_statement_flags);
+    }
+
+    this._flags.alignment = 0;
+  }
 };
+
 
 Beautifier.prototype.handle_comment = function(current_token, preserve_statement_flags) {
   if (current_token.newlines) {
@@ -2015,7 +2064,6 @@ module.exports.Beautifier = Beautifier;
 "use strict";
 /*jshint node:true */
 /*
-
   The MIT License (MIT)
 
   Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
@@ -2049,9 +2097,19 @@ function OutputLine(parent) {
   // use indent_count as a marker for this.__lines that have preserved indentation
   this.__indent_count = -1;
   this.__alignment_count = 0;
+  this.__wrap_point_index = 0;
+  this.__wrap_point_character_count = 0;
+  this.__wrap_point_indent_count = -1;
+  this.__wrap_point_alignment_count = 0;
 
   this.__items = [];
 }
+
+OutputLine.prototype.clone_empty = function() {
+  var line = new OutputLine(this.__parent);
+  line.set_indent(this.__indent_count, this.__alignment_count);
+  return line;
+};
 
 OutputLine.prototype.item = function(index) {
   if (index < 0) {
@@ -2071,13 +2129,46 @@ OutputLine.prototype.has_match = function(pattern) {
 };
 
 OutputLine.prototype.set_indent = function(indent, alignment) {
-  this.__indent_count = indent || 0;
-  this.__alignment_count = alignment || 0;
-  this.__character_count = this.__parent.baseIndentLength + this.__alignment_count + this.__indent_count * this.__parent.indent_length;
+  if (this.is_empty()) {
+    this.__indent_count = indent || 0;
+    this.__alignment_count = alignment || 0;
+    this.__character_count = this.__parent.get_indent_size(this.__indent_count, this.__alignment_count);
+  }
 };
 
-OutputLine.prototype.get_character_count = function() {
-  return this.__character_count;
+OutputLine.prototype._set_wrap_point = function() {
+  if (this.__parent.wrap_line_length) {
+    this.__wrap_point_index = this.__items.length;
+    this.__wrap_point_character_count = this.__character_count;
+    this.__wrap_point_indent_count = this.__parent.next_line.__indent_count;
+    this.__wrap_point_alignment_count = this.__parent.next_line.__alignment_count;
+  }
+};
+
+OutputLine.prototype._should_wrap = function() {
+  return this.__wrap_point_index &&
+    this.__character_count > this.__parent.wrap_line_length &&
+    this.__wrap_point_character_count > this.__parent.next_line.__character_count;
+};
+
+OutputLine.prototype._allow_wrap = function() {
+  if (this._should_wrap()) {
+    this.__parent.add_new_line();
+    var next = this.__parent.current_line;
+    next.set_indent(this.__wrap_point_indent_count, this.__wrap_point_alignment_count);
+    next.__items = this.__items.slice(this.__wrap_point_index);
+    this.__items = this.__items.slice(0, this.__wrap_point_index);
+
+    next.__character_count += this.__character_count - this.__wrap_point_character_count;
+    this.__character_count = this.__wrap_point_character_count;
+
+    if (next.__items[0] === " ") {
+      next.__items.splice(0, 1);
+      next.__character_count -= 1;
+    }
+    return true;
+  }
+  return false;
 };
 
 OutputLine.prototype.is_empty = function() {
@@ -2094,14 +2185,11 @@ OutputLine.prototype.last = function() {
 
 OutputLine.prototype.push = function(item) {
   this.__items.push(item);
-  this.__character_count += item.length;
-};
-
-OutputLine.prototype.push_raw = function(item) {
-  this.push(item);
   var last_newline_index = item.lastIndexOf('\n');
   if (last_newline_index !== -1) {
     this.__character_count = item.length - last_newline_index;
+  } else {
+    this.__character_count += item.length;
   }
 };
 
@@ -2114,13 +2202,19 @@ OutputLine.prototype.pop = function() {
   return item;
 };
 
-OutputLine.prototype.remove_indent = function() {
+
+OutputLine.prototype._remove_indent = function() {
   if (this.__indent_count > 0) {
     this.__indent_count -= 1;
-    this.__character_count -= this.__parent.indent_length;
+    this.__character_count -= this.__parent.indent_size;
   }
 };
 
+OutputLine.prototype._remove_wrap_indent = function() {
+  if (this.__wrap_point_indent_count > 0) {
+    this.__wrap_point_indent_count -= 1;
+  }
+};
 OutputLine.prototype.trim = function() {
   while (this.last() === ' ') {
     this.__items.pop();
@@ -2130,65 +2224,102 @@ OutputLine.prototype.trim = function() {
 
 OutputLine.prototype.toString = function() {
   var result = '';
-  if (!this.is_empty()) {
-    if (this.__indent_count >= 0) {
+  if (this.is_empty()) {
+    if (this.__parent.indent_empty_lines) {
       result = this.__parent.get_indent_string(this.__indent_count);
     }
-    if (this.__alignment_count >= 0) {
-      result += this.__parent.get_alignment_string(this.__alignment_count);
-    }
+  } else {
+    result = this.__parent.get_indent_string(this.__indent_count, this.__alignment_count);
     result += this.__items.join('');
   }
   return result;
 };
 
-function IndentCache(base_string, level_string) {
-  this.__cache = [base_string];
-  this.__level_string = level_string;
-}
-
-IndentCache.prototype.__ensure_cache = function(level) {
-  while (level >= this.__cache.length) {
-    this.__cache.push(this.__cache[this.__cache.length - 1] + this.__level_string);
-  }
-};
-
-IndentCache.prototype.get_level_string = function(level) {
-  this.__ensure_cache(level);
-  return this.__cache[level];
-};
-
-
-function Output(options, baseIndentString) {
-  var indent_string = options.indent_char;
-  if (options.indent_size > 1) {
-    indent_string = new Array(options.indent_size + 1).join(options.indent_char);
+function IndentStringCache(options, baseIndentString) {
+  this.__cache = [''];
+  this.__indent_size = options.indent_size;
+  this.__indent_string = options.indent_char;
+  if (!options.indent_with_tabs) {
+    this.__indent_string = new Array(options.indent_size + 1).join(options.indent_char);
   }
 
-  // Set to null to continue support for auto detection of base indent level.
+  // Set to null to continue support for auto detection of base indent
   baseIndentString = baseIndentString || '';
   if (options.indent_level > 0) {
-    baseIndentString = new Array(options.indent_level + 1).join(indent_string);
+    baseIndentString = new Array(options.indent_level + 1).join(this.__indent_string);
   }
 
-  this.__indent_cache = new IndentCache(baseIndentString, indent_string);
-  this.__alignment_cache = new IndentCache('', ' ');
-  this.baseIndentLength = baseIndentString.length;
-  this.indent_length = indent_string.length;
+  this.__base_string = baseIndentString;
+  this.__base_string_length = baseIndentString.length;
+}
+
+IndentStringCache.prototype.get_indent_size = function(indent, column) {
+  var result = this.__base_string_length;
+  column = column || 0;
+  if (indent < 0) {
+    result = 0;
+  }
+  result += indent * this.__indent_size;
+  result += column;
+  return result;
+};
+
+IndentStringCache.prototype.get_indent_string = function(indent_level, column) {
+  var result = this.__base_string;
+  column = column || 0;
+  if (indent_level < 0) {
+    indent_level = 0;
+    result = '';
+  }
+  column += indent_level * this.__indent_size;
+  this.__ensure_cache(column);
+  result += this.__cache[column];
+  return result;
+};
+
+IndentStringCache.prototype.__ensure_cache = function(column) {
+  while (column >= this.__cache.length) {
+    this.__add_column();
+  }
+};
+
+IndentStringCache.prototype.__add_column = function() {
+  var column = this.__cache.length;
+  var indent = 0;
+  var result = '';
+  if (this.__indent_size && column >= this.__indent_size) {
+    indent = Math.floor(column / this.__indent_size);
+    column -= indent * this.__indent_size;
+    result = new Array(indent + 1).join(this.__indent_string);
+  }
+  if (column) {
+    result += new Array(column + 1).join(' ');
+  }
+
+  this.__cache.push(result);
+};
+
+function Output(options, baseIndentString) {
+  this.__indent_cache = new IndentStringCache(options, baseIndentString);
   this.raw = false;
   this._end_with_newline = options.end_with_newline;
-
+  this.indent_size = options.indent_size;
+  this.wrap_line_length = options.wrap_line_length;
+  this.indent_empty_lines = options.indent_empty_lines;
   this.__lines = [];
   this.previous_line = null;
   this.current_line = null;
+  this.next_line = new OutputLine(this);
   this.space_before_token = false;
+  this.non_breaking_space = false;
+  this.previous_token_wrapped = false;
   // initialize
   this.__add_outputline();
 }
 
 Output.prototype.__add_outputline = function() {
   this.previous_line = this.current_line;
-  this.current_line = new OutputLine(this);
+  this.current_line = this.next_line.clone_empty();
   this.__lines.push(this.current_line);
 };
 
@@ -2196,12 +2327,12 @@ Output.prototype.get_line_number = function() {
   return this.__lines.length;
 };
 
-Output.prototype.get_indent_string = function(level) {
-  return this.__indent_cache.get_level_string(level);
+Output.prototype.get_indent_string = function(indent, column) {
+  return this.__indent_cache.get_indent_string(indent, column);
 };
 
-Output.prototype.get_alignment_string = function(level) {
-  return this.__alignment_cache.get_level_string(level);
+Output.prototype.get_indent_size = function(indent, column) {
+  return this.__indent_cache.get_indent_size(indent, column);
 };
 
 Output.prototype.is_empty = function() {
@@ -2225,28 +2356,47 @@ Output.prototype.add_new_line = function(force_newline) {
 };
 
 Output.prototype.get_code = function(eol) {
-  var sweet_code = this.__lines.join('\n').replace(/[\r\n\t ]+$/, '');
+  this.trim(true);
+
+  // handle some edge cases where the last tokens
+  // has text that ends with newline(s)
+  var last_item = this.current_line.pop();
+  if (last_item) {
+    if (last_item[last_item.length - 1] === '\n') {
+      last_item = last_item.replace(/\n+$/g, '');
+    }
+    this.current_line.push(last_item);
+  }
 
   if (this._end_with_newline) {
-    sweet_code += '\n';
+    this.__add_outputline();
   }
+
+  var sweet_code = this.__lines.join('\n');
 
   if (eol !== '\n') {
     sweet_code = sweet_code.replace(/[\n]/g, eol);
   }
-
   return sweet_code;
+};
+
+Output.prototype.set_wrap_point = function() {
+  this.current_line._set_wrap_point();
 };
 
 Output.prototype.set_indent = function(indent, alignment) {
   indent = indent || 0;
   alignment = alignment || 0;
 
+  // Next line stores alignment values
+  this.next_line.set_indent(indent, alignment);
+
   // Never indent your first output indent at the start of the file
   if (this.__lines.length > 1) {
     this.current_line.set_indent(indent, alignment);
     return true;
   }
+
   this.current_line.set_indent();
   return false;
 };
@@ -2255,35 +2405,44 @@ Output.prototype.add_raw_token = function(token) {
   for (var x = 0; x < token.newlines; x++) {
     this.__add_outputline();
   }
+  this.current_line.set_indent(-1);
   this.current_line.push(token.whitespace_before);
-  this.current_line.push_raw(token.text);
+  this.current_line.push(token.text);
   this.space_before_token = false;
+  this.non_breaking_space = false;
+  this.previous_token_wrapped = false;
 };
 
 Output.prototype.add_token = function(printable_token) {
-  this.add_space_before_token();
+  this.__add_space_before_token();
   this.current_line.push(printable_token);
+  this.space_before_token = false;
+  this.non_breaking_space = false;
+  this.previous_token_wrapped = this.current_line._allow_wrap();
 };
 
-Output.prototype.add_space_before_token = function() {
+Output.prototype.__add_space_before_token = function() {
   if (this.space_before_token && !this.just_added_newline()) {
+    if (!this.non_breaking_space) {
+      this.set_wrap_point();
+    }
     this.current_line.push(' ');
   }
-  this.space_before_token = false;
 };
 
 Output.prototype.remove_indent = function(index) {
   var output_length = this.__lines.length;
   while (index < output_length) {
-    this.__lines[index].remove_indent();
+    this.__lines[index]._remove_indent();
     index++;
   }
+  this.current_line._remove_wrap_indent();
 };
 
 Output.prototype.trim = function(eat_newlines) {
   eat_newlines = (eat_newlines === undefined) ? false : eat_newlines;
 
-  this.current_line.trim(this.indent_string, this.baseIndentString);
+  this.current_line.trim();
 
   while (eat_newlines && this.__lines.length > 1 &&
     this.current_line.is_empty()) {
@@ -2413,25 +2572,26 @@ module.exports.Token = Token;
 // 65 through 91 are uppercase letters.
 // permit _ (95).
 // 97 through 123 are lowercase letters.
-var baseASCIIidentifierStartChars = "\x24\x40\x41-\x5a\x5f\x61-\x7a";
+var baseASCIIidentifierStartChars = "\\x24\\x40\\x41-\\x5a\\x5f\\x61-\\x7a";
 
 // inside an identifier @ is not allowed but 0-9 are.
-var baseASCIIidentifierChars = "\x24\x30-\x39\x41-\x5a\x5f\x61-\x7a";
+var baseASCIIidentifierChars = "\\x24\\x30-\\x39\\x41-\\x5a\\x5f\\x61-\\x7a";
 
 // Big ugly regular expressions that match characters in the
 // whitespace, identifier, and identifier-start categories. These
 // are only applied when a character is found to actually have a
 // code point above 128.
-var nonASCIIidentifierStartChars = "\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0370-\u0374\u0376\u0377\u037a-\u037d\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u048a-\u0527\u0531-\u0556\u0559\u0561-\u0587\u05d0-\u05ea\u05f0-\u05f2\u0620-\u064a\u066e\u066f\u0671-\u06d3\u06d5\u06e5\u06e6\u06ee\u06ef\u06fa-\u06fc\u06ff\u0710\u0712-\u072f\u074d-\u07a5\u07b1\u07ca-\u07ea\u07f4\u07f5\u07fa\u0800-\u0815\u081a\u0824\u0828\u0840-\u0858\u08a0\u08a2-\u08ac\u0904-\u0939\u093d\u0950\u0958-\u0961\u0971-\u0977\u0979-\u097f\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bd\u09ce\u09dc\u09dd\u09df-\u09e1\u09f0\u09f1\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a59-\u0a5c\u0a5e\u0a72-\u0a74\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abd\u0ad0\u0ae0\u0ae1\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3d\u0b5c\u0b5d\u0b5f-\u0b61\u0b71\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bd0\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c33\u0c35-\u0c39\u0c3d\u0c58\u0c59\u0c60\u0c61\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbd\u0cde\u0ce0\u0ce1\u0cf1\u0cf2\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d3a\u0d3d\u0d4e\u0d60\u0d61\u0d7a-\u0d7f\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0e01-\u0e30\u0e32\u0e33\u0e40-\u0e46\u0e81\u0e82\u0e84\u0e87\u0e88\u0e8a\u0e8d\u0e94-\u0e97\u0e99-\u0e9f\u0ea1-\u0ea3\u0ea5\u0ea7\u0eaa\u0eab\u0ead-\u0eb0\u0eb2\u0eb3\u0ebd\u0ec0-\u0ec4\u0ec6\u0edc-\u0edf\u0f00\u0f40-\u0f47\u0f49-\u0f6c\u0f88-\u0f8c\u1000-\u102a\u103f\u1050-\u1055\u105a-\u105d\u1061\u1065\u1066\u106e-\u1070\u1075-\u1081\u108e\u10a0-\u10c5\u10c7\u10cd\u10d0-\u10fa\u10fc-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u1380-\u138f\u13a0-\u13f4\u1401-\u166c\u166f-\u167f\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f0\u1700-\u170c\u170e-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176c\u176e-\u1770\u1780-\u17b3\u17d7\u17dc\u1820-\u1877\u1880-\u18a8\u18aa\u18b0-\u18f5\u1900-\u191c\u1950-\u196d\u1970-\u1974\u1980-\u19ab\u19c1-\u19c7\u1a00-\u1a16\u1a20-\u1a54\u1aa7\u1b05-\u1b33\u1b45-\u1b4b\u1b83-\u1ba0\u1bae\u1baf\u1bba-\u1be5\u1c00-\u1c23\u1c4d-\u1c4f\u1c5a-\u1c7d\u1ce9-\u1cec\u1cee-\u1cf1\u1cf5\u1cf6\u1d00-\u1dbf\u1e00-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffc\u2071\u207f\u2090-\u209c\u2102\u2107\u210a-\u2113\u2115\u2119-\u211d\u2124\u2126\u2128\u212a-\u212d\u212f-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb-\u2cee\u2cf2\u2cf3\u2d00-\u2d25\u2d27\u2d2d\u2d30-\u2d67\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u2e2f\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303c\u3041-\u3096\u309d-\u309f\u30a1-\u30fa\u30fc-\u30ff\u3105-\u312d\u3131-\u318e\u31a0-\u31ba\u31f0-\u31ff\u3400-\u4db5\u4e00-\u9fcc\ua000-\ua48c\ua4d0-\ua4fd\ua500-\ua60c\ua610-\ua61f\ua62a\ua62b\ua640-\ua66e\ua67f-\ua697\ua6a0-\ua6ef\ua717-\ua71f\ua722-\ua788\ua78b-\ua78e\ua790-\ua793\ua7a0-\ua7aa\ua7f8-\ua801\ua803-\ua805\ua807-\ua80a\ua80c-\ua822\ua840-\ua873\ua882-\ua8b3\ua8f2-\ua8f7\ua8fb\ua90a-\ua925\ua930-\ua946\ua960-\ua97c\ua984-\ua9b2\ua9cf\uaa00-\uaa28\uaa40-\uaa42\uaa44-\uaa4b\uaa60-\uaa76\uaa7a\uaa80-\uaaaf\uaab1\uaab5\uaab6\uaab9-\uaabd\uaac0\uaac2\uaadb-\uaadd\uaae0-\uaaea\uaaf2-\uaaf4\uab01-\uab06\uab09-\uab0e\uab11-\uab16\uab20-\uab26\uab28-\uab2e\uabc0-\uabe2\uac00-\ud7a3\ud7b0-\ud7c6\ud7cb-\ud7fb\uf900-\ufa6d\ufa70-\ufad9\ufb00-\ufb06\ufb13-\ufb17\ufb1d\ufb1f-\ufb28\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40\ufb41\ufb43\ufb44\ufb46-\ufbb1\ufbd3-\ufd3d\ufd50-\ufd8f\ufd92-\ufdc7\ufdf0-\ufdfb\ufe70-\ufe74\ufe76-\ufefc\uff21-\uff3a\uff41-\uff5a\uff66-\uffbe\uffc2-\uffc7\uffca-\uffcf\uffd2-\uffd7\uffda-\uffdc";
-var nonASCIIidentifierChars = "\u0300-\u036f\u0483-\u0487\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u0610-\u061a\u0620-\u0649\u0672-\u06d3\u06e7-\u06e8\u06fb-\u06fc\u0730-\u074a\u0800-\u0814\u081b-\u0823\u0825-\u0827\u0829-\u082d\u0840-\u0857\u08e4-\u08fe\u0900-\u0903\u093a-\u093c\u093e-\u094f\u0951-\u0957\u0962-\u0963\u0966-\u096f\u0981-\u0983\u09bc\u09be-\u09c4\u09c7\u09c8\u09d7\u09df-\u09e0\u0a01-\u0a03\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a66-\u0a71\u0a75\u0a81-\u0a83\u0abc\u0abe-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ae2-\u0ae3\u0ae6-\u0aef\u0b01-\u0b03\u0b3c\u0b3e-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b56\u0b57\u0b5f-\u0b60\u0b66-\u0b6f\u0b82\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd7\u0be6-\u0bef\u0c01-\u0c03\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c62-\u0c63\u0c66-\u0c6f\u0c82\u0c83\u0cbc\u0cbe-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0ce2-\u0ce3\u0ce6-\u0cef\u0d02\u0d03\u0d46-\u0d48\u0d57\u0d62-\u0d63\u0d66-\u0d6f\u0d82\u0d83\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0df2\u0df3\u0e34-\u0e3a\u0e40-\u0e45\u0e50-\u0e59\u0eb4-\u0eb9\u0ec8-\u0ecd\u0ed0-\u0ed9\u0f18\u0f19\u0f20-\u0f29\u0f35\u0f37\u0f39\u0f41-\u0f47\u0f71-\u0f84\u0f86-\u0f87\u0f8d-\u0f97\u0f99-\u0fbc\u0fc6\u1000-\u1029\u1040-\u1049\u1067-\u106d\u1071-\u1074\u1082-\u108d\u108f-\u109d\u135d-\u135f\u170e-\u1710\u1720-\u1730\u1740-\u1750\u1772\u1773\u1780-\u17b2\u17dd\u17e0-\u17e9\u180b-\u180d\u1810-\u1819\u1920-\u192b\u1930-\u193b\u1951-\u196d\u19b0-\u19c0\u19c8-\u19c9\u19d0-\u19d9\u1a00-\u1a15\u1a20-\u1a53\u1a60-\u1a7c\u1a7f-\u1a89\u1a90-\u1a99\u1b46-\u1b4b\u1b50-\u1b59\u1b6b-\u1b73\u1bb0-\u1bb9\u1be6-\u1bf3\u1c00-\u1c22\u1c40-\u1c49\u1c5b-\u1c7d\u1cd0-\u1cd2\u1d00-\u1dbe\u1e01-\u1f15\u200c\u200d\u203f\u2040\u2054\u20d0-\u20dc\u20e1\u20e5-\u20f0\u2d81-\u2d96\u2de0-\u2dff\u3021-\u3028\u3099\u309a\ua640-\ua66d\ua674-\ua67d\ua69f\ua6f0-\ua6f1\ua7f8-\ua800\ua806\ua80b\ua823-\ua827\ua880-\ua881\ua8b4-\ua8c4\ua8d0-\ua8d9\ua8f3-\ua8f7\ua900-\ua909\ua926-\ua92d\ua930-\ua945\ua980-\ua983\ua9b3-\ua9c0\uaa00-\uaa27\uaa40-\uaa41\uaa4c-\uaa4d\uaa50-\uaa59\uaa7b\uaae0-\uaae9\uaaf2-\uaaf3\uabc0-\uabe1\uabec\uabed\uabf0-\uabf9\ufb20-\ufb28\ufe00-\ufe0f\ufe20-\ufe26\ufe33\ufe34\ufe4d-\ufe4f\uff10-\uff19\uff3f";
+var nonASCIIidentifierStartChars = "\\xaa\\xb5\\xba\\xc0-\\xd6\\xd8-\\xf6\\xf8-\\u02c1\\u02c6-\\u02d1\\u02e0-\\u02e4\\u02ec\\u02ee\\u0370-\\u0374\\u0376\\u0377\\u037a-\\u037d\\u0386\\u0388-\\u038a\\u038c\\u038e-\\u03a1\\u03a3-\\u03f5\\u03f7-\\u0481\\u048a-\\u0527\\u0531-\\u0556\\u0559\\u0561-\\u0587\\u05d0-\\u05ea\\u05f0-\\u05f2\\u0620-\\u064a\\u066e\\u066f\\u0671-\\u06d3\\u06d5\\u06e5\\u06e6\\u06ee\\u06ef\\u06fa-\\u06fc\\u06ff\\u0710\\u0712-\\u072f\\u074d-\\u07a5\\u07b1\\u07ca-\\u07ea\\u07f4\\u07f5\\u07fa\\u0800-\\u0815\\u081a\\u0824\\u0828\\u0840-\\u0858\\u08a0\\u08a2-\\u08ac\\u0904-\\u0939\\u093d\\u0950\\u0958-\\u0961\\u0971-\\u0977\\u0979-\\u097f\\u0985-\\u098c\\u098f\\u0990\\u0993-\\u09a8\\u09aa-\\u09b0\\u09b2\\u09b6-\\u09b9\\u09bd\\u09ce\\u09dc\\u09dd\\u09df-\\u09e1\\u09f0\\u09f1\\u0a05-\\u0a0a\\u0a0f\\u0a10\\u0a13-\\u0a28\\u0a2a-\\u0a30\\u0a32\\u0a33\\u0a35\\u0a36\\u0a38\\u0a39\\u0a59-\\u0a5c\\u0a5e\\u0a72-\\u0a74\\u0a85-\\u0a8d\\u0a8f-\\u0a91\\u0a93-\\u0aa8\\u0aaa-\\u0ab0\\u0ab2\\u0ab3\\u0ab5-\\u0ab9\\u0abd\\u0ad0\\u0ae0\\u0ae1\\u0b05-\\u0b0c\\u0b0f\\u0b10\\u0b13-\\u0b28\\u0b2a-\\u0b30\\u0b32\\u0b33\\u0b35-\\u0b39\\u0b3d\\u0b5c\\u0b5d\\u0b5f-\\u0b61\\u0b71\\u0b83\\u0b85-\\u0b8a\\u0b8e-\\u0b90\\u0b92-\\u0b95\\u0b99\\u0b9a\\u0b9c\\u0b9e\\u0b9f\\u0ba3\\u0ba4\\u0ba8-\\u0baa\\u0bae-\\u0bb9\\u0bd0\\u0c05-\\u0c0c\\u0c0e-\\u0c10\\u0c12-\\u0c28\\u0c2a-\\u0c33\\u0c35-\\u0c39\\u0c3d\\u0c58\\u0c59\\u0c60\\u0c61\\u0c85-\\u0c8c\\u0c8e-\\u0c90\\u0c92-\\u0ca8\\u0caa-\\u0cb3\\u0cb5-\\u0cb9\\u0cbd\\u0cde\\u0ce0\\u0ce1\\u0cf1\\u0cf2\\u0d05-\\u0d0c\\u0d0e-\\u0d10\\u0d12-\\u0d3a\\u0d3d\\u0d4e\\u0d60\\u0d61\\u0d7a-\\u0d7f\\u0d85-\\u0d96\\u0d9a-\\u0db1\\u0db3-\\u0dbb\\u0dbd\\u0dc0-\\u0dc6\\u0e01-\\u0e30\\u0e32\\u0e33\\u0e40-\\u0e46\\u0e81\\u0e82\\u0e84\\u0e87\\u0e88\\u0e8a\\u0e8d\\u0e94-\\u0e97\\u0e99-\\u0e9f\\u0ea1-\\u0ea3\\u0ea5\\u0ea7\\u0eaa\\u0eab\\u0ead-\\u0eb0\\u0eb2\\u0eb3\\u0ebd\\u0ec0-\\u0ec4\\u0ec6\\u0edc-\\u0edf\\u0f00\\u0f40-\\u0f47\\u0f49-\\u0f6c\\u0f88-\\u0f8c\\u1000-\\u102a\\u103f\\u1050-\\u1055\\u105a-\\u105d\\u1061\\u1065\\u1066\\u106e-\\u1070\\u1075-\\u1081\\u108e\\u10a0-\\u10c5\\u10c7\\u10cd\\u10d0-\\u10fa\\u10fc-\\u1248\\u124a-\\u124d\\u1250-\\u1256\\u1258\\u125a-\\u125d\\u1260-\\u1288\\u128a-\\u128d\\u1290-\\u12b0\\u12b2-\\u12b5\\u12b8-\\u12be\\u12c0\\u12c2-\\u12c5\\u12c8-\\u12d6\\u12d8-\\u1310\\u1312-\\u1315\\u1318-\\u135a\\u1380-\\u138f\\u13a0-\\u13f4\\u1401-\\u166c\\u166f-\\u167f\\u1681-\\u169a\\u16a0-\\u16ea\\u16ee-\\u16f0\\u1700-\\u170c\\u170e-\\u1711\\u1720-\\u1731\\u1740-\\u1751\\u1760-\\u176c\\u176e-\\u1770\\u1780-\\u17b3\\u17d7\\u17dc\\u1820-\\u1877\\u1880-\\u18a8\\u18aa\\u18b0-\\u18f5\\u1900-\\u191c\\u1950-\\u196d\\u1970-\\u1974\\u1980-\\u19ab\\u19c1-\\u19c7\\u1a00-\\u1a16\\u1a20-\\u1a54\\u1aa7\\u1b05-\\u1b33\\u1b45-\\u1b4b\\u1b83-\\u1ba0\\u1bae\\u1baf\\u1bba-\\u1be5\\u1c00-\\u1c23\\u1c4d-\\u1c4f\\u1c5a-\\u1c7d\\u1ce9-\\u1cec\\u1cee-\\u1cf1\\u1cf5\\u1cf6\\u1d00-\\u1dbf\\u1e00-\\u1f15\\u1f18-\\u1f1d\\u1f20-\\u1f45\\u1f48-\\u1f4d\\u1f50-\\u1f57\\u1f59\\u1f5b\\u1f5d\\u1f5f-\\u1f7d\\u1f80-\\u1fb4\\u1fb6-\\u1fbc\\u1fbe\\u1fc2-\\u1fc4\\u1fc6-\\u1fcc\\u1fd0-\\u1fd3\\u1fd6-\\u1fdb\\u1fe0-\\u1fec\\u1ff2-\\u1ff4\\u1ff6-\\u1ffc\\u2071\\u207f\\u2090-\\u209c\\u2102\\u2107\\u210a-\\u2113\\u2115\\u2119-\\u211d\\u2124\\u2126\\u2128\\u212a-\\u212d\\u212f-\\u2139\\u213c-\\u213f\\u2145-\\u2149\\u214e\\u2160-\\u2188\\u2c00-\\u2c2e\\u2c30-\\u2c5e\\u2c60-\\u2ce4\\u2ceb-\\u2cee\\u2cf2\\u2cf3\\u2d00-\\u2d25\\u2d27\\u2d2d\\u2d30-\\u2d67\\u2d6f\\u2d80-\\u2d96\\u2da0-\\u2da6\\u2da8-\\u2dae\\u2db0-\\u2db6\\u2db8-\\u2dbe\\u2dc0-\\u2dc6\\u2dc8-\\u2dce\\u2dd0-\\u2dd6\\u2dd8-\\u2dde\\u2e2f\\u3005-\\u3007\\u3021-\\u3029\\u3031-\\u3035\\u3038-\\u303c\\u3041-\\u3096\\u309d-\\u309f\\u30a1-\\u30fa\\u30fc-\\u30ff\\u3105-\\u312d\\u3131-\\u318e\\u31a0-\\u31ba\\u31f0-\\u31ff\\u3400-\\u4db5\\u4e00-\\u9fcc\\ua000-\\ua48c\\ua4d0-\\ua4fd\\ua500-\\ua60c\\ua610-\\ua61f\\ua62a\\ua62b\\ua640-\\ua66e\\ua67f-\\ua697\\ua6a0-\\ua6ef\\ua717-\\ua71f\\ua722-\\ua788\\ua78b-\\ua78e\\ua790-\\ua793\\ua7a0-\\ua7aa\\ua7f8-\\ua801\\ua803-\\ua805\\ua807-\\ua80a\\ua80c-\\ua822\\ua840-\\ua873\\ua882-\\ua8b3\\ua8f2-\\ua8f7\\ua8fb\\ua90a-\\ua925\\ua930-\\ua946\\ua960-\\ua97c\\ua984-\\ua9b2\\ua9cf\\uaa00-\\uaa28\\uaa40-\\uaa42\\uaa44-\\uaa4b\\uaa60-\\uaa76\\uaa7a\\uaa80-\\uaaaf\\uaab1\\uaab5\\uaab6\\uaab9-\\uaabd\\uaac0\\uaac2\\uaadb-\\uaadd\\uaae0-\\uaaea\\uaaf2-\\uaaf4\\uab01-\\uab06\\uab09-\\uab0e\\uab11-\\uab16\\uab20-\\uab26\\uab28-\\uab2e\\uabc0-\\uabe2\\uac00-\\ud7a3\\ud7b0-\\ud7c6\\ud7cb-\\ud7fb\\uf900-\\ufa6d\\ufa70-\\ufad9\\ufb00-\\ufb06\\ufb13-\\ufb17\\ufb1d\\ufb1f-\\ufb28\\ufb2a-\\ufb36\\ufb38-\\ufb3c\\ufb3e\\ufb40\\ufb41\\ufb43\\ufb44\\ufb46-\\ufbb1\\ufbd3-\\ufd3d\\ufd50-\\ufd8f\\ufd92-\\ufdc7\\ufdf0-\\ufdfb\\ufe70-\\ufe74\\ufe76-\\ufefc\\uff21-\\uff3a\\uff41-\\uff5a\\uff66-\\uffbe\\uffc2-\\uffc7\\uffca-\\uffcf\\uffd2-\\uffd7\\uffda-\\uffdc";
+var nonASCIIidentifierChars = "\\u0300-\\u036f\\u0483-\\u0487\\u0591-\\u05bd\\u05bf\\u05c1\\u05c2\\u05c4\\u05c5\\u05c7\\u0610-\\u061a\\u0620-\\u0649\\u0672-\\u06d3\\u06e7-\\u06e8\\u06fb-\\u06fc\\u0730-\\u074a\\u0800-\\u0814\\u081b-\\u0823\\u0825-\\u0827\\u0829-\\u082d\\u0840-\\u0857\\u08e4-\\u08fe\\u0900-\\u0903\\u093a-\\u093c\\u093e-\\u094f\\u0951-\\u0957\\u0962-\\u0963\\u0966-\\u096f\\u0981-\\u0983\\u09bc\\u09be-\\u09c4\\u09c7\\u09c8\\u09d7\\u09df-\\u09e0\\u0a01-\\u0a03\\u0a3c\\u0a3e-\\u0a42\\u0a47\\u0a48\\u0a4b-\\u0a4d\\u0a51\\u0a66-\\u0a71\\u0a75\\u0a81-\\u0a83\\u0abc\\u0abe-\\u0ac5\\u0ac7-\\u0ac9\\u0acb-\\u0acd\\u0ae2-\\u0ae3\\u0ae6-\\u0aef\\u0b01-\\u0b03\\u0b3c\\u0b3e-\\u0b44\\u0b47\\u0b48\\u0b4b-\\u0b4d\\u0b56\\u0b57\\u0b5f-\\u0b60\\u0b66-\\u0b6f\\u0b82\\u0bbe-\\u0bc2\\u0bc6-\\u0bc8\\u0bca-\\u0bcd\\u0bd7\\u0be6-\\u0bef\\u0c01-\\u0c03\\u0c46-\\u0c48\\u0c4a-\\u0c4d\\u0c55\\u0c56\\u0c62-\\u0c63\\u0c66-\\u0c6f\\u0c82\\u0c83\\u0cbc\\u0cbe-\\u0cc4\\u0cc6-\\u0cc8\\u0cca-\\u0ccd\\u0cd5\\u0cd6\\u0ce2-\\u0ce3\\u0ce6-\\u0cef\\u0d02\\u0d03\\u0d46-\\u0d48\\u0d57\\u0d62-\\u0d63\\u0d66-\\u0d6f\\u0d82\\u0d83\\u0dca\\u0dcf-\\u0dd4\\u0dd6\\u0dd8-\\u0ddf\\u0df2\\u0df3\\u0e34-\\u0e3a\\u0e40-\\u0e45\\u0e50-\\u0e59\\u0eb4-\\u0eb9\\u0ec8-\\u0ecd\\u0ed0-\\u0ed9\\u0f18\\u0f19\\u0f20-\\u0f29\\u0f35\\u0f37\\u0f39\\u0f41-\\u0f47\\u0f71-\\u0f84\\u0f86-\\u0f87\\u0f8d-\\u0f97\\u0f99-\\u0fbc\\u0fc6\\u1000-\\u1029\\u1040-\\u1049\\u1067-\\u106d\\u1071-\\u1074\\u1082-\\u108d\\u108f-\\u109d\\u135d-\\u135f\\u170e-\\u1710\\u1720-\\u1730\\u1740-\\u1750\\u1772\\u1773\\u1780-\\u17b2\\u17dd\\u17e0-\\u17e9\\u180b-\\u180d\\u1810-\\u1819\\u1920-\\u192b\\u1930-\\u193b\\u1951-\\u196d\\u19b0-\\u19c0\\u19c8-\\u19c9\\u19d0-\\u19d9\\u1a00-\\u1a15\\u1a20-\\u1a53\\u1a60-\\u1a7c\\u1a7f-\\u1a89\\u1a90-\\u1a99\\u1b46-\\u1b4b\\u1b50-\\u1b59\\u1b6b-\\u1b73\\u1bb0-\\u1bb9\\u1be6-\\u1bf3\\u1c00-\\u1c22\\u1c40-\\u1c49\\u1c5b-\\u1c7d\\u1cd0-\\u1cd2\\u1d00-\\u1dbe\\u1e01-\\u1f15\\u200c\\u200d\\u203f\\u2040\\u2054\\u20d0-\\u20dc\\u20e1\\u20e5-\\u20f0\\u2d81-\\u2d96\\u2de0-\\u2dff\\u3021-\\u3028\\u3099\\u309a\\ua640-\\ua66d\\ua674-\\ua67d\\ua69f\\ua6f0-\\ua6f1\\ua7f8-\\ua800\\ua806\\ua80b\\ua823-\\ua827\\ua880-\\ua881\\ua8b4-\\ua8c4\\ua8d0-\\ua8d9\\ua8f3-\\ua8f7\\ua900-\\ua909\\ua926-\\ua92d\\ua930-\\ua945\\ua980-\\ua983\\ua9b3-\\ua9c0\\uaa00-\\uaa27\\uaa40-\\uaa41\\uaa4c-\\uaa4d\\uaa50-\\uaa59\\uaa7b\\uaae0-\\uaae9\\uaaf2-\\uaaf3\\uabc0-\\uabe1\\uabec\\uabed\\uabf0-\\uabf9\\ufb20-\\ufb28\\ufe00-\\ufe0f\\ufe20-\\ufe26\\ufe33\\ufe34\\ufe4d-\\ufe4f\\uff10-\\uff19\\uff3f";
 //var nonASCIIidentifierStart = new RegExp("[" + nonASCIIidentifierStartChars + "]");
 //var nonASCIIidentifier = new RegExp("[" + nonASCIIidentifierStartChars + nonASCIIidentifierChars + "]");
 
-var identifierStart = "[" + baseASCIIidentifierStartChars + nonASCIIidentifierStartChars + "]";
-var identifierChars = "[" + baseASCIIidentifierChars + nonASCIIidentifierStartChars + nonASCIIidentifierChars + "]*";
+var identifierStart = "(?:\\\\u[0-9a-fA-F]{4}|[" + baseASCIIidentifierStartChars + nonASCIIidentifierStartChars + "])";
+var identifierChars = "(?:\\\\u[0-9a-fA-F]{4}|[" + baseASCIIidentifierChars + nonASCIIidentifierStartChars + nonASCIIidentifierChars + "])*";
 
 exports.identifier = new RegExp(identifierStart + identifierChars, 'g');
-
+exports.identifierStart = new RegExp(identifierStart);
+exports.identifierMatch = new RegExp("(?:\\\\u[0-9a-fA-F]{4}|[" + baseASCIIidentifierChars + nonASCIIidentifierStartChars + nonASCIIidentifierChars + "])+");
 
 var nonASCIIwhitespace = /[\u1680\u180e\u2000-\u200a\u202f\u205f\u3000\ufeff]/; // jshint ignore:line
 
@@ -2601,15 +2761,31 @@ function Options(options, merge_child_field) {
     this.max_preserve_newlines = 0;
   }
 
-  this.indent_with_tabs = this._get_boolean('indent_with_tabs');
+  this.indent_with_tabs = this._get_boolean('indent_with_tabs', this.indent_char === '\t');
   if (this.indent_with_tabs) {
     this.indent_char = '\t';
-    this.indent_size = 1;
+
+    // indent_size behavior changed after 1.8.6
+    // It used to be that indent_size would be
+    // set to 1 for indent_with_tabs. That is no longer needed and
+    // actually doesn't make sense - why not use spaces? Further,
+    // that might produce unexpected behavior - tabs being used
+    // for single-column alignment. So, when indent_with_tabs is true
+    // and indent_size is 1, reset indent_size to 4.
+    if (this.indent_size === 1) {
+      this.indent_size = 4;
+    }
   }
 
   // Backwards compat with 1.3.x
   this.wrap_line_length = this._get_number('wrap_line_length', this._get_number('max_char'));
 
+  this.indent_empty_lines = this._get_boolean('indent_empty_lines');
+
+  // valid templating languages ['django', 'erb', 'handlebars', 'php']
+  // For now, 'auto' = all off for javascript, all on for html (and inline javascript).
+  // other values ignored
+  this.templating = this._get_selection_list('templating', ['auto', 'none', 'django', 'erb', 'handlebars', 'php'], ['auto']);
 }
 
 Options.prototype._get_array = function(name, default_value) {
@@ -2770,8 +2946,11 @@ module.exports.mergeOpts = _mergeOpts;
 var InputScanner = __webpack_require__(8).InputScanner;
 var BaseTokenizer = __webpack_require__(9).Tokenizer;
 var BASETOKEN = __webpack_require__(9).TOKEN;
-var Directives = __webpack_require__(11).Directives;
+var Directives = __webpack_require__(13).Directives;
 var acorn = __webpack_require__(4);
+var Pattern = __webpack_require__(12).Pattern;
+var TemplatablePattern = __webpack_require__(14).TemplatablePattern;
+
 
 function in_array(what, arr) {
   return arr.indexOf(what) !== -1;
@@ -2802,7 +2981,7 @@ var TOKEN = {
 
 var directives_core = new Directives(/\/\*/, /\*\//);
 
-var number_pattern = /0[xX][0123456789abcdefABCDEF]*|0[oO][01234567]*|0[bB][01]*|\d+n|(?:\.\d+|\d+\.?\d*)(?:[eE][+-]?\d+)?/g;
+var number_pattern = /0[xX][0123456789abcdefABCDEF]*|0[oO][01234567]*|0[bB][01]*|\d+n|(?:\.\d+|\d+\.?\d*)(?:[eE][+-]?\d+)?/;
 
 var digit = /[0-9]/;
 
@@ -2825,30 +3004,48 @@ var punct =
 punct = punct.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&");
 punct = punct.replace(/ /g, '|');
 
-var punct_pattern = new RegExp(punct, 'g');
-var shebang_pattern = /#![^\n\r\u2028\u2029]*(?:\r\n|[\n\r\u2028\u2029])?/g;
-var include_pattern = /#include[^\n\r\u2028\u2029]*(?:\r\n|[\n\r\u2028\u2029])?/g;
+var punct_pattern = new RegExp(punct);
 
 // words which should always start on new line.
 var line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function,import,export'.split(',');
 var reserved_words = line_starters.concat(['do', 'in', 'of', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof', 'yield', 'async', 'await', 'from', 'as']);
 var reserved_word_pattern = new RegExp('^(?:' + reserved_words.join('|') + ')$');
 
-//  /* ... */ comment ends with nearest */ or end of file
-var block_comment_pattern = /\/\*(?:[\s\S]*?)((?:\*\/)|$)/g;
-
-// comment ends just before nearest linefeed or end of file
-var comment_pattern = /\/\/(?:[^\n\r\u2028\u2029]*)/g;
-
-var template_pattern = /(?:(?:<\?php|<\?=)[\s\S]*?\?>)|(?:<%[\s\S]*?%>)/g;
+// var template_pattern = /(?:(?:<\?php|<\?=)[\s\S]*?\?>)|(?:<%[\s\S]*?%>)/g;
 
 var in_html_comment;
 
 var Tokenizer = function(input_string, options) {
   BaseTokenizer.call(this, input_string, options);
 
-  this._whitespace_pattern = /[\n\r\u2028\u2029\t\u000B\u00A0\u1680\u180e\u2000-\u200a\u202f\u205f\u3000\ufeff ]+/g;
-  this._newline_pattern = /([^\n\r\u2028\u2029]*)(\r\n|[\n\r\u2028\u2029])?/g;
+  this._patterns.whitespace = this._patterns.whitespace.matching(
+    /\u00A0\u1680\u180e\u2000-\u200a\u202f\u205f\u3000\ufeff/.source,
+    /\u2028\u2029/.source);
+
+  var pattern_reader = new Pattern(this._input);
+  var templatable = new TemplatablePattern(this._input)
+    .read_options(this._options);
+
+  this.__patterns = {
+    template: templatable,
+    identifier: templatable.starting_with(acorn.identifier).matching(acorn.identifierMatch),
+    number: pattern_reader.matching(number_pattern),
+    punct: pattern_reader.matching(punct_pattern),
+    // comment ends just before nearest linefeed or end of file
+    comment: pattern_reader.starting_with(/\/\//).until(/[\n\r\u2028\u2029]/),
+    //  /* ... */ comment ends with nearest */ or end of file
+    block_comment: pattern_reader.starting_with(/\/\*/).until_after(/\*\//),
+    html_comment_start: pattern_reader.matching(/<!--/),
+    html_comment_end: pattern_reader.matching(/-->/),
+    include: pattern_reader.starting_with(/#include/).until_after(acorn.lineBreak),
+    shebang: pattern_reader.starting_with(/#!/).until_after(acorn.lineBreak),
+    xml: pattern_reader.matching(/[\s\S]*?<(\/?)([-a-zA-Z:0-9_.]+|{[\s\S]+?}|!\[CDATA\[[\s\S]*?\]\])(\s+{[\s\S]+?}|\s+[-a-zA-Z:0-9_.]+|\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{[\s\S]+?}))*\s*(\/?)\s*>/),
+    single_quote: templatable.until(/['\\\n\r\u2028\u2029]/),
+    double_quote: templatable.until(/["\\\n\r\u2028\u2029]/),
+    template_text: templatable.until(/[`\\$]/),
+    template_expression: templatable.until(/[`}\\]/)
+  };
+
 };
 Tokenizer.prototype = new BaseTokenizer();
 
@@ -2873,14 +3070,18 @@ Tokenizer.prototype._reset = function() {
 };
 
 Tokenizer.prototype._get_next_token = function(previous_token, open_token) { // jshint unused:false
-  this._readWhitespace();
   var token = null;
+  this._readWhitespace();
   var c = this._input.peek();
 
-  token = token || this._read_singles(c);
-  token = token || this._read_word(previous_token);
-  token = token || this._read_comment(c);
+  if (c === null) {
+    return this._create_token(TOKEN.EOF, '');
+  }
+
   token = token || this._read_string(c);
+  token = token || this._read_word(previous_token);
+  token = token || this._read_singles(c);
+  token = token || this._read_comment(c);
   token = token || this._read_regexp(c, previous_token);
   token = token || this._read_xml(c, previous_token);
   token = token || this._read_non_javascript(c);
@@ -2892,8 +3093,9 @@ Tokenizer.prototype._get_next_token = function(previous_token, open_token) { // 
 
 Tokenizer.prototype._read_word = function(previous_token) {
   var resulting_string;
-  resulting_string = this._input.read(acorn.identifier);
+  resulting_string = this.__patterns.identifier.read();
   if (resulting_string !== '') {
+    resulting_string = resulting_string.replace(acorn.allLineBreaks, '\n');
     if (!(previous_token.type === TOKEN.DOT ||
         (previous_token.type === TOKEN.RESERVED && (previous_token.text === 'set' || previous_token.text === 'get'))) &&
       reserved_word_pattern.test(resulting_string)) {
@@ -2902,11 +3104,10 @@ Tokenizer.prototype._read_word = function(previous_token) {
       }
       return this._create_token(TOKEN.RESERVED, resulting_string);
     }
-
     return this._create_token(TOKEN.WORD, resulting_string);
   }
 
-  resulting_string = this._input.read(number_pattern);
+  resulting_string = this.__patterns.number.read();
   if (resulting_string !== '') {
     return this._create_token(TOKEN.WORD, resulting_string);
   }
@@ -2914,9 +3115,7 @@ Tokenizer.prototype._read_word = function(previous_token) {
 
 Tokenizer.prototype._read_singles = function(c) {
   var token = null;
-  if (c === null) {
-    token = this._create_token(TOKEN.EOF, '');
-  } else if (c === '(' || c === '[') {
+  if (c === '(' || c === '[') {
     token = this._create_token(TOKEN.START_EXPR, c);
   } else if (c === ')' || c === ']') {
     token = this._create_token(TOKEN.END_EXPR, c);
@@ -2939,7 +3138,7 @@ Tokenizer.prototype._read_singles = function(c) {
 };
 
 Tokenizer.prototype._read_punctuation = function() {
-  var resulting_string = this._input.read(punct_pattern);
+  var resulting_string = this.__patterns.punct.read();
 
   if (resulting_string !== '') {
     if (resulting_string === '=') {
@@ -2955,7 +3154,7 @@ Tokenizer.prototype._read_non_javascript = function(c) {
 
   if (c === '#') {
     if (this._is_first_token()) {
-      resulting_string = this._input.read(shebang_pattern);
+      resulting_string = this.__patterns.shebang.read();
 
       if (resulting_string) {
         return this._create_token(TOKEN.UNKNOWN, resulting_string.trim() + '\n');
@@ -2963,7 +3162,7 @@ Tokenizer.prototype._read_non_javascript = function(c) {
     }
 
     // handles extendscript #includes
-    resulting_string = this._input.read(include_pattern);
+    resulting_string = this.__patterns.include.read();
 
     if (resulting_string) {
       return this._create_token(TOKEN.UNKNOWN, resulting_string.trim() + '\n');
@@ -2994,24 +3193,21 @@ Tokenizer.prototype._read_non_javascript = function(c) {
 
     this._input.back();
 
-  } else if (c === '<') {
-    if (this._input.peek(1) === '?' || this._input.peek(1) === '%') {
-      resulting_string = this._input.read(template_pattern);
-      if (resulting_string) {
-        resulting_string = resulting_string.replace(acorn.allLineBreaks, '\n');
-        return this._create_token(TOKEN.STRING, resulting_string);
-      }
-    } else if (this._input.match(/<\!--/g)) {
-      c = '<!--';
+  } else if (c === '<' && this._is_first_token()) {
+    resulting_string = this.__patterns.html_comment_start.read();
+    if (resulting_string) {
       while (this._input.hasNext() && !this._input.testChar(acorn.newline)) {
-        c += this._input.next();
+        resulting_string += this._input.next();
       }
       in_html_comment = true;
-      return this._create_token(TOKEN.COMMENT, c);
+      return this._create_token(TOKEN.COMMENT, resulting_string);
     }
-  } else if (c === '-' && in_html_comment && this._input.match(/-->/g)) {
-    in_html_comment = false;
-    return this._create_token(TOKEN.COMMENT, '-->');
+  } else if (in_html_comment && c === '-') {
+    resulting_string = this.__patterns.html_comment_end.read();
+    if (resulting_string) {
+      in_html_comment = false;
+      return this._create_token(TOKEN.COMMENT, resulting_string);
+    }
   }
 
   return null;
@@ -3023,7 +3219,7 @@ Tokenizer.prototype._read_comment = function(c) {
     var comment = '';
     if (this._input.peek(1) === '*') {
       // peek for comment /* ... */
-      comment = this._input.read(block_comment_pattern);
+      comment = this.__patterns.block_comment.read();
       var directives = directives_core.get_directives(comment);
       if (directives && directives.ignore === 'start') {
         comment += directives_core.readIgnored(this._input);
@@ -3033,7 +3229,7 @@ Tokenizer.prototype._read_comment = function(c) {
       token.directives = directives;
     } else if (this._input.peek(1) === '/') {
       // peek for comment // ...
-      comment = this._input.read(comment_pattern);
+      comment = this.__patterns.comment.read();
       token = this._create_token(TOKEN.COMMENT, comment);
     }
   }
@@ -3054,9 +3250,12 @@ Tokenizer.prototype._read_string = function(c) {
     if (this.has_char_escapes && this._options.unescape_strings) {
       resulting_string = unescape_string(resulting_string);
     }
+
     if (this._input.peek() === c) {
       resulting_string += this._input.next();
     }
+
+    resulting_string = resulting_string.replace(acorn.allLineBreaks, '\n');
 
     return this._create_token(TOKEN.STRING, resulting_string);
   }
@@ -3112,17 +3311,13 @@ Tokenizer.prototype._read_regexp = function(c, previous_token) {
   return null;
 };
 
-
-var startXmlRegExp = /<()([-a-zA-Z:0-9_.]+|{[\s\S]+?}|!\[CDATA\[[\s\S]*?\]\])(\s+{[\s\S]+?}|\s+[-a-zA-Z:0-9_.]+|\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{[\s\S]+?}))*\s*(\/?)\s*>/g;
-var xmlRegExp = /[\s\S]*?<(\/?)([-a-zA-Z:0-9_.]+|{[\s\S]+?}|!\[CDATA\[[\s\S]*?\]\])(\s+{[\s\S]+?}|\s+[-a-zA-Z:0-9_.]+|\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{[\s\S]+?}))*\s*(\/?)\s*>/g;
-
 Tokenizer.prototype._read_xml = function(c, previous_token) {
 
-  if (this._options.e4x && c === "<" && this._input.test(startXmlRegExp) && this._allow_regexp_or_xml(previous_token)) {
+  if (this._options.e4x && c === "<" && this._allow_regexp_or_xml(previous_token)) {
+    var xmlStr = '';
+    var match = this.__patterns.xml.read_match();
     // handle e4x xml literals
     //
-    var xmlStr = '';
-    var match = this._input.match(startXmlRegExp);
     if (match) {
       // Trim root tag to attempt to
       var rootTag = match[2].replace(/^{\s+/, '{').replace(/\s+}$/, '}');
@@ -3144,7 +3339,7 @@ Tokenizer.prototype._read_xml = function(c, previous_token) {
         if (depth <= 0) {
           break;
         }
-        match = this._input.match(xmlRegExp);
+        match = this.__patterns.xml.read_match();
       }
       // if we didn't close correctly, keep unformatted.
       if (!match) {
@@ -3224,51 +3419,53 @@ function unescape_string(s) {
 // handle string
 //
 Tokenizer.prototype._read_string_recursive = function(delimiter, allow_unescaped_newlines, start_sub) {
-  // Template strings can travers lines without escape characters.
-  // Other strings cannot
   var current_char;
-  var resulting_string = '';
-  var esc = false;
+  var pattern;
+  if (delimiter === '\'') {
+    pattern = this.__patterns.single_quote;
+  } else if (delimiter === '"') {
+    pattern = this.__patterns.double_quote;
+  } else if (delimiter === '`') {
+    pattern = this.__patterns.template_text;
+  } else if (delimiter === '}') {
+    pattern = this.__patterns.template_expression;
+  }
+
+  var resulting_string = pattern.read();
+  var next = '';
   while (this._input.hasNext()) {
-    current_char = this._input.peek();
-    if (!(esc || (current_char !== delimiter &&
-        (allow_unescaped_newlines || !acorn.newline.test(current_char))))) {
+    next = this._input.next();
+    if (next === delimiter ||
+      (!allow_unescaped_newlines && acorn.newline.test(next))) {
+      this._input.back();
       break;
-    }
+    } else if (next === '\\' && this._input.hasNext()) {
+      current_char = this._input.peek();
 
-    // Handle \r\n linebreaks after escapes or in template strings
-    if ((esc || allow_unescaped_newlines) && acorn.newline.test(current_char)) {
-      if (current_char === '\r' && this._input.peek(1) === '\n') {
-        this._input.next();
-        current_char = this._input.peek();
-      }
-      resulting_string += '\n';
-    } else {
-      resulting_string += current_char;
-    }
-
-    if (esc) {
       if (current_char === 'x' || current_char === 'u') {
         this.has_char_escapes = true;
+      } else if (current_char === '\r' && this._input.peek(1) === '\n') {
+        this._input.next();
       }
-      esc = false;
-    } else {
-      esc = current_char === '\\';
+      next += this._input.next();
+    } else if (start_sub) {
+      if (start_sub === '${' && next === '$' && this._input.peek() === '{') {
+        next += this._input.next();
+      }
+
+      if (start_sub === next) {
+        if (delimiter === '`') {
+          next += this._read_string_recursive('}', allow_unescaped_newlines, '`');
+        } else {
+          next += this._read_string_recursive('`', allow_unescaped_newlines, '${');
+        }
+        if (this._input.hasNext()) {
+          next += this._input.next();
+        }
+      }
     }
-
-    this._input.next();
-
-    if (start_sub && resulting_string.indexOf(start_sub, resulting_string.length - start_sub.length) !== -1) {
-      if (delimiter === '`') {
-        resulting_string += this._read_string_recursive('}', allow_unescaped_newlines, '`');
-      } else {
-        resulting_string += this._read_string_recursive('`', allow_unescaped_newlines, '${');
-      }
-
-      if (this._input.hasNext()) {
-        resulting_string += this._input.next();
-      }
-    }
+    next += pattern.read();
+    resulting_string += next;
   }
 
   return resulting_string;
@@ -3315,6 +3512,8 @@ module.exports.line_starters = line_starters.slice();
 
 
 
+var regexp_has_sticky = RegExp.prototype.hasOwnProperty('sticky');
+
 function InputScanner(input_string) {
   this.__input = input_string || '';
   this.__input_length = this.__input.length;
@@ -3354,14 +3553,32 @@ InputScanner.prototype.peek = function(index) {
   return val;
 };
 
+// This is a JavaScript only helper function (not in python)
+// Javascript doesn't have a match method
+// and not all implementation support "sticky" flag.
+// If they do not support sticky then both this.match() and this.test() method
+// must get the match and check the index of the match.
+// If sticky is supported and set, this method will use it.
+// Otherwise it will check that global is set, and fall back to the slower method.
+InputScanner.prototype.__match = function(pattern, index) {
+  pattern.lastIndex = index;
+  var pattern_match = pattern.exec(this.__input);
+
+  if (pattern_match && !(regexp_has_sticky && pattern.sticky)) {
+    if (pattern_match.index !== index) {
+      pattern_match = null;
+    }
+  }
+
+  return pattern_match;
+};
+
 InputScanner.prototype.test = function(pattern, index) {
   index = index || 0;
   index += this.__position;
-  pattern.lastIndex = index;
 
   if (index >= 0 && index < this.__input_length) {
-    var pattern_match = pattern.exec(this.__input);
-    return pattern_match && pattern_match.index === index;
+    return !!this.__match(pattern, index);
   } else {
     return false;
   }
@@ -3370,13 +3587,13 @@ InputScanner.prototype.test = function(pattern, index) {
 InputScanner.prototype.testChar = function(pattern, index) {
   // test one character regex match
   var val = this.peek(index);
+  pattern.lastIndex = 0;
   return val !== null && pattern.test(val);
 };
 
 InputScanner.prototype.match = function(pattern) {
-  pattern.lastIndex = this.__position;
-  var pattern_match = pattern.exec(this.__input);
-  if (pattern_match && pattern_match.index === this.__position) {
+  var pattern_match = this.__match(pattern, this.__position);
+  if (pattern_match) {
     this.__position += pattern_match[0].length;
   } else {
     pattern_match = null;
@@ -3384,25 +3601,30 @@ InputScanner.prototype.match = function(pattern) {
   return pattern_match;
 };
 
-InputScanner.prototype.read = function(pattern) {
+InputScanner.prototype.read = function(starting_pattern, until_pattern, until_after) {
   var val = '';
-  var match = this.match(pattern);
-  if (match) {
-    val = match[0];
+  var match;
+  if (starting_pattern) {
+    match = this.match(starting_pattern);
+    if (match) {
+      val += match[0];
+    }
+  }
+  if (until_pattern && (match || !starting_pattern)) {
+    val += this.readUntil(until_pattern, until_after);
   }
   return val;
 };
 
-InputScanner.prototype.readUntil = function(pattern, include_match) {
+InputScanner.prototype.readUntil = function(pattern, until_after) {
   var val = '';
   var match_index = this.__position;
   pattern.lastIndex = this.__position;
   var pattern_match = pattern.exec(this.__input);
   if (pattern_match) {
-    if (include_match) {
-      match_index = pattern_match.index + pattern_match[0].length;
-    } else {
-      match_index = pattern_match.index;
+    match_index = pattern_match.index;
+    if (until_after) {
+      match_index += pattern_match[0].length;
     }
   } else {
     match_index = this.__input_length;
@@ -3415,6 +3637,26 @@ InputScanner.prototype.readUntil = function(pattern, include_match) {
 
 InputScanner.prototype.readUntilAfter = function(pattern) {
   return this.readUntil(pattern, true);
+};
+
+InputScanner.prototype.get_regexp = function(pattern, match_from) {
+  var result = null;
+  var flags = 'g';
+  if (match_from && regexp_has_sticky) {
+    flags = 'y';
+  }
+  // strings are converted to regexp
+  if (typeof pattern === "string" && pattern !== '') {
+    // result = new RegExp(pattern.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), flags);
+    result = new RegExp(pattern, flags);
+  } else if (pattern) {
+    result = new RegExp(pattern.source, flags);
+  }
+  return result;
+};
+
+InputScanner.prototype.get_literal_regexp = function(literal_string) {
+  return RegExp(literal_string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
 };
 
 /* css beautifier legacy helpers */
@@ -3430,7 +3672,6 @@ InputScanner.prototype.lookBack = function(testVal) {
   return start >= testVal.length && this.__input.substring(start - testVal.length, start)
     .toLowerCase() === testVal;
 };
-
 
 module.exports.InputScanner = InputScanner;
 
@@ -3473,6 +3714,7 @@ module.exports.InputScanner = InputScanner;
 var InputScanner = __webpack_require__(8).InputScanner;
 var Token = __webpack_require__(3).Token;
 var TokenStream = __webpack_require__(10).TokenStream;
+var WhitespacePattern = __webpack_require__(11).WhitespacePattern;
 
 var TOKEN = {
   START: 'TK_START',
@@ -3484,11 +3726,9 @@ var Tokenizer = function(input_string, options) {
   this._input = new InputScanner(input_string);
   this._options = options || {};
   this.__tokens = null;
-  this.__newline_count = 0;
-  this.__whitespace_before_token = '';
 
-  this._whitespace_pattern = /[\n\r\t ]+/g;
-  this._newline_pattern = /([^\n\r]*)(\r\n|[\n\r])?/g;
+  this._patterns = {};
+  this._patterns.whitespace = new WhitespacePattern(this._input);
 };
 
 Tokenizer.prototype.tokenize = function() {
@@ -3567,25 +3807,14 @@ Tokenizer.prototype._is_closing = function(current_token, open_token) { // jshin
 };
 
 Tokenizer.prototype._create_token = function(type, text) {
-  var token = new Token(type, text, this.__newline_count, this.__whitespace_before_token);
-  this.__newline_count = 0;
-  this.__whitespace_before_token = '';
+  var token = new Token(type, text,
+    this._patterns.whitespace.newline_count,
+    this._patterns.whitespace.whitespace_before_token);
   return token;
 };
 
 Tokenizer.prototype._readWhitespace = function() {
-  var resulting_string = this._input.read(this._whitespace_pattern);
-  if (resulting_string === ' ') {
-    this.__whitespace_before_token = resulting_string;
-  } else if (resulting_string !== '') {
-    this._newline_pattern.lastIndex = 0;
-    var nextMatch = this._newline_pattern.exec(resulting_string);
-    while (nextMatch[2]) {
-      this.__newline_count += 1;
-      nextMatch = this._newline_pattern.exec(resulting_string);
-    }
-    this.__whitespace_before_token = nextMatch[1];
-  }
+  return this._patterns.whitespace.read();
 };
 
 
@@ -3714,13 +3943,226 @@ module.exports.TokenStream = TokenStream;
 
 
 
+var Pattern = __webpack_require__(12).Pattern;
+
+function WhitespacePattern(input_scanner, parent) {
+  Pattern.call(this, input_scanner, parent);
+  if (parent) {
+    this._line_regexp = this._input.get_regexp(parent._line_regexp);
+  } else {
+    this.__set_whitespace_patterns('', '');
+  }
+
+  this.newline_count = 0;
+  this.whitespace_before_token = '';
+}
+WhitespacePattern.prototype = new Pattern();
+
+WhitespacePattern.prototype.__set_whitespace_patterns = function(whitespace_chars, newline_chars) {
+  whitespace_chars += '\\t ';
+  newline_chars += '\\n\\r';
+
+  this._match_pattern = this._input.get_regexp(
+    '[' + whitespace_chars + newline_chars + ']+', true);
+  this._newline_regexp = this._input.get_regexp(
+    '\\r\\n|[' + newline_chars + ']');
+};
+
+WhitespacePattern.prototype.read = function() {
+  this.newline_count = 0;
+  this.whitespace_before_token = '';
+
+  var resulting_string = this._input.read(this._match_pattern);
+  if (resulting_string === ' ') {
+    this.whitespace_before_token = ' ';
+  } else if (resulting_string) {
+    var matches = this.__split(this._newline_regexp, resulting_string);
+    this.newline_count = matches.length - 1;
+    this.whitespace_before_token = matches[this.newline_count];
+  }
+
+  return resulting_string;
+};
+
+WhitespacePattern.prototype.matching = function(whitespace_chars, newline_chars) {
+  var result = this._create();
+  result.__set_whitespace_patterns(whitespace_chars, newline_chars);
+  result._update();
+  return result;
+};
+
+WhitespacePattern.prototype._create = function() {
+  return new WhitespacePattern(this._input, this);
+};
+
+WhitespacePattern.prototype.__split = function(regexp, input_string) {
+  regexp.lastIndex = 0;
+  var start_index = 0;
+  var result = [];
+  var next_match = regexp.exec(input_string);
+  while (next_match) {
+    result.push(input_string.substring(start_index, next_match.index));
+    start_index = next_match.index + next_match[0].length;
+    next_match = regexp.exec(input_string);
+  }
+
+  if (start_index < input_string.length) {
+    result.push(input_string.substring(start_index, input_string.length));
+  } else {
+    result.push('');
+  }
+
+  return result;
+};
+
+
+
+module.exports.WhitespacePattern = WhitespacePattern;
+
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/*jshint node:true */
+/*
+
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
+
+
+function Pattern(input_scanner, parent) {
+  this._input = input_scanner;
+  this._starting_pattern = null;
+  this._match_pattern = null;
+  this._until_pattern = null;
+  this._until_after = false;
+
+  if (parent) {
+    this._starting_pattern = this._input.get_regexp(parent._starting_pattern, true);
+    this._match_pattern = this._input.get_regexp(parent._match_pattern, true);
+    this._until_pattern = this._input.get_regexp(parent._until_pattern);
+    this._until_after = parent._until_after;
+  }
+}
+
+Pattern.prototype.read = function() {
+  var result = this._input.read(this._starting_pattern);
+  if (!this._starting_pattern || result) {
+    result += this._input.read(this._match_pattern, this._until_pattern, this._until_after);
+  }
+  return result;
+};
+
+Pattern.prototype.read_match = function() {
+  return this._input.match(this._match_pattern);
+};
+
+Pattern.prototype.until_after = function(pattern) {
+  var result = this._create();
+  result._until_after = true;
+  result._until_pattern = this._input.get_regexp(pattern);
+  result._update();
+  return result;
+};
+
+Pattern.prototype.until = function(pattern) {
+  var result = this._create();
+  result._until_after = false;
+  result._until_pattern = this._input.get_regexp(pattern);
+  result._update();
+  return result;
+};
+
+Pattern.prototype.starting_with = function(pattern) {
+  var result = this._create();
+  result._starting_pattern = this._input.get_regexp(pattern, true);
+  result._update();
+  return result;
+};
+
+Pattern.prototype.matching = function(pattern) {
+  var result = this._create();
+  result._match_pattern = this._input.get_regexp(pattern, true);
+  result._update();
+  return result;
+};
+
+Pattern.prototype._create = function() {
+  return new Pattern(this._input, this);
+};
+
+Pattern.prototype._update = function() {};
+
+module.exports.Pattern = Pattern;
+
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/*jshint node:true */
+/*
+
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
+
+
 function Directives(start_block_pattern, end_block_pattern) {
   start_block_pattern = typeof start_block_pattern === 'string' ? start_block_pattern : start_block_pattern.source;
   end_block_pattern = typeof end_block_pattern === 'string' ? end_block_pattern : end_block_pattern.source;
   this.__directives_block_pattern = new RegExp(start_block_pattern + / beautify( \w+[:]\w+)+ /.source + end_block_pattern, 'g');
   this.__directive_pattern = / (\w+)[:](\w+)/g;
 
-  this.__directives_end_ignore_pattern = new RegExp('(?:[\\s\\S]*?)((?:' + start_block_pattern + /\sbeautify\signore:end\s/.source + end_block_pattern + ')|$)', 'g');
+  this.__directives_end_ignore_pattern = new RegExp(start_block_pattern + /\sbeautify\signore:end\s/.source + end_block_pattern, 'g');
 }
 
 Directives.prototype.get_directives = function(text) {
@@ -3741,11 +4183,209 @@ Directives.prototype.get_directives = function(text) {
 };
 
 Directives.prototype.readIgnored = function(input) {
-  return input.read(this.__directives_end_ignore_pattern);
+  return input.readUntilAfter(this.__directives_end_ignore_pattern);
 };
 
 
 module.exports.Directives = Directives;
+
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/*jshint node:true */
+/*
+
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
+
+
+var Pattern = __webpack_require__(12).Pattern;
+
+
+var template_names = {
+  django: false,
+  erb: false,
+  handlebars: false,
+  php: false
+};
+
+// This lets templates appear anywhere we would do a readUntil
+// The cost is higher but it is pay to play.
+function TemplatablePattern(input_scanner, parent) {
+  Pattern.call(this, input_scanner, parent);
+  this.__template_pattern = null;
+  this._disabled = Object.assign({}, template_names);
+  this._excluded = Object.assign({}, template_names);
+
+  if (parent) {
+    this.__template_pattern = this._input.get_regexp(parent.__template_pattern);
+    this._excluded = Object.assign(this._excluded, parent._excluded);
+    this._disabled = Object.assign(this._disabled, parent._disabled);
+  }
+  var pattern = new Pattern(input_scanner);
+  this.__patterns = {
+    handlebars_comment: pattern.starting_with(/{{!--/).until_after(/--}}/),
+    handlebars_unescaped: pattern.starting_with(/{{{/).until_after(/}}}/),
+    handlebars: pattern.starting_with(/{{/).until_after(/}}/),
+    php: pattern.starting_with(/<\?(?:[=]|php)/).until_after(/\?>/),
+    erb: pattern.starting_with(/<%[^%]/).until_after(/[^%]%>/),
+    // django coflicts with handlebars a bit.
+    django: pattern.starting_with(/{%/).until_after(/%}/),
+    django_value: pattern.starting_with(/{{/).until_after(/}}/),
+    django_comment: pattern.starting_with(/{#/).until_after(/#}/)
+  };
+}
+TemplatablePattern.prototype = new Pattern();
+
+TemplatablePattern.prototype._create = function() {
+  return new TemplatablePattern(this._input, this);
+};
+
+TemplatablePattern.prototype._update = function() {
+  this.__set_templated_pattern();
+};
+
+TemplatablePattern.prototype.disable = function(language) {
+  var result = this._create();
+  result._disabled[language] = true;
+  result._update();
+  return result;
+};
+
+TemplatablePattern.prototype.read_options = function(options) {
+  var result = this._create();
+  for (var language in template_names) {
+    result._disabled[language] = options.templating.indexOf(language) === -1;
+  }
+  result._update();
+  return result;
+};
+
+TemplatablePattern.prototype.exclude = function(language) {
+  var result = this._create();
+  result._excluded[language] = true;
+  result._update();
+  return result;
+};
+
+TemplatablePattern.prototype.read = function() {
+  var result = '';
+  if (this._match_pattern) {
+    result = this._input.read(this._starting_pattern);
+  } else {
+    result = this._input.read(this._starting_pattern, this.__template_pattern);
+  }
+  var next = this._read_template();
+  while (next) {
+    if (this._match_pattern) {
+      next += this._input.read(this._match_pattern);
+    } else {
+      next += this._input.readUntil(this.__template_pattern);
+    }
+    result += next;
+    next = this._read_template();
+  }
+
+  if (this._until_after) {
+    result += this._input.readUntilAfter(this._until_pattern);
+  }
+  return result;
+};
+
+TemplatablePattern.prototype.__set_templated_pattern = function() {
+  var items = [];
+
+  if (!this._disabled.php) {
+    items.push(this.__patterns.php._starting_pattern.source);
+  }
+  if (!this._disabled.handlebars) {
+    items.push(this.__patterns.handlebars._starting_pattern.source);
+  }
+  if (!this._disabled.erb) {
+    items.push(this.__patterns.erb._starting_pattern.source);
+  }
+  if (!this._disabled.django) {
+    items.push(this.__patterns.django._starting_pattern.source);
+    items.push(this.__patterns.django_value._starting_pattern.source);
+    items.push(this.__patterns.django_comment._starting_pattern.source);
+  }
+
+  if (this._until_pattern) {
+    items.push(this._until_pattern.source);
+  }
+  this.__template_pattern = this._input.get_regexp('(?:' + items.join('|') + ')');
+};
+
+TemplatablePattern.prototype._read_template = function() {
+  var resulting_string = '';
+  var c = this._input.peek();
+  if (c === '<') {
+    var peek1 = this._input.peek(1);
+    //if we're in a comment, do something special
+    // We treat all comments as literals, even more than preformatted tags
+    // we just look for the appropriate close tag
+    if (!this._disabled.php && !this._excluded.php && peek1 === '?') {
+      resulting_string = resulting_string ||
+        this.__patterns.php.read();
+    }
+    if (!this._disabled.erb && !this._excluded.erb && peek1 === '%') {
+      resulting_string = resulting_string ||
+        this.__patterns.erb.read();
+    }
+  } else if (c === '{') {
+    if (!this._disabled.handlebars && !this._excluded.handlebars) {
+      resulting_string = resulting_string ||
+        this.__patterns.handlebars_comment.read();
+      resulting_string = resulting_string ||
+        this.__patterns.handlebars_unescaped.read();
+      resulting_string = resulting_string ||
+        this.__patterns.handlebars.read();
+    }
+    if (!this._disabled.django) {
+      // django coflicts with handlebars a bit.
+      if (!this._excluded.django && !this._excluded.handlebars) {
+        resulting_string = resulting_string ||
+          this.__patterns.django_value.read();
+      }
+      if (!this._excluded.django) {
+        resulting_string = resulting_string ||
+          this.__patterns.django_comment.read();
+        resulting_string = resulting_string ||
+          this.__patterns.django.read();
+      }
+    }
+  }
+  return resulting_string;
+};
+
+
+module.exports.TemplatablePattern = TemplatablePattern;
 
 
 /***/ })
@@ -3925,7 +4565,7 @@ var legacy_beautify_css =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 12);
+/******/ 	return __webpack_require__(__webpack_require__.s = 15);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -3937,7 +4577,6 @@ var legacy_beautify_css =
 "use strict";
 /*jshint node:true */
 /*
-
   The MIT License (MIT)
 
   Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
@@ -3971,9 +4610,19 @@ function OutputLine(parent) {
   // use indent_count as a marker for this.__lines that have preserved indentation
   this.__indent_count = -1;
   this.__alignment_count = 0;
+  this.__wrap_point_index = 0;
+  this.__wrap_point_character_count = 0;
+  this.__wrap_point_indent_count = -1;
+  this.__wrap_point_alignment_count = 0;
 
   this.__items = [];
 }
+
+OutputLine.prototype.clone_empty = function() {
+  var line = new OutputLine(this.__parent);
+  line.set_indent(this.__indent_count, this.__alignment_count);
+  return line;
+};
 
 OutputLine.prototype.item = function(index) {
   if (index < 0) {
@@ -3993,13 +4642,46 @@ OutputLine.prototype.has_match = function(pattern) {
 };
 
 OutputLine.prototype.set_indent = function(indent, alignment) {
-  this.__indent_count = indent || 0;
-  this.__alignment_count = alignment || 0;
-  this.__character_count = this.__parent.baseIndentLength + this.__alignment_count + this.__indent_count * this.__parent.indent_length;
+  if (this.is_empty()) {
+    this.__indent_count = indent || 0;
+    this.__alignment_count = alignment || 0;
+    this.__character_count = this.__parent.get_indent_size(this.__indent_count, this.__alignment_count);
+  }
 };
 
-OutputLine.prototype.get_character_count = function() {
-  return this.__character_count;
+OutputLine.prototype._set_wrap_point = function() {
+  if (this.__parent.wrap_line_length) {
+    this.__wrap_point_index = this.__items.length;
+    this.__wrap_point_character_count = this.__character_count;
+    this.__wrap_point_indent_count = this.__parent.next_line.__indent_count;
+    this.__wrap_point_alignment_count = this.__parent.next_line.__alignment_count;
+  }
+};
+
+OutputLine.prototype._should_wrap = function() {
+  return this.__wrap_point_index &&
+    this.__character_count > this.__parent.wrap_line_length &&
+    this.__wrap_point_character_count > this.__parent.next_line.__character_count;
+};
+
+OutputLine.prototype._allow_wrap = function() {
+  if (this._should_wrap()) {
+    this.__parent.add_new_line();
+    var next = this.__parent.current_line;
+    next.set_indent(this.__wrap_point_indent_count, this.__wrap_point_alignment_count);
+    next.__items = this.__items.slice(this.__wrap_point_index);
+    this.__items = this.__items.slice(0, this.__wrap_point_index);
+
+    next.__character_count += this.__character_count - this.__wrap_point_character_count;
+    this.__character_count = this.__wrap_point_character_count;
+
+    if (next.__items[0] === " ") {
+      next.__items.splice(0, 1);
+      next.__character_count -= 1;
+    }
+    return true;
+  }
+  return false;
 };
 
 OutputLine.prototype.is_empty = function() {
@@ -4016,14 +4698,11 @@ OutputLine.prototype.last = function() {
 
 OutputLine.prototype.push = function(item) {
   this.__items.push(item);
-  this.__character_count += item.length;
-};
-
-OutputLine.prototype.push_raw = function(item) {
-  this.push(item);
   var last_newline_index = item.lastIndexOf('\n');
   if (last_newline_index !== -1) {
     this.__character_count = item.length - last_newline_index;
+  } else {
+    this.__character_count += item.length;
   }
 };
 
@@ -4036,13 +4715,19 @@ OutputLine.prototype.pop = function() {
   return item;
 };
 
-OutputLine.prototype.remove_indent = function() {
+
+OutputLine.prototype._remove_indent = function() {
   if (this.__indent_count > 0) {
     this.__indent_count -= 1;
-    this.__character_count -= this.__parent.indent_length;
+    this.__character_count -= this.__parent.indent_size;
   }
 };
 
+OutputLine.prototype._remove_wrap_indent = function() {
+  if (this.__wrap_point_indent_count > 0) {
+    this.__wrap_point_indent_count -= 1;
+  }
+};
 OutputLine.prototype.trim = function() {
   while (this.last() === ' ') {
     this.__items.pop();
@@ -4052,65 +4737,102 @@ OutputLine.prototype.trim = function() {
 
 OutputLine.prototype.toString = function() {
   var result = '';
-  if (!this.is_empty()) {
-    if (this.__indent_count >= 0) {
+  if (this.is_empty()) {
+    if (this.__parent.indent_empty_lines) {
       result = this.__parent.get_indent_string(this.__indent_count);
     }
-    if (this.__alignment_count >= 0) {
-      result += this.__parent.get_alignment_string(this.__alignment_count);
-    }
+  } else {
+    result = this.__parent.get_indent_string(this.__indent_count, this.__alignment_count);
     result += this.__items.join('');
   }
   return result;
 };
 
-function IndentCache(base_string, level_string) {
-  this.__cache = [base_string];
-  this.__level_string = level_string;
-}
-
-IndentCache.prototype.__ensure_cache = function(level) {
-  while (level >= this.__cache.length) {
-    this.__cache.push(this.__cache[this.__cache.length - 1] + this.__level_string);
-  }
-};
-
-IndentCache.prototype.get_level_string = function(level) {
-  this.__ensure_cache(level);
-  return this.__cache[level];
-};
-
-
-function Output(options, baseIndentString) {
-  var indent_string = options.indent_char;
-  if (options.indent_size > 1) {
-    indent_string = new Array(options.indent_size + 1).join(options.indent_char);
+function IndentStringCache(options, baseIndentString) {
+  this.__cache = [''];
+  this.__indent_size = options.indent_size;
+  this.__indent_string = options.indent_char;
+  if (!options.indent_with_tabs) {
+    this.__indent_string = new Array(options.indent_size + 1).join(options.indent_char);
   }
 
-  // Set to null to continue support for auto detection of base indent level.
+  // Set to null to continue support for auto detection of base indent
   baseIndentString = baseIndentString || '';
   if (options.indent_level > 0) {
-    baseIndentString = new Array(options.indent_level + 1).join(indent_string);
+    baseIndentString = new Array(options.indent_level + 1).join(this.__indent_string);
   }
 
-  this.__indent_cache = new IndentCache(baseIndentString, indent_string);
-  this.__alignment_cache = new IndentCache('', ' ');
-  this.baseIndentLength = baseIndentString.length;
-  this.indent_length = indent_string.length;
+  this.__base_string = baseIndentString;
+  this.__base_string_length = baseIndentString.length;
+}
+
+IndentStringCache.prototype.get_indent_size = function(indent, column) {
+  var result = this.__base_string_length;
+  column = column || 0;
+  if (indent < 0) {
+    result = 0;
+  }
+  result += indent * this.__indent_size;
+  result += column;
+  return result;
+};
+
+IndentStringCache.prototype.get_indent_string = function(indent_level, column) {
+  var result = this.__base_string;
+  column = column || 0;
+  if (indent_level < 0) {
+    indent_level = 0;
+    result = '';
+  }
+  column += indent_level * this.__indent_size;
+  this.__ensure_cache(column);
+  result += this.__cache[column];
+  return result;
+};
+
+IndentStringCache.prototype.__ensure_cache = function(column) {
+  while (column >= this.__cache.length) {
+    this.__add_column();
+  }
+};
+
+IndentStringCache.prototype.__add_column = function() {
+  var column = this.__cache.length;
+  var indent = 0;
+  var result = '';
+  if (this.__indent_size && column >= this.__indent_size) {
+    indent = Math.floor(column / this.__indent_size);
+    column -= indent * this.__indent_size;
+    result = new Array(indent + 1).join(this.__indent_string);
+  }
+  if (column) {
+    result += new Array(column + 1).join(' ');
+  }
+
+  this.__cache.push(result);
+};
+
+function Output(options, baseIndentString) {
+  this.__indent_cache = new IndentStringCache(options, baseIndentString);
   this.raw = false;
   this._end_with_newline = options.end_with_newline;
-
+  this.indent_size = options.indent_size;
+  this.wrap_line_length = options.wrap_line_length;
+  this.indent_empty_lines = options.indent_empty_lines;
   this.__lines = [];
   this.previous_line = null;
   this.current_line = null;
+  this.next_line = new OutputLine(this);
   this.space_before_token = false;
+  this.non_breaking_space = false;
+  this.previous_token_wrapped = false;
   // initialize
   this.__add_outputline();
 }
 
 Output.prototype.__add_outputline = function() {
   this.previous_line = this.current_line;
-  this.current_line = new OutputLine(this);
+  this.current_line = this.next_line.clone_empty();
   this.__lines.push(this.current_line);
 };
 
@@ -4118,12 +4840,12 @@ Output.prototype.get_line_number = function() {
   return this.__lines.length;
 };
 
-Output.prototype.get_indent_string = function(level) {
-  return this.__indent_cache.get_level_string(level);
+Output.prototype.get_indent_string = function(indent, column) {
+  return this.__indent_cache.get_indent_string(indent, column);
 };
 
-Output.prototype.get_alignment_string = function(level) {
-  return this.__alignment_cache.get_level_string(level);
+Output.prototype.get_indent_size = function(indent, column) {
+  return this.__indent_cache.get_indent_size(indent, column);
 };
 
 Output.prototype.is_empty = function() {
@@ -4147,28 +4869,47 @@ Output.prototype.add_new_line = function(force_newline) {
 };
 
 Output.prototype.get_code = function(eol) {
-  var sweet_code = this.__lines.join('\n').replace(/[\r\n\t ]+$/, '');
+  this.trim(true);
+
+  // handle some edge cases where the last tokens
+  // has text that ends with newline(s)
+  var last_item = this.current_line.pop();
+  if (last_item) {
+    if (last_item[last_item.length - 1] === '\n') {
+      last_item = last_item.replace(/\n+$/g, '');
+    }
+    this.current_line.push(last_item);
+  }
 
   if (this._end_with_newline) {
-    sweet_code += '\n';
+    this.__add_outputline();
   }
+
+  var sweet_code = this.__lines.join('\n');
 
   if (eol !== '\n') {
     sweet_code = sweet_code.replace(/[\n]/g, eol);
   }
-
   return sweet_code;
+};
+
+Output.prototype.set_wrap_point = function() {
+  this.current_line._set_wrap_point();
 };
 
 Output.prototype.set_indent = function(indent, alignment) {
   indent = indent || 0;
   alignment = alignment || 0;
 
+  // Next line stores alignment values
+  this.next_line.set_indent(indent, alignment);
+
   // Never indent your first output indent at the start of the file
   if (this.__lines.length > 1) {
     this.current_line.set_indent(indent, alignment);
     return true;
   }
+
   this.current_line.set_indent();
   return false;
 };
@@ -4177,35 +4918,44 @@ Output.prototype.add_raw_token = function(token) {
   for (var x = 0; x < token.newlines; x++) {
     this.__add_outputline();
   }
+  this.current_line.set_indent(-1);
   this.current_line.push(token.whitespace_before);
-  this.current_line.push_raw(token.text);
+  this.current_line.push(token.text);
   this.space_before_token = false;
+  this.non_breaking_space = false;
+  this.previous_token_wrapped = false;
 };
 
 Output.prototype.add_token = function(printable_token) {
-  this.add_space_before_token();
+  this.__add_space_before_token();
   this.current_line.push(printable_token);
+  this.space_before_token = false;
+  this.non_breaking_space = false;
+  this.previous_token_wrapped = this.current_line._allow_wrap();
 };
 
-Output.prototype.add_space_before_token = function() {
+Output.prototype.__add_space_before_token = function() {
   if (this.space_before_token && !this.just_added_newline()) {
+    if (!this.non_breaking_space) {
+      this.set_wrap_point();
+    }
     this.current_line.push(' ');
   }
-  this.space_before_token = false;
 };
 
 Output.prototype.remove_indent = function(index) {
   var output_length = this.__lines.length;
   while (index < output_length) {
-    this.__lines[index].remove_indent();
+    this.__lines[index]._remove_indent();
     index++;
   }
+  this.current_line._remove_wrap_indent();
 };
 
 Output.prototype.trim = function(eat_newlines) {
   eat_newlines = (eat_newlines === undefined) ? false : eat_newlines;
 
-  this.current_line.trim(this.indent_string, this.baseIndentString);
+  this.current_line.trim();
 
   while (eat_newlines && this.__lines.length > 1 &&
     this.current_line.is_empty()) {
@@ -4302,15 +5052,31 @@ function Options(options, merge_child_field) {
     this.max_preserve_newlines = 0;
   }
 
-  this.indent_with_tabs = this._get_boolean('indent_with_tabs');
+  this.indent_with_tabs = this._get_boolean('indent_with_tabs', this.indent_char === '\t');
   if (this.indent_with_tabs) {
     this.indent_char = '\t';
-    this.indent_size = 1;
+
+    // indent_size behavior changed after 1.8.6
+    // It used to be that indent_size would be
+    // set to 1 for indent_with_tabs. That is no longer needed and
+    // actually doesn't make sense - why not use spaces? Further,
+    // that might produce unexpected behavior - tabs being used
+    // for single-column alignment. So, when indent_with_tabs is true
+    // and indent_size is 1, reset indent_size to 4.
+    if (this.indent_size === 1) {
+      this.indent_size = 4;
+    }
   }
 
   // Backwards compat with 1.3.x
   this.wrap_line_length = this._get_number('wrap_line_length', this._get_number('max_char'));
 
+  this.indent_empty_lines = this._get_boolean('indent_empty_lines');
+
+  // valid templating languages ['django', 'erb', 'handlebars', 'php']
+  // For now, 'auto' = all off for javascript, all on for html (and inline javascript).
+  // other values ignored
+  this.templating = this._get_selection_list('templating', ['auto', 'none', 'django', 'erb', 'handlebars', 'php'], ['auto']);
 }
 
 Options.prototype._get_array = function(name, default_value) {
@@ -4469,6 +5235,8 @@ module.exports.mergeOpts = _mergeOpts;
 
 
 
+var regexp_has_sticky = RegExp.prototype.hasOwnProperty('sticky');
+
 function InputScanner(input_string) {
   this.__input = input_string || '';
   this.__input_length = this.__input.length;
@@ -4508,14 +5276,32 @@ InputScanner.prototype.peek = function(index) {
   return val;
 };
 
+// This is a JavaScript only helper function (not in python)
+// Javascript doesn't have a match method
+// and not all implementation support "sticky" flag.
+// If they do not support sticky then both this.match() and this.test() method
+// must get the match and check the index of the match.
+// If sticky is supported and set, this method will use it.
+// Otherwise it will check that global is set, and fall back to the slower method.
+InputScanner.prototype.__match = function(pattern, index) {
+  pattern.lastIndex = index;
+  var pattern_match = pattern.exec(this.__input);
+
+  if (pattern_match && !(regexp_has_sticky && pattern.sticky)) {
+    if (pattern_match.index !== index) {
+      pattern_match = null;
+    }
+  }
+
+  return pattern_match;
+};
+
 InputScanner.prototype.test = function(pattern, index) {
   index = index || 0;
   index += this.__position;
-  pattern.lastIndex = index;
 
   if (index >= 0 && index < this.__input_length) {
-    var pattern_match = pattern.exec(this.__input);
-    return pattern_match && pattern_match.index === index;
+    return !!this.__match(pattern, index);
   } else {
     return false;
   }
@@ -4524,13 +5310,13 @@ InputScanner.prototype.test = function(pattern, index) {
 InputScanner.prototype.testChar = function(pattern, index) {
   // test one character regex match
   var val = this.peek(index);
+  pattern.lastIndex = 0;
   return val !== null && pattern.test(val);
 };
 
 InputScanner.prototype.match = function(pattern) {
-  pattern.lastIndex = this.__position;
-  var pattern_match = pattern.exec(this.__input);
-  if (pattern_match && pattern_match.index === this.__position) {
+  var pattern_match = this.__match(pattern, this.__position);
+  if (pattern_match) {
     this.__position += pattern_match[0].length;
   } else {
     pattern_match = null;
@@ -4538,25 +5324,30 @@ InputScanner.prototype.match = function(pattern) {
   return pattern_match;
 };
 
-InputScanner.prototype.read = function(pattern) {
+InputScanner.prototype.read = function(starting_pattern, until_pattern, until_after) {
   var val = '';
-  var match = this.match(pattern);
-  if (match) {
-    val = match[0];
+  var match;
+  if (starting_pattern) {
+    match = this.match(starting_pattern);
+    if (match) {
+      val += match[0];
+    }
+  }
+  if (until_pattern && (match || !starting_pattern)) {
+    val += this.readUntil(until_pattern, until_after);
   }
   return val;
 };
 
-InputScanner.prototype.readUntil = function(pattern, include_match) {
+InputScanner.prototype.readUntil = function(pattern, until_after) {
   var val = '';
   var match_index = this.__position;
   pattern.lastIndex = this.__position;
   var pattern_match = pattern.exec(this.__input);
   if (pattern_match) {
-    if (include_match) {
-      match_index = pattern_match.index + pattern_match[0].length;
-    } else {
-      match_index = pattern_match.index;
+    match_index = pattern_match.index;
+    if (until_after) {
+      match_index += pattern_match[0].length;
     }
   } else {
     match_index = this.__input_length;
@@ -4569,6 +5360,26 @@ InputScanner.prototype.readUntil = function(pattern, include_match) {
 
 InputScanner.prototype.readUntilAfter = function(pattern) {
   return this.readUntil(pattern, true);
+};
+
+InputScanner.prototype.get_regexp = function(pattern, match_from) {
+  var result = null;
+  var flags = 'g';
+  if (match_from && regexp_has_sticky) {
+    flags = 'y';
+  }
+  // strings are converted to regexp
+  if (typeof pattern === "string" && pattern !== '') {
+    // result = new RegExp(pattern.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), flags);
+    result = new RegExp(pattern, flags);
+  } else if (pattern) {
+    result = new RegExp(pattern.source, flags);
+  }
+  return result;
+};
+
+InputScanner.prototype.get_literal_regexp = function(literal_string) {
+  return RegExp(literal_string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
 };
 
 /* css beautifier legacy helpers */
@@ -4585,7 +5396,6 @@ InputScanner.prototype.lookBack = function(testVal) {
     .toLowerCase() === testVal;
 };
 
-
 module.exports.InputScanner = InputScanner;
 
 
@@ -4593,51 +5403,7 @@ module.exports.InputScanner = InputScanner;
 /* 9 */,
 /* 10 */,
 /* 11 */,
-/* 12 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/*jshint node:true */
-/*
-
-  The MIT License (MIT)
-
-  Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
-
-  Permission is hereby granted, free of charge, to any person
-  obtaining a copy of this software and associated documentation files
-  (the "Software"), to deal in the Software without restriction,
-  including without limitation the rights to use, copy, modify, merge,
-  publish, distribute, sublicense, and/or sell copies of the Software,
-  and to permit persons to whom the Software is furnished to do so,
-  subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be
-  included in all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
-*/
-
-
-
-var Beautifier = __webpack_require__(13).Beautifier;
-
-function css_beautify(source_text, options) {
-  var beautifier = new Beautifier(source_text, options);
-  return beautifier.beautify();
-}
-
-module.exports = css_beautify;
-
-
-/***/ }),
+/* 12 */,
 /* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4672,9 +5438,131 @@ module.exports = css_beautify;
 
 
 
-var Options = __webpack_require__(14).Options;
+function Directives(start_block_pattern, end_block_pattern) {
+  start_block_pattern = typeof start_block_pattern === 'string' ? start_block_pattern : start_block_pattern.source;
+  end_block_pattern = typeof end_block_pattern === 'string' ? end_block_pattern : end_block_pattern.source;
+  this.__directives_block_pattern = new RegExp(start_block_pattern + / beautify( \w+[:]\w+)+ /.source + end_block_pattern, 'g');
+  this.__directive_pattern = / (\w+)[:](\w+)/g;
+
+  this.__directives_end_ignore_pattern = new RegExp(start_block_pattern + /\sbeautify\signore:end\s/.source + end_block_pattern, 'g');
+}
+
+Directives.prototype.get_directives = function(text) {
+  if (!text.match(this.__directives_block_pattern)) {
+    return null;
+  }
+
+  var directives = {};
+  this.__directive_pattern.lastIndex = 0;
+  var directive_match = this.__directive_pattern.exec(text);
+
+  while (directive_match) {
+    directives[directive_match[1]] = directive_match[2];
+    directive_match = this.__directive_pattern.exec(text);
+  }
+
+  return directives;
+};
+
+Directives.prototype.readIgnored = function(input) {
+  return input.readUntilAfter(this.__directives_end_ignore_pattern);
+};
+
+
+module.exports.Directives = Directives;
+
+
+/***/ }),
+/* 14 */,
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/*jshint node:true */
+/*
+
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
+
+
+var Beautifier = __webpack_require__(16).Beautifier,
+  Options = __webpack_require__(17).Options;
+
+function css_beautify(source_text, options) {
+  var beautifier = new Beautifier(source_text, options);
+  return beautifier.beautify();
+}
+
+module.exports = css_beautify;
+module.exports.defaultOptions = function() {
+  return new Options();
+};
+
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/*jshint node:true */
+/*
+
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
+
+
+var Options = __webpack_require__(17).Options;
 var Output = __webpack_require__(2).Output;
 var InputScanner = __webpack_require__(8).InputScanner;
+var Directives = __webpack_require__(13).Directives;
+
+var directives_core = new Directives(/\/\*/, /\*\//);
 
 var lineBreak = /\r\n|[\r\n]/;
 var allLineBreaks = /\r\n|[\r\n]/g;
@@ -4774,9 +5662,8 @@ Beautifier.prototype.foundNestedPseudoClass = function() {
 };
 
 Beautifier.prototype.print_string = function(output_string) {
-  if (this._output.just_added_newline()) {
-    this._output.set_indent(this._indentLevel);
-  }
+  this._output.set_indent(this._indentLevel);
+  this._output.non_breaking_space = true;
   this._output.add_token(output_string);
 };
 
@@ -4835,12 +5722,18 @@ Beautifier.prototype.beautify = function() {
   var insideAtExtend = false;
   var insideAtImport = false;
   var topCharacter = this._ch;
+  var whitespace;
+  var isAfterSpace;
+  var previous_ch;
 
   while (true) {
-    var whitespace = this._input.read(whitespacePattern);
-    var isAfterSpace = whitespace !== '';
-    var previous_ch = topCharacter;
+    whitespace = this._input.read(whitespacePattern);
+    isAfterSpace = whitespace !== '';
+    previous_ch = topCharacter;
     this._ch = this._input.next();
+    if (this._ch === '\\' && this._input.hasNext()) {
+      this._ch += this._input.next();
+    }
     topCharacter = this._ch;
 
     if (!this._ch) {
@@ -4853,7 +5746,16 @@ Beautifier.prototype.beautify = function() {
       // minified code is being beautified.
       this._output.add_new_line();
       this._input.back();
-      this.print_string(this._input.read(block_comment_pattern));
+
+      var comment = this._input.read(block_comment_pattern);
+
+      // Handle ignore directive
+      var directives = directives_core.get_directives(comment);
+      if (directives && directives.ignore === 'start') {
+        comment += directives_core.readIgnored(this._input);
+      }
+
+      this.print_string(comment);
 
       // Ensures any new lines following the comment are preserved
       this.eatWhitespace(true);
@@ -4964,7 +5866,7 @@ Beautifier.prototype.beautify = function() {
         }
       }
     } else if (this._ch === ":") {
-      if ((insideRule || enteringConditionalGroup) && !(this._input.lookBack("&") || this.foundNestedPseudoClass()) && !this._input.lookBack("(") && !insideAtExtend) {
+      if ((insideRule || enteringConditionalGroup) && !(this._input.lookBack("&") || this.foundNestedPseudoClass()) && !this._input.lookBack("(") && !insideAtExtend && parenLevel === 0) {
         // 'property: value' delimiter
         // which could be in a conditional group query
         this.print_string(':');
@@ -4996,51 +5898,66 @@ Beautifier.prototype.beautify = function() {
       this.print_string(this._ch + this.eatString(this._ch));
       this.eatWhitespace(true);
     } else if (this._ch === ';') {
-      if (insidePropertyValue) {
-        this.outdent();
-        insidePropertyValue = false;
-      }
-      insideAtExtend = false;
-      insideAtImport = false;
-      this.print_string(this._ch);
-      this.eatWhitespace(true);
+      if (parenLevel === 0) {
+        if (insidePropertyValue) {
+          this.outdent();
+          insidePropertyValue = false;
+        }
+        insideAtExtend = false;
+        insideAtImport = false;
+        this.print_string(this._ch);
+        this.eatWhitespace(true);
 
-      // This maintains single line comments on the same
-      // line. Block comments are also affected, but
-      // a new line is always output before one inside
-      // that section
-      if (this._input.peek() !== '/') {
-        this._output.add_new_line();
+        // This maintains single line comments on the same
+        // line. Block comments are also affected, but
+        // a new line is always output before one inside
+        // that section
+        if (this._input.peek() !== '/') {
+          this._output.add_new_line();
+        }
+      } else {
+        this.print_string(this._ch);
+        this.eatWhitespace(true);
+        this._output.space_before_token = true;
       }
     } else if (this._ch === '(') { // may be a url
       if (this._input.lookBack("url")) {
         this.print_string(this._ch);
         this.eatWhitespace();
+        parenLevel++;
+        this.indent();
         this._ch = this._input.next();
         if (this._ch === ')' || this._ch === '"' || this._ch === '\'') {
           this._input.back();
-          parenLevel++;
         } else if (this._ch) {
           this.print_string(this._ch + this.eatString(')'));
+          if (parenLevel) {
+            parenLevel--;
+            this.outdent();
+          }
         }
       } else {
-        parenLevel++;
         this.preserveSingleSpace(isAfterSpace);
         this.print_string(this._ch);
         this.eatWhitespace();
+        parenLevel++;
+        this.indent();
       }
     } else if (this._ch === ')') {
+      if (parenLevel) {
+        parenLevel--;
+        this.outdent();
+      }
       this.print_string(this._ch);
-      parenLevel--;
     } else if (this._ch === ',') {
       this.print_string(this._ch);
       this.eatWhitespace(true);
-      if (this._options.selector_separator_newline && !insidePropertyValue && parenLevel < 1 && !insideAtImport) {
+      if (this._options.selector_separator_newline && !insidePropertyValue && parenLevel === 0 && !insideAtImport) {
         this._output.add_new_line();
       } else {
         this._output.space_before_token = true;
       }
-    } else if ((this._ch === '>' || this._ch === '+' || this._ch === '~') && !insidePropertyValue && parenLevel < 1) {
+    } else if ((this._ch === '>' || this._ch === '+' || this._ch === '~') && !insidePropertyValue && parenLevel === 0) {
       //handle combinator spacing
       if (this._options.space_around_combinator) {
         this._output.space_before_token = true;
@@ -5065,7 +5982,7 @@ Beautifier.prototype.beautify = function() {
       if (whitespaceChar.test(this._ch)) {
         this._ch = '';
       }
-    } else if (this._ch === '!') { // !important
+    } else if (this._ch === '!' && !this._input.lookBack("\\")) { // !important
       this.print_string(' ');
       this.print_string(this._ch);
     } else {
@@ -5083,7 +6000,7 @@ module.exports.Beautifier = Beautifier;
 
 
 /***/ }),
-/* 14 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5324,7 +6241,7 @@ var legacy_beautify_html =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 15);
+/******/ 	return __webpack_require__(__webpack_require__.s = 18);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -5336,7 +6253,6 @@ var legacy_beautify_html =
 "use strict";
 /*jshint node:true */
 /*
-
   The MIT License (MIT)
 
   Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
@@ -5370,9 +6286,19 @@ function OutputLine(parent) {
   // use indent_count as a marker for this.__lines that have preserved indentation
   this.__indent_count = -1;
   this.__alignment_count = 0;
+  this.__wrap_point_index = 0;
+  this.__wrap_point_character_count = 0;
+  this.__wrap_point_indent_count = -1;
+  this.__wrap_point_alignment_count = 0;
 
   this.__items = [];
 }
+
+OutputLine.prototype.clone_empty = function() {
+  var line = new OutputLine(this.__parent);
+  line.set_indent(this.__indent_count, this.__alignment_count);
+  return line;
+};
 
 OutputLine.prototype.item = function(index) {
   if (index < 0) {
@@ -5392,13 +6318,46 @@ OutputLine.prototype.has_match = function(pattern) {
 };
 
 OutputLine.prototype.set_indent = function(indent, alignment) {
-  this.__indent_count = indent || 0;
-  this.__alignment_count = alignment || 0;
-  this.__character_count = this.__parent.baseIndentLength + this.__alignment_count + this.__indent_count * this.__parent.indent_length;
+  if (this.is_empty()) {
+    this.__indent_count = indent || 0;
+    this.__alignment_count = alignment || 0;
+    this.__character_count = this.__parent.get_indent_size(this.__indent_count, this.__alignment_count);
+  }
 };
 
-OutputLine.prototype.get_character_count = function() {
-  return this.__character_count;
+OutputLine.prototype._set_wrap_point = function() {
+  if (this.__parent.wrap_line_length) {
+    this.__wrap_point_index = this.__items.length;
+    this.__wrap_point_character_count = this.__character_count;
+    this.__wrap_point_indent_count = this.__parent.next_line.__indent_count;
+    this.__wrap_point_alignment_count = this.__parent.next_line.__alignment_count;
+  }
+};
+
+OutputLine.prototype._should_wrap = function() {
+  return this.__wrap_point_index &&
+    this.__character_count > this.__parent.wrap_line_length &&
+    this.__wrap_point_character_count > this.__parent.next_line.__character_count;
+};
+
+OutputLine.prototype._allow_wrap = function() {
+  if (this._should_wrap()) {
+    this.__parent.add_new_line();
+    var next = this.__parent.current_line;
+    next.set_indent(this.__wrap_point_indent_count, this.__wrap_point_alignment_count);
+    next.__items = this.__items.slice(this.__wrap_point_index);
+    this.__items = this.__items.slice(0, this.__wrap_point_index);
+
+    next.__character_count += this.__character_count - this.__wrap_point_character_count;
+    this.__character_count = this.__wrap_point_character_count;
+
+    if (next.__items[0] === " ") {
+      next.__items.splice(0, 1);
+      next.__character_count -= 1;
+    }
+    return true;
+  }
+  return false;
 };
 
 OutputLine.prototype.is_empty = function() {
@@ -5415,14 +6374,11 @@ OutputLine.prototype.last = function() {
 
 OutputLine.prototype.push = function(item) {
   this.__items.push(item);
-  this.__character_count += item.length;
-};
-
-OutputLine.prototype.push_raw = function(item) {
-  this.push(item);
   var last_newline_index = item.lastIndexOf('\n');
   if (last_newline_index !== -1) {
     this.__character_count = item.length - last_newline_index;
+  } else {
+    this.__character_count += item.length;
   }
 };
 
@@ -5435,13 +6391,19 @@ OutputLine.prototype.pop = function() {
   return item;
 };
 
-OutputLine.prototype.remove_indent = function() {
+
+OutputLine.prototype._remove_indent = function() {
   if (this.__indent_count > 0) {
     this.__indent_count -= 1;
-    this.__character_count -= this.__parent.indent_length;
+    this.__character_count -= this.__parent.indent_size;
   }
 };
 
+OutputLine.prototype._remove_wrap_indent = function() {
+  if (this.__wrap_point_indent_count > 0) {
+    this.__wrap_point_indent_count -= 1;
+  }
+};
 OutputLine.prototype.trim = function() {
   while (this.last() === ' ') {
     this.__items.pop();
@@ -5451,65 +6413,102 @@ OutputLine.prototype.trim = function() {
 
 OutputLine.prototype.toString = function() {
   var result = '';
-  if (!this.is_empty()) {
-    if (this.__indent_count >= 0) {
+  if (this.is_empty()) {
+    if (this.__parent.indent_empty_lines) {
       result = this.__parent.get_indent_string(this.__indent_count);
     }
-    if (this.__alignment_count >= 0) {
-      result += this.__parent.get_alignment_string(this.__alignment_count);
-    }
+  } else {
+    result = this.__parent.get_indent_string(this.__indent_count, this.__alignment_count);
     result += this.__items.join('');
   }
   return result;
 };
 
-function IndentCache(base_string, level_string) {
-  this.__cache = [base_string];
-  this.__level_string = level_string;
-}
-
-IndentCache.prototype.__ensure_cache = function(level) {
-  while (level >= this.__cache.length) {
-    this.__cache.push(this.__cache[this.__cache.length - 1] + this.__level_string);
-  }
-};
-
-IndentCache.prototype.get_level_string = function(level) {
-  this.__ensure_cache(level);
-  return this.__cache[level];
-};
-
-
-function Output(options, baseIndentString) {
-  var indent_string = options.indent_char;
-  if (options.indent_size > 1) {
-    indent_string = new Array(options.indent_size + 1).join(options.indent_char);
+function IndentStringCache(options, baseIndentString) {
+  this.__cache = [''];
+  this.__indent_size = options.indent_size;
+  this.__indent_string = options.indent_char;
+  if (!options.indent_with_tabs) {
+    this.__indent_string = new Array(options.indent_size + 1).join(options.indent_char);
   }
 
-  // Set to null to continue support for auto detection of base indent level.
+  // Set to null to continue support for auto detection of base indent
   baseIndentString = baseIndentString || '';
   if (options.indent_level > 0) {
-    baseIndentString = new Array(options.indent_level + 1).join(indent_string);
+    baseIndentString = new Array(options.indent_level + 1).join(this.__indent_string);
   }
 
-  this.__indent_cache = new IndentCache(baseIndentString, indent_string);
-  this.__alignment_cache = new IndentCache('', ' ');
-  this.baseIndentLength = baseIndentString.length;
-  this.indent_length = indent_string.length;
+  this.__base_string = baseIndentString;
+  this.__base_string_length = baseIndentString.length;
+}
+
+IndentStringCache.prototype.get_indent_size = function(indent, column) {
+  var result = this.__base_string_length;
+  column = column || 0;
+  if (indent < 0) {
+    result = 0;
+  }
+  result += indent * this.__indent_size;
+  result += column;
+  return result;
+};
+
+IndentStringCache.prototype.get_indent_string = function(indent_level, column) {
+  var result = this.__base_string;
+  column = column || 0;
+  if (indent_level < 0) {
+    indent_level = 0;
+    result = '';
+  }
+  column += indent_level * this.__indent_size;
+  this.__ensure_cache(column);
+  result += this.__cache[column];
+  return result;
+};
+
+IndentStringCache.prototype.__ensure_cache = function(column) {
+  while (column >= this.__cache.length) {
+    this.__add_column();
+  }
+};
+
+IndentStringCache.prototype.__add_column = function() {
+  var column = this.__cache.length;
+  var indent = 0;
+  var result = '';
+  if (this.__indent_size && column >= this.__indent_size) {
+    indent = Math.floor(column / this.__indent_size);
+    column -= indent * this.__indent_size;
+    result = new Array(indent + 1).join(this.__indent_string);
+  }
+  if (column) {
+    result += new Array(column + 1).join(' ');
+  }
+
+  this.__cache.push(result);
+};
+
+function Output(options, baseIndentString) {
+  this.__indent_cache = new IndentStringCache(options, baseIndentString);
   this.raw = false;
   this._end_with_newline = options.end_with_newline;
-
+  this.indent_size = options.indent_size;
+  this.wrap_line_length = options.wrap_line_length;
+  this.indent_empty_lines = options.indent_empty_lines;
   this.__lines = [];
   this.previous_line = null;
   this.current_line = null;
+  this.next_line = new OutputLine(this);
   this.space_before_token = false;
+  this.non_breaking_space = false;
+  this.previous_token_wrapped = false;
   // initialize
   this.__add_outputline();
 }
 
 Output.prototype.__add_outputline = function() {
   this.previous_line = this.current_line;
-  this.current_line = new OutputLine(this);
+  this.current_line = this.next_line.clone_empty();
   this.__lines.push(this.current_line);
 };
 
@@ -5517,12 +6516,12 @@ Output.prototype.get_line_number = function() {
   return this.__lines.length;
 };
 
-Output.prototype.get_indent_string = function(level) {
-  return this.__indent_cache.get_level_string(level);
+Output.prototype.get_indent_string = function(indent, column) {
+  return this.__indent_cache.get_indent_string(indent, column);
 };
 
-Output.prototype.get_alignment_string = function(level) {
-  return this.__alignment_cache.get_level_string(level);
+Output.prototype.get_indent_size = function(indent, column) {
+  return this.__indent_cache.get_indent_size(indent, column);
 };
 
 Output.prototype.is_empty = function() {
@@ -5546,28 +6545,47 @@ Output.prototype.add_new_line = function(force_newline) {
 };
 
 Output.prototype.get_code = function(eol) {
-  var sweet_code = this.__lines.join('\n').replace(/[\r\n\t ]+$/, '');
+  this.trim(true);
+
+  // handle some edge cases where the last tokens
+  // has text that ends with newline(s)
+  var last_item = this.current_line.pop();
+  if (last_item) {
+    if (last_item[last_item.length - 1] === '\n') {
+      last_item = last_item.replace(/\n+$/g, '');
+    }
+    this.current_line.push(last_item);
+  }
 
   if (this._end_with_newline) {
-    sweet_code += '\n';
+    this.__add_outputline();
   }
+
+  var sweet_code = this.__lines.join('\n');
 
   if (eol !== '\n') {
     sweet_code = sweet_code.replace(/[\n]/g, eol);
   }
-
   return sweet_code;
+};
+
+Output.prototype.set_wrap_point = function() {
+  this.current_line._set_wrap_point();
 };
 
 Output.prototype.set_indent = function(indent, alignment) {
   indent = indent || 0;
   alignment = alignment || 0;
 
+  // Next line stores alignment values
+  this.next_line.set_indent(indent, alignment);
+
   // Never indent your first output indent at the start of the file
   if (this.__lines.length > 1) {
     this.current_line.set_indent(indent, alignment);
     return true;
   }
+
   this.current_line.set_indent();
   return false;
 };
@@ -5576,35 +6594,44 @@ Output.prototype.add_raw_token = function(token) {
   for (var x = 0; x < token.newlines; x++) {
     this.__add_outputline();
   }
+  this.current_line.set_indent(-1);
   this.current_line.push(token.whitespace_before);
-  this.current_line.push_raw(token.text);
+  this.current_line.push(token.text);
   this.space_before_token = false;
+  this.non_breaking_space = false;
+  this.previous_token_wrapped = false;
 };
 
 Output.prototype.add_token = function(printable_token) {
-  this.add_space_before_token();
+  this.__add_space_before_token();
   this.current_line.push(printable_token);
+  this.space_before_token = false;
+  this.non_breaking_space = false;
+  this.previous_token_wrapped = this.current_line._allow_wrap();
 };
 
-Output.prototype.add_space_before_token = function() {
+Output.prototype.__add_space_before_token = function() {
   if (this.space_before_token && !this.just_added_newline()) {
+    if (!this.non_breaking_space) {
+      this.set_wrap_point();
+    }
     this.current_line.push(' ');
   }
-  this.space_before_token = false;
 };
 
 Output.prototype.remove_indent = function(index) {
   var output_length = this.__lines.length;
   while (index < output_length) {
-    this.__lines[index].remove_indent();
+    this.__lines[index]._remove_indent();
     index++;
   }
+  this.current_line._remove_wrap_indent();
 };
 
 Output.prototype.trim = function(eat_newlines) {
   eat_newlines = (eat_newlines === undefined) ? false : eat_newlines;
 
-  this.current_line.trim(this.indent_string, this.baseIndentString);
+  this.current_line.trim();
 
   while (eat_newlines && this.__lines.length > 1 &&
     this.current_line.is_empty()) {
@@ -5761,15 +6788,31 @@ function Options(options, merge_child_field) {
     this.max_preserve_newlines = 0;
   }
 
-  this.indent_with_tabs = this._get_boolean('indent_with_tabs');
+  this.indent_with_tabs = this._get_boolean('indent_with_tabs', this.indent_char === '\t');
   if (this.indent_with_tabs) {
     this.indent_char = '\t';
-    this.indent_size = 1;
+
+    // indent_size behavior changed after 1.8.6
+    // It used to be that indent_size would be
+    // set to 1 for indent_with_tabs. That is no longer needed and
+    // actually doesn't make sense - why not use spaces? Further,
+    // that might produce unexpected behavior - tabs being used
+    // for single-column alignment. So, when indent_with_tabs is true
+    // and indent_size is 1, reset indent_size to 4.
+    if (this.indent_size === 1) {
+      this.indent_size = 4;
+    }
   }
 
   // Backwards compat with 1.3.x
   this.wrap_line_length = this._get_number('wrap_line_length', this._get_number('max_char'));
 
+  this.indent_empty_lines = this._get_boolean('indent_empty_lines');
+
+  // valid templating languages ['django', 'erb', 'handlebars', 'php']
+  // For now, 'auto' = all off for javascript, all on for html (and inline javascript).
+  // other values ignored
+  this.templating = this._get_selection_list('templating', ['auto', 'none', 'django', 'erb', 'handlebars', 'php'], ['auto']);
 }
 
 Options.prototype._get_array = function(name, default_value) {
@@ -5928,6 +6971,8 @@ module.exports.mergeOpts = _mergeOpts;
 
 
 
+var regexp_has_sticky = RegExp.prototype.hasOwnProperty('sticky');
+
 function InputScanner(input_string) {
   this.__input = input_string || '';
   this.__input_length = this.__input.length;
@@ -5967,14 +7012,32 @@ InputScanner.prototype.peek = function(index) {
   return val;
 };
 
+// This is a JavaScript only helper function (not in python)
+// Javascript doesn't have a match method
+// and not all implementation support "sticky" flag.
+// If they do not support sticky then both this.match() and this.test() method
+// must get the match and check the index of the match.
+// If sticky is supported and set, this method will use it.
+// Otherwise it will check that global is set, and fall back to the slower method.
+InputScanner.prototype.__match = function(pattern, index) {
+  pattern.lastIndex = index;
+  var pattern_match = pattern.exec(this.__input);
+
+  if (pattern_match && !(regexp_has_sticky && pattern.sticky)) {
+    if (pattern_match.index !== index) {
+      pattern_match = null;
+    }
+  }
+
+  return pattern_match;
+};
+
 InputScanner.prototype.test = function(pattern, index) {
   index = index || 0;
   index += this.__position;
-  pattern.lastIndex = index;
 
   if (index >= 0 && index < this.__input_length) {
-    var pattern_match = pattern.exec(this.__input);
-    return pattern_match && pattern_match.index === index;
+    return !!this.__match(pattern, index);
   } else {
     return false;
   }
@@ -5983,13 +7046,13 @@ InputScanner.prototype.test = function(pattern, index) {
 InputScanner.prototype.testChar = function(pattern, index) {
   // test one character regex match
   var val = this.peek(index);
+  pattern.lastIndex = 0;
   return val !== null && pattern.test(val);
 };
 
 InputScanner.prototype.match = function(pattern) {
-  pattern.lastIndex = this.__position;
-  var pattern_match = pattern.exec(this.__input);
-  if (pattern_match && pattern_match.index === this.__position) {
+  var pattern_match = this.__match(pattern, this.__position);
+  if (pattern_match) {
     this.__position += pattern_match[0].length;
   } else {
     pattern_match = null;
@@ -5997,25 +7060,30 @@ InputScanner.prototype.match = function(pattern) {
   return pattern_match;
 };
 
-InputScanner.prototype.read = function(pattern) {
+InputScanner.prototype.read = function(starting_pattern, until_pattern, until_after) {
   var val = '';
-  var match = this.match(pattern);
-  if (match) {
-    val = match[0];
+  var match;
+  if (starting_pattern) {
+    match = this.match(starting_pattern);
+    if (match) {
+      val += match[0];
+    }
+  }
+  if (until_pattern && (match || !starting_pattern)) {
+    val += this.readUntil(until_pattern, until_after);
   }
   return val;
 };
 
-InputScanner.prototype.readUntil = function(pattern, include_match) {
+InputScanner.prototype.readUntil = function(pattern, until_after) {
   var val = '';
   var match_index = this.__position;
   pattern.lastIndex = this.__position;
   var pattern_match = pattern.exec(this.__input);
   if (pattern_match) {
-    if (include_match) {
-      match_index = pattern_match.index + pattern_match[0].length;
-    } else {
-      match_index = pattern_match.index;
+    match_index = pattern_match.index;
+    if (until_after) {
+      match_index += pattern_match[0].length;
     }
   } else {
     match_index = this.__input_length;
@@ -6028,6 +7096,26 @@ InputScanner.prototype.readUntil = function(pattern, include_match) {
 
 InputScanner.prototype.readUntilAfter = function(pattern) {
   return this.readUntil(pattern, true);
+};
+
+InputScanner.prototype.get_regexp = function(pattern, match_from) {
+  var result = null;
+  var flags = 'g';
+  if (match_from && regexp_has_sticky) {
+    flags = 'y';
+  }
+  // strings are converted to regexp
+  if (typeof pattern === "string" && pattern !== '') {
+    // result = new RegExp(pattern.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), flags);
+    result = new RegExp(pattern, flags);
+  } else if (pattern) {
+    result = new RegExp(pattern.source, flags);
+  }
+  return result;
+};
+
+InputScanner.prototype.get_literal_regexp = function(literal_string) {
+  return RegExp(literal_string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
 };
 
 /* css beautifier legacy helpers */
@@ -6043,7 +7131,6 @@ InputScanner.prototype.lookBack = function(testVal) {
   return start >= testVal.length && this.__input.substring(start - testVal.length, start)
     .toLowerCase() === testVal;
 };
-
 
 module.exports.InputScanner = InputScanner;
 
@@ -6086,6 +7173,7 @@ module.exports.InputScanner = InputScanner;
 var InputScanner = __webpack_require__(8).InputScanner;
 var Token = __webpack_require__(3).Token;
 var TokenStream = __webpack_require__(10).TokenStream;
+var WhitespacePattern = __webpack_require__(11).WhitespacePattern;
 
 var TOKEN = {
   START: 'TK_START',
@@ -6097,11 +7185,9 @@ var Tokenizer = function(input_string, options) {
   this._input = new InputScanner(input_string);
   this._options = options || {};
   this.__tokens = null;
-  this.__newline_count = 0;
-  this.__whitespace_before_token = '';
 
-  this._whitespace_pattern = /[\n\r\t ]+/g;
-  this._newline_pattern = /([^\n\r]*)(\r\n|[\n\r])?/g;
+  this._patterns = {};
+  this._patterns.whitespace = new WhitespacePattern(this._input);
 };
 
 Tokenizer.prototype.tokenize = function() {
@@ -6180,25 +7266,14 @@ Tokenizer.prototype._is_closing = function(current_token, open_token) { // jshin
 };
 
 Tokenizer.prototype._create_token = function(type, text) {
-  var token = new Token(type, text, this.__newline_count, this.__whitespace_before_token);
-  this.__newline_count = 0;
-  this.__whitespace_before_token = '';
+  var token = new Token(type, text,
+    this._patterns.whitespace.newline_count,
+    this._patterns.whitespace.whitespace_before_token);
   return token;
 };
 
 Tokenizer.prototype._readWhitespace = function() {
-  var resulting_string = this._input.read(this._whitespace_pattern);
-  if (resulting_string === ' ') {
-    this.__whitespace_before_token = resulting_string;
-  } else if (resulting_string !== '') {
-    this._newline_pattern.lastIndex = 0;
-    var nextMatch = this._newline_pattern.exec(resulting_string);
-    while (nextMatch[2]) {
-      this.__newline_count += 1;
-      nextMatch = this._newline_pattern.exec(resulting_string);
-    }
-    this.__whitespace_before_token = nextMatch[1];
-  }
+  return this._patterns.whitespace.read();
 };
 
 
@@ -6327,13 +7402,226 @@ module.exports.TokenStream = TokenStream;
 
 
 
+var Pattern = __webpack_require__(12).Pattern;
+
+function WhitespacePattern(input_scanner, parent) {
+  Pattern.call(this, input_scanner, parent);
+  if (parent) {
+    this._line_regexp = this._input.get_regexp(parent._line_regexp);
+  } else {
+    this.__set_whitespace_patterns('', '');
+  }
+
+  this.newline_count = 0;
+  this.whitespace_before_token = '';
+}
+WhitespacePattern.prototype = new Pattern();
+
+WhitespacePattern.prototype.__set_whitespace_patterns = function(whitespace_chars, newline_chars) {
+  whitespace_chars += '\\t ';
+  newline_chars += '\\n\\r';
+
+  this._match_pattern = this._input.get_regexp(
+    '[' + whitespace_chars + newline_chars + ']+', true);
+  this._newline_regexp = this._input.get_regexp(
+    '\\r\\n|[' + newline_chars + ']');
+};
+
+WhitespacePattern.prototype.read = function() {
+  this.newline_count = 0;
+  this.whitespace_before_token = '';
+
+  var resulting_string = this._input.read(this._match_pattern);
+  if (resulting_string === ' ') {
+    this.whitespace_before_token = ' ';
+  } else if (resulting_string) {
+    var matches = this.__split(this._newline_regexp, resulting_string);
+    this.newline_count = matches.length - 1;
+    this.whitespace_before_token = matches[this.newline_count];
+  }
+
+  return resulting_string;
+};
+
+WhitespacePattern.prototype.matching = function(whitespace_chars, newline_chars) {
+  var result = this._create();
+  result.__set_whitespace_patterns(whitespace_chars, newline_chars);
+  result._update();
+  return result;
+};
+
+WhitespacePattern.prototype._create = function() {
+  return new WhitespacePattern(this._input, this);
+};
+
+WhitespacePattern.prototype.__split = function(regexp, input_string) {
+  regexp.lastIndex = 0;
+  var start_index = 0;
+  var result = [];
+  var next_match = regexp.exec(input_string);
+  while (next_match) {
+    result.push(input_string.substring(start_index, next_match.index));
+    start_index = next_match.index + next_match[0].length;
+    next_match = regexp.exec(input_string);
+  }
+
+  if (start_index < input_string.length) {
+    result.push(input_string.substring(start_index, input_string.length));
+  } else {
+    result.push('');
+  }
+
+  return result;
+};
+
+
+
+module.exports.WhitespacePattern = WhitespacePattern;
+
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/*jshint node:true */
+/*
+
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
+
+
+function Pattern(input_scanner, parent) {
+  this._input = input_scanner;
+  this._starting_pattern = null;
+  this._match_pattern = null;
+  this._until_pattern = null;
+  this._until_after = false;
+
+  if (parent) {
+    this._starting_pattern = this._input.get_regexp(parent._starting_pattern, true);
+    this._match_pattern = this._input.get_regexp(parent._match_pattern, true);
+    this._until_pattern = this._input.get_regexp(parent._until_pattern);
+    this._until_after = parent._until_after;
+  }
+}
+
+Pattern.prototype.read = function() {
+  var result = this._input.read(this._starting_pattern);
+  if (!this._starting_pattern || result) {
+    result += this._input.read(this._match_pattern, this._until_pattern, this._until_after);
+  }
+  return result;
+};
+
+Pattern.prototype.read_match = function() {
+  return this._input.match(this._match_pattern);
+};
+
+Pattern.prototype.until_after = function(pattern) {
+  var result = this._create();
+  result._until_after = true;
+  result._until_pattern = this._input.get_regexp(pattern);
+  result._update();
+  return result;
+};
+
+Pattern.prototype.until = function(pattern) {
+  var result = this._create();
+  result._until_after = false;
+  result._until_pattern = this._input.get_regexp(pattern);
+  result._update();
+  return result;
+};
+
+Pattern.prototype.starting_with = function(pattern) {
+  var result = this._create();
+  result._starting_pattern = this._input.get_regexp(pattern, true);
+  result._update();
+  return result;
+};
+
+Pattern.prototype.matching = function(pattern) {
+  var result = this._create();
+  result._match_pattern = this._input.get_regexp(pattern, true);
+  result._update();
+  return result;
+};
+
+Pattern.prototype._create = function() {
+  return new Pattern(this._input, this);
+};
+
+Pattern.prototype._update = function() {};
+
+module.exports.Pattern = Pattern;
+
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/*jshint node:true */
+/*
+
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
+
+
 function Directives(start_block_pattern, end_block_pattern) {
   start_block_pattern = typeof start_block_pattern === 'string' ? start_block_pattern : start_block_pattern.source;
   end_block_pattern = typeof end_block_pattern === 'string' ? end_block_pattern : end_block_pattern.source;
   this.__directives_block_pattern = new RegExp(start_block_pattern + / beautify( \w+[:]\w+)+ /.source + end_block_pattern, 'g');
   this.__directive_pattern = / (\w+)[:](\w+)/g;
 
-  this.__directives_end_ignore_pattern = new RegExp('(?:[\\s\\S]*?)((?:' + start_block_pattern + /\sbeautify\signore:end\s/.source + end_block_pattern + ')|$)', 'g');
+  this.__directives_end_ignore_pattern = new RegExp(start_block_pattern + /\sbeautify\signore:end\s/.source + end_block_pattern, 'g');
 }
 
 Directives.prototype.get_directives = function(text) {
@@ -6354,7 +7642,7 @@ Directives.prototype.get_directives = function(text) {
 };
 
 Directives.prototype.readIgnored = function(input) {
-  return input.read(this.__directives_end_ignore_pattern);
+  return input.readUntilAfter(this.__directives_end_ignore_pattern);
 };
 
 
@@ -6362,10 +7650,7 @@ module.exports.Directives = Directives;
 
 
 /***/ }),
-/* 12 */,
-/* 13 */,
-/* 14 */,
-/* 15 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6399,7 +7684,209 @@ module.exports.Directives = Directives;
 
 
 
-var Beautifier = __webpack_require__(16).Beautifier;
+var Pattern = __webpack_require__(12).Pattern;
+
+
+var template_names = {
+  django: false,
+  erb: false,
+  handlebars: false,
+  php: false
+};
+
+// This lets templates appear anywhere we would do a readUntil
+// The cost is higher but it is pay to play.
+function TemplatablePattern(input_scanner, parent) {
+  Pattern.call(this, input_scanner, parent);
+  this.__template_pattern = null;
+  this._disabled = Object.assign({}, template_names);
+  this._excluded = Object.assign({}, template_names);
+
+  if (parent) {
+    this.__template_pattern = this._input.get_regexp(parent.__template_pattern);
+    this._excluded = Object.assign(this._excluded, parent._excluded);
+    this._disabled = Object.assign(this._disabled, parent._disabled);
+  }
+  var pattern = new Pattern(input_scanner);
+  this.__patterns = {
+    handlebars_comment: pattern.starting_with(/{{!--/).until_after(/--}}/),
+    handlebars_unescaped: pattern.starting_with(/{{{/).until_after(/}}}/),
+    handlebars: pattern.starting_with(/{{/).until_after(/}}/),
+    php: pattern.starting_with(/<\?(?:[=]|php)/).until_after(/\?>/),
+    erb: pattern.starting_with(/<%[^%]/).until_after(/[^%]%>/),
+    // django coflicts with handlebars a bit.
+    django: pattern.starting_with(/{%/).until_after(/%}/),
+    django_value: pattern.starting_with(/{{/).until_after(/}}/),
+    django_comment: pattern.starting_with(/{#/).until_after(/#}/)
+  };
+}
+TemplatablePattern.prototype = new Pattern();
+
+TemplatablePattern.prototype._create = function() {
+  return new TemplatablePattern(this._input, this);
+};
+
+TemplatablePattern.prototype._update = function() {
+  this.__set_templated_pattern();
+};
+
+TemplatablePattern.prototype.disable = function(language) {
+  var result = this._create();
+  result._disabled[language] = true;
+  result._update();
+  return result;
+};
+
+TemplatablePattern.prototype.read_options = function(options) {
+  var result = this._create();
+  for (var language in template_names) {
+    result._disabled[language] = options.templating.indexOf(language) === -1;
+  }
+  result._update();
+  return result;
+};
+
+TemplatablePattern.prototype.exclude = function(language) {
+  var result = this._create();
+  result._excluded[language] = true;
+  result._update();
+  return result;
+};
+
+TemplatablePattern.prototype.read = function() {
+  var result = '';
+  if (this._match_pattern) {
+    result = this._input.read(this._starting_pattern);
+  } else {
+    result = this._input.read(this._starting_pattern, this.__template_pattern);
+  }
+  var next = this._read_template();
+  while (next) {
+    if (this._match_pattern) {
+      next += this._input.read(this._match_pattern);
+    } else {
+      next += this._input.readUntil(this.__template_pattern);
+    }
+    result += next;
+    next = this._read_template();
+  }
+
+  if (this._until_after) {
+    result += this._input.readUntilAfter(this._until_pattern);
+  }
+  return result;
+};
+
+TemplatablePattern.prototype.__set_templated_pattern = function() {
+  var items = [];
+
+  if (!this._disabled.php) {
+    items.push(this.__patterns.php._starting_pattern.source);
+  }
+  if (!this._disabled.handlebars) {
+    items.push(this.__patterns.handlebars._starting_pattern.source);
+  }
+  if (!this._disabled.erb) {
+    items.push(this.__patterns.erb._starting_pattern.source);
+  }
+  if (!this._disabled.django) {
+    items.push(this.__patterns.django._starting_pattern.source);
+    items.push(this.__patterns.django_value._starting_pattern.source);
+    items.push(this.__patterns.django_comment._starting_pattern.source);
+  }
+
+  if (this._until_pattern) {
+    items.push(this._until_pattern.source);
+  }
+  this.__template_pattern = this._input.get_regexp('(?:' + items.join('|') + ')');
+};
+
+TemplatablePattern.prototype._read_template = function() {
+  var resulting_string = '';
+  var c = this._input.peek();
+  if (c === '<') {
+    var peek1 = this._input.peek(1);
+    //if we're in a comment, do something special
+    // We treat all comments as literals, even more than preformatted tags
+    // we just look for the appropriate close tag
+    if (!this._disabled.php && !this._excluded.php && peek1 === '?') {
+      resulting_string = resulting_string ||
+        this.__patterns.php.read();
+    }
+    if (!this._disabled.erb && !this._excluded.erb && peek1 === '%') {
+      resulting_string = resulting_string ||
+        this.__patterns.erb.read();
+    }
+  } else if (c === '{') {
+    if (!this._disabled.handlebars && !this._excluded.handlebars) {
+      resulting_string = resulting_string ||
+        this.__patterns.handlebars_comment.read();
+      resulting_string = resulting_string ||
+        this.__patterns.handlebars_unescaped.read();
+      resulting_string = resulting_string ||
+        this.__patterns.handlebars.read();
+    }
+    if (!this._disabled.django) {
+      // django coflicts with handlebars a bit.
+      if (!this._excluded.django && !this._excluded.handlebars) {
+        resulting_string = resulting_string ||
+          this.__patterns.django_value.read();
+      }
+      if (!this._excluded.django) {
+        resulting_string = resulting_string ||
+          this.__patterns.django_comment.read();
+        resulting_string = resulting_string ||
+          this.__patterns.django.read();
+      }
+    }
+  }
+  return resulting_string;
+};
+
+
+module.exports.TemplatablePattern = TemplatablePattern;
+
+
+/***/ }),
+/* 15 */,
+/* 16 */,
+/* 17 */,
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/*jshint node:true */
+/*
+
+  The MIT License (MIT)
+
+  Copyright (c) 2007-2018 Einar Lielmanis, Liam Newman, and contributors.
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation files
+  (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge,
+  publish, distribute, sublicense, and/or sell copies of the Software,
+  and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
+
+
+var Beautifier = __webpack_require__(19).Beautifier,
+  Options = __webpack_require__(20).Options;
 
 function style_html(html_source, options, js_beautify, css_beautify) {
   var beautifier = new Beautifier(html_source, options, js_beautify, css_beautify);
@@ -6407,10 +7894,13 @@ function style_html(html_source, options, js_beautify, css_beautify) {
 }
 
 module.exports = style_html;
+module.exports.defaultOptions = function() {
+  return new Options();
+};
 
 
 /***/ }),
-/* 16 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6444,10 +7934,10 @@ module.exports = style_html;
 
 
 
-var Options = __webpack_require__(17).Options;
+var Options = __webpack_require__(20).Options;
 var Output = __webpack_require__(2).Output;
-var Tokenizer = __webpack_require__(18).Tokenizer;
-var TOKEN = __webpack_require__(18).TOKEN;
+var Tokenizer = __webpack_require__(21).Tokenizer;
+var TOKEN = __webpack_require__(21).TOKEN;
 
 var lineBreak = /\r\n|[\r\n]/;
 var allLineBreaks = /\r\n|[\r\n]/g;
@@ -6456,7 +7946,6 @@ var Printer = function(options, base_indent_string) { //handles input/output and
 
   this.indent_level = 0;
   this.alignment_size = 0;
-  this.wrap_line_length = options.wrap_line_length;
   this.max_preserve_newlines = options.max_preserve_newlines;
   this.preserve_newlines = options.preserve_newlines;
 
@@ -6468,9 +7957,16 @@ Printer.prototype.current_line_has_match = function(pattern) {
   return this._output.current_line.has_match(pattern);
 };
 
-Printer.prototype.set_space_before_token = function(value) {
+Printer.prototype.set_space_before_token = function(value, non_breaking) {
   this._output.space_before_token = value;
+  this._output.non_breaking_space = non_breaking;
 };
+
+Printer.prototype.set_wrap_point = function() {
+  this._output.set_indent(this.indent_level, this.alignment_size);
+  this._output.set_wrap_point();
+};
+
 
 Printer.prototype.add_raw_token = function(token) {
   this._output.add_raw_token(token);
@@ -6496,51 +7992,29 @@ Printer.prototype.traverse_whitespace = function(raw_token) {
   if (raw_token.whitespace_before || raw_token.newlines) {
     if (!this.print_preserved_newlines(raw_token)) {
       this._output.space_before_token = true;
-      this.print_space_or_wrap(raw_token.text);
     }
     return true;
   }
   return false;
 };
 
-// Append a space to the given content (string array) or, if we are
-// at the wrap_line_length, append a newline/indentation.
-// return true if a newline was added, false if a space was added
-Printer.prototype.print_space_or_wrap = function(text) {
-  if (this.wrap_line_length) {
-    if (this._output.current_line.get_character_count() + text.length + 1 >= this.wrap_line_length) { //insert a line when the wrap_line_length is reached
-      return this._output.add_new_line();
-    }
-  }
-  return false;
+Printer.prototype.previous_token_wrapped = function() {
+  return this._output.previous_token_wrapped;
 };
 
 Printer.prototype.print_newline = function(force) {
   this._output.add_new_line(force);
 };
 
-Printer.prototype.print_token = function(text) {
-  if (text) {
-    if (this._output.current_line.is_empty()) {
-      this._output.set_indent(this.indent_level, this.alignment_size);
-    }
-
-    this._output.add_token(text);
+Printer.prototype.print_token = function(token) {
+  if (token.text) {
+    this._output.set_indent(this.indent_level, this.alignment_size);
+    this._output.add_token(token.text);
   }
-};
-
-Printer.prototype.print_raw_text = function(text) {
-  this._output.current_line.push_raw(text);
 };
 
 Printer.prototype.indent = function() {
   this.indent_level++;
-};
-
-Printer.prototype.unindent = function() {
-  if (this.indent_level > 0) {
-    this.indent_level--;
-  }
 };
 
 Printer.prototype.get_full_indent = function(level) {
@@ -6552,28 +8026,55 @@ Printer.prototype.get_full_indent = function(level) {
   return this._output.get_indent_string(level);
 };
 
-
-var uses_beautifier = function(tag_check, start_token) {
+var get_type_attribute = function(start_token) {
+  var result = null;
   var raw_token = start_token.next;
-  if (!start_token.closed) {
-    return false;
-  }
 
-  while (raw_token.type !== TOKEN.EOF && raw_token.closed !== start_token) {
+  // Search attributes for a type attribute
+  while (raw_token.type !== TOKEN.EOF && start_token.closed !== raw_token) {
     if (raw_token.type === TOKEN.ATTRIBUTE && raw_token.text === 'type') {
-      // For script and style tags that have a type attribute, only enable custom beautifiers for matching values
-      var peekEquals = raw_token.next ? raw_token.next : raw_token;
-      var peekValue = peekEquals.next ? peekEquals.next : peekEquals;
-      if (peekEquals.type === TOKEN.EQUALS && peekValue.type === TOKEN.VALUE) {
-        return (tag_check === 'style' && peekValue.text.search('text/css') > -1) ||
-          (tag_check === 'script' && peekValue.text.search(/(text|application|dojo)\/(x-)?(javascript|ecmascript|jscript|livescript|(ld\+)?json|method|aspect)/) > -1);
+      if (raw_token.next && raw_token.next.type === TOKEN.EQUALS &&
+        raw_token.next.next && raw_token.next.next.type === TOKEN.VALUE) {
+        result = raw_token.next.next.text;
       }
-      return false;
+      break;
     }
     raw_token = raw_token.next;
   }
 
-  return true;
+  return result;
+};
+
+var get_custom_beautifier_name = function(tag_check, raw_token) {
+  var typeAttribute = null;
+  var result = null;
+
+  if (!raw_token.closed) {
+    return null;
+  }
+
+  if (tag_check === 'script') {
+    typeAttribute = 'text/javascript';
+  } else if (tag_check === 'style') {
+    typeAttribute = 'text/css';
+  }
+
+  typeAttribute = get_type_attribute(raw_token) || typeAttribute;
+
+  // For script and style tags that have a type attribute, only enable custom beautifiers for matching values
+  // For those without a type attribute use default;
+  if (typeAttribute.search('text/css') > -1) {
+    result = 'css';
+  } else if (typeAttribute.search(/(text|application|dojo)\/(x-)?(javascript|ecmascript|jscript|livescript|(ld\+)?json|method|aspect)/) > -1) {
+    result = 'javascript';
+  } else if (typeAttribute.search(/(text|application|dojo)\/(x-)?(html)/) > -1) {
+    result = 'html';
+  } else if (typeAttribute.search(/test\/null/) > -1) {
+    // Test only mime-type for testing the beautifier when null is passed as beautifing function
+    result = 'null';
+  }
+
+  return result;
 };
 
 function in_array(what, arr) {
@@ -6681,10 +8182,8 @@ Beautifier.prototype.beautify = function() {
 
   // HACK: newline parsing inconsistent. This brute force normalizes the input.
   source_text = source_text.replace(allLineBreaks, '\n');
-  var baseIndentString = '';
 
-  // Including commented out text would change existing html beautifier behavior to autodetect base indent.
-  // baseIndentString = source_text.match(/^[\t ]*/)[0];
+  var baseIndentString = source_text.match(/^[\t ]*/)[0];
 
   var last_token = {
     text: '',
@@ -6727,21 +8226,25 @@ Beautifier.prototype.beautify = function() {
 };
 
 Beautifier.prototype._handle_tag_close = function(printer, raw_token, last_tag_token) {
-  var parser_token = { text: raw_token.text, type: raw_token.type };
+  var parser_token = {
+    text: raw_token.text,
+    type: raw_token.type
+  };
   printer.alignment_size = 0;
   last_tag_token.tag_complete = true;
 
-  printer.set_space_before_token(raw_token.newlines || raw_token.whitespace_before !== '');
+  printer.set_space_before_token(raw_token.newlines || raw_token.whitespace_before !== '', true);
   if (last_tag_token.is_unformatted) {
     printer.add_raw_token(raw_token);
   } else {
     if (last_tag_token.tag_start_char === '<') {
-      printer.set_space_before_token(raw_token.text.charAt(0) === '/'); // space before />, no space before >
+      printer.set_space_before_token(raw_token.text.charAt(0) === '/', true); // space before />, no space before >
       if (this._is_wrap_attributes_force_expand_multiline && last_tag_token.has_wrapped_attrs) {
         printer.print_newline(false);
       }
     }
-    printer.print_token(raw_token.text);
+    printer.print_token(raw_token);
+
   }
 
   if (last_tag_token.indent_content &&
@@ -6751,20 +8254,32 @@ Beautifier.prototype._handle_tag_close = function(printer, raw_token, last_tag_t
     // only indent once per opened tag
     last_tag_token.indent_content = false;
   }
+
+  if (!last_tag_token.is_inline_element &&
+    !(last_tag_token.is_unformatted || last_tag_token.is_content_unformatted)) {
+    printer.set_wrap_point();
+  }
+
   return parser_token;
 };
 
 Beautifier.prototype._handle_inside_tag = function(printer, raw_token, last_tag_token, tokens) {
-  var parser_token = { text: raw_token.text, type: raw_token.type };
-  printer.set_space_before_token(raw_token.newlines || raw_token.whitespace_before !== '');
+  var wrapped = last_tag_token.has_wrapped_attrs;
+  var parser_token = {
+    text: raw_token.text,
+    type: raw_token.type
+  };
+
+  printer.set_space_before_token(raw_token.newlines || raw_token.whitespace_before !== '', true);
   if (last_tag_token.is_unformatted) {
     printer.add_raw_token(raw_token);
   } else if (last_tag_token.tag_start_char === '{' && raw_token.type === TOKEN.TEXT) {
     // For the insides of handlebars allow newlines or a single space between open and contents
     if (printer.print_preserved_newlines(raw_token)) {
-      printer.print_raw_text(raw_token.whitespace_before + raw_token.text);
+      raw_token.newlines = 0;
+      printer.add_raw_token(raw_token);
     } else {
-      printer.print_token(raw_token.text);
+      printer.print_token(raw_token);
     }
   } else {
     if (raw_token.type === TOKEN.ATTRIBUTE) {
@@ -6776,71 +8291,78 @@ Beautifier.prototype._handle_inside_tag = function(printer, raw_token, last_tag_
       printer.set_space_before_token(false);
     }
 
-    if (printer._output.space_before_token && last_tag_token.tag_start_char === '<') {
-      // Allow the current attribute to wrap
-      // Set wrapped to true if the line is wrapped
-      var wrapped = printer.print_space_or_wrap(raw_token.text);
-      if (raw_token.type === TOKEN.ATTRIBUTE) {
-        if (this._is_wrap_attributes_preserve || this._is_wrap_attributes_preserve_aligned) {
-          printer.traverse_whitespace(raw_token);
-          wrapped = wrapped || raw_token.newlines !== 0;
+    if (raw_token.type === TOKEN.ATTRIBUTE && last_tag_token.tag_start_char === '<') {
+      if (this._is_wrap_attributes_preserve || this._is_wrap_attributes_preserve_aligned) {
+        printer.traverse_whitespace(raw_token);
+        wrapped = wrapped || raw_token.newlines !== 0;
+      }
+
+
+      if (this._is_wrap_attributes_force) {
+        var force_attr_wrap = last_tag_token.attr_count > 1;
+        if (this._is_wrap_attributes_force_expand_multiline && last_tag_token.attr_count === 1) {
+          var is_only_attribute = true;
+          var peek_index = 0;
+          var peek_token;
+          do {
+            peek_token = tokens.peek(peek_index);
+            if (peek_token.type === TOKEN.ATTRIBUTE) {
+              is_only_attribute = false;
+              break;
+            }
+            peek_index += 1;
+          } while (peek_index < 4 && peek_token.type !== TOKEN.EOF && peek_token.type !== TOKEN.TAG_CLOSE);
+
+          force_attr_wrap = !is_only_attribute;
         }
-        // Save whether we have wrapped any attributes
-        last_tag_token.has_wrapped_attrs = last_tag_token.has_wrapped_attrs || wrapped;
 
-        if (this._is_wrap_attributes_force) {
-          var force_attr_wrap = last_tag_token.attr_count > 1;
-          if (this._is_wrap_attributes_force_expand_multiline && last_tag_token.attr_count === 1) {
-            var is_only_attribute = true;
-            var peek_index = 0;
-            var peek_token;
-            do {
-              peek_token = tokens.peek(peek_index);
-              if (peek_token.type === TOKEN.ATTRIBUTE) {
-                is_only_attribute = false;
-                break;
-              }
-              peek_index += 1;
-            } while (peek_index < 4 && peek_token.type !== TOKEN.EOF && peek_token.type !== TOKEN.TAG_CLOSE);
-
-            force_attr_wrap = !is_only_attribute;
-          }
-
-          if (force_attr_wrap) {
-            printer.print_newline(false);
-            last_tag_token.has_wrapped_attrs = true;
-          }
+        if (force_attr_wrap) {
+          printer.print_newline(false);
+          wrapped = true;
         }
       }
     }
-    printer.print_token(raw_token.text);
+    printer.print_token(raw_token);
+    wrapped = wrapped || printer.previous_token_wrapped();
+    last_tag_token.has_wrapped_attrs = wrapped;
   }
   return parser_token;
 };
 
 Beautifier.prototype._handle_text = function(printer, raw_token, last_tag_token) {
-  var parser_token = { text: raw_token.text, type: 'TK_CONTENT' };
-  if (last_tag_token.custom_beautifier) { //check if we need to format javascript
+  var parser_token = {
+    text: raw_token.text,
+    type: 'TK_CONTENT'
+  };
+  if (last_tag_token.custom_beautifier_name) { //check if we need to format javascript
     this._print_custom_beatifier_text(printer, raw_token, last_tag_token);
   } else if (last_tag_token.is_unformatted || last_tag_token.is_content_unformatted) {
     printer.add_raw_token(raw_token);
   } else {
     printer.traverse_whitespace(raw_token);
-    printer.print_token(raw_token.text);
+    printer.print_token(raw_token);
   }
   return parser_token;
 };
 
 Beautifier.prototype._print_custom_beatifier_text = function(printer, raw_token, last_tag_token) {
+  var local = this;
   if (raw_token.text !== '') {
-    printer.print_newline(false);
+
     var text = raw_token.text,
       _beautifier,
-      script_indent_level = 1;
-    if (last_tag_token.tag_name === 'script') {
-      _beautifier = typeof this._js_beautify === 'function' && this._js_beautify;
-    } else if (last_tag_token.tag_name === 'style') {
-      _beautifier = typeof this._css_beautify === 'function' && this._css_beautify;
+      script_indent_level = 1,
+      pre = '',
+      post = '';
+    if (last_tag_token.custom_beautifier_name === 'javascript' && typeof this._js_beautify === 'function') {
+      _beautifier = this._js_beautify;
+    } else if (last_tag_token.custom_beautifier_name === 'css' && typeof this._css_beautify === 'function') {
+      _beautifier = this._css_beautify;
+    } else if (last_tag_token.custom_beautifier_name === 'html') {
+      _beautifier = function(html_source, options) {
+        var beautifier = new Beautifier(html_source, options, local._js_beautify, local._css_beautify);
+        return beautifier.beautify();
+      };
     }
 
     if (this._options.indent_scripts === "keep") {
@@ -6855,25 +8377,72 @@ Beautifier.prototype._print_custom_beatifier_text = function(printer, raw_token,
     // we'll be adding one back after the text but before the containing tag.
     text = text.replace(/\n[ \t]*$/, '');
 
-    if (_beautifier) {
+    // Handle the case where content is wrapped in a comment or cdata.
+    if (last_tag_token.custom_beautifier_name !== 'html' &&
+      text[0] === '<' && text.match(/^(<!--|<!\[CDATA\[)/)) {
+      var matched = /^(<!--[^\n]*|<!\[CDATA\[)(\n?)([ \t\n]*)([\s\S]*)(-->|]]>)$/.exec(text);
 
-      // call the Beautifier if avaliable
-      var Child_options = function() {
-        this.eol = '\n';
-      };
-      Child_options.prototype = this._options.raw_options;
-      var child_options = new Child_options();
-      text = _beautifier(indentation + text, child_options);
-    } else {
-      // simply indent the string otherwise
-      var white = text.match(/^\s*/)[0];
-      var _level = white.match(/[^\n\r]*$/)[0].split(this._options.indent_string).length - 1;
-      var reindent = this._get_full_indent(script_indent_level - _level);
-      text = (indentation + text.trim())
-        .replace(/\r\n|\r|\n/g, '\n' + reindent);
+      // if we start to wrap but don't finish, print raw
+      if (!matched) {
+        printer.add_raw_token(raw_token);
+        return;
+      }
+
+      pre = indentation + matched[1] + '\n';
+      text = matched[4];
+      if (matched[5]) {
+        post = indentation + matched[5];
+      }
+
+      // if there is at least one empty line at the end of this text, strip it
+      // we'll be adding one back after the text but before the containing tag.
+      text = text.replace(/\n[ \t]*$/, '');
+
+      if (matched[2] || matched[3].indexOf('\n') !== -1) {
+        // if the first line of the non-comment text has spaces
+        // use that as the basis for indenting in null case.
+        matched = matched[3].match(/[ \t]+$/);
+        if (matched) {
+          raw_token.whitespace_before = matched[0];
+        }
+      }
     }
+
     if (text) {
-      printer.print_raw_text(text);
+      if (_beautifier) {
+
+        // call the Beautifier if avaliable
+        var Child_options = function() {
+          this.eol = '\n';
+        };
+        Child_options.prototype = this._options.raw_options;
+        var child_options = new Child_options();
+        text = _beautifier(indentation + text, child_options);
+      } else {
+        // simply indent the string otherwise
+        var white = raw_token.whitespace_before;
+        if (white) {
+          text = text.replace(new RegExp('\n(' + white + ')?', 'g'), '\n');
+        }
+
+        text = indentation + text.replace(/\n/g, '\n' + indentation);
+      }
+    }
+
+    if (pre) {
+      if (!text) {
+        text = pre + post;
+      } else {
+        text = pre + text + '\n' + post;
+      }
+    }
+
+    printer.print_newline(false);
+    if (text) {
+      raw_token.text = text;
+      raw_token.whitespace_before = '';
+      raw_token.newlines = 0;
+      printer.add_raw_token(raw_token);
       printer.print_newline(true);
     }
   }
@@ -6890,14 +8459,16 @@ Beautifier.prototype._handle_tag_open = function(printer, raw_token, last_tag_to
   } else {
     printer.traverse_whitespace(raw_token);
     this._set_tag_position(printer, raw_token, parser_token, last_tag_token, last_token);
-    printer.print_token(raw_token.text);
+    if (!parser_token.is_inline_element) {
+      printer.set_wrap_point();
+    }
+    printer.print_token(raw_token);
   }
 
   //indent attributes an auto, forced, aligned or forced-align line-wrap
   if (this._is_wrap_attributes_force_aligned || this._is_wrap_attributes_aligned_multiple || this._is_wrap_attributes_preserve_aligned) {
     parser_token.alignment_size = raw_token.text.length + 1;
   }
-
 
   if (!parser_token.tag_complete && !parser_token.is_unformatted) {
     printer.alignment_size = parser_token.alignment_size;
@@ -6919,7 +8490,7 @@ var TagOpenParserToken = function(parent, raw_token) {
   this.is_end_tag = false;
   this.indent_content = false;
   this.multiline_content = false;
-  this.custom_beautifier = false;
+  this.custom_beautifier_name = null;
   this.start_tag_token = null;
   this.attr_count = 0;
   this.has_wrapped_attrs = false;
@@ -6940,7 +8511,7 @@ var TagOpenParserToken = function(parent, raw_token) {
       tag_check_match = raw_token.text.match(/^<([^\s>]*)/);
       this.tag_check = tag_check_match ? tag_check_match[1] : '';
     } else {
-      tag_check_match = raw_token.text.match(/^{{\#?([^\s}]+)/);
+      tag_check_match = raw_token.text.match(/^{{[#\^]?([^\s}]+)/);
       this.tag_check = tag_check_match ? tag_check_match[1] : '';
     }
     this.tag_check = this.tag_check.toLowerCase();
@@ -6986,13 +8557,21 @@ Beautifier.prototype._set_tag_position = function(printer, raw_token, parser_tok
     } else { // it's a start-tag
       // check if this tag is starting an element that has optional end element
       // and do an ending needed
-      this._do_optional_end_element(parser_token);
+      if (this._do_optional_end_element(parser_token)) {
+        if (!parser_token.is_inline_element) {
+          if (parser_token.parent) {
+            parser_token.parent.multiline_content = true;
+          }
+          printer.print_newline(false);
+        }
+
+      }
 
       this._tag_stack.record_tag(parser_token); //push it on the tag stack
 
       if ((parser_token.tag_name === 'script' || parser_token.tag_name === 'style') &&
         !(parser_token.is_unformatted || parser_token.is_content_unformatted)) {
-        parser_token.custom_beautifier = uses_beautifier(parser_token.tag_check, raw_token);
+        parser_token.custom_beautifier_name = get_custom_beautifier_name(parser_token.tag_check, raw_token);
       }
     }
   }
@@ -7040,7 +8619,7 @@ Beautifier.prototype._set_tag_position = function(printer, raw_token, parser_tok
       printer.print_newline(false);
     }
   } else { // it's a start-tag
-    parser_token.indent_content = !parser_token.custom_beautifier;
+    parser_token.indent_content = !parser_token.custom_beautifier_name;
 
     if (parser_token.tag_start_char === '<') {
       if (parser_token.tag_name === 'html') {
@@ -7065,6 +8644,7 @@ Beautifier.prototype._set_tag_position = function(printer, raw_token, parser_tok
 //var p_closers = ['address', 'article', 'aside', 'blockquote', 'details', 'div', 'dl', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hr', 'main', 'nav', 'ol', 'p', 'pre', 'section', 'table', 'ul'];
 
 Beautifier.prototype._do_optional_end_element = function(parser_token) {
+  var result = null;
   // NOTE: cases of "if there is no more content in the parent element"
   // are handled automatically by the beautifier.
   // It assumes parent or ancestor close tag closes all children.
@@ -7074,52 +8654,52 @@ Beautifier.prototype._do_optional_end_element = function(parser_token) {
 
   } else if (parser_token.tag_name === 'body') {
     // A head element’s end tag may be omitted if the head element is not immediately followed by a space character or a comment.
-    this._tag_stack.try_pop('head');
+    result = result || this._tag_stack.try_pop('head');
 
     //} else if (parser_token.tag_name === 'body') {
     // DONE: A body element’s end tag may be omitted if the body element is not immediately followed by a comment.
 
   } else if (parser_token.tag_name === 'li') {
     // An li element’s end tag may be omitted if the li element is immediately followed by another li element or if there is no more content in the parent element.
-    this._tag_stack.try_pop('li', ['ol', 'ul']);
+    result = result || this._tag_stack.try_pop('li', ['ol', 'ul']);
 
   } else if (parser_token.tag_name === 'dd' || parser_token.tag_name === 'dt') {
     // A dd element’s end tag may be omitted if the dd element is immediately followed by another dd element or a dt element, or if there is no more content in the parent element.
     // A dt element’s end tag may be omitted if the dt element is immediately followed by another dt element or a dd element.
-    this._tag_stack.try_pop('dt', ['dl']);
-    this._tag_stack.try_pop('dd', ['dl']);
+    result = result || this._tag_stack.try_pop('dt', ['dl']);
+    result = result || this._tag_stack.try_pop('dd', ['dl']);
 
     //} else if (p_closers.indexOf(parser_token.tag_name) !== -1) {
     //TODO: THIS IS A BUG FARM. We are not putting this into 1.8.0 as it is likely to blow up.
     //A p element’s end tag may be omitted if the p element is immediately followed by an address, article, aside, blockquote, details, div, dl, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, hr, main, nav, ol, p, pre, section, table, or ul element, or if there is no more content in the parent element and the parent element is an HTML element that is not an a, audio, del, ins, map, noscript, or video element, or an autonomous custom element.
-    //this._tag_stack.try_pop('p', ['body']);
+    //result = result || this._tag_stack.try_pop('p', ['body']);
 
   } else if (parser_token.tag_name === 'rp' || parser_token.tag_name === 'rt') {
     // An rt element’s end tag may be omitted if the rt element is immediately followed by an rt or rp element, or if there is no more content in the parent element.
     // An rp element’s end tag may be omitted if the rp element is immediately followed by an rt or rp element, or if there is no more content in the parent element.
-    this._tag_stack.try_pop('rt', ['ruby', 'rtc']);
-    this._tag_stack.try_pop('rp', ['ruby', 'rtc']);
+    result = result || this._tag_stack.try_pop('rt', ['ruby', 'rtc']);
+    result = result || this._tag_stack.try_pop('rp', ['ruby', 'rtc']);
 
   } else if (parser_token.tag_name === 'optgroup') {
     // An optgroup element’s end tag may be omitted if the optgroup element is immediately followed by another optgroup element, or if there is no more content in the parent element.
     // An option element’s end tag may be omitted if the option element is immediately followed by another option element, or if it is immediately followed by an optgroup element, or if there is no more content in the parent element.
-    this._tag_stack.try_pop('optgroup', ['select']);
-    //this._tag_stack.try_pop('option', ['select']);
+    result = result || this._tag_stack.try_pop('optgroup', ['select']);
+    //result = result || this._tag_stack.try_pop('option', ['select']);
 
   } else if (parser_token.tag_name === 'option') {
     // An option element’s end tag may be omitted if the option element is immediately followed by another option element, or if it is immediately followed by an optgroup element, or if there is no more content in the parent element.
-    this._tag_stack.try_pop('option', ['select', 'datalist', 'optgroup']);
+    result = result || this._tag_stack.try_pop('option', ['select', 'datalist', 'optgroup']);
 
   } else if (parser_token.tag_name === 'colgroup') {
     // DONE: A colgroup element’s end tag may be omitted if the colgroup element is not immediately followed by a space character or a comment.
     // A caption element's end tag may be ommitted if a colgroup, thead, tfoot, tbody, or tr element is started.
-    this._tag_stack.try_pop('caption', ['table']);
+    result = result || this._tag_stack.try_pop('caption', ['table']);
 
   } else if (parser_token.tag_name === 'thead') {
     // A colgroup element's end tag may be ommitted if a thead, tfoot, tbody, or tr element is started.
     // A caption element's end tag may be ommitted if a colgroup, thead, tfoot, tbody, or tr element is started.
-    this._tag_stack.try_pop('caption', ['table']);
-    this._tag_stack.try_pop('colgroup', ['table']);
+    result = result || this._tag_stack.try_pop('caption', ['table']);
+    result = result || this._tag_stack.try_pop('colgroup', ['table']);
 
     //} else if (parser_token.tag_name === 'caption') {
     // DONE: A caption element’s end tag may be omitted if the caption element is not immediately followed by a space character or a comment.
@@ -7129,10 +8709,10 @@ Beautifier.prototype._do_optional_end_element = function(parser_token) {
     // A tbody element’s end tag may be omitted if the tbody element is immediately followed by a tbody or tfoot element, or if there is no more content in the parent element.
     // A colgroup element's end tag may be ommitted if a thead, tfoot, tbody, or tr element is started.
     // A caption element's end tag may be ommitted if a colgroup, thead, tfoot, tbody, or tr element is started.
-    this._tag_stack.try_pop('caption', ['table']);
-    this._tag_stack.try_pop('colgroup', ['table']);
-    this._tag_stack.try_pop('thead', ['table']);
-    this._tag_stack.try_pop('tbody', ['table']);
+    result = result || this._tag_stack.try_pop('caption', ['table']);
+    result = result || this._tag_stack.try_pop('colgroup', ['table']);
+    result = result || this._tag_stack.try_pop('thead', ['table']);
+    result = result || this._tag_stack.try_pop('tbody', ['table']);
 
     //} else if (parser_token.tag_name === 'tfoot') {
     // DONE: A tfoot element’s end tag may be omitted if there is no more content in the parent element.
@@ -7141,15 +8721,15 @@ Beautifier.prototype._do_optional_end_element = function(parser_token) {
     // A tr element’s end tag may be omitted if the tr element is immediately followed by another tr element, or if there is no more content in the parent element.
     // A colgroup element's end tag may be ommitted if a thead, tfoot, tbody, or tr element is started.
     // A caption element's end tag may be ommitted if a colgroup, thead, tfoot, tbody, or tr element is started.
-    this._tag_stack.try_pop('caption', ['table']);
-    this._tag_stack.try_pop('colgroup', ['table']);
-    this._tag_stack.try_pop('tr', ['table', 'thead', 'tbody', 'tfoot']);
+    result = result || this._tag_stack.try_pop('caption', ['table']);
+    result = result || this._tag_stack.try_pop('colgroup', ['table']);
+    result = result || this._tag_stack.try_pop('tr', ['table', 'thead', 'tbody', 'tfoot']);
 
   } else if (parser_token.tag_name === 'th' || parser_token.tag_name === 'td') {
     // A td element’s end tag may be omitted if the td element is immediately followed by a td or th element, or if there is no more content in the parent element.
     // A th element’s end tag may be omitted if the th element is immediately followed by a td or th element, or if there is no more content in the parent element.
-    this._tag_stack.try_pop('td', ['tr']);
-    this._tag_stack.try_pop('th', ['tr']);
+    result = result || this._tag_stack.try_pop('td', ['table', 'thead', 'tbody', 'tfoot', 'tr']);
+    result = result || this._tag_stack.try_pop('th', ['table', 'thead', 'tbody', 'tfoot', 'tr']);
   }
 
   // Start element omission not handled currently
@@ -7160,13 +8740,14 @@ Beautifier.prototype._do_optional_end_element = function(parser_token) {
   // Fix up the parent of the parser token
   parser_token.parent = this._tag_stack.get_parser_token();
 
+  return result;
 };
 
 module.exports.Beautifier = Beautifier;
 
 
 /***/ }),
-/* 17 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7204,6 +8785,9 @@ var BaseOptions = __webpack_require__(6).Options;
 
 function Options(options) {
   BaseOptions.call(this, options, 'html');
+  if (this.templating.length === 1 && this.templating[0] === 'auto') {
+    this.templating = ['django', 'erb', 'handlebars', 'php'];
+  }
 
   this.indent_inner_html = this._get_boolean('indent_inner_html');
   this.indent_body_inner_html = this._get_boolean('indent_body_inner_html', true);
@@ -7215,16 +8799,19 @@ function Options(options) {
   this.wrap_attributes_indent_size = this._get_number('wrap_attributes_indent_size', this.indent_size);
   this.extra_liners = this._get_array('extra_liners', ['head', 'body', '/html']);
 
+  // Block vs inline elements
+  // https://developer.mozilla.org/en-US/docs/Web/HTML/Block-level_elements
+  // https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements
+  // https://www.w3.org/TR/html5/dom.html#phrasing-content
   this.inline = this._get_array('inline', [
-    // https://www.w3.org/TR/html5/dom.html#phrasing-content
     'a', 'abbr', 'area', 'audio', 'b', 'bdi', 'bdo', 'br', 'button', 'canvas', 'cite',
     'code', 'data', 'datalist', 'del', 'dfn', 'em', 'embed', 'i', 'iframe', 'img',
     'input', 'ins', 'kbd', 'keygen', 'label', 'map', 'mark', 'math', 'meter', 'noscript',
     'object', 'output', 'progress', 'q', 'ruby', 's', 'samp', /* 'script', */ 'select', 'small',
     'span', 'strong', 'sub', 'sup', 'svg', 'template', 'textarea', 'time', 'u', 'var',
     'video', 'wbr', 'text',
-    // prexisting - not sure of full effect of removing, leaving in
-    'acronym', 'address', 'big', 'dt', 'ins', 'strike', 'tt'
+    // obsolete inline tags
+    'acronym', 'big', 'strike', 'tt'
   ]);
   this.void_elements = this._get_array('void_elements', [
     // HTLM void elements - aka self-closing tags - aka singletons
@@ -7236,16 +8823,19 @@ function Options(options) {
 
     // Doctype and xml elements
     '!doctype', '?xml',
-    // ?php and ?= tags
-    '?php', '?=',
-    // other tags that were in this list, keeping just in case
+
+    // obsolete tags
+    // basefont: https://www.computerhope.com/jargon/h/html-basefont-tag.htm
+    // isndex: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/isindex
     'basefont', 'isindex'
   ]);
   this.unformatted = this._get_array('unformatted', []);
   this.content_unformatted = this._get_array('content_unformatted', [
     'pre', 'textarea'
   ]);
+  this.unformatted_content_delimiter = this._get_characters('unformatted_content_delimiter');
   this.indent_scripts = this._get_selection('indent_scripts', ['normal', 'keep', 'separate']);
+
 }
 Options.prototype = new BaseOptions();
 
@@ -7255,7 +8845,7 @@ module.exports.Options = Options;
 
 
 /***/ }),
-/* 18 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7291,7 +8881,9 @@ module.exports.Options = Options;
 
 var BaseTokenizer = __webpack_require__(9).Tokenizer;
 var BASETOKEN = __webpack_require__(9).TOKEN;
-var Directives = __webpack_require__(11).Directives;
+var Directives = __webpack_require__(13).Directives;
+var TemplatablePattern = __webpack_require__(14).TemplatablePattern;
+var Pattern = __webpack_require__(12).Pattern;
 
 var TOKEN = {
   TAG_OPEN: 'TK_TAG_OPEN',
@@ -7315,7 +8907,39 @@ var Tokenizer = function(input_string, options) {
 
   // Words end at whitespace or when a tag starts
   // if we are indenting handlebars, they are considered tags
-  this._word_pattern = this._options.indent_handlebars ? /[\n\r\t <]|{{/g : /[\n\r\t <]/g;
+  var templatable_reader = new TemplatablePattern(this._input).read_options(this._options);
+  var pattern_reader = new Pattern(this._input);
+
+  this.__patterns = {
+    word: templatable_reader.until(/[\n\r\t <]/),
+    single_quote: templatable_reader.until_after(/'/),
+    double_quote: templatable_reader.until_after(/"/),
+    attribute: templatable_reader.until(/[\n\r\t =\/>]/),
+    element_name: templatable_reader.until(/[\n\r\t >\/]/),
+
+    handlebars_comment: pattern_reader.starting_with(/{{!--/).until_after(/--}}/),
+    handlebars: pattern_reader.starting_with(/{{/).until_after(/}}/),
+    handlebars_open: pattern_reader.until(/[\n\r\t }]/),
+    handlebars_raw_close: pattern_reader.until(/}}/),
+    comment: pattern_reader.starting_with(/<!--/).until_after(/-->/),
+    cdata: pattern_reader.starting_with(/<!\[CDATA\[/).until_after(/]]>/),
+    // https://en.wikipedia.org/wiki/Conditional_comment
+    conditional_comment: pattern_reader.starting_with(/<!\[/).until_after(/]>/),
+    processing: pattern_reader.starting_with(/<\?/).until_after(/\?>/)
+  };
+
+  if (this._options.indent_handlebars) {
+    this.__patterns.word = this.__patterns.word.exclude('handlebars');
+  }
+
+  this._unformatted_content_delimiter = null;
+
+  if (this._options.unformatted_content_delimiter) {
+    var literal_regexp = this._input.get_literal_regexp(this._options.unformatted_content_delimiter);
+    this.__patterns.unformatted_content_delimiter =
+      pattern_reader.matching(literal_regexp)
+      .until_after(literal_regexp);
+  }
 };
 Tokenizer.prototype = new BaseTokenizer();
 
@@ -7339,92 +8963,73 @@ Tokenizer.prototype._reset = function() {
 };
 
 Tokenizer.prototype._get_next_token = function(previous_token, open_token) { // jshint unused:false
-  this._readWhitespace();
   var token = null;
+  this._readWhitespace();
   var c = this._input.peek();
 
   if (c === null) {
     return this._create_token(TOKEN.EOF, '');
   }
 
+  token = token || this._read_open_handlebars(c, open_token);
   token = token || this._read_attribute(c, previous_token, open_token);
-  token = token || this._read_raw_content(previous_token, open_token);
-  token = token || this._read_comment(c);
-  token = token || this._read_open(c, open_token);
+  token = token || this._read_raw_content(c, previous_token, open_token);
   token = token || this._read_close(c, open_token);
-  token = token || this._read_content_word();
+  token = token || this._read_content_word(c);
+  token = token || this._read_comment_or_cdata(c);
+  token = token || this._read_processing(c);
+  token = token || this._read_open(c, open_token);
   token = token || this._create_token(TOKEN.UNKNOWN, this._input.next());
 
   return token;
 };
 
-Tokenizer.prototype._read_comment = function(c) { // jshint unused:false
+Tokenizer.prototype._read_comment_or_cdata = function(c) { // jshint unused:false
   var token = null;
-  if (c === '<' || c === '{') {
+  var resulting_string = null;
+  var directives = null;
+
+  if (c === '<') {
     var peek1 = this._input.peek(1);
-    var peek2 = this._input.peek(2);
-    if ((c === '<' && (peek1 === '!' || peek1 === '?' || peek1 === '%')) ||
-      this._options.indent_handlebars && c === '{' && peek1 === '{' && peek2 === '!') {
-      //if we're in a comment, do something special
-      // We treat all comments as literals, even more than preformatted tags
-      // we just look for the appropriate close tag
+    // We treat all comments as literals, even more than preformatted tags
+    // we only look for the appropriate closing marker
+    if (peek1 === '!') {
+      resulting_string = this.__patterns.comment.read();
 
-      // this is will have very poor perf, but will work for now.
-      var comment = '',
-        delimiter = '>',
-        matched = false;
-
-      var input_char = this._input.next();
-
-      while (input_char) {
-        comment += input_char;
-
-        // only need to check for the delimiter if the last chars match
-        if (comment.charAt(comment.length - 1) === delimiter.charAt(delimiter.length - 1) &&
-          comment.indexOf(delimiter) !== -1) {
-          break;
+      // only process directive on html comments
+      if (resulting_string) {
+        directives = directives_core.get_directives(resulting_string);
+        if (directives && directives.ignore === 'start') {
+          resulting_string += directives_core.readIgnored(this._input);
         }
-
-        // only need to search for custom delimiter for the first few characters
-        if (!matched) {
-          matched = comment.length > 10;
-          if (comment.indexOf('<![if') === 0) { //peek for <![if conditional comment
-            delimiter = '<![endif]>';
-            matched = true;
-          } else if (comment.indexOf('<![cdata[') === 0) { //if it's a <[cdata[ comment...
-            delimiter = ']]>';
-            matched = true;
-          } else if (comment.indexOf('<![') === 0) { // some other ![ comment? ...
-            delimiter = ']>';
-            matched = true;
-          } else if (comment.indexOf('<!--') === 0) { // <!-- comment ...
-            delimiter = '-->';
-            matched = true;
-          } else if (comment.indexOf('{{!--') === 0) { // {{!-- handlebars comment
-            delimiter = '--}}';
-            matched = true;
-          } else if (comment.indexOf('{{!') === 0) { // {{! handlebars comment
-            if (comment.length === 5 && comment.indexOf('{{!--') === -1) {
-              delimiter = '}}';
-              matched = true;
-            }
-          } else if (comment.indexOf('<?') === 0) { // {{! handlebars comment
-            delimiter = '?>';
-            matched = true;
-          } else if (comment.indexOf('<%') === 0) { // {{! handlebars comment
-            delimiter = '%>';
-            matched = true;
-          }
-        }
-
-        input_char = this._input.next();
+      } else {
+        resulting_string = this.__patterns.cdata.read();
       }
+    }
 
-      var directives = directives_core.get_directives(comment);
-      if (directives && directives.ignore === 'start') {
-        comment += directives_core.readIgnored(this._input);
-      }
-      token = this._create_token(TOKEN.COMMENT, comment);
+    if (resulting_string) {
+      token = this._create_token(TOKEN.COMMENT, resulting_string);
+      token.directives = directives;
+    }
+  }
+
+  return token;
+};
+
+Tokenizer.prototype._read_processing = function(c) { // jshint unused:false
+  var token = null;
+  var resulting_string = null;
+  var directives = null;
+
+  if (c === '<') {
+    var peek1 = this._input.peek(1);
+    if (peek1 === '!' || peek1 === '?') {
+      resulting_string = this.__patterns.conditional_comment.read();
+      resulting_string = resulting_string || this.__patterns.processing.read();
+    }
+
+    if (resulting_string) {
+      token = this._create_token(TOKEN.COMMENT, resulting_string);
       token.directives = directives;
     }
   }
@@ -7437,15 +9042,36 @@ Tokenizer.prototype._read_open = function(c, open_token) {
   var token = null;
   if (!open_token) {
     if (c === '<') {
-      resulting_string = this._input.read(/<(?:[^\n\r\t >{][^\n\r\t >{/]*)?/g);
-      token = this._create_token(TOKEN.TAG_OPEN, resulting_string);
-    } else if (this._options.indent_handlebars && c === '{' && this._input.peek(1) === '{') {
-      resulting_string = this._input.readUntil(/[\n\r\t }]/g);
+
+      resulting_string = this._input.next();
+      if (this._input.peek() === '/') {
+        resulting_string += this._input.next();
+      }
+      resulting_string += this.__patterns.element_name.read();
       token = this._create_token(TOKEN.TAG_OPEN, resulting_string);
     }
   }
   return token;
 };
+
+Tokenizer.prototype._read_open_handlebars = function(c, open_token) {
+  var resulting_string = null;
+  var token = null;
+  if (!open_token) {
+    if (this._options.indent_handlebars && c === '{' && this._input.peek(1) === '{') {
+      if (this._input.peek(2) === '!') {
+        resulting_string = this.__patterns.handlebars_comment.read();
+        resulting_string = resulting_string || this.__patterns.handlebars.read();
+        token = this._create_token(TOKEN.COMMENT, resulting_string);
+      } else {
+        resulting_string = this.__patterns.handlebars_open.read();
+        token = this._create_token(TOKEN.TAG_OPEN, resulting_string);
+      }
+    }
+  }
+  return token;
+};
+
 
 Tokenizer.prototype._read_close = function(c, open_token) {
   var resulting_string = null;
@@ -7476,25 +9102,14 @@ Tokenizer.prototype._read_attribute = function(c, previous_token, open_token) {
       token = this._create_token(TOKEN.EQUALS, this._input.next());
     } else if (c === '"' || c === "'") {
       var content = this._input.next();
-      var input_string = '';
-      var string_pattern = new RegExp(c + '|{{', 'g');
-      while (this._input.hasNext()) {
-        input_string = this._input.readUntilAfter(string_pattern);
-        content += input_string;
-        if (input_string[input_string.length - 1] === '"' || input_string[input_string.length - 1] === "'") {
-          break;
-        } else if (this._input.hasNext()) {
-          content += this._input.readUntilAfter(/}}/g);
-        }
+      if (c === '"') {
+        content += this.__patterns.double_quote.read();
+      } else {
+        content += this.__patterns.single_quote.read();
       }
-
       token = this._create_token(TOKEN.VALUE, content);
     } else {
-      if (c === '{' && this._input.peek(1) === '{') {
-        resulting_string = this._input.readUntilAfter(/}}/g);
-      } else {
-        resulting_string = this._input.readUntil(/[\n\r\t =\/>]/g);
-      }
+      resulting_string = this.__patterns.attribute.read();
 
       if (resulting_string) {
         if (previous_token.type === TOKEN.EQUALS) {
@@ -7513,19 +9128,27 @@ Tokenizer.prototype._is_content_unformatted = function(tag_name) {
   // script and style tags should always be read as unformatted content
   // finally content_unformatted and unformatted element contents are unformatted
   return this._options.void_elements.indexOf(tag_name) === -1 &&
-    (tag_name === 'script' || tag_name === 'style' ||
-      this._options.content_unformatted.indexOf(tag_name) !== -1 ||
+    (this._options.content_unformatted.indexOf(tag_name) !== -1 ||
       this._options.unformatted.indexOf(tag_name) !== -1);
 };
 
 
-Tokenizer.prototype._read_raw_content = function(previous_token, open_token) { // jshint unused:false
+Tokenizer.prototype._read_raw_content = function(c, previous_token, open_token) { // jshint unused:false
   var resulting_string = '';
   if (open_token && open_token.text.charAt(0) === '{') {
-    resulting_string = this._input.readUntil(/}}/g);
+    resulting_string = this.__patterns.handlebars_raw_close.read();
   } else if (previous_token.type === TOKEN.TAG_CLOSE && (previous_token.opened.text.charAt(0) === '<')) {
     var tag_name = previous_token.opened.text.substr(1).toLowerCase();
-    if (this._is_content_unformatted(tag_name)) {
+    if (tag_name === 'script' || tag_name === 'style') {
+      // Script and style tags are allowed to have comments wrapping their content
+      // or just have regular content.
+      var token = this._read_comment_or_cdata(c);
+      if (token) {
+        token.type = TOKEN.TEXT;
+        return token;
+      }
+      resulting_string = this._input.readUntil(new RegExp('</' + tag_name + '[\\n\\r\\t ]*?>', 'ig'));
+    } else if (this._is_content_unformatted(tag_name)) {
       resulting_string = this._input.readUntil(new RegExp('</' + tag_name + '[\\n\\r\\t ]*?>', 'ig'));
     }
   }
@@ -7537,9 +9160,17 @@ Tokenizer.prototype._read_raw_content = function(previous_token, open_token) { /
   return null;
 };
 
-Tokenizer.prototype._read_content_word = function() {
-  // if we get here and we see handlebars treat them as plain text
-  var resulting_string = this._input.readUntil(this._word_pattern);
+Tokenizer.prototype._read_content_word = function(c) {
+  var resulting_string = '';
+  if (this._options.unformatted_content_delimiter) {
+    if (c === this._options.unformatted_content_delimiter[0]) {
+      resulting_string = this.__patterns.unformatted_content_delimiter.read();
+    }
+  }
+
+  if (!resulting_string) {
+    resulting_string = this.__patterns.word.read();
+  }
   if (resulting_string) {
     return this._create_token(TOKEN.TEXT, resulting_string);
   }
@@ -8381,6 +10012,40 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
     {
         sanitytest = test_obj;
 
+        //============================================================
+        // Line wrap test inputs
+        //...---------1---------2---------3---------4---------5---------6---------7
+        //...1234567890123456789012345678901234567890123456789012345678901234567890
+        var wrap_input_1=(
+            'foo.bar().baz().cucumber((f && "sass") || (leans && mean));\n' +
+            'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
+            'return between_return_and_expression_should_never_wrap.but_this_can\n' +
+            'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
+            'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+            'object_literal = {\n' +
+            '    propertx: first_token + 12345678.99999E-6,\n' +
+            '    property: first_token_should_never_wrap + but_this_can,\n' +
+            '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
+            '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+            '}');
+
+        //...---------1---------2---------3---------4---------5---------6---------7
+        //...1234567890123456789012345678901234567890123456789012345678901234567890
+        var wrap_input_2=(
+            '{\n' +
+            '    foo.bar().baz().cucumber((f && "sass") || (leans && mean));\n' +
+            '    Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
+            '    return between_return_and_expression_should_never_wrap.but_this_can\n' +
+            '    throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
+            '    if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
+            '    object_literal = {\n' +
+            '        propertx: first_token + 12345678.99999E-6,\n' +
+            '        property: first_token_should_never_wrap + but_this_can,\n' +
+            '        propertz: first_token_should_never_wrap + !but_this_can,\n' +
+            '        proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+            '    }' +
+            '}');
+
 
         //============================================================
         // Unicode Support
@@ -8390,6 +10055,14 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt(
             'var ' + unicode_char(228) + 'x = {\n' +
             '    ' + unicode_char(228) + 'rgerlich: true\n' +
+            '};');
+        bt(
+            'var \\u00E4\\u0ca0\\u0cA0\\u0Ca0 = {\n' +
+            '    \\u0ca0rgerlich: true\n' +
+            '};');
+        bt(
+            'var \\u00E4add\\u0025 = {\n' +
+            '    \\u0044rgerlich\\u0ca0: true\n' +
             '};');
         bt(
             'var' + unicode_char(160) + unicode_char(3232) + '_' + unicode_char(3232) + ' = "hi";',
@@ -9545,6 +11218,1505 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
 
         //============================================================
+        // general preserve_newlines tests - (preserve_newlines = "false")
+        reset_options();
+        set_name('general preserve_newlines tests - (preserve_newlines = "false")');
+        opts.preserve_newlines = false;
+        bt(
+            'if (foo) // comment\n' +
+            '    bar();');
+        bt(
+            'if (foo) // comment\n' +
+            '    bar();');
+        bt(
+            'if (foo) // comment\n' +
+            '    (bar());');
+        bt(
+            'if (foo) // comment\n' +
+            '    (bar());');
+        bt(
+            'if (foo) // comment\n' +
+            '    /asdf/;');
+        bt(
+            'this.oa = new OAuth(\n' +
+            '    _requestToken,\n' +
+            '    _accessToken,\n' +
+            '    consumer_key\n' +
+            ');',
+            //  -- output --
+            'this.oa = new OAuth(_requestToken, _accessToken, consumer_key);');
+        bt(
+            'foo = {\n' +
+            '    x: y, // #44\n' +
+            '    w: z // #44\n' +
+            '}');
+        bt(
+            'switch (x) {\n' +
+            '    case "a":\n' +
+            '        // comment on newline\n' +
+            '        break;\n' +
+            '    case "b": // comment on same line\n' +
+            '        break;\n' +
+            '}');
+        bt(
+            'this.type =\n' +
+            '    this.options =\n' +
+            '    // comment\n' +
+            '    this.enabled null;',
+            //  -- output --
+            'this.type = this.options =\n' +
+            '    // comment\n' +
+            '    this.enabled null;');
+        bt(
+            'someObj\n' +
+            '    .someFunc1()\n' +
+            '    // This comment should not break the indent\n' +
+            '    .someFunc2();',
+            //  -- output --
+            'someObj.someFunc1()\n' +
+            '    // This comment should not break the indent\n' +
+            '    .someFunc2();');
+        bt(
+            'if (true ||\n' +
+            '!true) return;',
+            //  -- output --
+            'if (true || !true) return;');
+        bt(
+            'if\n' +
+            '(foo)\n' +
+            'if\n' +
+            '(bar)\n' +
+            'if\n' +
+            '(baz)\n' +
+            'whee();\n' +
+            'a();',
+            //  -- output --
+            'if (foo)\n' +
+            '    if (bar)\n' +
+            '        if (baz) whee();\n' +
+            'a();');
+        bt(
+            'if\n' +
+            '(foo)\n' +
+            'if\n' +
+            '(bar)\n' +
+            'if\n' +
+            '(baz)\n' +
+            'whee();\n' +
+            'else\n' +
+            'a();',
+            //  -- output --
+            'if (foo)\n' +
+            '    if (bar)\n' +
+            '        if (baz) whee();\n' +
+            '        else a();');
+        bt(
+            'if (foo)\n' +
+            'bar();\n' +
+            'else\n' +
+            'car();',
+            //  -- output --
+            'if (foo) bar();\n' +
+            'else car();');
+        bt(
+            'if (foo) if (bar) if (baz);\n' +
+            'a();',
+            //  -- output --
+            'if (foo)\n' +
+            '    if (bar)\n' +
+            '        if (baz);\n' +
+            'a();');
+        bt(
+            'if (foo) if (bar) if (baz) whee();\n' +
+            'a();',
+            //  -- output --
+            'if (foo)\n' +
+            '    if (bar)\n' +
+            '        if (baz) whee();\n' +
+            'a();');
+        bt(
+            'if (foo) a()\n' +
+            'if (bar) if (baz) whee();\n' +
+            'a();',
+            //  -- output --
+            'if (foo) a()\n' +
+            'if (bar)\n' +
+            '    if (baz) whee();\n' +
+            'a();');
+        bt(
+            'if (foo);\n' +
+            'if (bar) if (baz) whee();\n' +
+            'a();',
+            //  -- output --
+            'if (foo);\n' +
+            'if (bar)\n' +
+            '    if (baz) whee();\n' +
+            'a();');
+        bt(
+            'if (options)\n' +
+            '    for (var p in options)\n' +
+            '        this[p] = options[p];',
+            //  -- output --
+            'if (options)\n' +
+            '    for (var p in options) this[p] = options[p];');
+        bt(
+            'if (options) for (var p in options) this[p] = options[p];',
+            //  -- output --
+            'if (options)\n' +
+            '    for (var p in options) this[p] = options[p];');
+        bt(
+            'if (options) do q(); while (b());',
+            //  -- output --
+            'if (options)\n' +
+            '    do q(); while (b());');
+        bt(
+            'if (options) while (b()) q();',
+            //  -- output --
+            'if (options)\n' +
+            '    while (b()) q();');
+        bt(
+            'if (options) do while (b()) q(); while (a());',
+            //  -- output --
+            'if (options)\n' +
+            '    do\n' +
+            '        while (b()) q(); while (a());');
+        bt(
+            'function f(a, b, c,\n' +
+            'd, e) {}',
+            //  -- output --
+            'function f(a, b, c, d, e) {}');
+        bt(
+            'function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
+            //  -- output --
+            'function f(a, b) {\n' +
+            '    if (a) b()\n' +
+            '}\n' +
+            '\n' +
+            'function g(a, b) {\n' +
+            '    if (!a) b()\n' +
+            '}');
+        bt(
+            'function f(a,b) {if(a) b()}\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            'function g(a,b) {if(!a) b()}',
+            //  -- output --
+            'function f(a, b) {\n' +
+            '    if (a) b()\n' +
+            '}\n' +
+            '\n' +
+            'function g(a, b) {\n' +
+            '    if (!a) b()\n' +
+            '}');
+        bt(
+            '(if(a) b())(if(a) b())',
+            //  -- output --
+            '(\n' +
+            '    if (a) b())(\n' +
+            '    if (a) b())');
+        bt(
+            '(if(a) b())\n' +
+            '\n' +
+            '\n' +
+            '(if(a) b())',
+            //  -- output --
+            '(\n' +
+            '    if (a) b())\n' +
+            '(\n' +
+            '    if (a) b())');
+        bt(
+            'if\n' +
+            '(a)\n' +
+            'b();',
+            //  -- output --
+            'if (a) b();');
+        bt(
+            'var a =\n' +
+            'foo',
+            //  -- output --
+            'var a = foo');
+        bt(
+            'var a = {\n' +
+            '"a":1,\n' +
+            '"b":2}',
+            //  -- output --
+            'var a = {\n' +
+            '    "a": 1,\n' +
+            '    "b": 2\n' +
+            '}');
+        bt(
+            'var a = {\n' +
+            '\'a\':1,\n' +
+            '\'b\':2}',
+            //  -- output --
+            'var a = {\n' +
+            '    \'a\': 1,\n' +
+            '    \'b\': 2\n' +
+            '}');
+        bt('var a = /*i*/ "b";');
+        bt(
+            'var a = /*i*/\n' +
+            '"b";',
+            //  -- output --
+            'var a = /*i*/ "b";');
+        bt(
+            '{\n' +
+            '\n' +
+            '\n' +
+            '"x"\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    "x"\n' +
+            '}');
+        bt(
+            'if(a &&\n' +
+            'b\n' +
+            '||\n' +
+            'c\n' +
+            '||d\n' +
+            '&&\n' +
+            'e) e = f',
+            //  -- output --
+            'if (a && b || c || d && e) e = f');
+        bt(
+            'if(a &&\n' +
+            '(b\n' +
+            '||\n' +
+            'c\n' +
+            '||d)\n' +
+            '&&\n' +
+            'e) e = f',
+            //  -- output --
+            'if (a && (b || c || d) && e) e = f');
+        test_fragment(
+            '\n' +
+            '\n' +
+            '"x"',
+            //  -- output --
+            '"x"');
+        test_fragment(
+            '{\n' +
+            '\n' +
+            '"x"\n' +
+            'h=5;\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    "x"\n' +
+            '    h = 5;\n' +
+            '}');
+        bt(
+            'var a = "foo" +\n' +
+            '    "bar";',
+            //  -- output --
+            'var a = "foo" + "bar";');
+        bt(
+            'var a = 42; // foo\n' +
+            '\n' +
+            'var b;',
+            //  -- output --
+            'var a = 42; // foo\n' +
+            'var b;');
+        bt(
+            'var a = 42; // foo\n' +
+            '\n' +
+            '\n' +
+            'var b;',
+            //  -- output --
+            'var a = 42; // foo\n' +
+            'var b;');
+        bt(
+            'a = 1;\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            'b = 2;',
+            //  -- output --
+            'a = 1;\n' +
+            'b = 2;');
+
+        // general preserve_newlines tests - (preserve_newlines = "true")
+        reset_options();
+        set_name('general preserve_newlines tests - (preserve_newlines = "true")');
+        opts.preserve_newlines = true;
+        bt(
+            'if (foo) // comment\n' +
+            '    bar();');
+        bt(
+            'if (foo) // comment\n' +
+            '    bar();');
+        bt(
+            'if (foo) // comment\n' +
+            '    (bar());');
+        bt(
+            'if (foo) // comment\n' +
+            '    (bar());');
+        bt(
+            'if (foo) // comment\n' +
+            '    /asdf/;');
+        bt(
+            'this.oa = new OAuth(\n' +
+            '    _requestToken,\n' +
+            '    _accessToken,\n' +
+            '    consumer_key\n' +
+            ');');
+        bt(
+            'foo = {\n' +
+            '    x: y, // #44\n' +
+            '    w: z // #44\n' +
+            '}');
+        bt(
+            'switch (x) {\n' +
+            '    case "a":\n' +
+            '        // comment on newline\n' +
+            '        break;\n' +
+            '    case "b": // comment on same line\n' +
+            '        break;\n' +
+            '}');
+        bt(
+            'this.type =\n' +
+            '    this.options =\n' +
+            '    // comment\n' +
+            '    this.enabled null;');
+        bt(
+            'someObj\n' +
+            '    .someFunc1()\n' +
+            '    // This comment should not break the indent\n' +
+            '    .someFunc2();');
+        bt(
+            'if (true ||\n' +
+            '!true) return;',
+            //  -- output --
+            'if (true ||\n' +
+            '    !true) return;');
+        bt(
+            'if\n' +
+            '(foo)\n' +
+            'if\n' +
+            '(bar)\n' +
+            'if\n' +
+            '(baz)\n' +
+            'whee();\n' +
+            'a();',
+            //  -- output --
+            'if (foo)\n' +
+            '    if (bar)\n' +
+            '        if (baz)\n' +
+            '            whee();\n' +
+            'a();');
+        bt(
+            'if\n' +
+            '(foo)\n' +
+            'if\n' +
+            '(bar)\n' +
+            'if\n' +
+            '(baz)\n' +
+            'whee();\n' +
+            'else\n' +
+            'a();',
+            //  -- output --
+            'if (foo)\n' +
+            '    if (bar)\n' +
+            '        if (baz)\n' +
+            '            whee();\n' +
+            '        else\n' +
+            '            a();');
+        bt(
+            'if (foo)\n' +
+            'bar();\n' +
+            'else\n' +
+            'car();',
+            //  -- output --
+            'if (foo)\n' +
+            '    bar();\n' +
+            'else\n' +
+            '    car();');
+        bt(
+            'if (foo) if (bar) if (baz);\n' +
+            'a();',
+            //  -- output --
+            'if (foo)\n' +
+            '    if (bar)\n' +
+            '        if (baz);\n' +
+            'a();');
+        bt(
+            'if (foo) if (bar) if (baz) whee();\n' +
+            'a();',
+            //  -- output --
+            'if (foo)\n' +
+            '    if (bar)\n' +
+            '        if (baz) whee();\n' +
+            'a();');
+        bt(
+            'if (foo) a()\n' +
+            'if (bar) if (baz) whee();\n' +
+            'a();',
+            //  -- output --
+            'if (foo) a()\n' +
+            'if (bar)\n' +
+            '    if (baz) whee();\n' +
+            'a();');
+        bt(
+            'if (foo);\n' +
+            'if (bar) if (baz) whee();\n' +
+            'a();',
+            //  -- output --
+            'if (foo);\n' +
+            'if (bar)\n' +
+            '    if (baz) whee();\n' +
+            'a();');
+        bt(
+            'if (options)\n' +
+            '    for (var p in options)\n' +
+            '        this[p] = options[p];');
+        bt(
+            'if (options) for (var p in options) this[p] = options[p];',
+            //  -- output --
+            'if (options)\n' +
+            '    for (var p in options) this[p] = options[p];');
+        bt(
+            'if (options) do q(); while (b());',
+            //  -- output --
+            'if (options)\n' +
+            '    do q(); while (b());');
+        bt(
+            'if (options) while (b()) q();',
+            //  -- output --
+            'if (options)\n' +
+            '    while (b()) q();');
+        bt(
+            'if (options) do while (b()) q(); while (a());',
+            //  -- output --
+            'if (options)\n' +
+            '    do\n' +
+            '        while (b()) q(); while (a());');
+        bt(
+            'function f(a, b, c,\n' +
+            'd, e) {}',
+            //  -- output --
+            'function f(a, b, c,\n' +
+            '    d, e) {}');
+        bt(
+            'function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
+            //  -- output --
+            'function f(a, b) {\n' +
+            '    if (a) b()\n' +
+            '}\n' +
+            '\n' +
+            'function g(a, b) {\n' +
+            '    if (!a) b()\n' +
+            '}');
+        bt(
+            'function f(a,b) {if(a) b()}\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            'function g(a,b) {if(!a) b()}',
+            //  -- output --
+            'function f(a, b) {\n' +
+            '    if (a) b()\n' +
+            '}\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            'function g(a, b) {\n' +
+            '    if (!a) b()\n' +
+            '}');
+        bt(
+            '(if(a) b())(if(a) b())',
+            //  -- output --
+            '(\n' +
+            '    if (a) b())(\n' +
+            '    if (a) b())');
+        bt(
+            '(if(a) b())\n' +
+            '\n' +
+            '\n' +
+            '(if(a) b())',
+            //  -- output --
+            '(\n' +
+            '    if (a) b())\n' +
+            '\n' +
+            '\n' +
+            '(\n' +
+            '    if (a) b())');
+        bt(
+            'if\n' +
+            '(a)\n' +
+            'b();',
+            //  -- output --
+            'if (a)\n' +
+            '    b();');
+        bt(
+            'var a =\n' +
+            'foo',
+            //  -- output --
+            'var a =\n' +
+            '    foo');
+        bt(
+            'var a = {\n' +
+            '"a":1,\n' +
+            '"b":2}',
+            //  -- output --
+            'var a = {\n' +
+            '    "a": 1,\n' +
+            '    "b": 2\n' +
+            '}');
+        bt(
+            'var a = {\n' +
+            '\'a\':1,\n' +
+            '\'b\':2}',
+            //  -- output --
+            'var a = {\n' +
+            '    \'a\': 1,\n' +
+            '    \'b\': 2\n' +
+            '}');
+        bt('var a = /*i*/ "b";');
+        bt(
+            'var a = /*i*/\n' +
+            '"b";',
+            //  -- output --
+            'var a = /*i*/\n' +
+            '    "b";');
+        bt(
+            '{\n' +
+            '\n' +
+            '\n' +
+            '"x"\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '\n' +
+            '\n' +
+            '    "x"\n' +
+            '}');
+        bt(
+            'if(a &&\n' +
+            'b\n' +
+            '||\n' +
+            'c\n' +
+            '||d\n' +
+            '&&\n' +
+            'e) e = f',
+            //  -- output --
+            'if (a &&\n' +
+            '    b ||\n' +
+            '    c ||\n' +
+            '    d &&\n' +
+            '    e) e = f');
+        bt(
+            'if(a &&\n' +
+            '(b\n' +
+            '||\n' +
+            'c\n' +
+            '||d)\n' +
+            '&&\n' +
+            'e) e = f',
+            //  -- output --
+            'if (a &&\n' +
+            '    (b ||\n' +
+            '        c ||\n' +
+            '        d) &&\n' +
+            '    e) e = f');
+        test_fragment(
+            '\n' +
+            '\n' +
+            '"x"',
+            //  -- output --
+            '"x"');
+        test_fragment(
+            '{\n' +
+            '\n' +
+            '"x"\n' +
+            'h=5;\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '\n' +
+            '    "x"\n' +
+            '    h = 5;\n' +
+            '}');
+        bt(
+            'var a = "foo" +\n' +
+            '    "bar";');
+        bt(
+            'var a = 42; // foo\n' +
+            '\n' +
+            'var b;');
+        bt(
+            'var a = 42; // foo\n' +
+            '\n' +
+            '\n' +
+            'var b;');
+        bt(
+            'a = 1;\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            'b = 2;');
+
+
+        //============================================================
+        // break chained methods - (break_chained_methods = "false", preserve_newlines = "false")
+        reset_options();
+        set_name('break chained methods - (break_chained_methods = "false", preserve_newlines = "false")');
+        opts.break_chained_methods = false;
+        opts.preserve_newlines = false;
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat)',
+            //  -- output --
+            'foo.bar().baz().cucumber(fat)');
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat); foo.bar().baz().cucumber(fat)',
+            //  -- output --
+            'foo.bar().baz().cucumber(fat);\n' +
+            'foo.bar().baz().cucumber(fat)');
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat)\n' +
+            ' foo.bar().baz().cucumber(fat)',
+            //  -- output --
+            'foo.bar().baz().cucumber(fat)\n' +
+            'foo.bar().baz().cucumber(fat)');
+        bt(
+            'this\n' +
+            '.something = foo.bar()\n' +
+            '.baz().cucumber(fat)',
+            //  -- output --
+            'this.something = foo.bar().baz().cucumber(fat)');
+        bt('this.something.xxx = foo.moo.bar()');
+        bt(
+            'this\n' +
+            '.something\n' +
+            '.xxx = foo.moo\n' +
+            '.bar()',
+            //  -- output --
+            'this.something.xxx = foo.moo.bar()');
+
+        // break chained methods - (break_chained_methods = "false", preserve_newlines = "true")
+        reset_options();
+        set_name('break chained methods - (break_chained_methods = "false", preserve_newlines = "true")');
+        opts.break_chained_methods = false;
+        opts.preserve_newlines = true;
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    .bar()\n' +
+            '    .baz().cucumber(fat)');
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat); foo.bar().baz().cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    .bar()\n' +
+            '    .baz().cucumber(fat);\n' +
+            'foo.bar().baz().cucumber(fat)');
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat)\n' +
+            ' foo.bar().baz().cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    .bar()\n' +
+            '    .baz().cucumber(fat)\n' +
+            'foo.bar().baz().cucumber(fat)');
+        bt(
+            'this\n' +
+            '.something = foo.bar()\n' +
+            '.baz().cucumber(fat)',
+            //  -- output --
+            'this\n' +
+            '    .something = foo.bar()\n' +
+            '    .baz().cucumber(fat)');
+        bt('this.something.xxx = foo.moo.bar()');
+        bt(
+            'this\n' +
+            '.something\n' +
+            '.xxx = foo.moo\n' +
+            '.bar()',
+            //  -- output --
+            'this\n' +
+            '    .something\n' +
+            '    .xxx = foo.moo\n' +
+            '    .bar()');
+
+        // break chained methods - (break_chained_methods = "true", preserve_newlines = "false")
+        reset_options();
+        set_name('break chained methods - (break_chained_methods = "true", preserve_newlines = "false")');
+        opts.break_chained_methods = true;
+        opts.preserve_newlines = false;
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat)',
+            //  -- output --
+            'foo.bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat)');
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat); foo.bar().baz().cucumber(fat)',
+            //  -- output --
+            'foo.bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat);\n' +
+            'foo.bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat)');
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat)\n' +
+            ' foo.bar().baz().cucumber(fat)',
+            //  -- output --
+            'foo.bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat)\n' +
+            'foo.bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat)');
+        bt(
+            'this\n' +
+            '.something = foo.bar()\n' +
+            '.baz().cucumber(fat)',
+            //  -- output --
+            'this.something = foo.bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat)');
+        bt('this.something.xxx = foo.moo.bar()');
+        bt(
+            'this\n' +
+            '.something\n' +
+            '.xxx = foo.moo\n' +
+            '.bar()',
+            //  -- output --
+            'this.something.xxx = foo.moo.bar()');
+
+        // break chained methods - (break_chained_methods = "true", preserve_newlines = "true")
+        reset_options();
+        set_name('break chained methods - (break_chained_methods = "true", preserve_newlines = "true")');
+        opts.break_chained_methods = true;
+        opts.preserve_newlines = true;
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    .bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat)');
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat); foo.bar().baz().cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    .bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat);\n' +
+            'foo.bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat)');
+        bt(
+            'foo\n' +
+            '.bar()\n' +
+            '.baz().cucumber(fat)\n' +
+            ' foo.bar().baz().cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    .bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat)\n' +
+            'foo.bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat)');
+        bt(
+            'this\n' +
+            '.something = foo.bar()\n' +
+            '.baz().cucumber(fat)',
+            //  -- output --
+            'this\n' +
+            '    .something = foo.bar()\n' +
+            '    .baz()\n' +
+            '    .cucumber(fat)');
+        bt('this.something.xxx = foo.moo.bar()');
+        bt(
+            'this\n' +
+            '.something\n' +
+            '.xxx = foo.moo\n' +
+            '.bar()',
+            //  -- output --
+            'this\n' +
+            '    .something\n' +
+            '    .xxx = foo.moo\n' +
+            '    .bar()');
+
+
+        //============================================================
+        // line wrapping 0
+        reset_options();
+        set_name('line wrapping 0');
+        opts.preserve_newlines = false;
+        opts.wrap_line_length = 0;
+        test_fragment(
+            '' + wrap_input_1 + '',
+            //  -- output --
+            'foo.bar().baz().cucumber((f && "sass") || (leans && mean));\n' +
+            'Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
+            'return between_return_and_expression_should_never_wrap.but_this_can\n' +
+            'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
+            'if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
+            'object_literal = {\n' +
+            '    propertx: first_token + 12345678.99999E-6,\n' +
+            '    property: first_token_should_never_wrap + but_this_can,\n' +
+            '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
+            '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+            '}');
+        test_fragment(
+            '' + wrap_input_2 + '',
+            //  -- output --
+            '{\n' +
+            '    foo.bar().baz().cucumber((f && "sass") || (leans && mean));\n' +
+            '    Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
+            '    return between_return_and_expression_should_never_wrap.but_this_can\n' +
+            '    throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
+            '    if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
+            '    object_literal = {\n' +
+            '        propertx: first_token + 12345678.99999E-6,\n' +
+            '        property: first_token_should_never_wrap + but_this_can,\n' +
+            '        propertz: first_token_should_never_wrap + !but_this_can,\n' +
+            '        proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+            '    }\n' +
+            '}');
+
+
+        //============================================================
+        // line wrapping 70
+        reset_options();
+        set_name('line wrapping 70');
+        opts.preserve_newlines = false;
+        opts.wrap_line_length = 70;
+        test_fragment(
+            '' + wrap_input_1 + '',
+            //  -- output --
+            'foo.bar().baz().cucumber((f && "sass") || (leans && mean));\n' +
+            'Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
+            'return between_return_and_expression_should_never_wrap.but_this_can\n' +
+            'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
+            'if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
+            'object_literal = {\n' +
+            '    propertx: first_token + 12345678.99999E-6,\n' +
+            '    property: first_token_should_never_wrap + but_this_can,\n' +
+            '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
+            '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+            '}');
+        test_fragment(
+            '' + wrap_input_2 + '',
+            //  -- output --
+            '{\n' +
+            '    foo.bar().baz().cucumber((f && "sass") || (leans && mean));\n' +
+            '    Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
+            '    return between_return_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
+            '    if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
+            '    object_literal = {\n' +
+            '        propertx: first_token + 12345678.99999E-6,\n' +
+            '        property: first_token_should_never_wrap + but_this_can,\n' +
+            '        propertz: first_token_should_never_wrap + !but_this_can,\n' +
+            '        proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+            '    }\n' +
+            '}');
+
+
+        //============================================================
+        // line wrapping 40
+        reset_options();
+        set_name('line wrapping 40');
+        opts.preserve_newlines = false;
+        opts.wrap_line_length = 40;
+        test_fragment(
+            '' + wrap_input_1 + '',
+            //  -- output --
+            'foo.bar().baz().cucumber((f &&\n' +
+            '    "sass") || (leans && mean));\n' +
+            'Test_very_long_variable_name_this_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'return between_return_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'throw between_throw_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'if (wraps_can_occur &&\n' +
+            '    inside_an_if_block) that_is_.okay();\n' +
+            'object_literal = {\n' +
+            '    propertx: first_token +\n' +
+            '        12345678.99999E-6,\n' +
+            '    property: first_token_should_never_wrap +\n' +
+            '        but_this_can,\n' +
+            '    propertz: first_token_should_never_wrap +\n' +
+            '        !but_this_can,\n' +
+            '    proper: "first_token_should_never_wrap" +\n' +
+            '        "but_this_can"\n' +
+            '}');
+        test_fragment(
+            '' + wrap_input_2 + '',
+            //  -- output --
+            '{\n' +
+            '    foo.bar().baz().cucumber((f &&\n' +
+            '        "sass") || (leans &&\n' +
+            '        mean));\n' +
+            '    Test_very_long_variable_name_this_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    return between_return_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    throw between_throw_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    if (wraps_can_occur &&\n' +
+            '        inside_an_if_block) that_is_\n' +
+            '        .okay();\n' +
+            '    object_literal = {\n' +
+            '        propertx: first_token +\n' +
+            '            12345678.99999E-6,\n' +
+            '        property: first_token_should_never_wrap +\n' +
+            '            but_this_can,\n' +
+            '        propertz: first_token_should_never_wrap +\n' +
+            '            !but_this_can,\n' +
+            '        proper: "first_token_should_never_wrap" +\n' +
+            '            "but_this_can"\n' +
+            '    }\n' +
+            '}');
+
+
+        //============================================================
+        // line wrapping 41
+        reset_options();
+        set_name('line wrapping 41');
+        opts.preserve_newlines = false;
+        opts.wrap_line_length = 41;
+        test_fragment(
+            '' + wrap_input_1 + '',
+            //  -- output --
+            'foo.bar().baz().cucumber((f && "sass") ||\n' +
+            '    (leans && mean));\n' +
+            'Test_very_long_variable_name_this_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'return between_return_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'throw between_throw_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'if (wraps_can_occur &&\n' +
+            '    inside_an_if_block) that_is_.okay();\n' +
+            'object_literal = {\n' +
+            '    propertx: first_token +\n' +
+            '        12345678.99999E-6,\n' +
+            '    property: first_token_should_never_wrap +\n' +
+            '        but_this_can,\n' +
+            '    propertz: first_token_should_never_wrap +\n' +
+            '        !but_this_can,\n' +
+            '    proper: "first_token_should_never_wrap" +\n' +
+            '        "but_this_can"\n' +
+            '}');
+        test_fragment(
+            '' + wrap_input_2 + '',
+            //  -- output --
+            '{\n' +
+            '    foo.bar().baz().cucumber((f &&\n' +
+            '        "sass") || (leans &&\n' +
+            '        mean));\n' +
+            '    Test_very_long_variable_name_this_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    return between_return_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    throw between_throw_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    if (wraps_can_occur &&\n' +
+            '        inside_an_if_block) that_is_\n' +
+            '        .okay();\n' +
+            '    object_literal = {\n' +
+            '        propertx: first_token +\n' +
+            '            12345678.99999E-6,\n' +
+            '        property: first_token_should_never_wrap +\n' +
+            '            but_this_can,\n' +
+            '        propertz: first_token_should_never_wrap +\n' +
+            '            !but_this_can,\n' +
+            '        proper: "first_token_should_never_wrap" +\n' +
+            '            "but_this_can"\n' +
+            '    }\n' +
+            '}');
+
+
+        //============================================================
+        // line wrapping 45
+        reset_options();
+        set_name('line wrapping 45');
+        opts.preserve_newlines = false;
+        opts.wrap_line_length = 45;
+        test_fragment(
+            '' + wrap_input_1 + '',
+            //  -- output --
+            'foo.bar().baz().cucumber((f && "sass") || (\n' +
+            '    leans && mean));\n' +
+            'Test_very_long_variable_name_this_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'return between_return_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'throw between_throw_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'if (wraps_can_occur && inside_an_if_block)\n' +
+            '    that_is_.okay();\n' +
+            'object_literal = {\n' +
+            '    propertx: first_token +\n' +
+            '        12345678.99999E-6,\n' +
+            '    property: first_token_should_never_wrap +\n' +
+            '        but_this_can,\n' +
+            '    propertz: first_token_should_never_wrap +\n' +
+            '        !but_this_can,\n' +
+            '    proper: "first_token_should_never_wrap" +\n' +
+            '        "but_this_can"\n' +
+            '}');
+        test_fragment(
+            '' + wrap_input_2 + '',
+            //  -- output --
+            '{\n' +
+            '    foo.bar().baz().cucumber((f && "sass") ||\n' +
+            '        (leans && mean));\n' +
+            '    Test_very_long_variable_name_this_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    return between_return_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    throw between_throw_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    if (wraps_can_occur &&\n' +
+            '        inside_an_if_block) that_is_.okay();\n' +
+            '    object_literal = {\n' +
+            '        propertx: first_token +\n' +
+            '            12345678.99999E-6,\n' +
+            '        property: first_token_should_never_wrap +\n' +
+            '            but_this_can,\n' +
+            '        propertz: first_token_should_never_wrap +\n' +
+            '            !but_this_can,\n' +
+            '        proper: "first_token_should_never_wrap" +\n' +
+            '            "but_this_can"\n' +
+            '    }\n' +
+            '}');
+
+
+        //============================================================
+        // line wrapping 0
+        reset_options();
+        set_name('line wrapping 0');
+        opts.preserve_newlines = true;
+        opts.wrap_line_length = 0;
+        test_fragment(
+            '' + wrap_input_1 + '',
+            //  -- output --
+            'foo.bar().baz().cucumber((f && "sass") || (leans && mean));\n' +
+            'Test_very_long_variable_name_this_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'return between_return_and_expression_should_never_wrap.but_this_can\n' +
+            'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
+            'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
+            '    .okay();\n' +
+            'object_literal = {\n' +
+            '    propertx: first_token + 12345678.99999E-6,\n' +
+            '    property: first_token_should_never_wrap + but_this_can,\n' +
+            '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
+            '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+            '}');
+        test_fragment(
+            '' + wrap_input_2 + '',
+            //  -- output --
+            '{\n' +
+            '    foo.bar().baz().cucumber((f && "sass") || (leans && mean));\n' +
+            '    Test_very_long_variable_name_this_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    return between_return_and_expression_should_never_wrap.but_this_can\n' +
+            '    throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
+            '    if (wraps_can_occur && inside_an_if_block) that_is_\n' +
+            '        .okay();\n' +
+            '    object_literal = {\n' +
+            '        propertx: first_token + 12345678.99999E-6,\n' +
+            '        property: first_token_should_never_wrap + but_this_can,\n' +
+            '        propertz: first_token_should_never_wrap + !but_this_can,\n' +
+            '        proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+            '    }\n' +
+            '}');
+
+
+        //============================================================
+        // line wrapping 70
+        reset_options();
+        set_name('line wrapping 70');
+        opts.preserve_newlines = true;
+        opts.wrap_line_length = 70;
+        test_fragment(
+            '' + wrap_input_1 + '',
+            //  -- output --
+            'foo.bar().baz().cucumber((f && "sass") || (leans && mean));\n' +
+            'Test_very_long_variable_name_this_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'return between_return_and_expression_should_never_wrap.but_this_can\n' +
+            'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
+            'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
+            '    .okay();\n' +
+            'object_literal = {\n' +
+            '    propertx: first_token + 12345678.99999E-6,\n' +
+            '    property: first_token_should_never_wrap + but_this_can,\n' +
+            '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
+            '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+            '}');
+        test_fragment(
+            '' + wrap_input_2 + '',
+            //  -- output --
+            '{\n' +
+            '    foo.bar().baz().cucumber((f && "sass") || (leans && mean));\n' +
+            '    Test_very_long_variable_name_this_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    return between_return_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
+            '    if (wraps_can_occur && inside_an_if_block) that_is_\n' +
+            '        .okay();\n' +
+            '    object_literal = {\n' +
+            '        propertx: first_token + 12345678.99999E-6,\n' +
+            '        property: first_token_should_never_wrap + but_this_can,\n' +
+            '        propertz: first_token_should_never_wrap + !but_this_can,\n' +
+            '        proper: "first_token_should_never_wrap" + "but_this_can"\n' +
+            '    }\n' +
+            '}');
+
+
+        //============================================================
+        // line wrapping 40
+        reset_options();
+        set_name('line wrapping 40');
+        opts.preserve_newlines = true;
+        opts.wrap_line_length = 40;
+        test_fragment(
+            '' + wrap_input_1 + '',
+            //  -- output --
+            'foo.bar().baz().cucumber((f &&\n' +
+            '    "sass") || (leans && mean));\n' +
+            'Test_very_long_variable_name_this_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'return between_return_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'throw between_throw_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'if (wraps_can_occur &&\n' +
+            '    inside_an_if_block) that_is_\n' +
+            '    .okay();\n' +
+            'object_literal = {\n' +
+            '    propertx: first_token +\n' +
+            '        12345678.99999E-6,\n' +
+            '    property: first_token_should_never_wrap +\n' +
+            '        but_this_can,\n' +
+            '    propertz: first_token_should_never_wrap +\n' +
+            '        !but_this_can,\n' +
+            '    proper: "first_token_should_never_wrap" +\n' +
+            '        "but_this_can"\n' +
+            '}');
+        test_fragment(
+            '' + wrap_input_2 + '',
+            //  -- output --
+            '{\n' +
+            '    foo.bar().baz().cucumber((f &&\n' +
+            '        "sass") || (leans &&\n' +
+            '        mean));\n' +
+            '    Test_very_long_variable_name_this_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    return between_return_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    throw between_throw_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    if (wraps_can_occur &&\n' +
+            '        inside_an_if_block) that_is_\n' +
+            '        .okay();\n' +
+            '    object_literal = {\n' +
+            '        propertx: first_token +\n' +
+            '            12345678.99999E-6,\n' +
+            '        property: first_token_should_never_wrap +\n' +
+            '            but_this_can,\n' +
+            '        propertz: first_token_should_never_wrap +\n' +
+            '            !but_this_can,\n' +
+            '        proper: "first_token_should_never_wrap" +\n' +
+            '            "but_this_can"\n' +
+            '    }\n' +
+            '}');
+
+
+        //============================================================
+        // line wrapping 41
+        reset_options();
+        set_name('line wrapping 41');
+        opts.preserve_newlines = true;
+        opts.wrap_line_length = 41;
+        test_fragment(
+            '' + wrap_input_1 + '',
+            //  -- output --
+            'foo.bar().baz().cucumber((f && "sass") ||\n' +
+            '    (leans && mean));\n' +
+            'Test_very_long_variable_name_this_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'return between_return_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'throw between_throw_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'if (wraps_can_occur &&\n' +
+            '    inside_an_if_block) that_is_\n' +
+            '    .okay();\n' +
+            'object_literal = {\n' +
+            '    propertx: first_token +\n' +
+            '        12345678.99999E-6,\n' +
+            '    property: first_token_should_never_wrap +\n' +
+            '        but_this_can,\n' +
+            '    propertz: first_token_should_never_wrap +\n' +
+            '        !but_this_can,\n' +
+            '    proper: "first_token_should_never_wrap" +\n' +
+            '        "but_this_can"\n' +
+            '}');
+        test_fragment(
+            '' + wrap_input_2 + '',
+            //  -- output --
+            '{\n' +
+            '    foo.bar().baz().cucumber((f &&\n' +
+            '        "sass") || (leans &&\n' +
+            '        mean));\n' +
+            '    Test_very_long_variable_name_this_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    return between_return_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    throw between_throw_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    if (wraps_can_occur &&\n' +
+            '        inside_an_if_block) that_is_\n' +
+            '        .okay();\n' +
+            '    object_literal = {\n' +
+            '        propertx: first_token +\n' +
+            '            12345678.99999E-6,\n' +
+            '        property: first_token_should_never_wrap +\n' +
+            '            but_this_can,\n' +
+            '        propertz: first_token_should_never_wrap +\n' +
+            '            !but_this_can,\n' +
+            '        proper: "first_token_should_never_wrap" +\n' +
+            '            "but_this_can"\n' +
+            '    }\n' +
+            '}');
+
+
+        //============================================================
+        // line wrapping 45
+        reset_options();
+        set_name('line wrapping 45');
+        opts.preserve_newlines = true;
+        opts.wrap_line_length = 45;
+        test_fragment(
+            '' + wrap_input_1 + '',
+            //  -- output --
+            'foo.bar().baz().cucumber((f && "sass") || (\n' +
+            '    leans && mean));\n' +
+            'Test_very_long_variable_name_this_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'return between_return_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'throw between_throw_and_expression_should_never_wrap\n' +
+            '    .but_this_can\n' +
+            'if (wraps_can_occur && inside_an_if_block)\n' +
+            '    that_is_\n' +
+            '    .okay();\n' +
+            'object_literal = {\n' +
+            '    propertx: first_token +\n' +
+            '        12345678.99999E-6,\n' +
+            '    property: first_token_should_never_wrap +\n' +
+            '        but_this_can,\n' +
+            '    propertz: first_token_should_never_wrap +\n' +
+            '        !but_this_can,\n' +
+            '    proper: "first_token_should_never_wrap" +\n' +
+            '        "but_this_can"\n' +
+            '}');
+        test_fragment(
+            '' + wrap_input_2 + '',
+            //  -- output --
+            '{\n' +
+            '    foo.bar().baz().cucumber((f && "sass") ||\n' +
+            '        (leans && mean));\n' +
+            '    Test_very_long_variable_name_this_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    return between_return_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    throw between_throw_and_expression_should_never_wrap\n' +
+            '        .but_this_can\n' +
+            '    if (wraps_can_occur &&\n' +
+            '        inside_an_if_block) that_is_\n' +
+            '        .okay();\n' +
+            '    object_literal = {\n' +
+            '        propertx: first_token +\n' +
+            '            12345678.99999E-6,\n' +
+            '        property: first_token_should_never_wrap +\n' +
+            '            but_this_can,\n' +
+            '        propertz: first_token_should_never_wrap +\n' +
+            '            !but_this_can,\n' +
+            '        proper: "first_token_should_never_wrap" +\n' +
+            '            "but_this_can"\n' +
+            '    }\n' +
+            '}');
+
+
+        //============================================================
+        // general preserve_newlines tests preserve limit
+        reset_options();
+        set_name('general preserve_newlines tests preserve limit');
+        opts.preserve_newlines = true;
+        opts.max_preserve_newlines = 8;
+        bt(
+            'a = 1;\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            'b = 2;',
+            //  -- output --
+            'a = 1;\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            'b = 2;');
+
+
+        //============================================================
+        // more random test
+        reset_options();
+        set_name('more random test');
+        bt('return function();');
+        bt('var a = function();');
+        bt('var a = 5 + function();');
+
+        // actionscript import
+        bt('import foo.*;');
+
+        // actionscript
+        bt('function f(a: a, b: b)');
+        bt(
+            'function a(a) {} function b(b) {} function c(c) {}',
+            //  -- output --
+            'function a(a) {}\n' +
+            '\n' +
+            'function b(b) {}\n' +
+            '\n' +
+            'function c(c) {}');
+        bt('foo(a, function() {})');
+        bt('foo(a, /regex/)');
+        bt(
+            '/* foo */\n' +
+            '"x"');
+        test_fragment(
+            'roo = {\n' +
+            '    /*\n' +
+            '    ****\n' +
+            '      FOO\n' +
+            '    ****\n' +
+            '    */\n' +
+            '    BAR: 0\n' +
+            '};');
+        test_fragment(
+            'if (zz) {\n' +
+            '    // ....\n' +
+            '}\n' +
+            '(function');
+        bt(
+            'a = //comment\n' +
+            '    /regex/;');
+        bt('var a = new function();');
+        bt('new function');
+        bt(
+            'if (a)\n' +
+            '{\n' +
+            'b;\n' +
+            '}\n' +
+            'else\n' +
+            '{\n' +
+            'c;\n' +
+            '}',
+            //  -- output --
+            'if (a) {\n' +
+            '    b;\n' +
+            '} else {\n' +
+            '    c;\n' +
+            '}');
+
+
+        //============================================================
         // operator_position option - ensure no neswlines if preserve_newlines is false - (preserve_newlines = "false")
         reset_options();
         set_name('operator_position option - ensure no neswlines if preserve_newlines is false - (preserve_newlines = "false")');
@@ -10269,6 +13441,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         // Regression test #1228
         bt('const module = await import("...")');
 
+        // Regression test #1658
+        bt('.');
+
         // ensure that this doesn't break anyone with the async library
         bt('async.map(function(t) {})');
 
@@ -10330,6 +13505,15 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        return a;\n' +
             '    },\n' +
             '    myOtherVar: async function() {\n' +
+            '        yield b;\n' +
+            '    }\n' +
+            '}');
+        bt(
+            'a = {\n' +
+            '    myVar: async () => {\n' +
+            '        return a;\n' +
+            '    },\n' +
+            '    myOtherVar: async async () => {\n' +
             '        yield b;\n' +
             '    }\n' +
             '}');
@@ -11202,19 +14386,553 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
 
         //============================================================
-        // Template Formatting
+        // minimal template handling - ()
         reset_options();
-        set_name('Template Formatting');
-        bt('<?=$view["name"]; ?>');
-        bt('a = <?= external() ?>;');
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = <?php$view["name"]; ?>;', 'var a = <?php$view["name"]; ?>;');
         bt(
-            '<?php\n' +
+            'a = abc<?php\n' +
             'for($i = 1; $i <= 100; $i++;) {\n' +
             '    #count to 100!\n' +
             '    echo($i . "</br>");\n' +
             '}\n' +
-            '?>');
-        bt('a = <%= external() %>;');
+            '?>;');
+        test_fragment(
+            '<?php ?>\n' +
+            'test.met<?php someValue ?>hod();');
+        bt(
+            '<?php "A" ?>abc<?php "D" ?>;\n' +
+            '<?php "B" ?>.test();\n' +
+            '" <?php   "C" \'D\'  ?>  "');
+        bt(
+            '<?php\n' +
+            'echo "A";\n' +
+            '?>;\n' +
+            'test.method();');
+        bt('"<?php";if(0){}"?>";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = <?=$view["name"]; ?>;', 'var a = <?=$view["name"]; ?>;');
+        bt(
+            'a = abc<?=\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '?>;');
+        test_fragment(
+            '<?= ?>\n' +
+            'test.met<?= someValue ?>hod();');
+        bt(
+            '<?= "A" ?>abc<?= "D" ?>;\n' +
+            '<?= "B" ?>.test();\n' +
+            '" <?=   "C" \'D\'  ?>  "');
+        bt(
+            '<?=\n' +
+            'echo "A";\n' +
+            '?>;\n' +
+            'test.method();');
+        bt('"<?=";if(0){}"?>";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = <%$view["name"]; %>;', 'var a = <%$view["name"]; %>;');
+        bt(
+            'a = abc<%\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '%>;');
+        test_fragment(
+            '<% %>\n' +
+            'test.met<% someValue %>hod();');
+        bt(
+            '<% "A" %>abc<% "D" %>;\n' +
+            '<% "B" %>.test();\n' +
+            '" <%   "C" \'D\'  %>  "');
+        bt(
+            '<%\n' +
+            'echo "A";\n' +
+            '%>;\n' +
+            'test.method();');
+        bt('"<%";if(0){}"%>";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = <%=$view["name"]; %>;', 'var a = <%=$view["name"]; %>;');
+        bt(
+            'a = abc<%=\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '%>;');
+        test_fragment(
+            '<%= %>\n' +
+            'test.met<%= someValue %>hod();');
+        bt(
+            '<%= "A" %>abc<%= "D" %>;\n' +
+            '<%= "B" %>.test();\n' +
+            '" <%=   "C" \'D\'  %>  "');
+        bt(
+            '<%=\n' +
+            'echo "A";\n' +
+            '%>;\n' +
+            'test.method();');
+        bt('"<%=";if(0){}"%>";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = {{$view["name"]; }};', 'var a = {{$view["name"]; }};');
+        bt(
+            'a = abc{{\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '}};');
+        test_fragment(
+            '{{ }}\n' +
+            'test.met{{ someValue }}hod();');
+        bt(
+            '{{ "A" }}abc{{ "D" }};\n' +
+            '{{ "B" }}.test();\n' +
+            '" {{   "C" \'D\'  }}  "');
+        bt(
+            '{{\n' +
+            'echo "A";\n' +
+            '}};\n' +
+            'test.method();');
+        bt('"{{";if(0){}"}}";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = {#$view["name"]; #};', 'var a = {#$view["name"]; #};');
+        bt(
+            'a = abc{#\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '#};');
+        test_fragment(
+            '{# #}\n' +
+            'test.met{# someValue #}hod();');
+        bt(
+            '{# "A" #}abc{# "D" #};\n' +
+            '{# "B" #}.test();\n' +
+            '" {#   "C" \'D\'  #}  "');
+        bt(
+            '{#\n' +
+            'echo "A";\n' +
+            '#};\n' +
+            'test.method();');
+        bt('"{#";if(0){}"#}";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = {%$view["name"]; %};', 'var a = {%$view["name"]; %};');
+        bt(
+            'a = abc{%\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '%};');
+        test_fragment(
+            '{% %}\n' +
+            'test.met{% someValue %}hod();');
+        bt(
+            '{% "A" %}abc{% "D" %};\n' +
+            '{% "B" %}.test();\n' +
+            '" {%   "C" \'D\'  %}  "');
+        bt(
+            '{%\n' +
+            'echo "A";\n' +
+            '%};\n' +
+            'test.method();');
+        bt('"{%";if(0){}"%}";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = {{$view["name"]; }};', 'var a = {{$view["name"]; }};');
+        bt(
+            'a = abc{{\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '}};');
+        test_fragment(
+            '{{ }}\n' +
+            'test.met{{ someValue }}hod();');
+        bt(
+            '{{ "A" }}abc{{ "D" }};\n' +
+            '{{ "B" }}.test();\n' +
+            '" {{   "C" \'D\'  }}  "');
+        bt(
+            '{{\n' +
+            'echo "A";\n' +
+            '}};\n' +
+            'test.method();');
+        bt('"{{";if(0){}"}}";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = {{{$view["name"]; }}};', 'var a = {{{$view["name"]; }}};');
+        bt(
+            'a = abc{{{\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '}}};');
+        test_fragment(
+            '{{{ }}}\n' +
+            'test.met{{{ someValue }}}hod();');
+        bt(
+            '{{{ "A" }}}abc{{{ "D" }}};\n' +
+            '{{{ "B" }}}.test();\n' +
+            '" {{{   "C" \'D\'  }}}  "');
+        bt(
+            '{{{\n' +
+            'echo "A";\n' +
+            '}}};\n' +
+            'test.method();');
+        bt('"{{{";if(0){}"}}}";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = {{^$view["name"]; }};', 'var a = {{^$view["name"]; }};');
+        bt(
+            'a = abc{{^\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '}};');
+        test_fragment(
+            '{{^ }}\n' +
+            'test.met{{^ someValue }}hod();');
+        bt(
+            '{{^ "A" }}abc{{^ "D" }};\n' +
+            '{{^ "B" }}.test();\n' +
+            '" {{^   "C" \'D\'  }}  "');
+        bt(
+            '{{^\n' +
+            'echo "A";\n' +
+            '}};\n' +
+            'test.method();');
+        bt('"{{^";if(0){}"}}";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = {{#$view["name"]; }};', 'var a = {{#$view["name"]; }};');
+        bt(
+            'a = abc{{#\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '}};');
+        test_fragment(
+            '{{# }}\n' +
+            'test.met{{# someValue }}hod();');
+        bt(
+            '{{# "A" }}abc{{# "D" }};\n' +
+            '{{# "B" }}.test();\n' +
+            '" {{#   "C" \'D\'  }}  "');
+        bt(
+            '{{#\n' +
+            'echo "A";\n' +
+            '}};\n' +
+            'test.method();');
+        bt('"{{#";if(0){}"}}";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = {{!$view["name"]; }};', 'var a = {{!$view["name"]; }};');
+        bt(
+            'a = abc{{!\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '}};');
+        test_fragment(
+            '{{! }}\n' +
+            'test.met{{! someValue }}hod();');
+        bt(
+            '{{! "A" }}abc{{! "D" }};\n' +
+            '{{! "B" }}.test();\n' +
+            '" {{!   "C" \'D\'  }}  "');
+        bt(
+            '{{!\n' +
+            'echo "A";\n' +
+            '}};\n' +
+            'test.method();');
+        bt('"{{!";if(0){}"}}";');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        opts.templating = ['django', 'erb', 'handlebars', 'php'];
+        bt('var  a = {{!--$view["name"]; --}};', 'var a = {{!--$view["name"]; --}};');
+        bt(
+            'a = abc{{!--\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '--}};');
+        test_fragment(
+            '{{!-- --}}\n' +
+            'test.met{{!-- someValue --}}hod();');
+        bt(
+            '{{!-- "A" --}}abc{{!-- "D" --}};\n' +
+            '{{!-- "B" --}}.test();\n' +
+            '" {{!--   "C" \'D\'  --}}  "');
+        bt(
+            '{{!--\n' +
+            'echo "A";\n' +
+            '--}};\n' +
+            'test.method();');
+        bt('"{{!--";if(0){}"--}}";');
+
+
+        //============================================================
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"<?php";if(0){}"?>";',
+            //  -- output --
+            '"<?php";\n' +
+            'if (0) {}\n' +
+            '"?>";');
+        bt(
+            '"<?php";if(0){}',
+            //  -- output --
+            '"<?php";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"<?=";if(0){}"?>";',
+            //  -- output --
+            '"<?=";\n' +
+            'if (0) {}\n' +
+            '"?>";');
+        bt(
+            '"<?=";if(0){}',
+            //  -- output --
+            '"<?=";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"<%";if(0){}"%>";',
+            //  -- output --
+            '"<%";\n' +
+            'if (0) {}\n' +
+            '"%>";');
+        bt(
+            '"<%";if(0){}',
+            //  -- output --
+            '"<%";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"<%=";if(0){}"%>";',
+            //  -- output --
+            '"<%=";\n' +
+            'if (0) {}\n' +
+            '"%>";');
+        bt(
+            '"<%=";if(0){}',
+            //  -- output --
+            '"<%=";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"{{";if(0){}"}}";',
+            //  -- output --
+            '"{{";\n' +
+            'if (0) {}\n' +
+            '"}}";');
+        bt(
+            '"{{";if(0){}',
+            //  -- output --
+            '"{{";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"{#";if(0){}"#}";',
+            //  -- output --
+            '"{#";\n' +
+            'if (0) {}\n' +
+            '"#}";');
+        bt(
+            '"{#";if(0){}',
+            //  -- output --
+            '"{#";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"{%";if(0){}"%}";',
+            //  -- output --
+            '"{%";\n' +
+            'if (0) {}\n' +
+            '"%}";');
+        bt(
+            '"{%";if(0){}',
+            //  -- output --
+            '"{%";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"{{";if(0){}"}}";',
+            //  -- output --
+            '"{{";\n' +
+            'if (0) {}\n' +
+            '"}}";');
+        bt(
+            '"{{";if(0){}',
+            //  -- output --
+            '"{{";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"{{{";if(0){}"}}}";',
+            //  -- output --
+            '"{{{";\n' +
+            'if (0) {}\n' +
+            '"}}}";');
+        bt(
+            '"{{{";if(0){}',
+            //  -- output --
+            '"{{{";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"{{^";if(0){}"}}";',
+            //  -- output --
+            '"{{^";\n' +
+            'if (0) {}\n' +
+            '"}}";');
+        bt(
+            '"{{^";if(0){}',
+            //  -- output --
+            '"{{^";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"{{#";if(0){}"}}";',
+            //  -- output --
+            '"{{#";\n' +
+            'if (0) {}\n' +
+            '"}}";');
+        bt(
+            '"{{#";if(0){}',
+            //  -- output --
+            '"{{#";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"{{!";if(0){}"}}";',
+            //  -- output --
+            '"{{!";\n' +
+            'if (0) {}\n' +
+            '"}}";');
+        bt(
+            '"{{!";if(0){}',
+            //  -- output --
+            '"{{!";\n' +
+            'if (0) {}');
+
+        // Templating disabled - ensure formatting - ()
+        reset_options();
+        set_name('Templating disabled - ensure formatting - ()');
+        opts.templating = ['auto'];
+        bt(
+            '"{{!--";if(0){}"--}}";',
+            //  -- output --
+            '"{{!--";\n' +
+            'if (0) {}\n' +
+            '"--}}";');
+        bt(
+            '"{{!--";if(0){}',
+            //  -- output --
+            '"{{!--";\n' +
+            'if (0) {}');
 
 
         //============================================================
@@ -11293,6 +15011,32 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    break;\n' +
             '}');
 
+        // Issue #1357
+        bt(
+            'switch(x) {case 0: case 1:{a(); break;} default: break}',
+            //  -- output --
+            'switch (x) {\n' +
+            'case 0:\n' +
+            'case 1: {\n' +
+            '    a();\n' +
+            '    break;\n' +
+            '}\n' +
+            'default:\n' +
+            '    break\n' +
+            '}');
+
+        // Issue #1357
+        bt(
+            'switch(x){case -1:break;case !y:{break;}}',
+            //  -- output --
+            'switch (x) {\n' +
+            'case -1:\n' +
+            '    break;\n' +
+            'case !y: {\n' +
+            '    break;\n' +
+            '}\n' +
+            '}');
+
         // typical greasemonkey start
         test_fragment(
             '// comment 2\n' +
@@ -11351,6 +15095,59 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt(
             'async x() {\n' +
             '    yield 1;\n' +
+            '}');
+        bt(
+            'var a={data(){},\n' +
+            'data2(){}}',
+            //  -- output --
+            'var a = {\n' +
+            '    data() {},\n' +
+            '    data2() {}\n' +
+            '}');
+        bt(
+            'new Vue({\n' +
+            'data(){},\n' +
+            'data2(){}, a:1})',
+            //  -- output --
+            'new Vue({\n' +
+            '    data() {},\n' +
+            '    data2() {},\n' +
+            '    a: 1\n' +
+            '})');
+        bt(
+            'export default {data(){},\n' +
+            'data2(){},\n' +
+            'a:1}',
+            //  -- output --
+            'export default {\n' +
+            '    data() {},\n' +
+            '    data2() {},\n' +
+            '    a: 1\n' +
+            '}');
+        bt(
+            'var a={*data(){},*data2(){}}',
+            //  -- output --
+            'var a = {\n' +
+            '    * data() {},\n' +
+            '    * data2() {}\n' +
+            '}');
+        bt(
+            'new Vue({\n' +
+            '*data(){},*data2(){}, a:1})',
+            //  -- output --
+            'new Vue({\n' +
+            '    * data() {},\n' +
+            '    * data2() {},\n' +
+            '    a: 1\n' +
+            '})');
+        bt(
+            'export default {*data(){},*data2(){},\n' +
+            'a:1}',
+            //  -- output --
+            'export default {\n' +
+            '    * data() {},\n' +
+            '    * data2() {},\n' +
+            '    a: 1\n' +
             '}');
 
         // jslint and space after anon function - (jslint_happy = "true", space_after_anon_function = "false")
@@ -11428,6 +15225,32 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    break;\n' +
             '}');
 
+        // Issue #1357
+        bt(
+            'switch(x) {case 0: case 1:{a(); break;} default: break}',
+            //  -- output --
+            'switch (x) {\n' +
+            'case 0:\n' +
+            'case 1: {\n' +
+            '    a();\n' +
+            '    break;\n' +
+            '}\n' +
+            'default:\n' +
+            '    break\n' +
+            '}');
+
+        // Issue #1357
+        bt(
+            'switch(x){case -1:break;case !y:{break;}}',
+            //  -- output --
+            'switch (x) {\n' +
+            'case -1:\n' +
+            '    break;\n' +
+            'case !y: {\n' +
+            '    break;\n' +
+            '}\n' +
+            '}');
+
         // typical greasemonkey start
         test_fragment(
             '// comment 2\n' +
@@ -11486,6 +15309,59 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt(
             'async x() {\n' +
             '    yield 1;\n' +
+            '}');
+        bt(
+            'var a={data(){},\n' +
+            'data2(){}}',
+            //  -- output --
+            'var a = {\n' +
+            '    data() {},\n' +
+            '    data2() {}\n' +
+            '}');
+        bt(
+            'new Vue({\n' +
+            'data(){},\n' +
+            'data2(){}, a:1})',
+            //  -- output --
+            'new Vue({\n' +
+            '    data() {},\n' +
+            '    data2() {},\n' +
+            '    a: 1\n' +
+            '})');
+        bt(
+            'export default {data(){},\n' +
+            'data2(){},\n' +
+            'a:1}',
+            //  -- output --
+            'export default {\n' +
+            '    data() {},\n' +
+            '    data2() {},\n' +
+            '    a: 1\n' +
+            '}');
+        bt(
+            'var a={*data(){},*data2(){}}',
+            //  -- output --
+            'var a = {\n' +
+            '    * data() {},\n' +
+            '    * data2() {}\n' +
+            '}');
+        bt(
+            'new Vue({\n' +
+            '*data(){},*data2(){}, a:1})',
+            //  -- output --
+            'new Vue({\n' +
+            '    * data() {},\n' +
+            '    * data2() {},\n' +
+            '    a: 1\n' +
+            '})');
+        bt(
+            'export default {*data(){},*data2(){},\n' +
+            'a:1}',
+            //  -- output --
+            'export default {\n' +
+            '    * data() {},\n' +
+            '    * data2() {},\n' +
+            '    a: 1\n' +
             '}');
 
         // jslint and space after anon function - (jslint_happy = "false", space_after_anon_function = "true")
@@ -11563,6 +15439,32 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        break;\n' +
             '}');
 
+        // Issue #1357
+        bt(
+            'switch(x) {case 0: case 1:{a(); break;} default: break}',
+            //  -- output --
+            'switch (x) {\n' +
+            '    case 0:\n' +
+            '    case 1: {\n' +
+            '        a();\n' +
+            '        break;\n' +
+            '    }\n' +
+            '    default:\n' +
+            '        break\n' +
+            '}');
+
+        // Issue #1357
+        bt(
+            'switch(x){case -1:break;case !y:{break;}}',
+            //  -- output --
+            'switch (x) {\n' +
+            '    case -1:\n' +
+            '        break;\n' +
+            '    case !y: {\n' +
+            '        break;\n' +
+            '    }\n' +
+            '}');
+
         // typical greasemonkey start
         test_fragment(
             '// comment 2\n' +
@@ -11621,6 +15523,59 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt(
             'async x() {\n' +
             '    yield 1;\n' +
+            '}');
+        bt(
+            'var a={data(){},\n' +
+            'data2(){}}',
+            //  -- output --
+            'var a = {\n' +
+            '    data() {},\n' +
+            '    data2() {}\n' +
+            '}');
+        bt(
+            'new Vue({\n' +
+            'data(){},\n' +
+            'data2(){}, a:1})',
+            //  -- output --
+            'new Vue({\n' +
+            '    data() {},\n' +
+            '    data2() {},\n' +
+            '    a: 1\n' +
+            '})');
+        bt(
+            'export default {data(){},\n' +
+            'data2(){},\n' +
+            'a:1}',
+            //  -- output --
+            'export default {\n' +
+            '    data() {},\n' +
+            '    data2() {},\n' +
+            '    a: 1\n' +
+            '}');
+        bt(
+            'var a={*data(){},*data2(){}}',
+            //  -- output --
+            'var a = {\n' +
+            '    * data() {},\n' +
+            '    * data2() {}\n' +
+            '}');
+        bt(
+            'new Vue({\n' +
+            '*data(){},*data2(){}, a:1})',
+            //  -- output --
+            'new Vue({\n' +
+            '    * data() {},\n' +
+            '    * data2() {},\n' +
+            '    a: 1\n' +
+            '})');
+        bt(
+            'export default {*data(){},*data2(){},\n' +
+            'a:1}',
+            //  -- output --
+            'export default {\n' +
+            '    * data() {},\n' +
+            '    * data2() {},\n' +
+            '    a: 1\n' +
             '}');
 
         // jslint and space after anon function - (jslint_happy = "false", space_after_anon_function = "false")
@@ -11703,6 +15658,32 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        break;\n' +
             '}');
 
+        // Issue #1357
+        bt(
+            'switch(x) {case 0: case 1:{a(); break;} default: break}',
+            //  -- output --
+            'switch (x) {\n' +
+            '    case 0:\n' +
+            '    case 1: {\n' +
+            '        a();\n' +
+            '        break;\n' +
+            '    }\n' +
+            '    default:\n' +
+            '        break\n' +
+            '}');
+
+        // Issue #1357
+        bt(
+            'switch(x){case -1:break;case !y:{break;}}',
+            //  -- output --
+            'switch (x) {\n' +
+            '    case -1:\n' +
+            '        break;\n' +
+            '    case !y: {\n' +
+            '        break;\n' +
+            '    }\n' +
+            '}');
+
         // typical greasemonkey start
         test_fragment(
             '// comment 2\n' +
@@ -11757,6 +15738,59 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt(
             'async x() {\n' +
             '    yield 1;\n' +
+            '}');
+        bt(
+            'var a={data(){},\n' +
+            'data2(){}}',
+            //  -- output --
+            'var a = {\n' +
+            '    data() {},\n' +
+            '    data2() {}\n' +
+            '}');
+        bt(
+            'new Vue({\n' +
+            'data(){},\n' +
+            'data2(){}, a:1})',
+            //  -- output --
+            'new Vue({\n' +
+            '    data() {},\n' +
+            '    data2() {},\n' +
+            '    a: 1\n' +
+            '})');
+        bt(
+            'export default {data(){},\n' +
+            'data2(){},\n' +
+            'a:1}',
+            //  -- output --
+            'export default {\n' +
+            '    data() {},\n' +
+            '    data2() {},\n' +
+            '    a: 1\n' +
+            '}');
+        bt(
+            'var a={*data(){},*data2(){}}',
+            //  -- output --
+            'var a = {\n' +
+            '    * data() {},\n' +
+            '    * data2() {}\n' +
+            '}');
+        bt(
+            'new Vue({\n' +
+            '*data(){},*data2(){}, a:1})',
+            //  -- output --
+            'new Vue({\n' +
+            '    * data() {},\n' +
+            '    * data2() {},\n' +
+            '    a: 1\n' +
+            '})');
+        bt(
+            'export default {*data(){},*data2(){},\n' +
+            'a:1}',
+            //  -- output --
+            'export default {\n' +
+            '    * data() {},\n' +
+            '    * data2() {},\n' +
+            '    a: 1\n' +
             '}');
 
         // jslint and space after anon function - (space_after_named_function = "true")
@@ -11838,6 +15872,32 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        break;\n' +
             '}');
 
+        // Issue #1357
+        bt(
+            'switch(x) {case 0: case 1:{a(); break;} default: break}',
+            //  -- output --
+            'switch (x) {\n' +
+            '    case 0:\n' +
+            '    case 1: {\n' +
+            '        a();\n' +
+            '        break;\n' +
+            '    }\n' +
+            '    default:\n' +
+            '        break\n' +
+            '}');
+
+        // Issue #1357
+        bt(
+            'switch(x){case -1:break;case !y:{break;}}',
+            //  -- output --
+            'switch (x) {\n' +
+            '    case -1:\n' +
+            '        break;\n' +
+            '    case !y: {\n' +
+            '        break;\n' +
+            '    }\n' +
+            '}');
+
         // typical greasemonkey start
         test_fragment(
             '// comment 2\n' +
@@ -11905,6 +15965,59 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'async x () {\n' +
             '    yield 1;\n' +
             '}');
+        bt(
+            'var a={data(){},\n' +
+            'data2(){}}',
+            //  -- output --
+            'var a = {\n' +
+            '    data () {},\n' +
+            '    data2 () {}\n' +
+            '}');
+        bt(
+            'new Vue({\n' +
+            'data(){},\n' +
+            'data2(){}, a:1})',
+            //  -- output --
+            'new Vue({\n' +
+            '    data () {},\n' +
+            '    data2 () {},\n' +
+            '    a: 1\n' +
+            '})');
+        bt(
+            'export default {data(){},\n' +
+            'data2(){},\n' +
+            'a:1}',
+            //  -- output --
+            'export default {\n' +
+            '    data () {},\n' +
+            '    data2 () {},\n' +
+            '    a: 1\n' +
+            '}');
+        bt(
+            'var a={*data(){},*data2(){}}',
+            //  -- output --
+            'var a = {\n' +
+            '    * data () {},\n' +
+            '    * data2 () {}\n' +
+            '}');
+        bt(
+            'new Vue({\n' +
+            '*data(){},*data2(){}, a:1})',
+            //  -- output --
+            'new Vue({\n' +
+            '    * data () {},\n' +
+            '    * data2 () {},\n' +
+            '    a: 1\n' +
+            '})');
+        bt(
+            'export default {*data(){},*data2(){},\n' +
+            'a:1}',
+            //  -- output --
+            'export default {\n' +
+            '    * data () {},\n' +
+            '    * data2 () {},\n' +
+            '    a: 1\n' +
+            '}');
 
 
         //============================================================
@@ -11920,6 +16033,14 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        bar: 2\n' +
             '    });\n' +
             'var test = 1;');
+
+        // Issue #1663
+        bt(
+            '{\n' +
+            '    /* howdy\n' +
+            '    \n' +
+            '    */\n' +
+            '}');
         bt(
             'obj\n' +
             '    .last(a, function() {\n' +
@@ -12925,6 +17046,490 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        let extraParams = {}\n' +
             '    }\n' +
             ')');
+
+
+        //============================================================
+        // keep_array_indentation false
+        reset_options();
+        set_name('keep_array_indentation false');
+        opts.keep_array_indentation = false;
+        bt(
+            'a  = ["a", "b", "c",\n' +
+            '   "d", "e", "f"]',
+            //  -- output --
+            'a = ["a", "b", "c",\n' +
+            '    "d", "e", "f"\n' +
+            ']');
+        bt(
+            'a  = ["a", "b", "c",\n' +
+            '   "d", "e", "f",\n' +
+            '        "g", "h", "i"]',
+            //  -- output --
+            'a = ["a", "b", "c",\n' +
+            '    "d", "e", "f",\n' +
+            '    "g", "h", "i"\n' +
+            ']');
+        bt(
+            'a  = ["a", "b", "c",\n' +
+            '       "d", "e", "f",\n' +
+            '            "g", "h", "i"]',
+            //  -- output --
+            'a = ["a", "b", "c",\n' +
+            '    "d", "e", "f",\n' +
+            '    "g", "h", "i"\n' +
+            ']');
+        bt(
+            'var  x = [{}\n' +
+            ']',
+            //  -- output --
+            'var x = [{}]');
+        bt(
+            'var x = [{foo:bar}\n' +
+            ']',
+            //  -- output --
+            'var x = [{\n' +
+            '    foo: bar\n' +
+            '}]');
+        bt(
+            'a  = ["something",\n' +
+            '    "completely",\n' +
+            '    "different"];\n' +
+            'if (x);',
+            //  -- output --
+            'a = ["something",\n' +
+            '    "completely",\n' +
+            '    "different"\n' +
+            '];\n' +
+            'if (x);');
+        bt('a = ["a","b","c"]', 'a = ["a", "b", "c"]');
+        bt('a = ["a",   "b","c"]', 'a = ["a", "b", "c"]');
+        bt(
+            'x = [{"a":0}]',
+            //  -- output --
+            'x = [{\n' +
+            '    "a": 0\n' +
+            '}]');
+        bt(
+            '{a([[a1]], {b;});}',
+            //  -- output --
+            '{\n' +
+            '    a([\n' +
+            '        [a1]\n' +
+            '    ], {\n' +
+            '        b;\n' +
+            '    });\n' +
+            '}');
+        bt(
+            'a ();\n' +
+            '   [\n' +
+            '   ["sdfsdfsd"],\n' +
+            '        ["sdfsdfsdf"]\n' +
+            '   ].toString();',
+            //  -- output --
+            'a();\n' +
+            '[\n' +
+            '    ["sdfsdfsd"],\n' +
+            '    ["sdfsdfsdf"]\n' +
+            '].toString();');
+        bt(
+            'a ();\n' +
+            'a = [\n' +
+            '   ["sdfsdfsd"],\n' +
+            '        ["sdfsdfsdf"]\n' +
+            '   ].toString();',
+            //  -- output --
+            'a();\n' +
+            'a = [\n' +
+            '    ["sdfsdfsd"],\n' +
+            '    ["sdfsdfsdf"]\n' +
+            '].toString();');
+        bt(
+            'function()  {\n' +
+            '    Foo([\n' +
+            '        ["sdfsdfsd"],\n' +
+            '        ["sdfsdfsdf"]\n' +
+            '    ]);\n' +
+            '}',
+            //  -- output --
+            'function() {\n' +
+            '    Foo([\n' +
+            '        ["sdfsdfsd"],\n' +
+            '        ["sdfsdfsdf"]\n' +
+            '    ]);\n' +
+            '}');
+        bt(
+            'function  foo() {\n' +
+            '    return [\n' +
+            '        "one",\n' +
+            '        "two"\n' +
+            '    ];\n' +
+            '}',
+            //  -- output --
+            'function foo() {\n' +
+            '    return [\n' +
+            '        "one",\n' +
+            '        "two"\n' +
+            '    ];\n' +
+            '}');
+        bt(
+            'function foo() {\n' +
+            '    return [\n' +
+            '        {\n' +
+            '            one: "x",\n' +
+            '            two: [\n' +
+            '                {\n' +
+            '                    id: "a",\n' +
+            '                    name: "apple"\n' +
+            '                }, {\n' +
+            '                    id: "b",\n' +
+            '                    name: "banana"\n' +
+            '                }\n' +
+            '            ]\n' +
+            '        }\n' +
+            '    ];\n' +
+            '}',
+            //  -- output --
+            'function foo() {\n' +
+            '    return [{\n' +
+            '        one: "x",\n' +
+            '        two: [{\n' +
+            '            id: "a",\n' +
+            '            name: "apple"\n' +
+            '        }, {\n' +
+            '            id: "b",\n' +
+            '            name: "banana"\n' +
+            '        }]\n' +
+            '    }];\n' +
+            '}');
+        bt(
+            'function foo() {\n' +
+            '   return [\n' +
+            '      {\n' +
+            '         one: "x",\n' +
+            '         two: [\n' +
+            '            {\n' +
+            '               id: "a",\n' +
+            '               name: "apple"\n' +
+            '            }, {\n' +
+            '               id: "b",\n' +
+            '               name: "banana"\n' +
+            '            }\n' +
+            '         ]\n' +
+            '      }\n' +
+            '   ];\n' +
+            '}',
+            //  -- output --
+            'function foo() {\n' +
+            '    return [{\n' +
+            '        one: "x",\n' +
+            '        two: [{\n' +
+            '            id: "a",\n' +
+            '            name: "apple"\n' +
+            '        }, {\n' +
+            '            id: "b",\n' +
+            '            name: "banana"\n' +
+            '        }]\n' +
+            '    }];\n' +
+            '}');
+
+
+        //============================================================
+        // keep_array_indentation true
+        reset_options();
+        set_name('keep_array_indentation true');
+        opts.keep_array_indentation = true;
+        bt(
+            'a  = ["a", "b", "c",\n' +
+            '   "d", "e", "f"]',
+            //  -- output --
+            'a = ["a", "b", "c",\n' +
+            '   "d", "e", "f"]');
+        bt(
+            'a  = ["a", "b", "c",\n' +
+            '   "d", "e", "f",\n' +
+            '        "g", "h", "i"]',
+            //  -- output --
+            'a = ["a", "b", "c",\n' +
+            '   "d", "e", "f",\n' +
+            '        "g", "h", "i"]');
+        bt(
+            'a  = ["a", "b", "c",\n' +
+            '       "d", "e", "f",\n' +
+            '            "g", "h", "i"]',
+            //  -- output --
+            'a = ["a", "b", "c",\n' +
+            '       "d", "e", "f",\n' +
+            '            "g", "h", "i"]');
+        bt(
+            'var  x = [{}\n' +
+            ']',
+            //  -- output --
+            'var x = [{}\n' +
+            ']');
+        bt(
+            'var x = [{foo:bar}\n' +
+            ']',
+            //  -- output --
+            'var x = [{\n' +
+            '        foo: bar\n' +
+            '    }\n' +
+            ']');
+        bt(
+            'a  = ["something",\n' +
+            '    "completely",\n' +
+            '    "different"];\n' +
+            'if (x);',
+            //  -- output --
+            'a = ["something",\n' +
+            '    "completely",\n' +
+            '    "different"];\n' +
+            'if (x);');
+        bt('a = ["a","b","c"]', 'a = ["a", "b", "c"]');
+        bt('a = ["a",   "b","c"]', 'a = ["a", "b", "c"]');
+        bt(
+            'x = [{"a":0}]',
+            //  -- output --
+            'x = [{\n' +
+            '    "a": 0\n' +
+            '}]');
+        bt(
+            '{a([[a1]], {b;});}',
+            //  -- output --
+            '{\n' +
+            '    a([[a1]], {\n' +
+            '        b;\n' +
+            '    });\n' +
+            '}');
+        bt(
+            'a ();\n' +
+            '   [\n' +
+            '   ["sdfsdfsd"],\n' +
+            '        ["sdfsdfsdf"]\n' +
+            '   ].toString();',
+            //  -- output --
+            'a();\n' +
+            '   [\n' +
+            '   ["sdfsdfsd"],\n' +
+            '        ["sdfsdfsdf"]\n' +
+            '   ].toString();');
+        bt(
+            'a ();\n' +
+            'a = [\n' +
+            '   ["sdfsdfsd"],\n' +
+            '        ["sdfsdfsdf"]\n' +
+            '   ].toString();',
+            //  -- output --
+            'a();\n' +
+            'a = [\n' +
+            '   ["sdfsdfsd"],\n' +
+            '        ["sdfsdfsdf"]\n' +
+            '   ].toString();');
+        bt(
+            'function()  {\n' +
+            '    Foo([\n' +
+            '        ["sdfsdfsd"],\n' +
+            '        ["sdfsdfsdf"]\n' +
+            '    ]);\n' +
+            '}',
+            //  -- output --
+            'function() {\n' +
+            '    Foo([\n' +
+            '        ["sdfsdfsd"],\n' +
+            '        ["sdfsdfsdf"]\n' +
+            '    ]);\n' +
+            '}');
+        bt(
+            'function  foo() {\n' +
+            '    return [\n' +
+            '        "one",\n' +
+            '        "two"\n' +
+            '    ];\n' +
+            '}',
+            //  -- output --
+            'function foo() {\n' +
+            '    return [\n' +
+            '        "one",\n' +
+            '        "two"\n' +
+            '    ];\n' +
+            '}');
+        bt(
+            'function  foo() {\n' +
+            '    return [\n' +
+            '        {\n' +
+            '            one: "x",\n' +
+            '            two: [\n' +
+            '                {\n' +
+            '                    id: "a",\n' +
+            '                    name: "apple"\n' +
+            '                }, {\n' +
+            '                    id: "b",\n' +
+            '                    name: "banana"\n' +
+            '                }\n' +
+            '            ]\n' +
+            '        }\n' +
+            '    ];\n' +
+            '}',
+            //  -- output --
+            'function foo() {\n' +
+            '    return [\n' +
+            '        {\n' +
+            '            one: "x",\n' +
+            '            two: [\n' +
+            '                {\n' +
+            '                    id: "a",\n' +
+            '                    name: "apple"\n' +
+            '                }, {\n' +
+            '                    id: "b",\n' +
+            '                    name: "banana"\n' +
+            '                }\n' +
+            '            ]\n' +
+            '        }\n' +
+            '    ];\n' +
+            '}');
+
+
+        //============================================================
+        // indent_empty_lines true
+        reset_options();
+        set_name('indent_empty_lines true');
+        opts.indent_empty_lines = true;
+        test_fragment(
+            'var a = 1;\n' +
+            '\n' +
+            'var b = 1;');
+        test_fragment(
+            'var a = 1;\n' +
+            '        \n' +
+            'var b = 1;',
+            //  -- output --
+            'var a = 1;\n' +
+            '\n' +
+            'var b = 1;');
+        test_fragment(
+            '{\n' +
+            '    var a = 1;\n' +
+            '        \n' +
+            '    var b = 1;\n' +
+            '\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    var a = 1;\n' +
+            '    \n' +
+            '    var b = 1;\n' +
+            '    \n' +
+            '}');
+        test_fragment(
+            '{\n' +
+            '\n' +
+            '    var a = 1;\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '    var b = 1;\n' +
+            '\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    \n' +
+            '    var a = 1;\n' +
+            '    \n' +
+            '    \n' +
+            '    \n' +
+            '    var b = 1;\n' +
+            '    \n' +
+            '}');
+        test_fragment(
+            '{\n' +
+            '\n' +
+            '    var a = 1;\n' +
+            '\n' +
+            'function A() {\n' +
+            '\n' +
+            '}\n' +
+            '\n' +
+            '    var b = 1;\n' +
+            '\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    \n' +
+            '    var a = 1;\n' +
+            '    \n' +
+            '    function A() {\n' +
+            '        \n' +
+            '    }\n' +
+            '    \n' +
+            '    var b = 1;\n' +
+            '    \n' +
+            '}');
+
+
+        //============================================================
+        // indent_empty_lines false
+        reset_options();
+        set_name('indent_empty_lines false');
+        opts.indent_empty_lines = false;
+        test_fragment(
+            'var a = 1;\n' +
+            '\n' +
+            'var b = 1;');
+        test_fragment(
+            'var a = 1;\n' +
+            '        \n' +
+            'var b = 1;',
+            //  -- output --
+            'var a = 1;\n' +
+            '\n' +
+            'var b = 1;');
+        test_fragment(
+            '{\n' +
+            '    var a = 1;\n' +
+            '        \n' +
+            '    var b = 1;\n' +
+            '\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    var a = 1;\n' +
+            '\n' +
+            '    var b = 1;\n' +
+            '\n' +
+            '}');
+        test_fragment(
+            '{\n' +
+            '\n' +
+            '    var a = 1;\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '    var b = 1;\n' +
+            '\n' +
+            '}');
+        test_fragment(
+            '{\n' +
+            '\n' +
+            '    var a = 1;\n' +
+            '\n' +
+            'function A() {\n' +
+            '\n' +
+            '}\n' +
+            '\n' +
+            '    var b = 1;\n' +
+            '\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '\n' +
+            '    var a = 1;\n' +
+            '\n' +
+            '    function A() {\n' +
+            '\n' +
+            '    }\n' +
+            '\n' +
+            '    var b = 1;\n' +
+            '\n' +
+            '}');
 
 
         //============================================================
@@ -14264,187 +18869,15 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         reset_options();
         //============================================================
-        opts.preserve_newlines = false;
-
-        bt('var\na=dont_preserve_newlines;', 'var a = dont_preserve_newlines;');
-
-        // make sure the blank line between function definitions stays
-        // even when preserve_newlines = false
-        bt('function foo() {\n    return 1;\n}\n\nfunction foo() {\n    return 1;\n}');
-        bt('function foo() {\n    return 1;\n}\nfunction foo() {\n    return 1;\n}',
-           'function foo() {\n    return 1;\n}\n\nfunction foo() {\n    return 1;\n}'
-          );
-        bt('function foo() {\n    return 1;\n}\n\n\nfunction foo() {\n    return 1;\n}',
-           'function foo() {\n    return 1;\n}\n\nfunction foo() {\n    return 1;\n}'
-          );
-
-        opts.preserve_newlines = true;
-        bt('var\na=do_preserve_newlines;', 'var\n    a = do_preserve_newlines;');
-        bt('if (foo) //  comment\n{\n    bar();\n}');
-
-
-        reset_options();
-        //============================================================
-        opts.keep_array_indentation = false;
-        bt("a = ['a', 'b', 'c',\n   'd', 'e', 'f']",
-            "a = ['a', 'b', 'c',\n    'd', 'e', 'f'\n]");
-        bt("a = ['a', 'b', 'c',\n   'd', 'e', 'f',\n        'g', 'h', 'i']",
-            "a = ['a', 'b', 'c',\n    'd', 'e', 'f',\n    'g', 'h', 'i'\n]");
-        bt("a = ['a', 'b', 'c',\n       'd', 'e', 'f',\n            'g', 'h', 'i']",
-            "a = ['a', 'b', 'c',\n    'd', 'e', 'f',\n    'g', 'h', 'i'\n]");
-        bt('var x = [{}\n]', 'var x = [{}]');
-        bt('var x = [{foo:bar}\n]', 'var x = [{\n    foo: bar\n}]');
-        bt("a = ['something',\n    'completely',\n    'different'];\nif (x);",
-            "a = ['something',\n    'completely',\n    'different'\n];\nif (x);");
-        bt("a = ['a','b','c']", "a = ['a', 'b', 'c']");
-
-        bt("a = ['a',   'b','c']", "a = ['a', 'b', 'c']");
-        bt("x = [{'a':0}]",
-            "x = [{\n    'a': 0\n}]");
-        bt('{a([[a1]], {b;});}',
-            '{\n    a([\n        [a1]\n    ], {\n        b;\n    });\n}');
-        bt("a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
-            "a();\n[\n    ['sdfsdfsd'],\n    ['sdfsdfsdf']\n].toString();");
-        bt("a();\na = [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
-            "a();\na = [\n    ['sdfsdfsd'],\n    ['sdfsdfsdf']\n].toString();");
-        bt("function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}",
-            "function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}");
-        bt('function foo() {\n    return [\n        "one",\n        "two"\n    ];\n}');
-        // 4 spaces per indent input, processed with 4-spaces per indent
-        bt( "function foo() {\n" +
-            "    return [\n" +
-            "        {\n" +
-            "            one: 'x',\n" +
-            "            two: [\n" +
-            "                {\n" +
-            "                    id: 'a',\n" +
-            "                    name: 'apple'\n" +
-            "                }, {\n" +
-            "                    id: 'b',\n" +
-            "                    name: 'banana'\n" +
-            "                }\n" +
-            "            ]\n" +
-            "        }\n" +
-            "    ];\n" +
-            "}",
-            "function foo() {\n" +
-            "    return [{\n" +
-            "        one: 'x',\n" +
-            "        two: [{\n" +
-            "            id: 'a',\n" +
-            "            name: 'apple'\n" +
-            "        }, {\n" +
-            "            id: 'b',\n" +
-            "            name: 'banana'\n" +
-            "        }]\n" +
-            "    }];\n" +
-            "}");
-        // 3 spaces per indent input, processed with 4-spaces per indent
-        bt( "function foo() {\n" +
-            "   return [\n" +
-            "      {\n" +
-            "         one: 'x',\n" +
-            "         two: [\n" +
-            "            {\n" +
-            "               id: 'a',\n" +
-            "               name: 'apple'\n" +
-            "            }, {\n" +
-            "               id: 'b',\n" +
-            "               name: 'banana'\n" +
-            "            }\n" +
-            "         ]\n" +
-            "      }\n" +
-            "   ];\n" +
-            "}",
-            "function foo() {\n" +
-            "    return [{\n" +
-            "        one: 'x',\n" +
-            "        two: [{\n" +
-            "            id: 'a',\n" +
-            "            name: 'apple'\n" +
-            "        }, {\n" +
-            "            id: 'b',\n" +
-            "            name: 'banana'\n" +
-            "        }]\n" +
-            "    }];\n" +
-            "}");
-
-        opts.keep_array_indentation = true;
-        bt("a = ['a', 'b', 'c',\n   'd', 'e', 'f']");
-        bt("a = ['a', 'b', 'c',\n   'd', 'e', 'f',\n        'g', 'h', 'i']");
-        bt("a = ['a', 'b', 'c',\n       'd', 'e', 'f',\n            'g', 'h', 'i']");
-        bt('var x = [{}\n]', 'var x = [{}\n]');
-        bt('var x = [{foo:bar}\n]', 'var x = [{\n        foo: bar\n    }\n]');
-        bt("a = ['something',\n    'completely',\n    'different'];\nif (x);");
-        bt("a = ['a','b','c']", "a = ['a', 'b', 'c']");
-        bt("a = ['a',   'b','c']", "a = ['a', 'b', 'c']");
-        bt("x = [{'a':0}]",
-            "x = [{\n    'a': 0\n}]");
-        bt('{a([[a1]], {b;});}',
-            '{\n    a([[a1]], {\n        b;\n    });\n}');
-        bt("a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
-            "a();\n   [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();");
-        bt("a();\na = [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();",
-            "a();\na = [\n   ['sdfsdfsd'],\n        ['sdfsdfsdf']\n   ].toString();");
-        bt("function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}",
-            "function() {\n    Foo([\n        ['sdfsdfsd'],\n        ['sdfsdfsdf']\n    ]);\n}");
-        bt('function foo() {\n    return [\n        "one",\n        "two"\n    ];\n}');
-        // 4 spaces per indent input, processed with 4-spaces per indent
-        bt( "function foo() {\n" +
-            "    return [\n" +
-            "        {\n" +
-            "            one: 'x',\n" +
-            "            two: [\n" +
-            "                {\n" +
-            "                    id: 'a',\n" +
-            "                    name: 'apple'\n" +
-            "                }, {\n" +
-            "                    id: 'b',\n" +
-            "                    name: 'banana'\n" +
-            "                }\n" +
-            "            ]\n" +
-            "        }\n" +
-            "    ];\n" +
-            "}");
-        // 3 spaces per indent input, processed with 4-spaces per indent
-        // Should be unchanged, but is not - #445
-//         bt( "function foo() {\n" +
-//             "   return [\n" +
-//             "      {\n" +
-//             "         one: 'x',\n" +
-//             "         two: [\n" +
-//             "            {\n" +
-//             "               id: 'a',\n" +
-//             "               name: 'apple'\n" +
-//             "            }, {\n" +
-//             "               id: 'b',\n" +
-//             "               name: 'banana'\n" +
-//             "            }\n" +
-//             "         ]\n" +
-//             "      }\n" +
-//             "   ];\n" +
-//             "}");
-
-
-        reset_options();
-        //============================================================
-        bt('a = //comment\n    /regex/;');
-
-        bt('if (a)\n{\nb;\n}\nelse\n{\nc;\n}', 'if (a) {\n    b;\n} else {\n    c;\n}');
-
         // tests for brace positioning
         beautify_brace_tests('expand');
         beautify_brace_tests('collapse');
         beautify_brace_tests('end-expand');
         beautify_brace_tests('none');
 
-        test_fragment('roo = {\n    /*\n    ****\n      FOO\n    ****\n    */\n    BAR: 0\n};');
 
         bt('"foo""bar""baz"', '"foo"\n"bar"\n"baz"');
         bt("'foo''bar''baz'", "'foo'\n'bar'\n'baz'");
-
-
-        test_fragment("if (zz) {\n    // ....\n}\n(function");
 
         bt("{\n    get foo() {}\n}");
         bt("{\n    var a = get\n    foo();\n}");
@@ -14457,8 +18890,6 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt("var x = set\n\na() {}", "var x = set\n\na() {}");
         bt("var x = set\n\nfunction() {}", "var x = set\n\nfunction() {}");
 
-        bt('<!-- foo\nbar();\n-->');
-        bt('<!-- dont crash'); // -->
         bt('for () /abc/.test()');
         bt('if (k) /aaa/m.test(v) && l();');
         bt('switch (true) {\n    case /swf/i.test(foo):\n        bar();\n}');
@@ -14468,15 +18899,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         reset_options();
         //============================================================
         opts.preserve_newlines = true;
-        bt('var a = 42; // foo\n\nvar b;');
-        bt('var a = 42; // foo\n\n\nvar b;');
         bt("var a = 'foo' +\n    'bar';");
-        bt("var a = \"foo\" +\n    \"bar\";");
-        bt('this.oa = new OAuth(\n' +
-           '    _requestToken,\n' +
-           '    _accessToken,\n' +
-           '    consumer_key\n' +
-           ');');
 
 
         reset_options();
@@ -14509,511 +18932,6 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         reset_options();
         //============================================================
-        bt('return function();');
-        bt('var a = function();');
-        bt('var a = 5 + function();');
-
-        bt('import foo.*;', 'import foo.*;'); // actionscript's import
-        test_fragment('function f(a: a, b: b)'); // actionscript
-
-        bt('{\n    foo // something\n    ,\n    bar // something\n    baz\n}');
-        bt('function a(a) {} function b(b) {} function c(c) {}', 'function a(a) {}\n\nfunction b(b) {}\n\nfunction c(c) {}');
-        bt('foo(a, function() {})');
-
-        bt('foo(a, /regex/)');
-
-        bt('/* foo */\n"x"');
-
-        reset_options();
-        //============================================================
-        opts.break_chained_methods = false;
-        opts.preserve_newlines = false;
-        bt('foo\n.bar()\n.baz().cucumber(fat)', 'foo.bar().baz().cucumber(fat)');
-        bt('foo\n.bar()\n.baz().cucumber(fat); foo.bar().baz().cucumber(fat)', 'foo.bar().baz().cucumber(fat);\nfoo.bar().baz().cucumber(fat)');
-        bt('foo\n.bar()\n.baz().cucumber(fat)\n foo.bar().baz().cucumber(fat)', 'foo.bar().baz().cucumber(fat)\nfoo.bar().baz().cucumber(fat)');
-        bt('this\n.something = foo.bar()\n.baz().cucumber(fat)', 'this.something = foo.bar().baz().cucumber(fat)');
-        bt('this.something.xxx = foo.moo.bar()');
-        bt('this\n.something\n.xxx = foo.moo\n.bar()', 'this.something.xxx = foo.moo.bar()');
-
-        opts.break_chained_methods = false;
-        opts.preserve_newlines = true;
-        bt('foo\n.bar()\n.baz().cucumber(fat)', 'foo\n    .bar()\n    .baz().cucumber(fat)');
-        bt('foo\n.bar()\n.baz().cucumber(fat); foo.bar().baz().cucumber(fat)', 'foo\n    .bar()\n    .baz().cucumber(fat);\nfoo.bar().baz().cucumber(fat)');
-        bt('foo\n.bar()\n.baz().cucumber(fat)\n foo.bar().baz().cucumber(fat)', 'foo\n    .bar()\n    .baz().cucumber(fat)\nfoo.bar().baz().cucumber(fat)');
-        bt('this\n.something = foo.bar()\n.baz().cucumber(fat)', 'this\n    .something = foo.bar()\n    .baz().cucumber(fat)');
-        bt('this.something.xxx = foo.moo.bar()');
-        bt('this\n.something\n.xxx = foo.moo\n.bar()', 'this\n    .something\n    .xxx = foo.moo\n    .bar()');
-
-        opts.break_chained_methods = true;
-        opts.preserve_newlines = false;
-        bt('foo\n.bar()\n.baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat)');
-        bt('foo\n.bar()\n.baz().cucumber(fat); foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat);\nfoo.bar()\n    .baz()\n    .cucumber(fat)');
-        bt('foo\n.bar()\n.baz().cucumber(fat)\n foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat)\nfoo.bar()\n    .baz()\n    .cucumber(fat)');
-        bt('this\n.something = foo.bar()\n.baz().cucumber(fat)', 'this.something = foo.bar()\n    .baz()\n    .cucumber(fat)');
-        bt('this.something.xxx = foo.moo.bar()');
-        bt('this\n.something\n.xxx = foo.moo\n.bar()', 'this.something.xxx = foo.moo.bar()');
-
-        opts.break_chained_methods = true;
-        opts.preserve_newlines = true;
-        bt('foo\n.bar()\n.baz().cucumber(fat)', 'foo\n    .bar()\n    .baz()\n    .cucumber(fat)');
-        bt('foo\n.bar()\n.baz().cucumber(fat); foo.bar().baz().cucumber(fat)', 'foo\n    .bar()\n    .baz()\n    .cucumber(fat);\nfoo.bar()\n    .baz()\n    .cucumber(fat)');
-        bt('foo\n.bar()\n.baz().cucumber(fat)\n foo.bar().baz().cucumber(fat)', 'foo\n    .bar()\n    .baz()\n    .cucumber(fat)\nfoo.bar()\n    .baz()\n    .cucumber(fat)');
-        bt('this\n.something = foo.bar()\n.baz().cucumber(fat)', 'this\n    .something = foo.bar()\n    .baz()\n    .cucumber(fat)');
-        bt('this.something.xxx = foo.moo.bar()');
-        bt('this\n.something\n.xxx = foo.moo\n.bar()', 'this\n    .something\n    .xxx = foo.moo\n    .bar()');
-
-        reset_options();
-        //============================================================
-        // Line wrap test intputs
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        wrap_input_1=('foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
-                      'Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
-                      'return between_return_and_expression_should_never_wrap.but_this_can\n' +
-                      'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
-                      'object_literal = {\n' +
-                      '    propertx: first_token + 12345678.99999E-6,\n' +
-                      '    property: first_token_should_never_wrap + but_this_can,\n' +
-                      '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
-                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
-                      '}');
-
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        wrap_input_2=('{\n' +
-                      '    foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
-                      '    Test_very_long_variable_name_this_should_never_wrap\n.but_this_can\n' +
-                      '    return between_return_and_expression_should_never_wrap.but_this_can\n' +
-                      '    throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
-                      '    if (wraps_can_occur && inside_an_if_block) that_is_\n.okay();\n' +
-                      '    object_literal = {\n' +
-                      '        propertx: first_token + 12345678.99999E-6,\n' +
-                      '        property: first_token_should_never_wrap + but_this_can,\n' +
-                      '        propertz: first_token_should_never_wrap + !but_this_can,\n' +
-                      '        proper: "first_token_should_never_wrap" + "but_this_can"\n' +
-                      '    }' +
-                      '}');
-
-        opts.preserve_newlines = false;
-        opts.wrap_line_length = 0;
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        test_fragment(wrap_input_1,
-                      /* expected */
-                      'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
-                      'Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
-                      'return between_return_and_expression_should_never_wrap.but_this_can\n' +
-                      'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
-                      'object_literal = {\n' +
-                      '    propertx: first_token + 12345678.99999E-6,\n' +
-                      '    property: first_token_should_never_wrap + but_this_can,\n' +
-                      '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
-                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
-                      '}');
-
-        opts.wrap_line_length = 70;
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        test_fragment(wrap_input_1,
-                      /* expected */
-                      'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
-                      'Test_very_long_variable_name_this_should_never_wrap.but_this_can\n' +
-                      'return between_return_and_expression_should_never_wrap.but_this_can\n' +
-                      'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_.okay();\n' +
-                      'object_literal = {\n' +
-                      '    propertx: first_token + 12345678.99999E-6,\n' +
-                      '    property: first_token_should_never_wrap + but_this_can,\n' +
-                      '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
-                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
-                      '}');
-
-        opts.wrap_line_length = 40;
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        test_fragment(wrap_input_1,
-                      /* expected */
-                      'foo.bar().baz().cucumber((fat &&\n' +
-                      '    "sassy") || (leans && mean));\n' +
-                      'Test_very_long_variable_name_this_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'return between_return_and_expression_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'throw between_throw_and_expression_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'if (wraps_can_occur &&\n' +
-                      '    inside_an_if_block) that_is_.okay();\n' +
-                      'object_literal = {\n' +
-                      '    propertx: first_token +\n' +
-                      '        12345678.99999E-6,\n' +
-                      '    property: first_token_should_never_wrap +\n' +
-                      '        but_this_can,\n' +
-                      '    propertz: first_token_should_never_wrap +\n' +
-                      '        !but_this_can,\n' +
-                      '    proper: "first_token_should_never_wrap" +\n' +
-                      '        "but_this_can"\n' +
-                      '}');
-
-        opts.wrap_line_length = 41;
-        // NOTE: wrap is only best effort - line continues until next wrap point is found.
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        test_fragment(wrap_input_1,
-                      /* expected */
-                      'foo.bar().baz().cucumber((fat && "sassy") ||\n' +
-                      '    (leans && mean));\n' +
-                      'Test_very_long_variable_name_this_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'return between_return_and_expression_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'throw between_throw_and_expression_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'if (wraps_can_occur &&\n' +
-                      '    inside_an_if_block) that_is_.okay();\n' +
-                      'object_literal = {\n' +
-                      '    propertx: first_token +\n' +
-                      '        12345678.99999E-6,\n' +
-                      '    property: first_token_should_never_wrap +\n' +
-                      '        but_this_can,\n' +
-                      '    propertz: first_token_should_never_wrap +\n' +
-                      '        !but_this_can,\n' +
-                      '    proper: "first_token_should_never_wrap" +\n' +
-                      '        "but_this_can"\n' +
-                      '}');
-
-        opts.wrap_line_length = 45;
-        // NOTE: wrap is only best effort - line continues until next wrap point is found.
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        test_fragment(wrap_input_2,
-                      /* expected */
-                      '{\n' +
-                      '    foo.bar().baz().cucumber((fat && "sassy") ||\n' +
-                      '        (leans && mean));\n' +
-                      '    Test_very_long_variable_name_this_should_never_wrap\n' +
-                      '        .but_this_can\n' +
-                      '    return between_return_and_expression_should_never_wrap\n' +
-                      '        .but_this_can\n' +
-                      '    throw between_throw_and_expression_should_never_wrap\n' +
-                      '        .but_this_can\n' +
-                      '    if (wraps_can_occur &&\n' +
-                      '        inside_an_if_block) that_is_.okay();\n' +
-                      '    object_literal = {\n' +
-                      '        propertx: first_token +\n' +
-                      '            12345678.99999E-6,\n' +
-                      '        property: first_token_should_never_wrap +\n' +
-                      '            but_this_can,\n' +
-                      '        propertz: first_token_should_never_wrap +\n' +
-                      '            !but_this_can,\n' +
-                      '        proper: "first_token_should_never_wrap" +\n' +
-                      '            "but_this_can"\n' +
-                      '    }\n'+
-                      '}');
-
-        opts.preserve_newlines = true;
-        opts.wrap_line_length = 0;
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        test_fragment(wrap_input_1,
-                      /* expected */
-                      'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
-                      'Test_very_long_variable_name_this_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'return between_return_and_expression_should_never_wrap.but_this_can\n' +
-                      'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
-                      '    .okay();\n' +
-                      'object_literal = {\n' +
-                      '    propertx: first_token + 12345678.99999E-6,\n' +
-                      '    property: first_token_should_never_wrap + but_this_can,\n' +
-                      '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
-                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
-                      '}');
-
-        opts.wrap_line_length = 70;
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        test_fragment(wrap_input_1,
-                      /* expected */
-                      'foo.bar().baz().cucumber((fat && "sassy") || (leans && mean));\n' +
-                      'Test_very_long_variable_name_this_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'return between_return_and_expression_should_never_wrap.but_this_can\n' +
-                      'throw between_throw_and_expression_should_never_wrap.but_this_can\n' +
-                      'if (wraps_can_occur && inside_an_if_block) that_is_\n' +
-                      '    .okay();\n' +
-                      'object_literal = {\n' +
-                      '    propertx: first_token + 12345678.99999E-6,\n' +
-                      '    property: first_token_should_never_wrap + but_this_can,\n' +
-                      '    propertz: first_token_should_never_wrap + !but_this_can,\n' +
-                      '    proper: "first_token_should_never_wrap" + "but_this_can"\n' +
-                      '}');
-
-
-        opts.wrap_line_length = 40;
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        test_fragment(wrap_input_1,
-                      /* expected */
-                      'foo.bar().baz().cucumber((fat &&\n' +
-                      '    "sassy") || (leans && mean));\n' +
-                      'Test_very_long_variable_name_this_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'return between_return_and_expression_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'throw between_throw_and_expression_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'if (wraps_can_occur &&\n' +
-                      '    inside_an_if_block) that_is_\n' +
-                      '    .okay();\n' +
-                      'object_literal = {\n' +
-                      '    propertx: first_token +\n' +
-                      '        12345678.99999E-6,\n' +
-                      '    property: first_token_should_never_wrap +\n' +
-                      '        but_this_can,\n' +
-                      '    propertz: first_token_should_never_wrap +\n' +
-                      '        !but_this_can,\n' +
-                      '    proper: "first_token_should_never_wrap" +\n' +
-                      '        "but_this_can"\n' +
-                      '}');
-
-        opts.wrap_line_length = 41;
-        // NOTE: wrap is only best effort - line continues until next wrap point is found.
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        test_fragment(wrap_input_1,
-                      /* expected */
-                      'foo.bar().baz().cucumber((fat && "sassy") ||\n' +
-                      '    (leans && mean));\n' +
-                      'Test_very_long_variable_name_this_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'return between_return_and_expression_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'throw between_throw_and_expression_should_never_wrap\n' +
-                      '    .but_this_can\n' +
-                      'if (wraps_can_occur &&\n' +
-                      '    inside_an_if_block) that_is_\n' +
-                      '    .okay();\n' +
-                      'object_literal = {\n' +
-                      '    propertx: first_token +\n' +
-                      '        12345678.99999E-6,\n' +
-                      '    property: first_token_should_never_wrap +\n' +
-                      '        but_this_can,\n' +
-                      '    propertz: first_token_should_never_wrap +\n' +
-                      '        !but_this_can,\n' +
-                      '    proper: "first_token_should_never_wrap" +\n' +
-                      '        "but_this_can"\n' +
-                      '}');
-
-        opts.wrap_line_length = 45;
-        // NOTE: wrap is only best effort - line continues until next wrap point is found.
-        //.............---------1---------2---------3---------4---------5---------6---------7
-        //.............1234567890123456789012345678901234567890123456789012345678901234567890
-        test_fragment(wrap_input_2,
-                      /* expected */
-                      '{\n' +
-                      '    foo.bar().baz().cucumber((fat && "sassy") ||\n' +
-                      '        (leans && mean));\n' +
-                      '    Test_very_long_variable_name_this_should_never_wrap\n' +
-                      '        .but_this_can\n' +
-                      '    return between_return_and_expression_should_never_wrap\n' +
-                      '        .but_this_can\n' +
-                      '    throw between_throw_and_expression_should_never_wrap\n' +
-                      '        .but_this_can\n' +
-                      '    if (wraps_can_occur &&\n' +
-                      '        inside_an_if_block) that_is_\n' +
-                      '        .okay();\n' +
-                      '    object_literal = {\n' +
-                      '        propertx: first_token +\n' +
-                      '            12345678.99999E-6,\n' +
-                      '        property: first_token_should_never_wrap +\n' +
-                      '            but_this_can,\n' +
-                      '        propertz: first_token_should_never_wrap +\n' +
-                      '            !but_this_can,\n' +
-                      '        proper: "first_token_should_never_wrap" +\n' +
-                      '            "but_this_can"\n' +
-                      '    }\n'+
-                      '}');
-
-        reset_options();
-        //============================================================
-        opts.preserve_newlines = false;
-        bt('if (foo) // comment\n    bar();');
-        bt('if (foo) // comment\n    (bar());');
-        bt('if (foo) // comment\n    (bar());');
-        bt('if (foo) // comment\n    /asdf/;');
-        bt('this.oa = new OAuth(\n' +
-           '    _requestToken,\n' +
-           '    _accessToken,\n' +
-           '    consumer_key\n' +
-           ');',
-           'this.oa = new OAuth(_requestToken, _accessToken, consumer_key);');
-        bt('foo = {\n    x: y, // #44\n    w: z // #44\n}');
-        bt('switch (x) {\n    case "a":\n        // comment on newline\n        break;\n    case "b": // comment on same line\n        break;\n}');
-        bt('this.type =\n    this.options =\n    // comment\n    this.enabled null;',
-           'this.type = this.options =\n    // comment\n    this.enabled null;');
-        bt('someObj\n    .someFunc1()\n    // This comment should not break the indent\n    .someFunc2();',
-           'someObj.someFunc1()\n    // This comment should not break the indent\n    .someFunc2();');
-
-        bt('if (true ||\n!true) return;', 'if (true || !true) return;');
-
-        // these aren't ready yet.
-        //bt('if (foo) // comment\n    bar() /*i*/ + baz() /*j\n*/ + asdf();');
-        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\na();',
-            'if (foo)\n    if (bar)\n        if (baz) whee();\na();');
-        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\nelse\na();',
-            'if (foo)\n    if (bar)\n        if (baz) whee();\n        else a();');
-        bt('if (foo)\nbar();\nelse\ncar();',
-            'if (foo) bar();\nelse car();');
-
-        bt('if (foo) if (bar) if (baz);\na();',
-            'if (foo)\n    if (bar)\n        if (baz);\na();');
-        bt('if (foo) if (bar) if (baz) whee();\na();',
-            'if (foo)\n    if (bar)\n        if (baz) whee();\na();');
-        bt('if (foo) a()\nif (bar) if (baz) whee();\na();',
-            'if (foo) a()\nif (bar)\n    if (baz) whee();\na();');
-        bt('if (foo);\nif (bar) if (baz) whee();\na();',
-            'if (foo);\nif (bar)\n    if (baz) whee();\na();');
-        bt('if (options)\n' +
-           '    for (var p in options)\n' +
-           '        this[p] = options[p];',
-           'if (options)\n'+
-           '    for (var p in options) this[p] = options[p];');
-        bt('if (options) for (var p in options) this[p] = options[p];',
-           'if (options)\n    for (var p in options) this[p] = options[p];');
-
-        bt('if (options) do q(); while (b());',
-           'if (options)\n    do q(); while (b());');
-        bt('if (options) while (b()) q();',
-           'if (options)\n    while (b()) q();');
-        bt('if (options) do while (b()) q(); while (a());',
-           'if (options)\n    do\n        while (b()) q(); while (a());');
-
-        bt('function f(a, b, c,\nd, e) {}',
-            'function f(a, b, c, d, e) {}');
-
-        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
-            'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
-        bt('function f(a,b) {if(a) b()}\n\n\n\nfunction g(a,b) {if(!a) b()}',
-            'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
-
-        // This is not valid syntax, but still want to behave reasonably and not side-effect
-        bt('(if(a) b())(if(a) b())',
-            '(\n    if (a) b())(\n    if (a) b())');
-        bt('(if(a) b())\n\n\n(if(a) b())',
-            '(\n    if (a) b())\n(\n    if (a) b())');
-
-
-
-        bt("if\n(a)\nb();", "if (a) b();");
-        bt('var a =\nfoo', 'var a = foo');
-        bt('var a = {\n"a":1,\n"b":2}', "var a = {\n    \"a\": 1,\n    \"b\": 2\n}");
-        bt("var a = {\n'a':1,\n'b':2}", "var a = {\n    'a': 1,\n    'b': 2\n}");
-        bt('var a = /*i*/ "b";');
-        bt('var a = /*i*/\n"b";', 'var a = /*i*/ "b";');
-        bt('var a = /*i*/\nb;', 'var a = /*i*/ b;');
-        bt('{\n\n\n"x"\n}', '{\n    "x"\n}');
-        bt('if(a &&\nb\n||\nc\n||d\n&&\ne) e = f', 'if (a && b || c || d && e) e = f');
-        bt('if(a &&\n(b\n||\nc\n||d)\n&&\ne) e = f', 'if (a && (b || c || d) && e) e = f');
-        test_fragment('\n\n"x"', '"x"');
-        bt('a = 1;\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nb = 2;',
-                'a = 1;\nb = 2;');
-
-        opts.preserve_newlines = true;
-        bt('if (foo) // comment\n    bar();');
-        bt('if (foo) // comment\n    (bar());');
-        bt('if (foo) // comment\n    (bar());');
-        bt('if (foo) // comment\n    /asdf/;');
-        bt('foo = {\n    x: y, // #44\n    w: z // #44\n}');
-        bt('switch (x) {\n    case "a":\n        // comment on newline\n        break;\n    case "b": // comment on same line\n        break;\n}');
-        bt('this.type =\n    this.options =\n    // comment\n    this.enabled null;');
-        bt('someObj\n    .someFunc1()\n    // This comment should not break the indent\n    .someFunc2();');
-
-        bt('if (true ||\n!true) return;', 'if (true ||\n    !true) return;');
-
-        // these aren't ready yet.
-        // bt('if (foo) // comment\n    bar() /*i*/ + baz() /*j\n*/ + asdf();');
-        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\na();',
-            'if (foo)\n    if (bar)\n        if (baz)\n            whee();\na();');
-        bt('if\n(foo)\nif\n(bar)\nif\n(baz)\nwhee();\nelse\na();',
-            'if (foo)\n    if (bar)\n        if (baz)\n            whee();\n        else\n            a();');
-        bt('if (foo)\nbar();\nelse\ncar();',
-            'if (foo)\n    bar();\nelse\n    car();');
-        bt('if (foo) bar();\nelse\ncar();',
-            'if (foo) bar();\nelse\n    car();');
-
-        bt('if (foo) if (bar) if (baz);\na();',
-            'if (foo)\n    if (bar)\n        if (baz);\na();');
-        bt('if (foo) if (bar) if (baz) whee();\na();',
-            'if (foo)\n    if (bar)\n        if (baz) whee();\na();');
-        bt('if (foo) a()\nif (bar) if (baz) whee();\na();',
-            'if (foo) a()\nif (bar)\n    if (baz) whee();\na();');
-        bt('if (foo);\nif (bar) if (baz) whee();\na();',
-            'if (foo);\nif (bar)\n    if (baz) whee();\na();');
-        bt('if (options)\n' +
-           '    for (var p in options)\n' +
-           '        this[p] = options[p];');
-        bt('if (options) for (var p in options) this[p] = options[p];',
-           'if (options)\n    for (var p in options) this[p] = options[p];');
-
-        bt('if (options) do q(); while (b());',
-           'if (options)\n    do q(); while (b());');
-        bt('if (options) do; while (b());',
-           'if (options)\n    do; while (b());');
-        bt('if (options) while (b()) q();',
-           'if (options)\n    while (b()) q();');
-        bt('if (options) do while (b()) q(); while (a());',
-           'if (options)\n    do\n        while (b()) q(); while (a());');
-
-        bt('function f(a, b, c,\nd, e) {}',
-            'function f(a, b, c,\n    d, e) {}');
-
-        bt('function f(a,b) {if(a) b()}function g(a,b) {if(!a) b()}',
-            'function f(a, b) {\n    if (a) b()\n}\n\nfunction g(a, b) {\n    if (!a) b()\n}');
-        bt('function f(a,b) {if(a) b()}\n\n\n\nfunction g(a,b) {if(!a) b()}',
-            'function f(a, b) {\n    if (a) b()\n}\n\n\n\nfunction g(a, b) {\n    if (!a) b()\n}');
-        // This is not valid syntax, but still want to behave reasonably and not side-effect
-        bt('(if(a) b())(if(a) b())',
-            '(\n    if (a) b())(\n    if (a) b())');
-        bt('(if(a) b())\n\n\n(if(a) b())',
-            '(\n    if (a) b())\n\n\n(\n    if (a) b())');
-
-        // space between functions
-        bt('/*\n * foo\n */\nfunction foo() {}');
-        bt('// a nice function\nfunction foo() {}');
-        bt('function foo() {}\nfunction foo() {}',
-            'function foo() {}\n\nfunction foo() {}'
-        );
-
-        bt('[\n    function() {}\n]');
-
-
-
-        bt("if\n(a)\nb();", "if (a)\n    b();");
-        bt('var a =\nfoo', 'var a =\n    foo');
-        bt('var a = {\n"a":1,\n"b":2}', "var a = {\n    \"a\": 1,\n    \"b\": 2\n}");
-        bt("var a = {\n'a':1,\n'b':2}", "var a = {\n    'a': 1,\n    'b': 2\n}");
-        bt('var a = /*i*/ "b";');
-        bt('var a = /*i*/\n"b";', 'var a = /*i*/\n    "b";');
-        bt('var a = /*i*/\nb;', 'var a = /*i*/\n    b;');
-        bt('{\n\n\n"x"\n}', '{\n\n\n    "x"\n}');
-        bt('if(a &&\nb\n||\nc\n||d\n&&\ne) e = f', 'if (a &&\n    b ||\n    c ||\n    d &&\n    e) e = f');
-        bt('if(a &&\n(b\n||\nc\n||d)\n&&\ne) e = f', 'if (a &&\n    (b ||\n        c ||\n        d) &&\n    e) e = f');
-        test_fragment('\n\n"x"', '"x"');
-
-        // this beavior differs between js and python, defaults to unlimited in js, 10 in python
-        bt('a = 1;\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nb = 2;',
-            'a = 1;\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nb = 2;');
-        opts.max_preserve_newlines = 8;
-        bt('a = 1;\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nb = 2;',
-            'a = 1;\n\n\n\n\n\n\n\nb = 2;');
-
-        reset_options();
-        //============================================================
-
-
         Urlencoded.run_tests(sanitytest);
     }
 
@@ -15078,8 +18996,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
     };
     var opts;
 
-    default_opts.indent_size = 1;
-    default_opts.indent_char = '\t';
+    default_opts.indent_size = 4;
+    default_opts.indent_char = ' ';
     default_opts.selector_separator_newline = true;
     default_opts.end_with_newline = false;
     default_opts.newline_between_rules = false;
@@ -15390,15 +19308,15 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         set_name('');
         t(
             '#cboxOverlay {\n' +
-            '\tbackground: url(images/overlay.png) repeat 0 0;\n' +
-            '\topacity: 0.9;\n' +
-            '\tfilter: alpha(opacity = 90);\n' +
+            '    background: url(images/overlay.png) repeat 0 0;\n' +
+            '    opacity: 0.9;\n' +
+            '    filter: alpha(opacity = 90);\n' +
             '}',
             //  -- output --
             '#cboxOverlay {\n' +
-            '\tbackground: url(images/overlay.png) repeat 0 0;\n' +
-            '\topacity: 0.9;\n' +
-            '\tfilter: alpha(opacity=90);\n' +
+            '    background: url(images/overlay.png) repeat 0 0;\n' +
+            '    opacity: 0.9;\n' +
+            '    filter: alpha(opacity=90);\n' +
             '}');
 
         // simple data uri base64 test
@@ -15406,7 +19324,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'a { background: url(data:image/gif;base64,R0lGODlhCwALAJEAAAAAAP///xUVFf///yH5BAEAAAMALAAAAAALAAsAAAIPnI+py+0/hJzz0IruwjsVADs=); }',
             //  -- output --
             'a {\n' +
-            '\tbackground: url(data:image/gif;base64,R0lGODlhCwALAJEAAAAAAP///xUVFf///yH5BAEAAAMALAAAAAALAAsAAAIPnI+py+0/hJzz0IruwjsVADs=);\n' +
+            '    background: url(data:image/gif;base64,R0lGODlhCwALAJEAAAAAAP///xUVFf///yH5BAEAAAMALAAAAAALAAsAAAIPnI+py+0/hJzz0IruwjsVADs=);\n' +
             '}');
 
         // non-base64 data
@@ -15414,7 +19332,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'a { background: url(data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E); }',
             //  -- output --
             'a {\n' +
-            '\tbackground: url(data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E);\n' +
+            '    background: url(data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E);\n' +
             '}');
 
         // Beautifier does not fix or mitigate bad data uri
@@ -15422,7 +19340,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'a { background: url(data:  image/gif   base64,R0lGODlhCwALAJEAAAAAAP///xUVFf///yH5BAEAAAMALAAAAAALAAsAAAIPnI+py+0/hJzz0IruwjsVADs=); }',
             //  -- output --
             'a {\n' +
-            '\tbackground: url(data:  image/gif   base64,R0lGODlhCwALAJEAAAAAAP///xUVFf///yH5BAEAAAMALAAAAAALAAsAAAIPnI+py+0/hJzz0IruwjsVADs=);\n' +
+            '    background: url(data:  image/gif   base64,R0lGODlhCwALAJEAAAAAAP///xUVFf///yH5BAEAAAMALAAAAAALAAsAAAIPnI+py+0/hJzz0IruwjsVADs=);\n' +
             '}');
 
 
@@ -15481,25 +19399,25 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'a > b{width: calc(100% + 45px);}',
             //  -- output --
             'a > b {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
         t(
             'a ~ b{width: calc(100% + 45px);}',
             //  -- output --
             'a ~ b {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b{width: calc(100% + 45px);}',
             //  -- output --
             'a + b {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b > c{width: calc(100% + 45px);}',
             //  -- output --
             'a + b > c {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
 
         // Space Around Combinator - (space_around_combinator = "false")
@@ -15518,25 +19436,25 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'a > b{width: calc(100% + 45px);}',
             //  -- output --
             'a>b {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
         t(
             'a ~ b{width: calc(100% + 45px);}',
             //  -- output --
             'a~b {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b{width: calc(100% + 45px);}',
             //  -- output --
             'a+b {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b > c{width: calc(100% + 45px);}',
             //  -- output --
             'a+b>c {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
 
         // Space Around Combinator - (space_around_selector_separator = "true")
@@ -15555,25 +19473,25 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'a > b{width: calc(100% + 45px);}',
             //  -- output --
             'a > b {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
         t(
             'a ~ b{width: calc(100% + 45px);}',
             //  -- output --
             'a ~ b {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b{width: calc(100% + 45px);}',
             //  -- output --
             'a + b {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
         t(
             'a + b > c{width: calc(100% + 45px);}',
             //  -- output --
             'a + b > c {\n' +
-            '\twidth: calc(100% + 45px);\n' +
+            '    width: calc(100% + 45px);\n' +
             '}');
 
 
@@ -15595,24 +19513,24 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla, #foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '#bla, #foo{color:green}\n' +
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla, #foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}\n' +
             '\n' +
             '#bla, #foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '@media print {.tab{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab {}\n' +
+            '    .tab {}\n' +
             '}');
 
         // This is bug #1489
@@ -15620,7 +19538,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media print {.tab,.bat{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab, .bat {}\n' +
+            '    .tab, .bat {}\n' +
             '}');
 
         // This is bug #1489
@@ -15631,34 +19549,34 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '@media print {\n' +
             '\n' +
-            '\t// comment\n' +
-            '\t//comment 2\n' +
-            '\t.bat {}\n' +
+            '    // comment\n' +
+            '    //comment 2\n' +
+            '    .bat {}\n' +
             '}');
         t(
             '#bla, #foo{color:black}',
             //  -- output --
             '#bla, #foo {\n' +
-            '\tcolor: black\n' +
+            '    color: black\n' +
             '}');
         t(
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}\n' +
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
             //  -- output --
             'a:first-child, a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:first-child, div:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:first-child, div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             'a:first-child, a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:first-child, div:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:first-child, div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}');
 
         // Selector Separator - (selector_separator_newline = "false", selector_separator = "" "", newline_between_rules = "false")
@@ -15671,23 +19589,23 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla, #foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '#bla, #foo{color:green}\n' +
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla, #foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}\n' +
             '#bla, #foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '@media print {.tab{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab {}\n' +
+            '    .tab {}\n' +
             '}');
 
         // This is bug #1489
@@ -15695,7 +19613,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media print {.tab,.bat{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab, .bat {}\n' +
+            '    .tab, .bat {}\n' +
             '}');
 
         // This is bug #1489
@@ -15705,31 +19623,31 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.bat{}}',
             //  -- output --
             '@media print {\n' +
-            '\t// comment\n' +
-            '\t//comment 2\n' +
-            '\t.bat {}\n' +
+            '    // comment\n' +
+            '    //comment 2\n' +
+            '    .bat {}\n' +
             '}');
         t(
             '#bla, #foo{color:black}',
             //  -- output --
             '#bla, #foo {\n' +
-            '\tcolor: black\n' +
+            '    color: black\n' +
             '}');
         t(
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}\n' +
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
             //  -- output --
             'a:first-child, a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child, div:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child, div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             'a:first-child, a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child, div:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child, div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}');
 
         // Selector Separator - (selector_separator_newline = "false", selector_separator = ""  "", newline_between_rules = "false")
@@ -15742,23 +19660,23 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla, #foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '#bla, #foo{color:green}\n' +
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla, #foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}\n' +
             '#bla, #foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '@media print {.tab{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab {}\n' +
+            '    .tab {}\n' +
             '}');
 
         // This is bug #1489
@@ -15766,7 +19684,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media print {.tab,.bat{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab, .bat {}\n' +
+            '    .tab, .bat {}\n' +
             '}');
 
         // This is bug #1489
@@ -15776,31 +19694,31 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.bat{}}',
             //  -- output --
             '@media print {\n' +
-            '\t// comment\n' +
-            '\t//comment 2\n' +
-            '\t.bat {}\n' +
+            '    // comment\n' +
+            '    //comment 2\n' +
+            '    .bat {}\n' +
             '}');
         t(
             '#bla, #foo{color:black}',
             //  -- output --
             '#bla, #foo {\n' +
-            '\tcolor: black\n' +
+            '    color: black\n' +
             '}');
         t(
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}\n' +
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
             //  -- output --
             'a:first-child, a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child, div:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child, div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             'a:first-child, a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child, div:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child, div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}');
 
         // Selector Separator - (selector_separator_newline = "true", selector_separator = "" "", newline_between_rules = "true")
@@ -15813,24 +19731,24 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla,\n#foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '#bla, #foo{color:green}\n' +
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla,\n#foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}\n' +
             '\n' +
             '#bla,\n#foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '@media print {.tab{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab {}\n' +
+            '    .tab {}\n' +
             '}');
 
         // This is bug #1489
@@ -15839,7 +19757,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '@media print {\n' +
             '\n' +
-            '\t.tab,\n\t.bat {}\n' +
+            '    .tab,\n    .bat {}\n' +
             '}');
 
         // This is bug #1489
@@ -15850,34 +19768,34 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '@media print {\n' +
             '\n' +
-            '\t// comment\n' +
-            '\t//comment 2\n' +
-            '\t.bat {}\n' +
+            '    // comment\n' +
+            '    //comment 2\n' +
+            '    .bat {}\n' +
             '}');
         t(
             '#bla, #foo{color:black}',
             //  -- output --
             '#bla,\n#foo {\n' +
-            '\tcolor: black\n' +
+            '    color: black\n' +
             '}');
         t(
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}\n' +
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
             //  -- output --
             'a:first-child,\na:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:first-child,\n\tdiv:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:first-child,\n    div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             'a:first-child,\na:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:first-child,\n\tdiv:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:first-child,\n    div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}');
 
         // Selector Separator - (selector_separator_newline = "true", selector_separator = "" "", newline_between_rules = "false")
@@ -15890,23 +19808,23 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla,\n#foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '#bla, #foo{color:green}\n' +
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla,\n#foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}\n' +
             '#bla,\n#foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '@media print {.tab{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab {}\n' +
+            '    .tab {}\n' +
             '}');
 
         // This is bug #1489
@@ -15914,7 +19832,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media print {.tab,.bat{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab,\n\t.bat {}\n' +
+            '    .tab,\n    .bat {}\n' +
             '}');
 
         // This is bug #1489
@@ -15924,31 +19842,31 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.bat{}}',
             //  -- output --
             '@media print {\n' +
-            '\t// comment\n' +
-            '\t//comment 2\n' +
-            '\t.bat {}\n' +
+            '    // comment\n' +
+            '    //comment 2\n' +
+            '    .bat {}\n' +
             '}');
         t(
             '#bla, #foo{color:black}',
             //  -- output --
             '#bla,\n#foo {\n' +
-            '\tcolor: black\n' +
+            '    color: black\n' +
             '}');
         t(
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}\n' +
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
             //  -- output --
             'a:first-child,\na:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child,\n\tdiv:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child,\n    div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             'a:first-child,\na:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child,\n\tdiv:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child,\n    div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}');
 
         // Selector Separator - (selector_separator_newline = "true", selector_separator = ""  "", newline_between_rules = "false")
@@ -15961,23 +19879,23 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla,\n#foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '#bla, #foo{color:green}\n' +
             '#bla, #foo{color:green}',
             //  -- output --
             '#bla,\n#foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}\n' +
             '#bla,\n#foo {\n' +
-            '\tcolor: green\n' +
+            '    color: green\n' +
             '}');
         t(
             '@media print {.tab{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab {}\n' +
+            '    .tab {}\n' +
             '}');
 
         // This is bug #1489
@@ -15985,7 +19903,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media print {.tab,.bat{}}',
             //  -- output --
             '@media print {\n' +
-            '\t.tab,\n\t.bat {}\n' +
+            '    .tab,\n    .bat {}\n' +
             '}');
 
         // This is bug #1489
@@ -15995,31 +19913,31 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.bat{}}',
             //  -- output --
             '@media print {\n' +
-            '\t// comment\n' +
-            '\t//comment 2\n' +
-            '\t.bat {}\n' +
+            '    // comment\n' +
+            '    //comment 2\n' +
+            '    .bat {}\n' +
             '}');
         t(
             '#bla, #foo{color:black}',
             //  -- output --
             '#bla,\n#foo {\n' +
-            '\tcolor: black\n' +
+            '    color: black\n' +
             '}');
         t(
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}\n' +
             'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
             //  -- output --
             'a:first-child,\na:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child,\n\tdiv:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child,\n    div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             'a:first-child,\na:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child,\n\tdiv:hover {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child,\n    div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}');
 
 
@@ -16031,12 +19949,12 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('.div {}\n\n.span {}');
         t(
             '#bla, #foo{\n' +
-            '\tcolor:black;\n\n\tfont-size: 12px;\n' +
+            '    color:black;\n\n    font-size: 12px;\n' +
             '}',
             //  -- output --
             '#bla,\n' +
             '#foo {\n' +
-            '\tcolor: black;\n\n\tfont-size: 12px;\n' +
+            '    color: black;\n\n    font-size: 12px;\n' +
             '}');
 
         // Preserve Newlines - (preserve_newlines = "false")
@@ -16046,12 +19964,12 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('.div {}\n\n.span {}', '.div {}\n.span {}');
         t(
             '#bla, #foo{\n' +
-            '\tcolor:black;\n\n\tfont-size: 12px;\n' +
+            '    color:black;\n\n    font-size: 12px;\n' +
             '}',
             //  -- output --
             '#bla,\n' +
             '#foo {\n' +
-            '\tcolor: black;\n\tfont-size: 12px;\n' +
+            '    color: black;\n    font-size: 12px;\n' +
             '}');
 
 
@@ -16069,45 +19987,45 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '#bla, #foo{\n' +
-            '\tcolor:black;\n' +
-            '\tfont-size: 12px;\n' +
+            '    color:black;\n' +
+            '    font-size: 12px;\n' +
             '}',
             //  -- output --
             '#bla,\n' +
             '#foo {\n' +
-            '\tcolor: black;\n' +
-            '\tfont-size: 12px;\n' +
+            '    color: black;\n' +
+            '    font-size: 12px;\n' +
             '}');
         t(
             '#bla, #foo{\n' +
-            '\tcolor:black;\n' +
+            '    color:black;\n' +
             '\n' +
             '\n' +
-            '\tfont-size: 12px;\n' +
+            '    font-size: 12px;\n' +
             '}',
             //  -- output --
             '#bla,\n' +
             '#foo {\n' +
-            '\tcolor: black;\n' +
+            '    color: black;\n' +
             '\n' +
             '\n' +
-            '\tfont-size: 12px;\n' +
+            '    font-size: 12px;\n' +
             '}');
         t(
             '#bla,\n' +
             '\n' +
             '#foo {\n' +
-            '\tcolor: black;\n' +
-            '\tfont-size: 12px;\n' +
+            '    color: black;\n' +
+            '    font-size: 12px;\n' +
             '}');
         t(
             'a {\n' +
-            '\tb: c;\n' +
+            '    b: c;\n' +
             '\n' +
             '\n' +
-            '\td: {\n' +
-            '\t\te: f;\n' +
-            '\t}\n' +
+            '    d: {\n' +
+            '        e: f;\n' +
+            '    }\n' +
             '}');
         t(
             '.div {}\n' +
@@ -16119,46 +20037,46 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '/*this is a comment*/');
         t(
             '.div {\n' +
-            '\ta: 1;\n' +
+            '    a: 1;\n' +
             '\n' +
             '\n' +
-            '\tb: 2;\n' +
+            '    b: 2;\n' +
             '}\n' +
             '\n' +
             '\n' +
             '\n' +
             '.span {\n' +
-            '\ta: 1;\n' +
+            '    a: 1;\n' +
             '}');
         t(
             '.div {\n' +
             '\n' +
             '\n' +
-            '\ta: 1;\n' +
+            '    a: 1;\n' +
             '\n' +
             '\n' +
-            '\tb: 2;\n' +
+            '    b: 2;\n' +
             '}\n' +
             '\n' +
             '\n' +
             '\n' +
             '.span {\n' +
-            '\ta: 1;\n' +
+            '    a: 1;\n' +
             '}');
         t(
             '@media screen {\n' +
-            '\t.div {\n' +
-            '\t\ta: 1;\n' +
+            '    .div {\n' +
+            '        a: 1;\n' +
             '\n' +
             '\n' +
-            '\t\tb: 2;\n' +
-            '\t}\n' +
+            '        b: 2;\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '\n' +
-            '\t.span {\n' +
-            '\t\ta: 1;\n' +
-            '\t}\n' +
+            '    .span {\n' +
+            '        a: 1;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {}\n' +
@@ -16173,35 +20091,35 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         opts.preserve_newlines = true;
         t(
             '.tool-tip {\n' +
-            '\tposition: relative;\n' +
+            '    position: relative;\n' +
             '\n' +
-            '\t\t\n' +
-            '\t.tool-tip-content {\n' +
-            '\t\t&>* {\n' +
-            '\t\t\tmargin-top: 0;\n' +
-            '\t\t}\n' +
-            '\t\t\n' +
+            '        \n' +
+            '    .tool-tip-content {\n' +
+            '        &>* {\n' +
+            '            margin-top: 0;\n' +
+            '        }\n' +
+            '        \n' +
             '\n' +
-            '\t\t.mixin-box-shadow(.2rem .2rem .5rem rgba(0, 0, 0, .15));\n' +
-            '\t\tpadding: 1rem;\n' +
-            '\t\tposition: absolute;\n' +
-            '\t\tz-index: 10;\n' +
-            '\t}\n' +
+            '        .mixin-box-shadow(.2rem .2rem .5rem rgba(0, 0, 0, .15));\n' +
+            '        padding: 1rem;\n' +
+            '        position: absolute;\n' +
+            '        z-index: 10;\n' +
+            '    }\n' +
             '}',
             //  -- output --
             '.tool-tip {\n' +
-            '\tposition: relative;\n' +
+            '    position: relative;\n' +
             '\n' +
             '\n' +
-            '\t.tool-tip-content {\n' +
-            '\t\t&>* {\n' +
-            '\t\t\tmargin-top: 0;\n' +
-            '\t\t}\n' +
-            '\n\n\t\t.mixin-box-shadow(.2rem .2rem .5rem rgba(0, 0, 0, .15));\n' +
-            '\t\tpadding: 1rem;\n' +
-            '\t\tposition: absolute;\n' +
-            '\t\tz-index: 10;\n' +
-            '\t}\n' +
+            '    .tool-tip-content {\n' +
+            '        &>* {\n' +
+            '            margin-top: 0;\n' +
+            '        }\n' +
+            '\n\n        .mixin-box-shadow(.2rem .2rem .5rem rgba(0, 0, 0, .15));\n' +
+            '        padding: 1rem;\n' +
+            '        position: absolute;\n' +
+            '        z-index: 10;\n' +
+            '    }\n' +
             '}');
 
 
@@ -16212,10 +20130,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         opts.preserve_newlines = true;
         t(
             'body {\n' +
-            '\tgrid-template-areas:\n' +
-            '\t\t"header header"\n' +
-            '\t\t"main   sidebar"\n' +
-            '\t\t"footer footer";\n' +
+            '    grid-template-areas:\n' +
+            '        "header header"\n' +
+            '        "main   sidebar"\n' +
+            '        "footer footer";\n' +
             '}');
 
 
@@ -16259,17 +20177,17 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '.selector1 {\n' +
-            '\tmargin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '.div{height:15px;}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
@@ -16278,258 +20196,258 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div{height:15px;}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    background-image: url(foo@2x.png);\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div{height:15px;}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
+            '    background-image: url(foo@2x.png);\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div{height:15px;}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue"\n' +
-            '\t\t}\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue"\n' +
+            '        }\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}',
             //  -- output --
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue"\n' +
-            '\t\t}\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue"\n' +
+            '        }\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{color:red;div:first-child{color:black;}}\n' +
             '.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{color:red;div:not(.peq){color:black;}}\n' +
             '.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.list-group {\n' +
-            '\t.list-group-item {\n' +
-            '\t}\n' +
+            '    .list-group-item {\n' +
+            '    }\n' +
             '\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.list-group-condensed {\n' +
             '}',
             //  -- output --
             '.list-group {\n' +
-            '\t.list-group-item {}\n' +
+            '    .list-group-item {}\n' +
             '\n' +
-            '\t.list-group-icon {}\n' +
+            '    .list-group-icon {}\n' +
             '}\n' +
             '\n' +
             '.list-group-condensed {}');
         t(
             '.list-group {\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
             '}\n' +
             '.list-group-condensed {\n' +
             '}',
             //  -- output --
             '.list-group {\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
             '\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
             '\n' +
-            '\t.list-group-icon {}\n' +
+            '    .list-group-icon {}\n' +
             '\n' +
-            '\t.list-group-icon {}\n' +
+            '    .list-group-icon {}\n' +
             '}\n' +
             '\n' +
             '.list-group-condensed {}');
         t(
             '.list-group {\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
-            '\t//this is my pre-comment\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
-            '\t//this is a comment\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
-            '\t//this is also a comment\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
+            '    //this is my pre-comment\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
+            '    //this is a comment\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
+            '    //this is also a comment\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
             '}\n' +
             '.list-group-condensed {\n' +
             '}',
             //  -- output --
             '.list-group {\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
             '\n' +
-            '\t//this is my pre-comment\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
+            '    //this is my pre-comment\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
             '\n' +
-            '\t//this is a comment\n' +
-            '\t.list-group-icon {}\n' +
+            '    //this is a comment\n' +
+            '    .list-group-icon {}\n' +
             '\n' +
-            '\t//this is also a comment\n' +
-            '\t.list-group-icon {}\n' +
+            '    //this is also a comment\n' +
+            '    .list-group-icon {}\n' +
             '}\n' +
             '\n' +
             '.list-group-condensed {}');
         t(
             '.list-group {\n' +
-            '\tcolor: #38a0e5;\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
-            '\tcolor: #38a0e5;\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
+            '    color: #38a0e5;\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
+            '    color: #38a0e5;\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
             'color: #38a0e5;\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
-            '\tcolor: #38a0e5;\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
+            '    color: #38a0e5;\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
             '}\n' +
             'color: #38a0e5;\n' +
             '.list-group-condensed {\n' +
             '}',
             //  -- output --
             '.list-group {\n' +
-            '\tcolor: #38a0e5;\n' +
+            '    color: #38a0e5;\n' +
             '\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
             '\n' +
-            '\tcolor: #38a0e5;\n' +
+            '    color: #38a0e5;\n' +
             '\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
             '\n' +
-            '\tcolor: #38a0e5;\n' +
+            '    color: #38a0e5;\n' +
             '\n' +
-            '\t.list-group-icon {}\n' +
+            '    .list-group-icon {}\n' +
             '\n' +
-            '\tcolor: #38a0e5;\n' +
+            '    color: #38a0e5;\n' +
             '\n' +
-            '\t.list-group-icon {}\n' +
+            '    .list-group-icon {}\n' +
             '}\n' +
             '\n' +
             'color: #38a0e5;\n' +
@@ -16550,67 +20468,67 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '@media only screen and (max-width: 40em) {\n' +
-            '\theader {\n' +
-            '\t\tmargin: 0 auto;\n' +
-            '\t\tpadding: 10px;\n' +
-            '\t\tbackground: red;\n' +
-            '\t}\n' +
+            '    header {\n' +
+            '        margin: 0 auto;\n' +
+            '        padding: 10px;\n' +
+            '        background: red;\n' +
+            '    }\n' +
             '\n' +
-            '\tmain {\n' +
-            '\t\tmargin: 20px auto;\n' +
-            '\t\tpadding: 4px;\n' +
-            '\t\tbackground: blue;\n' +
-            '\t}\n' +
+            '    main {\n' +
+            '        margin: 20px auto;\n' +
+            '        padding: 4px;\n' +
+            '        background: blue;\n' +
+            '    }\n' +
             '}');
         t(
             '.preloader {\n' +
-            '\theight: 20px;\n' +
-            '\t.line {\n' +
-            '\t\twidth: 1px;\n' +
-            '\t\theight: 12px;\n' +
-            '\t\tbackground: #38a0e5;\n' +
-            '\t\tmargin: 0 1px;\n' +
-            '\t\tdisplay: inline-block;\n' +
-            '\t\t&.line-1 {\n' +
-            '\t\t\tanimation-delay: 800ms;\n' +
-            '\t\t}\n' +
-            '\t\t&.line-2 {\n' +
-            '\t\t\tanimation-delay: 600ms;\n' +
-            '\t\t}\n' +
-            '\t}\n' +
-            '\tdiv {\n' +
-            '\t\tcolor: #38a0e5;\n' +
-            '\t\tfont-family: "Arial", sans-serif;\n' +
-            '\t\tfont-size: 10px;\n' +
-            '\t\tmargin: 5px 0;\n' +
-            '\t}\n' +
+            '    height: 20px;\n' +
+            '    .line {\n' +
+            '        width: 1px;\n' +
+            '        height: 12px;\n' +
+            '        background: #38a0e5;\n' +
+            '        margin: 0 1px;\n' +
+            '        display: inline-block;\n' +
+            '        &.line-1 {\n' +
+            '            animation-delay: 800ms;\n' +
+            '        }\n' +
+            '        &.line-2 {\n' +
+            '            animation-delay: 600ms;\n' +
+            '        }\n' +
+            '    }\n' +
+            '    div {\n' +
+            '        color: #38a0e5;\n' +
+            '        font-family: "Arial", sans-serif;\n' +
+            '        font-size: 10px;\n' +
+            '        margin: 5px 0;\n' +
+            '    }\n' +
             '}',
             //  -- output --
             '.preloader {\n' +
-            '\theight: 20px;\n' +
+            '    height: 20px;\n' +
             '\n' +
-            '\t.line {\n' +
-            '\t\twidth: 1px;\n' +
-            '\t\theight: 12px;\n' +
-            '\t\tbackground: #38a0e5;\n' +
-            '\t\tmargin: 0 1px;\n' +
-            '\t\tdisplay: inline-block;\n' +
+            '    .line {\n' +
+            '        width: 1px;\n' +
+            '        height: 12px;\n' +
+            '        background: #38a0e5;\n' +
+            '        margin: 0 1px;\n' +
+            '        display: inline-block;\n' +
             '\n' +
-            '\t\t&.line-1 {\n' +
-            '\t\t\tanimation-delay: 800ms;\n' +
-            '\t\t}\n' +
+            '        &.line-1 {\n' +
+            '            animation-delay: 800ms;\n' +
+            '        }\n' +
             '\n' +
-            '\t\t&.line-2 {\n' +
-            '\t\t\tanimation-delay: 600ms;\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '        &.line-2 {\n' +
+            '            animation-delay: 600ms;\n' +
+            '        }\n' +
+            '    }\n' +
             '\n' +
-            '\tdiv {\n' +
-            '\t\tcolor: #38a0e5;\n' +
-            '\t\tfont-family: "Arial", sans-serif;\n' +
-            '\t\tfont-size: 10px;\n' +
-            '\t\tmargin: 5px 0;\n' +
-            '\t}\n' +
+            '    div {\n' +
+            '        color: #38a0e5;\n' +
+            '        font-family: "Arial", sans-serif;\n' +
+            '        font-size: 10px;\n' +
+            '        margin: 5px 0;\n' +
+            '    }\n' +
             '}');
 
         // Newline Between Rules - (newline_between_rules = "false")
@@ -16645,16 +20563,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '.selector1 {\n' +
-            '\tmargin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0; /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '.div{height:15px;}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
@@ -16663,211 +20581,211 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div{height:15px;}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    background-image: url(foo@2x.png);\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div{height:15px;}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    background-image: url(foo@2x.png);\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div{height:15px;}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue"\n' +
-            '\t\t}\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue"\n' +
+            '        }\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{color:red;div:first-child{color:black;}}\n' +
             '.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{color:red;div:not(.peq){color:black;}}\n' +
             '.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.list-group {\n' +
-            '\t.list-group-item {\n' +
-            '\t}\n' +
+            '    .list-group-item {\n' +
+            '    }\n' +
             '\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.list-group-condensed {\n' +
             '}',
             //  -- output --
             '.list-group {\n' +
-            '\t.list-group-item {}\n' +
-            '\t.list-group-icon {}\n' +
+            '    .list-group-item {}\n' +
+            '    .list-group-icon {}\n' +
             '}\n' +
             '.list-group-condensed {}');
         t(
             '.list-group {\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
             '}\n' +
             '.list-group-condensed {\n' +
             '}',
             //  -- output --
             '.list-group {\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
-            '\t.list-group-icon {}\n' +
-            '\t.list-group-icon {}\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
+            '    .list-group-icon {}\n' +
+            '    .list-group-icon {}\n' +
             '}\n' +
             '.list-group-condensed {}');
         t(
             '.list-group {\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
-            '\t//this is my pre-comment\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
-            '\t//this is a comment\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
-            '\t//this is also a comment\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
+            '    //this is my pre-comment\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
+            '    //this is a comment\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
+            '    //this is also a comment\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
             '}\n' +
             '.list-group-condensed {\n' +
             '}',
             //  -- output --
             '.list-group {\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
-            '\t//this is my pre-comment\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
-            '\t//this is a comment\n' +
-            '\t.list-group-icon {}\n' +
-            '\t//this is also a comment\n' +
-            '\t.list-group-icon {}\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
+            '    //this is my pre-comment\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
+            '    //this is a comment\n' +
+            '    .list-group-icon {}\n' +
+            '    //this is also a comment\n' +
+            '    .list-group-icon {}\n' +
             '}\n' +
             '.list-group-condensed {}');
         t(
             '.list-group {\n' +
-            '\tcolor: #38a0e5;\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
-            '\tcolor: #38a0e5;\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta:1\n' +
-            '\t}\n' +
+            '    color: #38a0e5;\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
+            '    color: #38a0e5;\n' +
+            '    .list-group-item {\n' +
+            '        a:1\n' +
+            '    }\n' +
             'color: #38a0e5;\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
-            '\tcolor: #38a0e5;\n' +
-            '\t.list-group-icon {\n' +
-            '\t}\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
+            '    color: #38a0e5;\n' +
+            '    .list-group-icon {\n' +
+            '    }\n' +
             '}\n' +
             'color: #38a0e5;\n' +
             '.list-group-condensed {\n' +
             '}',
             //  -- output --
             '.list-group {\n' +
-            '\tcolor: #38a0e5;\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
-            '\tcolor: #38a0e5;\n' +
-            '\t.list-group-item {\n' +
-            '\t\ta: 1\n' +
-            '\t}\n' +
-            '\tcolor: #38a0e5;\n' +
-            '\t.list-group-icon {}\n' +
-            '\tcolor: #38a0e5;\n' +
-            '\t.list-group-icon {}\n' +
+            '    color: #38a0e5;\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
+            '    color: #38a0e5;\n' +
+            '    .list-group-item {\n' +
+            '        a: 1\n' +
+            '    }\n' +
+            '    color: #38a0e5;\n' +
+            '    .list-group-icon {}\n' +
+            '    color: #38a0e5;\n' +
+            '    .list-group-icon {}\n' +
             '}\n' +
             'color: #38a0e5;\n' +
             '.list-group-condensed {}');
@@ -16886,39 +20804,39 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '@media only screen and (max-width: 40em) {\n' +
-            '\theader {\n' +
-            '\t\tmargin: 0 auto;\n' +
-            '\t\tpadding: 10px;\n' +
-            '\t\tbackground: red;\n' +
-            '\t}\n' +
-            '\tmain {\n' +
-            '\t\tmargin: 20px auto;\n' +
-            '\t\tpadding: 4px;\n' +
-            '\t\tbackground: blue;\n' +
-            '\t}\n' +
+            '    header {\n' +
+            '        margin: 0 auto;\n' +
+            '        padding: 10px;\n' +
+            '        background: red;\n' +
+            '    }\n' +
+            '    main {\n' +
+            '        margin: 20px auto;\n' +
+            '        padding: 4px;\n' +
+            '        background: blue;\n' +
+            '    }\n' +
             '}');
         t(
             '.preloader {\n' +
-            '\theight: 20px;\n' +
-            '\t.line {\n' +
-            '\t\twidth: 1px;\n' +
-            '\t\theight: 12px;\n' +
-            '\t\tbackground: #38a0e5;\n' +
-            '\t\tmargin: 0 1px;\n' +
-            '\t\tdisplay: inline-block;\n' +
-            '\t\t&.line-1 {\n' +
-            '\t\t\tanimation-delay: 800ms;\n' +
-            '\t\t}\n' +
-            '\t\t&.line-2 {\n' +
-            '\t\t\tanimation-delay: 600ms;\n' +
-            '\t\t}\n' +
-            '\t}\n' +
-            '\tdiv {\n' +
-            '\t\tcolor: #38a0e5;\n' +
-            '\t\tfont-family: "Arial", sans-serif;\n' +
-            '\t\tfont-size: 10px;\n' +
-            '\t\tmargin: 5px 0;\n' +
-            '\t}\n' +
+            '    height: 20px;\n' +
+            '    .line {\n' +
+            '        width: 1px;\n' +
+            '        height: 12px;\n' +
+            '        background: #38a0e5;\n' +
+            '        margin: 0 1px;\n' +
+            '        display: inline-block;\n' +
+            '        &.line-1 {\n' +
+            '            animation-delay: 800ms;\n' +
+            '        }\n' +
+            '        &.line-2 {\n' +
+            '            animation-delay: 600ms;\n' +
+            '        }\n' +
+            '    }\n' +
+            '    div {\n' +
+            '        color: #38a0e5;\n' +
+            '        font-family: "Arial", sans-serif;\n' +
+            '        font-size: 10px;\n' +
+            '        margin: 5px 0;\n' +
+            '    }\n' +
             '}');
 
 
@@ -16947,13 +20865,109 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '  }',
             //  -- output --
             '.tabs (t, t2) {\n' +
-            '\tkey: val(p1, p2);\n' +
+            '    key: val(p1, p2);\n' +
             '}');
         t(
             '.box-shadow(@shadow: 0 1px 3px rgba(0, 0, 0, .25)) {\n' +
-            '\t-webkit-box-shadow: @shadow;\n' +
-            '\t-moz-box-shadow: @shadow;\n' +
-            '\tbox-shadow: @shadow;\n' +
+            '    -webkit-box-shadow: @shadow;\n' +
+            '    -moz-box-shadow: @shadow;\n' +
+            '    box-shadow: @shadow;\n' +
+            '}');
+
+
+        //============================================================
+        // Beautify preserve formatting
+        reset_options();
+        set_name('Beautify preserve formatting');
+        opts.indent_size = 4;
+        opts.indent_char = ' ';
+        opts.preserve_newlines = true;
+
+        // Directive: ignore
+        t(
+            '/* beautify ignore:start */\n' +
+            '/* beautify ignore:end */');
+        t(
+            '/* beautify ignore:start */\n' +
+            '   var a,,,{ 1;\n' +
+            ' .div {}/* beautify ignore:end */');
+        t(
+            '.div {}\n' +
+            '\n' +
+            '/* beautify ignore:start */\n' +
+            '   .div {}var a = 1;\n' +
+            '/* beautify ignore:end */');
+
+        // ignore starts _after_ the start comment, ends after the end comment
+        t('/* beautify ignore:start */     {asdklgh;y;+++;dd2d}/* beautify ignore:end */');
+        t('/* beautify ignore:start */  {asdklgh;y;+++;dd2d}    /* beautify ignore:end */');
+        t(
+            '.div {}/* beautify ignore:start */\n' +
+            '   .div {}var a,,,{ 1;\n' +
+            '/*beautify ignore:end*/',
+            //  -- output --
+            '.div {}\n' +
+            '/* beautify ignore:start */\n' +
+            '   .div {}var a,,,{ 1;\n' +
+            '/*beautify ignore:end*/');
+        t(
+            '.div {}\n' +
+            '  /* beautify ignore:start */\n' +
+            '   .div {}var a,,,{ 1;\n' +
+            '/* beautify ignore:end */',
+            //  -- output --
+            '.div {}\n' +
+            '/* beautify ignore:start */\n' +
+            '   .div {}var a,,,{ 1;\n' +
+            '/* beautify ignore:end */');
+        t(
+            '.div {\n' +
+            '    /* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            '    two   :  2,\n' +
+            '    three :  {\n' +
+            '    ten   : 10\n' +
+            '    /* beautify ignore:end */\n' +
+            '}');
+        t(
+            '.div {\n' +
+            '/* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            '    two   :  2,\n' +
+            '    three :  {\n' +
+            '    ten   : 10\n' +
+            '/* beautify ignore:end */\n' +
+            '}',
+            //  -- output --
+            '.div {\n' +
+            '    /* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            '    two   :  2,\n' +
+            '    three :  {\n' +
+            '    ten   : 10\n' +
+            '/* beautify ignore:end */\n' +
+            '}');
+        t(
+            '.div {\n' +
+            '/* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            ' /* beautify ignore:end */\n' +
+            '    two   :  2,\n' +
+            '/* beautify ignore:start */\n' +
+            '    three :  {\n' +
+            '    ten   : 10\n' +
+            '/* beautify ignore:end */\n' +
+            '}',
+            //  -- output --
+            '.div {\n' +
+            '    /* beautify ignore:start */\n' +
+            '    one   :  1\n' +
+            ' /* beautify ignore:end */\n' +
+            '    two : 2,\n' +
+            '    /* beautify ignore:start */\n' +
+            '    three :  {\n' +
+            '    ten   : 10\n' +
+            '/* beautify ignore:end */\n' +
             '}');
 
 
@@ -16973,7 +20987,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs{/* test */}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '}');
 
         // #1185
@@ -16986,8 +21000,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {/* non-header */width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* non-header */\n' +
-            '\twidth: 10px;\n' +
+            '    /* non-header */\n' +
+            '    width: 10px;\n' +
             '}');
         t('/* header');
         t('// comment');
@@ -16997,8 +21011,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.selector1 {margin: 0;/* This is a comment including an url http://domain.com/path/to/file.ext */}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}');
 
         // single line comment support (less/sass)
@@ -17007,16 +21021,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{// comment\n' +
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '//comment\n' +
@@ -17024,7 +21038,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '//comment\n' +
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{//comment\n' +
@@ -17032,24 +21046,24 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t//comment\n' +
-            '\t//2nd single line comment\n' +
-            '\twidth: 10px;\n' +
+            '    //comment\n' +
+            '    //2nd single line comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
             'height:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px;\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
@@ -17057,8 +21071,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another nl\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another nl\n' +
             '}');
         t(
             '.tabs{width: 10px;   // comment follows rule\n' +
@@ -17066,21 +21080,21 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; // comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px; // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #1165
         t(
             '.tabs{width: 10px;\n' +
-            '\t\t// comment follows rule\n' +
+            '        // comment follows rule\n' +
             '// another comment new line\n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
-            '\t// comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px;\n' +
+            '    // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #736
@@ -17101,10 +21115,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}.demob {text-align: right;}',
             //  -- output --
             '.demoa1 {\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '}\n' +
             '.demob {\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '}');
 
         // #1440
@@ -17116,20 +21130,20 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {text-align:left;}//demob instructions for LESS note visibility only\n' +
             '.demob {text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '}\n' +
             '//demob instructions for LESS note visibility only\n' +
             '.demob {\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
@@ -17168,11 +21182,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div{height:15px;}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
@@ -17180,84 +21194,84 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}.div{height:15px;}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '#foo {background-image: url(foo@2x.png);\t@font-face {\t\tfont-family: "Bitstream Vera Serif Bold";\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\t}}.div{height:15px;}',
+            '#foo {background-image: url(foo@2x.png);    @font-face {        font-family: "Bitstream Vera Serif Bold";        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");    }}.div{height:15px;}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    background-image: url(foo@2x.png);\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '@media screen {\t#foo:hover {\t\tbackground-image: url(foo@2x.png);\t}\t@font-face {\t\tfont-family: "Bitstream Vera Serif Bold";\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\t}}.div{height:15px;}',
+            '@media screen {    #foo:hover {        background-image: url(foo@2x.png);    }    @font-face {        font-family: "Bitstream Vera Serif Bold";        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");    }}.div{height:15px;}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '@font-face {\tfont-family: "Bitstream Vera Serif Bold";\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");}\n' +
-            '@media screen {\t#foo:hover {\t\tbackground-image: url(foo.png);\t}\t@media screen and (min-device-pixel-ratio: 2) {\t\t@font-face {\t\t\tfont-family: "Helvetica Neue";\t\t}\t\t#foo:hover {\t\t\tbackground-image: url(foo@2x.png);\t\t}\t}}',
+            '@font-face {    font-family: "Bitstream Vera Serif Bold";    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");}\n' +
+            '@media screen {    #foo:hover {        background-image: url(foo.png);    }    @media screen and (min-device-pixel-ratio: 2) {        @font-face {            font-family: "Helvetica Neue";        }        #foo:hover {            background-image: url(foo@2x.png);        }    }}',
             //  -- output --
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t}\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        }\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{color:red;div:first-child{color:black;}}.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{color:red;div:not(.peq){color:black;}}.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
 
         // Comments - (preserve_newlines = "false", newline_between_rules = "false")
@@ -17284,7 +21298,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '}');
 
         // #1185
@@ -17309,8 +21323,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* non-header */\n' +
-            '\twidth: 10px;\n' +
+            '    /* non-header */\n' +
+            '    width: 10px;\n' +
             '}');
         t('/* header');
         t('// comment');
@@ -17329,8 +21343,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}');
 
         // single line comment support (less/sass)
@@ -17347,8 +21361,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -17363,8 +21377,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '//comment\n' +
@@ -17380,7 +21394,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '//comment\n' +
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -17398,9 +21412,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t//comment\n' +
-            '\t//2nd single line comment\n' +
-            '\twidth: 10px;\n' +
+            '    //comment\n' +
+            '    //2nd single line comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -17412,7 +21426,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -17427,8 +21441,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px;\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -17443,8 +21457,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another nl\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another nl\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -17459,8 +21473,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; // comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px; // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #1165
@@ -17471,7 +21485,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width: 10px;\n' +
             '\n' +
             '\n' +
-            '\t\t// comment follows rule\n' +
+            '        // comment follows rule\n' +
             '\n' +
             '\n' +
             '// another comment new line\n' +
@@ -17480,9 +21494,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
-            '\t// comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px;\n' +
+            '    // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #736
@@ -17525,10 +21539,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.demoa1 {\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '}\n' +
             '.demob {\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '}');
 
         // #1440
@@ -17540,9 +21554,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {\n' +
@@ -17563,11 +21577,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '}\n' +
             '//demob instructions for LESS note visibility only\n' +
             '.demob {\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
@@ -17666,11 +21680,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -17694,11 +21708,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '#foo {\n' +
@@ -17707,16 +21721,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -17731,38 +21745,38 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    background-image: url(foo@2x.png);\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '        background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -17777,25 +21791,25 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@font-face {\n' +
             '\n' +
             '\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -17804,57 +21818,57 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
+            '        background-image: url(foo.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
             '\n' +
             '\n' +
-            '\t\t@font-face {\n' +
+            '        @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
+            '            font-family: "Helvetica Neue";\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
+            '        #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
+            '            background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}',
             //  -- output --
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t}\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        }\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{\n' +
@@ -17884,13 +21898,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{\n' +
@@ -17920,13 +21934,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
 
         // Comments - (preserve_newlines = "false", newline_between_rules = "false")
@@ -17937,7 +21951,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('/* header comment newlines on */');
         t(
             '@import "custom.css";\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.rule{}',
             //  -- output --
@@ -17945,21 +21959,21 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.rule {}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* test */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '}');
 
         // #1185
         t(
             '/* header */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.tabs{}',
             //  -- output --
@@ -17967,19 +21981,19 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {}');
         t(
             '.tabs {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* non-header */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* non-header */\n' +
-            '\twidth: 10px;\n' +
+            '    /* non-header */\n' +
+            '    width: 10px;\n' +
             '}');
         t('/* header');
         t('// comment');
@@ -17987,171 +22001,171 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('//');
         t(
             '.selector1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'margin: 0;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}');
 
         // single line comment support (less/sass)
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '// comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '// comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '//comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '//comment\n' +
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '//2nd single line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t//comment\n' +
-            '\t//2nd single line comment\n' +
-            '\twidth: 10px;\n' +
+            '    //comment\n' +
+            '    //2nd single line comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px;\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;//another nl\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another nl\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another nl\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width: 10px;   // comment follows rule\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '// another comment new line\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; // comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px; // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #1165
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width: 10px;\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
-            '\t\t// comment follows rule\n' +
-            '\t\t\t\n' +
+            '        // comment follows rule\n' +
+            '            \n' +
             '   \n' +
             '// another comment new line\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
-            '\t// comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px;\n' +
+            '    // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #736
@@ -18159,13 +22173,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '/*\n' +
             ' * comment\n' +
             ' */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* another comment */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'body{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n',
             //  -- output --
             '/*\n' +
@@ -18177,27 +22191,27 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // #1348
         t(
             '.demoa1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align:left; //demoa1 instructions for LESS note visibility only\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.demob {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align: right;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.demoa1 {\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '}\n' +
             '.demob {\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '}');
 
         // #1440
@@ -18209,43 +22223,43 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align:left;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//demob instructions for LESS note visibility only\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.demob {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '}\n' +
             '//demob instructions for LESS note visibility only\n' +
             '.demob {\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
         t(
             '.div{}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -18253,34 +22267,34 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -18296,16 +22310,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.div{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -18315,287 +22329,287 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '.selector1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'margin: 0; \n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;//another\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '#foo {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'background-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t@font-face {\n' +
-            '\t\t\n' +
+            '    @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    background-image: url(foo@2x.png);\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@media screen {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t#foo:hover {\n' +
-            '\t\t\n' +
+            '    #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
-            '\t@font-face {\n' +
-            '\t\t\n' +
+            '    @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@font-face {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '@media screen {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t#foo:hover {\n' +
-            '\t\t\n' +
+            '    #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t\t\n' +
+            '        background-image: url(foo.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t@font-face {\n' +
-            '\t\t\n' +
+            '        @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        \n' +
             '    \n' +
-            '\t\t}\n' +
-            '\t\t\n' +
+            '        }\n' +
+            '        \n' +
             '    \n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\n' +
+            '        #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t\t}\n' +
-            '\t\t\n' +
+            '        }\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t}\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        }\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:red;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'div:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:black;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:red;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'div:not(.peq){\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:black;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
 
         // Comments - (preserve_newlines = "true", newline_between_rules = "false")
@@ -18613,7 +22627,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs{/* test */}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '}');
 
         // #1185
@@ -18626,8 +22640,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {/* non-header */width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* non-header */\n' +
-            '\twidth: 10px;\n' +
+            '    /* non-header */\n' +
+            '    width: 10px;\n' +
             '}');
         t('/* header');
         t('// comment');
@@ -18637,8 +22651,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.selector1 {margin: 0;/* This is a comment including an url http://domain.com/path/to/file.ext */}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}');
 
         // single line comment support (less/sass)
@@ -18647,16 +22661,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{// comment\n' +
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '//comment\n' +
@@ -18664,7 +22678,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '//comment\n' +
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{//comment\n' +
@@ -18672,24 +22686,24 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t//comment\n' +
-            '\t//2nd single line comment\n' +
-            '\twidth: 10px;\n' +
+            '    //comment\n' +
+            '    //2nd single line comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
             'height:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px;\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
@@ -18697,8 +22711,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another nl\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another nl\n' +
             '}');
         t(
             '.tabs{width: 10px;   // comment follows rule\n' +
@@ -18706,21 +22720,21 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; // comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px; // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #1165
         t(
             '.tabs{width: 10px;\n' +
-            '\t\t// comment follows rule\n' +
+            '        // comment follows rule\n' +
             '// another comment new line\n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
-            '\t// comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px;\n' +
+            '    // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #736
@@ -18741,10 +22755,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}.demob {text-align: right;}',
             //  -- output --
             '.demoa1 {\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '}\n' +
             '.demob {\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '}');
 
         // #1440
@@ -18756,20 +22770,20 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {text-align:left;}//demob instructions for LESS note visibility only\n' +
             '.demob {text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '}\n' +
             '//demob instructions for LESS note visibility only\n' +
             '.demob {\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
@@ -18808,11 +22822,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div{height:15px;}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
@@ -18820,84 +22834,84 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}.div{height:15px;}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '#foo {background-image: url(foo@2x.png);\t@font-face {\t\tfont-family: "Bitstream Vera Serif Bold";\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\t}}.div{height:15px;}',
+            '#foo {background-image: url(foo@2x.png);    @font-face {        font-family: "Bitstream Vera Serif Bold";        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");    }}.div{height:15px;}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    background-image: url(foo@2x.png);\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '@media screen {\t#foo:hover {\t\tbackground-image: url(foo@2x.png);\t}\t@font-face {\t\tfont-family: "Bitstream Vera Serif Bold";\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\t}}.div{height:15px;}',
+            '@media screen {    #foo:hover {        background-image: url(foo@2x.png);    }    @font-face {        font-family: "Bitstream Vera Serif Bold";        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");    }}.div{height:15px;}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '@font-face {\tfont-family: "Bitstream Vera Serif Bold";\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");}\n' +
-            '@media screen {\t#foo:hover {\t\tbackground-image: url(foo.png);\t}\t@media screen and (min-device-pixel-ratio: 2) {\t\t@font-face {\t\t\tfont-family: "Helvetica Neue";\t\t}\t\t#foo:hover {\t\t\tbackground-image: url(foo@2x.png);\t\t}\t}}',
+            '@font-face {    font-family: "Bitstream Vera Serif Bold";    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");}\n' +
+            '@media screen {    #foo:hover {        background-image: url(foo.png);    }    @media screen and (min-device-pixel-ratio: 2) {        @font-face {            font-family: "Helvetica Neue";        }        #foo:hover {            background-image: url(foo@2x.png);        }    }}',
             //  -- output --
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t}\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        }\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{color:red;div:first-child{color:black;}}.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{color:red;div:not(.peq){color:black;}}.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
 
         // Comments - (preserve_newlines = "true", newline_between_rules = "false")
@@ -18918,7 +22932,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '}');
 
         // #1185
@@ -18935,8 +22949,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* non-header */\n' +
-            '\twidth: 10px;\n' +
+            '    /* non-header */\n' +
+            '    width: 10px;\n' +
             '}');
         t('/* header');
         t('// comment');
@@ -18949,8 +22963,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}');
 
         // single line comment support (less/sass)
@@ -18961,8 +22975,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -18971,8 +22985,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '//comment\n' +
@@ -18982,7 +22996,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '//comment\n' +
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -18992,9 +23006,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t//comment\n' +
-            '\t//2nd single line comment\n' +
-            '\twidth: 10px;\n' +
+            '    //comment\n' +
+            '    //2nd single line comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -19002,7 +23016,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -19011,8 +23025,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px;\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -19021,8 +23035,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another nl\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another nl\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -19031,22 +23045,22 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; // comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px; // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #1165
         t(
             '.tabs{\n' +
             'width: 10px;\n' +
-            '\t\t// comment follows rule\n' +
+            '        // comment follows rule\n' +
             '// another comment new line\n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
-            '\t// comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px;\n' +
+            '    // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #736
@@ -19073,10 +23087,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.demoa1 {\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '}\n' +
             '.demob {\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '}');
 
         // #1440
@@ -19088,9 +23102,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {\n' +
@@ -19101,11 +23115,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '}\n' +
             '//demob instructions for LESS note visibility only\n' +
             '.demob {\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
@@ -19160,11 +23174,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -19176,77 +23190,77 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '#foo {\n' +
             'background-image: url(foo@2x.png);\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div{\n' +
             'height:15px;\n' +
             '}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    background-image: url(foo@2x.png);\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div{\n' +
             'height:15px;\n' +
             '}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t}\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        }\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{\n' +
@@ -19260,13 +23274,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{\n' +
@@ -19280,13 +23294,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    color: red;\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
 
         // Comments - (preserve_newlines = "true", newline_between_rules = "false")
@@ -19297,7 +23311,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('/* header comment newlines on */');
         t(
             '@import "custom.css";\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.rule{}',
             //  -- output --
@@ -19307,17 +23321,17 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.rule {}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* test */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '\n' +
             '\n' +
             '}');
@@ -19325,7 +23339,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // #1185
         t(
             '/* header */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.tabs{}',
             //  -- output --
@@ -19335,23 +23349,23 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {}');
         t(
             '.tabs {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* non-header */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t/* non-header */\n' +
+            '    /* non-header */\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -19361,23 +23375,23 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('//');
         t(
             '.selector1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'margin: 0;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.selector1 {\n' +
             '\n' +
             '\n' +
-            '\tmargin: 0;\n' +
+            '    margin: 0;\n' +
             '\n' +
             '\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '\n' +
             '\n' +
             '}');
@@ -19385,57 +23399,57 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // single line comment support (less/sass)
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '// comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t// comment\n' +
+            '    // comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '// comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t// comment\n' +
+            '    // comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '//comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -19445,117 +23459,117 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '//2nd single line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t//comment\n' +
+            '    //comment\n' +
             '\n' +
             '\n' +
-            '\t//2nd single line comment\n' +
+            '    //2nd single line comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px;\n' +
+            '    height: 10px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;//another nl\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px; //another nl\n' +
+            '    height: 10px; //another nl\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width: 10px;   // comment follows rule\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '// another comment new line\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; // comment follows rule\n' +
+            '    width: 10px; // comment follows rule\n' +
             '\n' +
             '\n' +
-            '\t// another comment new line\n' +
+            '    // another comment new line\n' +
             '\n' +
             '\n' +
             '}');
@@ -19563,29 +23577,29 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // #1165
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width: 10px;\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
-            '\t\t// comment follows rule\n' +
-            '\t\t\t\n' +
+            '        // comment follows rule\n' +
+            '            \n' +
             '   \n' +
             '// another comment new line\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
-            '\t// comment follows rule\n' +
+            '    // comment follows rule\n' +
             '\n' +
             '\n' +
-            '\t// another comment new line\n' +
+            '    // another comment new line\n' +
             '\n' +
             '\n' +
             '}');
@@ -19595,13 +23609,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '/*\n' +
             ' * comment\n' +
             ' */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* another comment */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'body{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n',
             //  -- output --
             '/*\n' +
@@ -19617,26 +23631,26 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // #1348
         t(
             '.demoa1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align:left; //demoa1 instructions for LESS note visibility only\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.demob {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align: right;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.demoa1 {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -19645,7 +23659,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demob {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '\n' +
             '\n' +
             '}');
@@ -19659,32 +23673,32 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align:left;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//demob instructions for LESS note visibility only\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.demob {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -19696,16 +23710,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demob {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
         t(
             '.div{}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -19715,34 +23729,34 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -19776,16 +23790,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.div{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -19801,32 +23815,32 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '.selector1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'margin: 0; \n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.selector1 {\n' +
             '\n' +
             '\n' +
-            '\tmargin: 0;\n' +
+            '    margin: 0;\n' +
             '\n' +
             '\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -19835,38 +23849,38 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;//another\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px; //another\n' +
+            '    height: 10px; //another\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -19875,56 +23889,56 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '#foo {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'background-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t@font-face {\n' +
-            '\t\t\n' +
+            '    @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '#foo {\n' +
             '\n' +
             '\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
+            '    background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -19933,68 +23947,68 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '@media screen {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t#foo:hover {\n' +
-            '\t\t\n' +
+            '    #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
-            '\t@font-face {\n' +
-            '\t\t\n' +
+            '    @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '        background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20003,68 +24017,68 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '@font-face {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '@media screen {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t#foo:hover {\n' +
-            '\t\t\n' +
+            '    #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t\t\n' +
+            '        background-image: url(foo.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t@font-face {\n' +
-            '\t\t\n' +
+            '        @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        \n' +
             '    \n' +
-            '\t\t}\n' +
-            '\t\t\n' +
+            '        }\n' +
+            '        \n' +
             '    \n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\n' +
+            '        #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t\t}\n' +
-            '\t\t\n' +
+            '        }\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '@font-face {\n' +
             '\n' +
             '\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20073,80 +24087,80 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
+            '        background-image: url(foo.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
             '\n' +
             '\n' +
-            '\t\t@font-face {\n' +
+            '        @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
+            '            font-family: "Helvetica Neue";\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
+            '        #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
+            '            background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}');
         t(
             'a:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:red;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'div:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:black;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             'a:first-child {\n' +
             '\n' +
             '\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
             '\n' +
-            '\tdiv:first-child {\n' +
+            '    div:first-child {\n' +
             '\n' +
             '\n' +
-            '\t\tcolor: black;\n' +
+            '        color: black;\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20155,50 +24169,50 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             'a:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:red;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'div:not(.peq){\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:black;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             'a:first-child {\n' +
             '\n' +
             '\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
             '\n' +
-            '\tdiv:not(.peq) {\n' +
+            '    div:not(.peq) {\n' +
             '\n' +
             '\n' +
-            '\t\tcolor: black;\n' +
+            '        color: black;\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20207,7 +24221,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20240,7 +24254,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '\n' +
             '\n' +
             '}');
@@ -20271,10 +24285,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t/* non-header */\n' +
+            '    /* non-header */\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20297,10 +24311,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.selector1 {\n' +
             '\n' +
             '\n' +
-            '\tmargin: 0;\n' +
+            '    margin: 0;\n' +
             '\n' +
             '\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '\n' +
             '\n' +
             '}');
@@ -20321,10 +24335,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t// comment\n' +
+            '    // comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20343,10 +24357,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t// comment\n' +
+            '    // comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20368,7 +24382,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20390,13 +24404,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t//comment\n' +
+            '    //comment\n' +
             '\n' +
             '\n' +
-            '\t//2nd single line comment\n' +
+            '    //2nd single line comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20412,7 +24426,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
             '}');
@@ -20431,10 +24445,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px;\n' +
+            '    height: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20453,10 +24467,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px; //another nl\n' +
+            '    height: 10px; //another nl\n' +
             '\n' +
             '\n' +
             '}');
@@ -20475,10 +24489,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; // comment follows rule\n' +
+            '    width: 10px; // comment follows rule\n' +
             '\n' +
             '\n' +
-            '\t// another comment new line\n' +
+            '    // another comment new line\n' +
             '\n' +
             '\n' +
             '}');
@@ -20491,7 +24505,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width: 10px;\n' +
             '\n' +
             '\n' +
-            '\t\t// comment follows rule\n' +
+            '        // comment follows rule\n' +
             '\n' +
             '\n' +
             '// another comment new line\n' +
@@ -20502,13 +24516,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
-            '\t// comment follows rule\n' +
+            '    // comment follows rule\n' +
             '\n' +
             '\n' +
-            '\t// another comment new line\n' +
+            '    // another comment new line\n' +
             '\n' +
             '\n' +
             '}');
@@ -20559,7 +24573,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demoa1 {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20568,7 +24582,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demob {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20582,9 +24596,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {\n' +
@@ -20607,7 +24621,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demoa2 {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20619,7 +24633,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demob {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
@@ -20746,10 +24760,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.selector1 {\n' +
             '\n' +
             '\n' +
-            '\tmargin: 0;\n' +
+            '    margin: 0;\n' +
             '\n' +
             '\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20758,7 +24772,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20786,10 +24800,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px; //another\n' +
+            '    height: 10px; //another\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20798,7 +24812,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20809,16 +24823,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20835,19 +24849,19 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '#foo {\n' +
             '\n' +
             '\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
+            '    background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20856,7 +24870,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20864,25 +24878,25 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '        background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20899,25 +24913,25 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '        background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20926,7 +24940,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -20934,10 +24948,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@font-face {\n' +
             '\n' +
             '\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -20946,37 +24960,37 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
+            '        background-image: url(foo.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
             '\n' +
             '\n' +
-            '\t\t@font-face {\n' +
+            '        @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
+            '            font-family: "Helvetica Neue";\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
+            '        #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
+            '            background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}');
@@ -21010,16 +25024,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'a:first-child {\n' +
             '\n' +
             '\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
             '\n' +
-            '\tdiv:first-child {\n' +
+            '    div:first-child {\n' +
             '\n' +
             '\n' +
-            '\t\tcolor: black;\n' +
+            '        color: black;\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -21028,7 +25042,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -21062,16 +25076,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'a:first-child {\n' +
             '\n' +
             '\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
             '\n' +
-            '\tdiv:not(.peq) {\n' +
+            '    div:not(.peq) {\n' +
             '\n' +
             '\n' +
-            '\t\tcolor: black;\n' +
+            '        color: black;\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -21080,7 +25094,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -21101,7 +25115,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs{/* test */}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '}');
 
         // #1185
@@ -21114,8 +25128,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {/* non-header */width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* non-header */\n' +
-            '\twidth: 10px;\n' +
+            '    /* non-header */\n' +
+            '    width: 10px;\n' +
             '}');
         t('/* header');
         t('// comment');
@@ -21125,8 +25139,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.selector1 {margin: 0;/* This is a comment including an url http://domain.com/path/to/file.ext */}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}');
 
         // single line comment support (less/sass)
@@ -21135,16 +25149,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{// comment\n' +
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '//comment\n' +
@@ -21152,7 +25166,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '//comment\n' +
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{//comment\n' +
@@ -21160,24 +25174,24 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t//comment\n' +
-            '\t//2nd single line comment\n' +
-            '\twidth: 10px;\n' +
+            '    //comment\n' +
+            '    //2nd single line comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
             'height:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px;\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
@@ -21185,8 +25199,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another nl\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another nl\n' +
             '}');
         t(
             '.tabs{width: 10px;   // comment follows rule\n' +
@@ -21194,21 +25208,21 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; // comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px; // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #1165
         t(
             '.tabs{width: 10px;\n' +
-            '\t\t// comment follows rule\n' +
+            '        // comment follows rule\n' +
             '// another comment new line\n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
-            '\t// comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px;\n' +
+            '    // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #736
@@ -21229,11 +25243,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}.demob {text-align: right;}',
             //  -- output --
             '.demoa1 {\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '}\n' +
             '\n' +
             '.demob {\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '}');
 
         // #1440
@@ -21245,21 +25259,21 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {text-align:left;}//demob instructions for LESS note visibility only\n' +
             '.demob {text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '}\n' +
             '\n' +
             '//demob instructions for LESS note visibility only\n' +
             '.demob {\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
@@ -21301,12 +25315,12 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div{height:15px;}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
@@ -21314,96 +25328,96 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}.div{height:15px;}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '#foo {background-image: url(foo@2x.png);\t@font-face {\t\tfont-family: "Bitstream Vera Serif Bold";\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\t}}.div{height:15px;}',
+            '#foo {background-image: url(foo@2x.png);    @font-face {        font-family: "Bitstream Vera Serif Bold";        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");    }}.div{height:15px;}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
+            '    background-image: url(foo@2x.png);\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '@media screen {\t#foo:hover {\t\tbackground-image: url(foo@2x.png);\t}\t@font-face {\t\tfont-family: "Bitstream Vera Serif Bold";\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\t}}.div{height:15px;}',
+            '@media screen {    #foo:hover {        background-image: url(foo@2x.png);    }    @font-face {        font-family: "Bitstream Vera Serif Bold";        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");    }}.div{height:15px;}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '@font-face {\tfont-family: "Bitstream Vera Serif Bold";\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");}\n' +
-            '@media screen {\t#foo:hover {\t\tbackground-image: url(foo.png);\t}\t@media screen and (min-device-pixel-ratio: 2) {\t\t@font-face {\t\t\tfont-family: "Helvetica Neue";\t\t}\t\t#foo:hover {\t\t\tbackground-image: url(foo@2x.png);\t\t}\t}}',
+            '@font-face {    font-family: "Bitstream Vera Serif Bold";    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");}\n' +
+            '@media screen {    #foo:hover {        background-image: url(foo.png);    }    @media screen and (min-device-pixel-ratio: 2) {        @font-face {            font-family: "Helvetica Neue";        }        #foo:hover {            background-image: url(foo@2x.png);        }    }}',
             //  -- output --
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t}\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        }\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{color:red;div:first-child{color:black;}}.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{color:red;div:not(.peq){color:black;}}.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
 
         // Comments - (preserve_newlines = "false", newline_between_rules = "true")
@@ -21431,7 +25445,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '}');
 
         // #1185
@@ -21456,8 +25470,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* non-header */\n' +
-            '\twidth: 10px;\n' +
+            '    /* non-header */\n' +
+            '    width: 10px;\n' +
             '}');
         t('/* header');
         t('// comment');
@@ -21476,8 +25490,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}');
 
         // single line comment support (less/sass)
@@ -21494,8 +25508,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -21510,8 +25524,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '//comment\n' +
@@ -21527,7 +25541,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '//comment\n' +
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -21545,9 +25559,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t//comment\n' +
-            '\t//2nd single line comment\n' +
-            '\twidth: 10px;\n' +
+            '    //comment\n' +
+            '    //2nd single line comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -21559,7 +25573,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -21574,8 +25588,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px;\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -21590,8 +25604,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another nl\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another nl\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -21606,8 +25620,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; // comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px; // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #1165
@@ -21618,7 +25632,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width: 10px;\n' +
             '\n' +
             '\n' +
-            '\t\t// comment follows rule\n' +
+            '        // comment follows rule\n' +
             '\n' +
             '\n' +
             '// another comment new line\n' +
@@ -21627,9 +25641,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
-            '\t// comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px;\n' +
+            '    // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #736
@@ -21672,11 +25686,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.demoa1 {\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '}\n' +
             '\n' +
             '.demob {\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '}');
 
         // #1440
@@ -21688,9 +25702,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {\n' +
@@ -21711,12 +25725,12 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '}\n' +
             '\n' +
             '//demob instructions for LESS note visibility only\n' +
             '.demob {\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
@@ -21818,12 +25832,12 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -21847,12 +25861,12 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '#foo {\n' +
@@ -21861,16 +25875,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -21885,40 +25899,40 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
+            '    background-image: url(foo@2x.png);\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '        background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -21933,27 +25947,27 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@font-face {\n' +
             '\n' +
             '\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -21962,60 +25976,60 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
+            '        background-image: url(foo.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
             '\n' +
             '\n' +
-            '\t\t@font-face {\n' +
+            '        @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
+            '            font-family: "Helvetica Neue";\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
+            '        #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
+            '            background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}',
             //  -- output --
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t}\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        }\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{\n' +
@@ -22045,15 +26059,15 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{\n' +
@@ -22083,15 +26097,15 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
 
         // Comments - (preserve_newlines = "false", newline_between_rules = "true")
@@ -22102,7 +26116,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('/* header comment newlines on */');
         t(
             '@import "custom.css";\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.rule{}',
             //  -- output --
@@ -22111,21 +26125,21 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.rule {}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* test */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '}');
 
         // #1185
         t(
             '/* header */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.tabs{}',
             //  -- output --
@@ -22133,19 +26147,19 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {}');
         t(
             '.tabs {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* non-header */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* non-header */\n' +
-            '\twidth: 10px;\n' +
+            '    /* non-header */\n' +
+            '    width: 10px;\n' +
             '}');
         t('/* header');
         t('// comment');
@@ -22153,171 +26167,171 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('//');
         t(
             '.selector1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'margin: 0;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}');
 
         // single line comment support (less/sass)
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '// comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '// comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '//comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '//comment\n' +
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '//2nd single line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t//comment\n' +
-            '\t//2nd single line comment\n' +
-            '\twidth: 10px;\n' +
+            '    //comment\n' +
+            '    //2nd single line comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px;\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;//another nl\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another nl\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another nl\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width: 10px;   // comment follows rule\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '// another comment new line\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; // comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px; // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #1165
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width: 10px;\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
-            '\t\t// comment follows rule\n' +
-            '\t\t\t\n' +
+            '        // comment follows rule\n' +
+            '            \n' +
             '   \n' +
             '// another comment new line\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
-            '\t// comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px;\n' +
+            '    // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #736
@@ -22325,13 +26339,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '/*\n' +
             ' * comment\n' +
             ' */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* another comment */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'body{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n',
             //  -- output --
             '/*\n' +
@@ -22343,28 +26357,28 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // #1348
         t(
             '.demoa1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align:left; //demoa1 instructions for LESS note visibility only\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.demob {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align: right;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.demoa1 {\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '}\n' +
             '\n' +
             '.demob {\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '}');
 
         // #1440
@@ -22376,44 +26390,44 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align:left;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//demob instructions for LESS note visibility only\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.demob {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '}\n' +
             '\n' +
             '//demob instructions for LESS note visibility only\n' +
             '.demob {\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
         t(
             '.div{}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -22422,34 +26436,34 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -22466,16 +26480,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.div{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -22486,300 +26500,300 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '.selector1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'margin: 0; \n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;//another\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '#foo {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'background-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t@font-face {\n' +
-            '\t\t\n' +
+            '    @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
+            '    background-image: url(foo@2x.png);\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@media screen {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t#foo:hover {\n' +
-            '\t\t\n' +
+            '    #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
-            '\t@font-face {\n' +
-            '\t\t\n' +
+            '    @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@font-face {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '@media screen {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t#foo:hover {\n' +
-            '\t\t\n' +
+            '    #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t\t\n' +
+            '        background-image: url(foo.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t@font-face {\n' +
-            '\t\t\n' +
+            '        @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        \n' +
             '    \n' +
-            '\t\t}\n' +
-            '\t\t\n' +
+            '        }\n' +
+            '        \n' +
             '    \n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\n' +
+            '        #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t\t}\n' +
-            '\t\t\n' +
+            '        }\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t}\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        }\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:red;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'div:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:black;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:red;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'div:not(.peq){\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:black;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
 
         // Comments - (preserve_newlines = "true", newline_between_rules = "true")
@@ -22798,7 +26812,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs{/* test */}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '}');
 
         // #1185
@@ -22811,8 +26825,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {/* non-header */width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* non-header */\n' +
-            '\twidth: 10px;\n' +
+            '    /* non-header */\n' +
+            '    width: 10px;\n' +
             '}');
         t('/* header');
         t('// comment');
@@ -22822,8 +26836,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.selector1 {margin: 0;/* This is a comment including an url http://domain.com/path/to/file.ext */}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}');
 
         // single line comment support (less/sass)
@@ -22832,16 +26846,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{// comment\n' +
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '//comment\n' +
@@ -22849,7 +26863,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '//comment\n' +
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{//comment\n' +
@@ -22857,24 +26871,24 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\t//comment\n' +
-            '\t//2nd single line comment\n' +
-            '\twidth: 10px;\n' +
+            '    //comment\n' +
+            '    //2nd single line comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
             'height:10px;}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px;\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
@@ -22882,8 +26896,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another nl\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another nl\n' +
             '}');
         t(
             '.tabs{width: 10px;   // comment follows rule\n' +
@@ -22891,21 +26905,21 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; // comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px; // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #1165
         t(
             '.tabs{width: 10px;\n' +
-            '\t\t// comment follows rule\n' +
+            '        // comment follows rule\n' +
             '// another comment new line\n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
-            '\t// comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px;\n' +
+            '    // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #736
@@ -22926,11 +26940,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}.demob {text-align: right;}',
             //  -- output --
             '.demoa1 {\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '}\n' +
             '\n' +
             '.demob {\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '}');
 
         // #1440
@@ -22942,21 +26956,21 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {text-align:left;}//demob instructions for LESS note visibility only\n' +
             '.demob {text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '}\n' +
             '\n' +
             '//demob instructions for LESS note visibility only\n' +
             '.demob {\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
@@ -22998,12 +27012,12 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div{height:15px;}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{width:10px;//end of line comment\n' +
@@ -23011,96 +27025,96 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}.div{height:15px;}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '#foo {background-image: url(foo@2x.png);\t@font-face {\t\tfont-family: "Bitstream Vera Serif Bold";\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\t}}.div{height:15px;}',
+            '#foo {background-image: url(foo@2x.png);    @font-face {        font-family: "Bitstream Vera Serif Bold";        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");    }}.div{height:15px;}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
+            '    background-image: url(foo@2x.png);\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '@media screen {\t#foo:hover {\t\tbackground-image: url(foo@2x.png);\t}\t@font-face {\t\tfont-family: "Bitstream Vera Serif Bold";\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\t}}.div{height:15px;}',
+            '@media screen {    #foo:hover {        background-image: url(foo@2x.png);    }    @font-face {        font-family: "Bitstream Vera Serif Bold";        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");    }}.div{height:15px;}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
-            '@font-face {\tfont-family: "Bitstream Vera Serif Bold";\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");}\n' +
-            '@media screen {\t#foo:hover {\t\tbackground-image: url(foo.png);\t}\t@media screen and (min-device-pixel-ratio: 2) {\t\t@font-face {\t\t\tfont-family: "Helvetica Neue";\t\t}\t\t#foo:hover {\t\t\tbackground-image: url(foo@2x.png);\t\t}\t}}',
+            '@font-face {    font-family: "Bitstream Vera Serif Bold";    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");}\n' +
+            '@media screen {    #foo:hover {        background-image: url(foo.png);    }    @media screen and (min-device-pixel-ratio: 2) {        @font-face {            font-family: "Helvetica Neue";        }        #foo:hover {            background-image: url(foo@2x.png);        }    }}',
             //  -- output --
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t}\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        }\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{color:red;div:first-child{color:black;}}.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{color:red;div:not(.peq){color:black;}}.div{height:15px;}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
 
         // Comments - (preserve_newlines = "true", newline_between_rules = "true")
@@ -23122,7 +27136,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '}');
 
         // #1185
@@ -23139,8 +27153,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t/* non-header */\n' +
-            '\twidth: 10px;\n' +
+            '    /* non-header */\n' +
+            '    width: 10px;\n' +
             '}');
         t('/* header');
         t('// comment');
@@ -23153,8 +27167,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}');
 
         // single line comment support (less/sass)
@@ -23165,8 +27179,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -23175,8 +27189,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t// comment\n' +
-            '\twidth: 10px;\n' +
+            '    // comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '//comment\n' +
@@ -23186,7 +27200,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '//comment\n' +
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -23196,9 +27210,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\t//comment\n' +
-            '\t//2nd single line comment\n' +
-            '\twidth: 10px;\n' +
+            '    //comment\n' +
+            '    //2nd single line comment\n' +
+            '    width: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -23206,7 +27220,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -23215,8 +27229,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px;\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -23225,8 +27239,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another nl\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another nl\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -23235,22 +27249,22 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; // comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px; // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #1165
         t(
             '.tabs{\n' +
             'width: 10px;\n' +
-            '\t\t// comment follows rule\n' +
+            '        // comment follows rule\n' +
             '// another comment new line\n' +
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px;\n' +
-            '\t// comment follows rule\n' +
-            '\t// another comment new line\n' +
+            '    width: 10px;\n' +
+            '    // comment follows rule\n' +
+            '    // another comment new line\n' +
             '}');
 
         // #736
@@ -23277,11 +27291,11 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.demoa1 {\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '}\n' +
             '\n' +
             '.demob {\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '}');
 
         // #1440
@@ -23293,9 +27307,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {\n' +
@@ -23306,12 +27320,12 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '}\n' +
             '\n' +
             '//demob instructions for LESS note visibility only\n' +
             '.demob {\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
@@ -23369,12 +27383,12 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.selector1 {\n' +
-            '\tmargin: 0;\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    margin: 0;\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '.tabs{\n' +
@@ -23386,103 +27400,103 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '.tabs {\n' +
-            '\twidth: 10px; //end of line comment\n' +
-            '\theight: 10px; //another\n' +
+            '    width: 10px; //end of line comment\n' +
+            '    height: 10px; //another\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '#foo {\n' +
             'background-image: url(foo@2x.png);\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div{\n' +
             'height:15px;\n' +
             '}',
             //  -- output --
             '#foo {\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
+            '    background-image: url(foo@2x.png);\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '.div{\n' +
             'height:15px;\n' +
             '}',
             //  -- output --
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@font-face {\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t}\n' +
+            '    @font-face {\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t}\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        }\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}',
             //  -- output --
             '@font-face {\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '}\n' +
             '\n' +
             '@media screen {\n' +
-            '\t#foo:hover {\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t}\n' +
+            '    #foo:hover {\n' +
+            '        background-image: url(foo.png);\n' +
+            '    }\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t@font-face {\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t}\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        @font-face {\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        }\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '        #foo:hover {\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             'a:first-child{\n' +
@@ -23496,15 +27510,15 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:first-child {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:first-child {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
         t(
             'a:first-child{\n' +
@@ -23518,15 +27532,15 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             'a:first-child {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
-            '\tdiv:not(.peq) {\n' +
-            '\t\tcolor: black;\n' +
-            '\t}\n' +
+            '    div:not(.peq) {\n' +
+            '        color: black;\n' +
+            '    }\n' +
             '}\n' +
             '\n' +
             '.div {\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '}');
 
         // Comments - (preserve_newlines = "true", newline_between_rules = "true")
@@ -23557,7 +27571,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '\n' +
             '\n' +
             '}');
@@ -23588,10 +27602,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t/* non-header */\n' +
+            '    /* non-header */\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -23614,10 +27628,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.selector1 {\n' +
             '\n' +
             '\n' +
-            '\tmargin: 0;\n' +
+            '    margin: 0;\n' +
             '\n' +
             '\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '\n' +
             '\n' +
             '}');
@@ -23638,10 +27652,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t// comment\n' +
+            '    // comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -23660,10 +27674,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t// comment\n' +
+            '    // comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -23685,7 +27699,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -23707,13 +27721,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t//comment\n' +
+            '    //comment\n' +
             '\n' +
             '\n' +
-            '\t//2nd single line comment\n' +
+            '    //2nd single line comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -23729,7 +27743,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
             '}');
@@ -23748,10 +27762,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px;\n' +
+            '    height: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -23770,10 +27784,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px; //another nl\n' +
+            '    height: 10px; //another nl\n' +
             '\n' +
             '\n' +
             '}');
@@ -23792,10 +27806,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; // comment follows rule\n' +
+            '    width: 10px; // comment follows rule\n' +
             '\n' +
             '\n' +
-            '\t// another comment new line\n' +
+            '    // another comment new line\n' +
             '\n' +
             '\n' +
             '}');
@@ -23808,7 +27822,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'width: 10px;\n' +
             '\n' +
             '\n' +
-            '\t\t// comment follows rule\n' +
+            '        // comment follows rule\n' +
             '\n' +
             '\n' +
             '// another comment new line\n' +
@@ -23819,13 +27833,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
-            '\t// comment follows rule\n' +
+            '    // comment follows rule\n' +
             '\n' +
             '\n' +
-            '\t// another comment new line\n' +
+            '    // another comment new line\n' +
             '\n' +
             '\n' +
             '}');
@@ -23876,7 +27890,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demoa1 {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -23885,7 +27899,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demob {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '\n' +
             '\n' +
             '}');
@@ -23899,9 +27913,9 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {\n' +
@@ -23924,7 +27938,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demoa2 {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -23936,7 +27950,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demob {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
@@ -24063,10 +28077,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.selector1 {\n' +
             '\n' +
             '\n' +
-            '\tmargin: 0;\n' +
+            '    margin: 0;\n' +
             '\n' +
             '\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24075,7 +28089,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -24103,10 +28117,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px; //another\n' +
+            '    height: 10px; //another\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24115,7 +28129,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -24126,16 +28140,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24152,19 +28166,19 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '#foo {\n' +
             '\n' +
             '\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
+            '    background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24173,7 +28187,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -24181,25 +28195,25 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '        background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24216,25 +28230,25 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '        background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24243,7 +28257,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -24251,10 +28265,10 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@font-face {\n' +
             '\n' +
             '\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24263,37 +28277,37 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
+            '        background-image: url(foo.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
             '\n' +
             '\n' +
-            '\t\t@font-face {\n' +
+            '        @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
+            '            font-family: "Helvetica Neue";\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
+            '        #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
+            '            background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}');
@@ -24327,16 +28341,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'a:first-child {\n' +
             '\n' +
             '\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
             '\n' +
-            '\tdiv:first-child {\n' +
+            '    div:first-child {\n' +
             '\n' +
             '\n' +
-            '\t\tcolor: black;\n' +
+            '        color: black;\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24345,7 +28359,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -24379,16 +28393,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'a:first-child {\n' +
             '\n' +
             '\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
             '\n' +
-            '\tdiv:not(.peq) {\n' +
+            '    div:not(.peq) {\n' +
             '\n' +
             '\n' +
-            '\t\tcolor: black;\n' +
+            '        color: black;\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24397,7 +28411,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -24410,7 +28424,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('/* header comment newlines on */');
         t(
             '@import "custom.css";\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.rule{}',
             //  -- output --
@@ -24420,17 +28434,17 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.rule {}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* test */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t/* test */\n' +
+            '    /* test */\n' +
             '\n' +
             '\n' +
             '}');
@@ -24438,7 +28452,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // #1185
         t(
             '/* header */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.tabs{}',
             //  -- output --
@@ -24448,23 +28462,23 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {}');
         t(
             '.tabs {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* non-header */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t/* non-header */\n' +
+            '    /* non-header */\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -24474,23 +28488,23 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         t('//');
         t(
             '.selector1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'margin: 0;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.selector1 {\n' +
             '\n' +
             '\n' +
-            '\tmargin: 0;\n' +
+            '    margin: 0;\n' +
             '\n' +
             '\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '\n' +
             '\n' +
             '}');
@@ -24498,57 +28512,57 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // single line comment support (less/sass)
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '// comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t// comment\n' +
+            '    // comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '// comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t// comment\n' +
+            '    // comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '//comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -24558,117 +28572,117 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '//2nd single line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'width:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\t//comment\n' +
+            '    //comment\n' +
             '\n' +
             '\n' +
-            '\t//2nd single line comment\n' +
+            '    //2nd single line comment\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px;\n' +
+            '    height: 10px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;//another nl\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px; //another nl\n' +
+            '    height: 10px; //another nl\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width: 10px;   // comment follows rule\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '// another comment new line\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; // comment follows rule\n' +
+            '    width: 10px; // comment follows rule\n' +
             '\n' +
             '\n' +
-            '\t// another comment new line\n' +
+            '    // another comment new line\n' +
             '\n' +
             '\n' +
             '}');
@@ -24676,29 +28690,29 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // #1165
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width: 10px;\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
-            '\t\t// comment follows rule\n' +
-            '\t\t\t\n' +
+            '        // comment follows rule\n' +
+            '            \n' +
             '   \n' +
             '// another comment new line\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px;\n' +
+            '    width: 10px;\n' +
             '\n' +
             '\n' +
-            '\t// comment follows rule\n' +
+            '    // comment follows rule\n' +
             '\n' +
             '\n' +
-            '\t// another comment new line\n' +
+            '    // another comment new line\n' +
             '\n' +
             '\n' +
             '}');
@@ -24708,13 +28722,13 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '/*\n' +
             ' * comment\n' +
             ' */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* another comment */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'body{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n',
             //  -- output --
             '/*\n' +
@@ -24730,26 +28744,26 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // #1348
         t(
             '.demoa1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align:left; //demoa1 instructions for LESS note visibility only\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.demob {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align: right;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.demoa1 {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: left; //demoa1 instructions for LESS note visibility only\n' +
+            '    text-align: left; //demoa1 instructions for LESS note visibility only\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24758,7 +28772,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demob {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: right;\n' +
+            '    text-align: right;\n' +
             '\n' +
             '\n' +
             '}');
@@ -24772,32 +28786,32 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}',
             //  -- output --
             '#search-text {\n' +
-            '\twidth: 43%;\n' +
-            '\t// height: 100%;\n' +
-            '\tborder: none;\n' +
+            '    width: 43%;\n' +
+            '    // height: 100%;\n' +
+            '    border: none;\n' +
             '}');
         t(
             '.demoa2 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align:left;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//demob instructions for LESS note visibility only\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.demob {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'text-align: right}',
             //  -- output --
             '.demoa2 {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: left;\n' +
+            '    text-align: left;\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24809,16 +28823,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.demob {\n' +
             '\n' +
             '\n' +
-            '\ttext-align: right\n' +
+            '    text-align: right\n' +
             '}');
 
         // new lines between rules - #531 and #857
         t(
             '.div{}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -24828,34 +28842,34 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '/**/\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -24889,16 +28903,16 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.div{}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '//\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.span {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
@@ -24914,32 +28928,32 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.span {}');
         t(
             '.selector1 {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'margin: 0; \n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.selector1 {\n' +
             '\n' +
             '\n' +
-            '\tmargin: 0;\n' +
+            '    margin: 0;\n' +
             '\n' +
             '\n' +
-            '\t/* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
+            '    /* This is a comment including an url http://domain.com/path/to/file.ext */\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24948,38 +28962,38 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '.tabs{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'width:10px;//end of line comment\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             'height:10px;//another\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '.tabs {\n' +
             '\n' +
             '\n' +
-            '\twidth: 10px; //end of line comment\n' +
+            '    width: 10px; //end of line comment\n' +
             '\n' +
             '\n' +
-            '\theight: 10px; //another\n' +
+            '    height: 10px; //another\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -24988,56 +29002,56 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '#foo {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'background-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t@font-face {\n' +
-            '\t\t\n' +
+            '    @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '#foo {\n' +
             '\n' +
             '\n' +
-            '\tbackground-image: url(foo@2x.png);\n' +
+            '    background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -25046,68 +29060,68 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '@media screen {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t#foo:hover {\n' +
-            '\t\t\n' +
+            '    #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '        background-image: url(foo@2x.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
-            '\t@font-face {\n' +
-            '\t\t\n' +
+            '    @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo@2x.png);\n' +
+            '        background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@font-face {\n' +
+            '    @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '        font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\t\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -25116,68 +29130,68 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             '@font-face {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
-            '\t\t\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
+            '        \n' +
             '    \n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
-            '\t\t\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\t\n' +
+            '            \n' +
             '   \n' +
             '@media screen {\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
-            '\t#foo:hover {\n' +
-            '\t\t\n' +
+            '    #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\tbackground-image: url(foo.png);\n' +
-            '\t\t\n' +
+            '        background-image: url(foo.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
-            '\t\t\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t@font-face {\n' +
-            '\t\t\n' +
+            '        @font-face {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
-            '\t\t\n' +
+            '            font-family: "Helvetica Neue";\n' +
+            '        \n' +
             '    \n' +
-            '\t\t}\n' +
-            '\t\t\n' +
+            '        }\n' +
+            '        \n' +
             '    \n' +
-            '\t\t#foo:hover {\n' +
-            '\t\t\n' +
+            '        #foo:hover {\n' +
+            '        \n' +
             '    \n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
-            '\t\t\n' +
+            '            background-image: url(foo@2x.png);\n' +
+            '        \n' +
             '    \n' +
-            '\t\t}\n' +
-            '\t\t\n' +
+            '        }\n' +
+            '        \n' +
             '    \n' +
-            '\t}\n' +
-            '\t\t\n' +
+            '    }\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             '@font-face {\n' +
             '\n' +
             '\n' +
-            '\tfont-family: "Bitstream Vera Serif Bold";\n' +
+            '    font-family: "Bitstream Vera Serif Bold";\n' +
             '\n' +
             '\n' +
-            '\tsrc: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
+            '    src: url("http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf");\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -25186,80 +29200,80 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '@media screen {\n' +
             '\n' +
             '\n' +
-            '\t#foo:hover {\n' +
+            '    #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\tbackground-image: url(foo.png);\n' +
+            '        background-image: url(foo.png);\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
-            '\t@media screen and (min-device-pixel-ratio: 2) {\n' +
+            '    @media screen and (min-device-pixel-ratio: 2) {\n' +
             '\n' +
             '\n' +
-            '\t\t@font-face {\n' +
+            '        @font-face {\n' +
             '\n' +
             '\n' +
-            '\t\t\tfont-family: "Helvetica Neue";\n' +
+            '            font-family: "Helvetica Neue";\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t\t#foo:hover {\n' +
+            '        #foo:hover {\n' +
             '\n' +
             '\n' +
-            '\t\t\tbackground-image: url(foo@2x.png);\n' +
+            '            background-image: url(foo@2x.png);\n' +
             '\n' +
             '\n' +
-            '\t\t}\n' +
+            '        }\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}');
         t(
             'a:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:red;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'div:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:black;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             'a:first-child {\n' +
             '\n' +
             '\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
             '\n' +
-            '\tdiv:first-child {\n' +
+            '    div:first-child {\n' +
             '\n' +
             '\n' +
-            '\t\tcolor: black;\n' +
+            '        color: black;\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -25268,50 +29282,50 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
         t(
             'a:first-child{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:red;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'div:not(.peq){\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'color:black;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '.div{\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             'height:15px;\n' +
-            '\t\t\n' +
+            '        \n' +
             '    \n' +
             '}',
             //  -- output --
             'a:first-child {\n' +
             '\n' +
             '\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
             '\n' +
             '\n' +
-            '\tdiv:not(.peq) {\n' +
+            '    div:not(.peq) {\n' +
             '\n' +
             '\n' +
-            '\t\tcolor: black;\n' +
+            '        color: black;\n' +
             '\n' +
             '\n' +
-            '\t}\n' +
+            '    }\n' +
             '\n' +
             '\n' +
             '}\n' +
@@ -25320,7 +29334,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '.div {\n' +
             '\n' +
             '\n' +
-            '\theight: 15px;\n' +
+            '    height: 15px;\n' +
             '\n' +
             '\n' +
             '}');
@@ -25332,37 +29346,37 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         set_name('Handle LESS property name interpolation');
         t(
             'tag {\n' +
-            '\t@{prop}: none;\n' +
+            '    @{prop}: none;\n' +
             '}');
         t(
             'tag{@{prop}:none;}',
             //  -- output --
             'tag {\n' +
-            '\t@{prop}: none;\n' +
+            '    @{prop}: none;\n' +
             '}');
         t(
             'tag{ @{prop}: none;}',
             //  -- output --
             'tag {\n' +
-            '\t@{prop}: none;\n' +
+            '    @{prop}: none;\n' +
             '}');
 
         // can also be part of property name
         t(
             'tag {\n' +
-            '\tdynamic-@{prop}: none;\n' +
+            '    dynamic-@{prop}: none;\n' +
             '}');
         t(
             'tag{dynamic-@{prop}:none;}',
             //  -- output --
             'tag {\n' +
-            '\tdynamic-@{prop}: none;\n' +
+            '    dynamic-@{prop}: none;\n' +
             '}');
         t(
             'tag{ dynamic-@{prop}: none;}',
             //  -- output --
             'tag {\n' +
-            '\tdynamic-@{prop}: none;\n' +
+            '    dynamic-@{prop}: none;\n' +
             '}');
 
 
@@ -25372,19 +29386,19 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         set_name('Handle LESS property name interpolation, test #631');
         t(
             '.generate-columns(@n, @i: 1) when (@i =< @n) {\n' +
-            '\t.column-@{i} {\n' +
-            '\t\twidth: (@i * 100% / @n);\n' +
-            '\t}\n' +
-            '\t.generate-columns(@n, (@i + 1));\n' +
+            '    .column-@{i} {\n' +
+            '        width: (@i * 100% / @n);\n' +
+            '    }\n' +
+            '    .generate-columns(@n, (@i + 1));\n' +
             '}');
         t(
             '.generate-columns(@n,@i:1) when (@i =< @n){.column-@{i}{width:(@i * 100% / @n);}.generate-columns(@n,(@i + 1));}',
             //  -- output --
             '.generate-columns(@n, @i: 1) when (@i =< @n) {\n' +
-            '\t.column-@{i} {\n' +
-            '\t\twidth: (@i * 100% / @n);\n' +
-            '\t}\n' +
-            '\t.generate-columns(@n, (@i + 1));\n' +
+            '    .column-@{i} {\n' +
+            '        width: (@i * 100% / @n);\n' +
+            '    }\n' +
+            '    .generate-columns(@n, (@i + 1));\n' +
             '}');
 
 
@@ -25396,12 +29410,12 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'div{.px2rem(width,12);}',
             //  -- output --
             'div {\n' +
-            '\t.px2rem(width, 12);\n' +
+            '    .px2rem(width, 12);\n' +
             '}');
         t(
             'div {\n' +
-            '\tbackground: url("//test.com/dummy.png");\n' +
-            '\t.px2rem(width, 12);\n' +
+            '    background: url("//test.com/dummy.png");\n' +
+            '    .px2rem(width, 12);\n' +
             '}');
 
 
@@ -25422,15 +29436,15 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         set_name('Issue 1411 -- LESS Variable Assignment Spacing');
         t(
             '@set: {\n' +
-            '\tone: blue;\n' +
-            '\ttwo: green;\n' +
-            '\tthree: red;\n' +
+            '    one: blue;\n' +
+            '    two: green;\n' +
+            '    three: red;\n' +
             '}\n' +
             '.set {\n' +
-            '\teach(@set, {\n' +
-            '\t\t@{key}-@{index}: @value;\n' +
-            '\t}\n' +
-            '\t);\n' +
+            '    each(@set, {\n' +
+            '            @{key}-@{index}: @value;\n' +
+            '        }\n' +
+            '    );\n' +
             '}');
         t('@light-blue: @nice-blue + #111;');
 
@@ -25443,24 +29457,24 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         // Basic Interpolation
         t(
             'p {\n' +
-            '\t$font-size: 12px;\n' +
-            '\t$line-height: 30px;\n' +
-            '\tfont: #{$font-size}/#{$line-height};\n' +
+            '    $font-size: 12px;\n' +
+            '    $line-height: 30px;\n' +
+            '    font: #{$font-size}/#{$line-height};\n' +
             '}');
         t('p.#{$name} {}');
         t(
             '@mixin itemPropertiesCoverItem($items, $margin) {\n' +
-            '\twidth: calc((100% - ((#{$items} - 1) * #{$margin}rem)) / #{$items});\n' +
-            '\tmargin: 1.6rem #{$margin}rem 1.6rem 0;\n' +
+            '    width: calc((100% - ((#{$items} - 1) * #{$margin}rem)) / #{$items});\n' +
+            '    margin: 1.6rem #{$margin}rem 1.6rem 0;\n' +
             '}');
 
         // Multiple filed issues in LESS due to not(:blah)
         t('&:first-of-type:not(:last-child) {}');
         t(
             'div {\n' +
-            '\t&:not(:first-of-type) {\n' +
-            '\t\tbackground: red;\n' +
-            '\t}\n' +
+            '    &:not(:first-of-type) {\n' +
+            '        background: red;\n' +
+            '    }\n' +
             '}');
 
 
@@ -25483,11 +29497,28 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             ', a :b {}');
         t(
             '.card-blue ::-webkit-input-placeholder {\n' +
-            '\tcolor: #87D1FF;\n' +
+            '    color: #87D1FF;\n' +
             '}');
         t(
             'div [attr] :not(.class) {\n' +
-            '\tcolor: red;\n' +
+            '    color: red;\n' +
+            '}');
+
+        // Issue #1233
+        t(
+            '.one {\n' +
+            '    color: #FFF;\n' +
+            '    // pseudo-element\n' +
+            '    span:not(*::selection) {\n' +
+            '        margin-top: 0;\n' +
+            '    }\n' +
+            '}\n' +
+            '.two {\n' +
+            '    color: #000;\n' +
+            '    // pseudo-class\n' +
+            '    span:not(*:active) {\n' +
+            '        margin-top: 0;\n' +
+            '    }\n' +
             '}');
 
 
@@ -25498,23 +29529,23 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         opts.selector_separator_newline = false;
         t(
             '@media(min-width:768px) {\n' +
-            '\t.selector::after {\n' +
-            '\t\t/* property: value */\n' +
-            '\t}\n' +
-            '\t.other-selector {\n' +
-            '\t\t/* property: value */\n' +
-            '\t}\n' +
+            '    .selector::after {\n' +
+            '        /* property: value */\n' +
+            '    }\n' +
+            '    .other-selector {\n' +
+            '        /* property: value */\n' +
+            '    }\n' +
             '}');
         t(
             '.fa-rotate-270 {\n' +
-            '\tfilter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);\n' +
+            '    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);\n' +
             '}');
 
 
         //============================================================
-        // Issue #645
+        // Issue #645, #1233
         reset_options();
-        set_name('Issue #645');
+        set_name('Issue #645, #1233');
         opts.selector_separator_newline = true;
         opts.preserve_newlines = true;
         opts.newline_between_rules = true;
@@ -25522,7 +29553,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '/* Comment above first rule */\n' +
             '\n' +
             'body {\n' +
-            '\tdisplay: none;\n' +
+            '    display: none;\n' +
             '}\n' +
             '\n' +
             '/* Comment between rules */\n' +
@@ -25532,10 +29563,43 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '/* Comment between selectors */\n' +
             '\n' +
             'li {\n' +
-            '\tdisplay: none;\n' +
+            '    display: none;\n' +
             '}\n' +
             '\n' +
             '/* Comment after last rule */');
+        t(
+            '.one  {\n' +
+            '    color: #FFF;\n' +
+            '    // pseudo-element\n' +
+            '    span:not(*::selection) {\n' +
+            '        margin-top: 0;\n' +
+            '    }\n' +
+            '}\n' +
+            '.two {\n' +
+            '    color: #000;\n' +
+            '    // pseudo-class\n' +
+            '    span:not(*:active) {\n' +
+            '        margin-top: 0;\n' +
+            '    }\n' +
+            '}',
+            //  -- output --
+            '.one {\n' +
+            '    color: #FFF;\n' +
+            '\n' +
+            '    // pseudo-element\n' +
+            '    span:not(*::selection) {\n' +
+            '        margin-top: 0;\n' +
+            '    }\n' +
+            '}\n' +
+            '\n' +
+            '.two {\n' +
+            '    color: #000;\n' +
+            '\n' +
+            '    // pseudo-class\n' +
+            '    span:not(*:active) {\n' +
+            '        margin-top: 0;\n' +
+            '    }\n' +
+            '}');
 
 
         //============================================================
@@ -25544,19 +29608,19 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         set_name('Extend Tests');
         t(
             '.btn-group-radios {\n' +
-            '\t.btn:hover {\n' +
-            '\t\t&:hover,\n' +
-            '\t\t&:focus {\n' +
-            '\t\t\t@extend .btn-blue:hover;\n' +
-            '\t\t}\n' +
-            '\t}\n' +
+            '    .btn:hover {\n' +
+            '        &:hover,\n' +
+            '        &:focus {\n' +
+            '            @extend .btn-blue:hover;\n' +
+            '        }\n' +
+            '    }\n' +
             '}');
         t(
             '.item-warning {\n' +
-            '\t@extend btn-warning:hover;\n' +
+            '    @extend btn-warning:hover;\n' +
             '}\n' +
             '.item-warning-wrong {\n' +
-            '\t@extend btn-warning: hover;\n' +
+            '    @extend btn-warning: hover;\n' +
             '}');
 
 
@@ -25585,26 +29649,144 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         //============================================================
         // Important
         reset_options();
-        set_name('Important ');
+        set_name('Important');
         t(
             'a {\n' +
-            '\tcolor: blue  !important;\n' +
+            '    color: blue  !important;\n' +
             '}',
             //  -- output --
             'a {\n' +
-            '\tcolor: blue !important;\n' +
+            '    color: blue !important;\n' +
             '}');
         t(
             'a {\n' +
-            '\tcolor: blue!important;\n' +
+            '    color: blue!important;\n' +
             '}',
             //  -- output --
             'a {\n' +
-            '\tcolor: blue !important;\n' +
+            '    color: blue !important;\n' +
             '}');
         t(
             'a {\n' +
-            '\tcolor: blue !important;\n' +
+            '    color: blue !important;\n' +
+            '}');
+        t(
+            '.blue\\! {\n' +
+            '    color: blue !important;\n' +
+            '}');
+
+
+        //============================================================
+        // Escape
+        reset_options();
+        set_name('Escape');
+        t(
+            'a:not(.color\\:blue) {\n' +
+            '    color: blue !important;\n' +
+            '}');
+        t(
+            '.blue\\:very {\n' +
+            '    color: blue !important;\n' +
+            '}');
+        test_fragment('a:not(.color\\');
+        test_fragment('a:not\\');
+
+
+        //============================================================
+        // indent_empty_lines true
+        reset_options();
+        set_name('indent_empty_lines true');
+        opts.indent_empty_lines = true;
+        opts.preserve_newlines = true;
+        test_fragment(
+            'a {\n' +
+            '\n' +
+            'width: auto;\n' +
+            '\n' +
+            'height: auto;\n' +
+            '\n' +
+            '}',
+            //  -- output --
+            'a {\n' +
+            '    \n' +
+            '    width: auto;\n' +
+            '    \n' +
+            '    height: auto;\n' +
+            '    \n' +
+            '}');
+
+
+        //============================================================
+        // indent_empty_lines false
+        reset_options();
+        set_name('indent_empty_lines false');
+        opts.indent_empty_lines = false;
+        opts.preserve_newlines = true;
+        test_fragment(
+            'a {\n' +
+            '\n' +
+            '    width: auto;\n' +
+            '\n' +
+            '    height: auto;\n' +
+            '\n' +
+            '}');
+
+
+        //============================================================
+        // LESS mixins
+        reset_options();
+        set_name('LESS mixins');
+        t(
+            '.btn {\n' +
+            '    .generate-animation(@mykeyframes, 1.4s, .5s, 1, ease-out);\n' +
+            '}\n' +
+            '.mymixin(@color: #ccc; @border-width: 1px) {\n' +
+            '    border: @border-width solid @color;\n' +
+            '}\n' +
+            'strong {\n' +
+            '    &:extend(a:hover);\n' +
+            '}');
+
+        // Ensure simple closing parens do not break behavior
+        t(
+            'strong {\n' +
+            '    &:extend(a:hover));\n' +
+            '}\n' +
+            '.btn {\n' +
+            '    .generate-animation(@mykeyframes, 1.4s, .5s, 1, ease-out);\n' +
+            '}\n' +
+            '.mymixin(@color: #ccc; @border-width: 1px) {\n' +
+            '    border: @border-width solid @color;\n' +
+            '}\n' +
+            'strong {\n' +
+            '    &:extend(a:hover);\n' +
+            '}');
+
+        // indent multi-line parens
+        t(
+            '.btn {\n' +
+            '    .generate-animation(@mykeyframes, 1.4s,\n' +
+            '        .5s, 1, ease-out);\n' +
+            '}\n' +
+            '.mymixin(@color: #ccc;\n' +
+            '    @border-width: 1px) {\n' +
+            '    border: @border-width solid @color;\n' +
+            '}');
+
+        // format inside mixin parens
+        t(
+            '.btn {\n' +
+            '    .generate-animation(@mykeyframes,1.4s,.5s,1,ease-out);\n' +
+            '}\n' +
+            '.mymixin(@color:#ccc;@border-width:1px) {\n' +
+            '    border:@border-width solid @color;\n' +
+            '}',
+            //  -- output --
+            '.btn {\n' +
+            '    .generate-animation(@mykeyframes, 1.4s, .5s, 1, ease-out);\n' +
+            '}\n' +
+            '.mymixin(@color: #ccc; @border-width: 1px) {\n' +
+            '    border: @border-width solid @color;\n' +
             '}');
 
 
@@ -25634,31 +29816,31 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
         //============================================================
         // test basic css beautifier
         t(".tabs {}");
-        t(".tabs{color:red;}", ".tabs {\n\tcolor: red;\n}");
-        t(".tabs{color:rgb(255, 255, 0)}", ".tabs {\n\tcolor: rgb(255, 255, 0)\n}");
-        t(".tabs{background:url('back.jpg')}", ".tabs {\n\tbackground: url('back.jpg')\n}");
-        t("#bla, #foo{color:red}", "#bla,\n#foo {\n\tcolor: red\n}");
-        t("@media print {.tab{}}", "@media print {\n\t.tab {}\n}");
-        t("@media print {.tab{background-image:url(foo@2x.png)}}", "@media print {\n\t.tab {\n\t\tbackground-image: url(foo@2x.png)\n\t}\n}");
+        t(".tabs{color:red;}", ".tabs {\n    color: red;\n}");
+        t(".tabs{color:rgb(255, 255, 0)}", ".tabs {\n    color: rgb(255, 255, 0)\n}");
+        t(".tabs{background:url('back.jpg')}", ".tabs {\n    background: url('back.jpg')\n}");
+        t("#bla, #foo{color:red}", "#bla,\n#foo {\n    color: red\n}");
+        t("@media print {.tab{}}", "@media print {\n    .tab {}\n}");
+        t("@media print {.tab{background-image:url(foo@2x.png)}}", "@media print {\n    .tab {\n        background-image: url(foo@2x.png)\n    }\n}");
 
         t("a:before {\n" +
-            "\tcontent: 'a{color:black;}\"\"\\'\\'\"\\n\\n\\na{color:black}\';\n" +
+            "    content: 'a{color:black;}\"\"\\'\\'\"\\n\\n\\na{color:black}\';\n" +
             "}");
 
         //lead-in whitespace determines base-indent.
         // lead-in newlines are stripped.
-        t("\n\na, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}");
-        t("   a, img {padding: 0.2px}", "   a,\n   img {\n   \tpadding: 0.2px\n   }");
-        t(" \t \na, img {padding: 0.2px}", " \t a,\n \t img {\n \t \tpadding: 0.2px\n \t }");
-        t("\n\n     a, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}");
+        t("\n\na, img {padding: 0.2px}", "a,\nimg {\n    padding: 0.2px\n}");
+        t("   a, img {padding: 0.2px}", "   a,\n   img {\n       padding: 0.2px\n   }");
+        t("      \na, img {padding: 0.2px}", "      a,\n      img {\n          padding: 0.2px\n      }");
+        t("\n\n     a, img {padding: 0.2px}", "a,\nimg {\n    padding: 0.2px\n}");
 
         // separate selectors
-        t("#bla, #foo{color:red}", "#bla,\n#foo {\n\tcolor: red\n}");
-        t("a, img {padding: 0.2px}", "a,\nimg {\n\tpadding: 0.2px\n}");
+        t("#bla, #foo{color:red}", "#bla,\n#foo {\n    color: red\n}");
+        t("a, img {padding: 0.2px}", "a,\nimg {\n    padding: 0.2px\n}");
 
         // block nesting
-        t("#foo {\n\tbackground-image: url(foo@2x.png);\n\t@font-face {\n\t\tfont-family: 'Bitstream Vera Serif Bold';\n\t\tsrc: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n\t}\n}");
-        t("@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo@2x.png);\n\t}\n\t@font-face {\n\t\tfont-family: 'Bitstream Vera Serif Bold';\n\t\tsrc: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n\t}\n}");
+        t("#foo {\n    background-image: url(foo@2x.png);\n    @font-face {\n        font-family: 'Bitstream Vera Serif Bold';\n        src: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n    }\n}");
+        t("@media screen {\n    #foo:hover {\n        background-image: url(foo@2x.png);\n    }\n    @font-face {\n        font-family: 'Bitstream Vera Serif Bold';\n        src: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n    }\n}");
 /*
 @font-face {
     font-family: 'Bitstream Vera Serif Bold';
@@ -25678,32 +29860,32 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
     }
 }
 */
-        t("@font-face {\n\tfont-family: 'Bitstream Vera Serif Bold';\n\tsrc: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n}\n@media screen {\n\t#foo:hover {\n\t\tbackground-image: url(foo.png);\n\t}\n\t@media screen and (min-device-pixel-ratio: 2) {\n\t\t@font-face {\n\t\t\tfont-family: 'Helvetica Neue'\n\t\t}\n\t\t#foo:hover {\n\t\t\tbackground-image: url(foo@2x.png);\n\t\t}\n\t}\n}");
+        t("@font-face {\n    font-family: 'Bitstream Vera Serif Bold';\n    src: url('http://developer.mozilla.org/@api/deki/files/2934/=VeraSeBd.ttf');\n}\n@media screen {\n    #foo:hover {\n        background-image: url(foo.png);\n    }\n    @media screen and (min-device-pixel-ratio: 2) {\n        @font-face {\n            font-family: 'Helvetica Neue'\n        }\n        #foo:hover {\n            background-image: url(foo@2x.png);\n        }\n    }\n}");
 
         // less-css cases
-        t('.well{@well-bg:@bg-color;@well-fg:@fg-color;}','.well {\n\t@well-bg: @bg-color;\n\t@well-fg: @fg-color;\n}');
+        t('.well{@well-bg:@bg-color;@well-fg:@fg-color;}','.well {\n    @well-bg: @bg-color;\n    @well-fg: @fg-color;\n}');
         t('.well {&.active {\nbox-shadow: 0 1px 1px @border-color, 1px 0 1px @border-color;}}',
             '.well {\n' +
-            '\t&.active {\n' +
-            '\t\tbox-shadow: 0 1px 1px @border-color, 1px 0 1px @border-color;\n' +
-            '\t}\n' +
+            '    &.active {\n' +
+            '        box-shadow: 0 1px 1px @border-color, 1px 0 1px @border-color;\n' +
+            '    }\n' +
             '}');
         t('a {\n' +
-            '\tcolor: blue;\n' +
-            '\t&:hover {\n' +
-            '\t\tcolor: green;\n' +
-            '\t}\n' +
-            '\t& & &&&.active {\n' +
-            '\t\tcolor: green;\n' +
-            '\t}\n' +
+            '    color: blue;\n' +
+            '    &:hover {\n' +
+            '        color: green;\n' +
+            '    }\n' +
+            '    & & &&&.active {\n' +
+            '        color: green;\n' +
+            '    }\n' +
             '}');
 
         // Not sure if this is sensible
         // but I believe it is correct to not remove the space in "&: hover".
         t('a {\n' +
-            '\t&: hover {\n' +
-            '\t\tcolor: green;\n' +
-            '\t}\n' +
+            '    &: hover {\n' +
+            '        color: green;\n' +
+            '    }\n' +
             '}');
 
         // import
@@ -25711,29 +29893,29 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
 
         // don't break nested pseudo-classes
         t("a:first-child{color:red;div:first-child{color:black;}}",
-            "a:first-child {\n\tcolor: red;\n\tdiv:first-child {\n\t\tcolor: black;\n\t}\n}");
+            "a:first-child {\n    color: red;\n    div:first-child {\n        color: black;\n    }\n}");
 
         // handle SASS/LESS parent reference
         t("div{&:first-letter {text-transform: uppercase;}}",
-            "div {\n\t&:first-letter {\n\t\ttext-transform: uppercase;\n\t}\n}");
+            "div {\n    &:first-letter {\n        text-transform: uppercase;\n    }\n}");
 
         //nested modifiers (&:hover etc)
-        t(".tabs{&:hover{width:10px;}}", ".tabs {\n\t&:hover {\n\t\twidth: 10px;\n\t}\n}");
-        t(".tabs{&.big{width:10px;}}", ".tabs {\n\t&.big {\n\t\twidth: 10px;\n\t}\n}");
-        t(".tabs{&>big{width:10px;}}", ".tabs {\n\t&>big {\n\t\twidth: 10px;\n\t}\n}");
-        t(".tabs{&+.big{width:10px;}}", ".tabs {\n\t&+.big {\n\t\twidth: 10px;\n\t}\n}");
+        t(".tabs{&:hover{width:10px;}}", ".tabs {\n    &:hover {\n        width: 10px;\n    }\n}");
+        t(".tabs{&.big{width:10px;}}", ".tabs {\n    &.big {\n        width: 10px;\n    }\n}");
+        t(".tabs{&>big{width:10px;}}", ".tabs {\n    &>big {\n        width: 10px;\n    }\n}");
+        t(".tabs{&+.big{width:10px;}}", ".tabs {\n    &+.big {\n        width: 10px;\n    }\n}");
 
         //nested rules
-        t(".tabs{.child{width:10px;}}", ".tabs {\n\t.child {\n\t\twidth: 10px;\n\t}\n}");
+        t(".tabs{.child{width:10px;}}", ".tabs {\n    .child {\n        width: 10px;\n    }\n}");
 
         //variables
-        t("@myvar:10px;.tabs{width:10px;}", "@myvar: 10px;\n.tabs {\n\twidth: 10px;\n}");
-        t("@myvar:10px; .tabs{width:10px;}", "@myvar: 10px;\n.tabs {\n\twidth: 10px;\n}");
+        t("@myvar:10px;.tabs{width:10px;}", "@myvar: 10px;\n.tabs {\n    width: 10px;\n}");
+        t("@myvar:10px; .tabs{width:10px;}", "@myvar: 10px;\n.tabs {\n    width: 10px;\n}");
 
         //mixins
-        t("div{.px2rem(width,12);}", "div {\n\t.px2rem(width, 12);\n}");
+        t("div{.px2rem(width,12);}", "div {\n    .px2rem(width, 12);\n}");
         // mixin next to 'background: url("...")' should not add a line break after the comma
-        t("div {\n\tbackground: url(\"//test.com/dummy.png\");\n\t.px2rem(width, 12);\n}");
+        t("div {\n    background: url(\"//test.com/dummy.png\");\n    .px2rem(width, 12);\n}");
 
         // test options
         opts.indent_size = 2;
@@ -25894,8 +30076,9 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         success = success && test_fragment(input, expectation);
 
         if (opts.indent_size === 4 && input) {
-            wrapped_input = '<div>\n' + input.replace(/^(.+)$/mg, '    $1') + '\n    <span>inline</span>\n</div>';
-            wrapped_expectation = '<div>\n' + expectation.replace(/^(.+)$/mg, '    $1') + '\n    <span>inline</span>\n</div>';
+          var indent_string = opts.indent_with_tabs ? '\t' : '    ';
+            wrapped_input = '<div>\n' + input.replace(/^(.+)$/mg, indent_string + '$1') + '\n' + indent_string + '<span>inline</span>\n</div>';
+            wrapped_expectation = '<div>\n' + expectation.replace(/^(.+)$/mg, indent_string + '$1') + '\n' + indent_string + '<span>inline</span>\n</div>';
             success = success && test_fragment(wrapped_input, wrapped_expectation);
         }
         return success;
@@ -25956,49 +30139,49 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // Support Indent Level Options and Base Indent Autodetection - ()
         reset_options();
         set_name('Support Indent Level Options and Base Indent Autodetection - ()');
-        test_fragment('   a', 'a');
+        test_fragment('   a');
         test_fragment(
             '   <div>\n' +
             '  <p>This is my sentence.</p>\n' +
             '</div>',
             //  -- output --
-            '<div>\n' +
-            '    <p>This is my sentence.</p>\n' +
-            '</div>');
+            '   <div>\n' +
+            '       <p>This is my sentence.</p>\n' +
+            '   </div>');
         test_fragment(
             '   // This is a random comment\n' +
             '<div>\n' +
             '  <p>This is my sentence.</p>\n' +
             '</div>',
             //  -- output --
-            '// This is a random comment\n' +
-            '<div>\n' +
-            '    <p>This is my sentence.</p>\n' +
-            '</div>');
+            '   // This is a random comment\n' +
+            '   <div>\n' +
+            '       <p>This is my sentence.</p>\n' +
+            '   </div>');
 
         // Support Indent Level Options and Base Indent Autodetection - (indent_level = "0")
         reset_options();
         set_name('Support Indent Level Options and Base Indent Autodetection - (indent_level = "0")');
         opts.indent_level = 0;
-        test_fragment('   a', 'a');
+        test_fragment('   a');
         test_fragment(
             '   <div>\n' +
             '  <p>This is my sentence.</p>\n' +
             '</div>',
             //  -- output --
-            '<div>\n' +
-            '    <p>This is my sentence.</p>\n' +
-            '</div>');
+            '   <div>\n' +
+            '       <p>This is my sentence.</p>\n' +
+            '   </div>');
         test_fragment(
             '   // This is a random comment\n' +
             '<div>\n' +
             '  <p>This is my sentence.</p>\n' +
             '</div>',
             //  -- output --
-            '// This is a random comment\n' +
-            '<div>\n' +
-            '    <p>This is my sentence.</p>\n' +
-            '</div>');
+            '   // This is a random comment\n' +
+            '   <div>\n' +
+            '       <p>This is my sentence.</p>\n' +
+            '   </div>');
 
         // Support Indent Level Options and Base Indent Autodetection - (indent_level = "1")
         reset_options();
@@ -26077,25 +30260,25 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         reset_options();
         set_name('Support Indent Level Options and Base Indent Autodetection - (indent_level = "0")');
         opts.indent_level = 0;
-        test_fragment('\t   a', 'a');
+        test_fragment('\t   a');
         test_fragment(
             '\t   <div>\n' +
             '  <p>This is my sentence.</p>\n' +
             '</div>',
             //  -- output --
-            '<div>\n' +
-            '    <p>This is my sentence.</p>\n' +
-            '</div>');
+            '\t   <div>\n' +
+            '\t       <p>This is my sentence.</p>\n' +
+            '\t   </div>');
         test_fragment(
             '\t   // This is a random comment\n' +
             '<div>\n' +
             '  <p>This is my sentence.</p>\n' +
             '</div>',
             //  -- output --
-            '// This is a random comment\n' +
-            '<div>\n' +
-            '    <p>This is my sentence.</p>\n' +
-            '</div>');
+            '\t   // This is a random comment\n' +
+            '\t   <div>\n' +
+            '\t       <p>This is my sentence.</p>\n' +
+            '\t   </div>');
 
 
         //============================================================
@@ -26182,6 +30365,182 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
 
         //============================================================
+        // Tests for script and style Commented and cdata wapping (#1641)
+        reset_options();
+        set_name('Tests for script and style Commented and cdata wapping (#1641)');
+        opts.templating = 'php';
+        bth(
+            '<style><!----></style>',
+            //  -- output --
+            '<style>\n' +
+            '    <!--\n' +
+            '    -->\n' +
+            '</style>');
+        bth(
+            '<style><!--\n' +
+            '--></style>',
+            //  -- output --
+            '<style>\n' +
+            '    <!--\n' +
+            '    -->\n' +
+            '</style>');
+        bth(
+            '<style><!-- the rest of this   line is   ignored\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '--></style>',
+            //  -- output --
+            '<style>\n' +
+            '    <!-- the rest of this   line is   ignored\n' +
+            '    -->\n' +
+            '</style>');
+        bth(
+            '<style type="test/null"><!--\n' +
+            '\n' +
+            '\t  \n' +
+            '\n' +
+            '--></style>',
+            //  -- output --
+            '<style type="test/null">\n' +
+            '    <!--\n' +
+            '    -->\n' +
+            '</style>');
+        bth(
+            '<script><!--\n' +
+            'console.log("</script>" + "</style>");\n' +
+            '--></script>',
+            //  -- output --
+            '<script>\n' +
+            '    <!--\n' +
+            '    console.log("</script>" + "</style>");\n' +
+            '    -->\n' +
+            '</script>');
+
+        // If wrapping is incomplete, print remaining unchanged.
+        test_fragment(
+            '<div>\n' +
+            '<script><!--\n' +
+            'console.log("</script>" + "</style>");\n' +
+            ' </script>\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    <script><!--\n' +
+            'console.log("</script>" + "</style>");\n' +
+            ' </script>\n' +
+            '</div>');
+        bth(
+            '<style><!--\n' +
+            '.selector {\n' +
+            '    font-family: "</script></style>";\n' +
+            '    }\n' +
+            '--></style>',
+            //  -- output --
+            '<style>\n' +
+            '    <!--\n' +
+            '    .selector {\n' +
+            '        font-family: "</script></style>";\n' +
+            '    }\n' +
+            '    -->\n' +
+            '</style>');
+        bth(
+            '<script type="test/null">\n' +
+            '    <!--\n' +
+            '   console.log("</script>" + "</style>");\n' +
+            '    console.log("</script>" + "</style>");\n' +
+            '--></script>',
+            //  -- output --
+            '<script type="test/null">\n' +
+            '    <!--\n' +
+            '    console.log("</script>" + "</style>");\n' +
+            '     console.log("</script>" + "</style>");\n' +
+            '    -->\n' +
+            '</script>');
+        bth(
+            '<script type="test/null"><!--\n' +
+            ' console.log("</script>" + "</style>");\n' +
+            '      console.log("</script>" + "</style>");\n' +
+            '--></script>',
+            //  -- output --
+            '<script type="test/null">\n' +
+            '    <!--\n' +
+            '    console.log("</script>" + "</style>");\n' +
+            '         console.log("</script>" + "</style>");\n' +
+            '    -->\n' +
+            '</script>');
+        bth(
+            '<script><![CDATA[\n' +
+            'console.log("</script>" + "</style>");\n' +
+            ']]></script>',
+            //  -- output --
+            '<script>\n' +
+            '    <![CDATA[\n' +
+            '    console.log("</script>" + "</style>");\n' +
+            '    ]]>\n' +
+            '</script>');
+        bth(
+            '<style><![CDATA[\n' +
+            '.selector {\n' +
+            '    font-family: "</script></style>";\n' +
+            '    }\n' +
+            ']]></style>',
+            //  -- output --
+            '<style>\n' +
+            '    <![CDATA[\n' +
+            '    .selector {\n' +
+            '        font-family: "</script></style>";\n' +
+            '    }\n' +
+            '    ]]>\n' +
+            '</style>');
+        bth(
+            '<script type="test/null">\n' +
+            '    <![CDATA[\n' +
+            '   console.log("</script>" + "</style>");\n' +
+            '    console.log("</script>" + "</style>");\n' +
+            ']]></script>',
+            //  -- output --
+            '<script type="test/null">\n' +
+            '    <![CDATA[\n' +
+            '    console.log("</script>" + "</style>");\n' +
+            '     console.log("</script>" + "</style>");\n' +
+            '    ]]>\n' +
+            '</script>');
+        bth(
+            '<script type="test/null"><![CDATA[\n' +
+            ' console.log("</script>" + "</style>");\n' +
+            '      console.log("</script>" + "</style>");\n' +
+            ']]></script>',
+            //  -- output --
+            '<script type="test/null">\n' +
+            '    <![CDATA[\n' +
+            '    console.log("</script>" + "</style>");\n' +
+            '         console.log("</script>" + "</style>");\n' +
+            '    ]]>\n' +
+            '</script>');
+
+        // Issue #1687 - start with <?php ?>
+        bth(
+            '<script>\n' +
+            '<?php ?>\n' +
+            'var b={\n' +
+            'a:function _test( ){\n' +
+            'return 1;\n' +
+            '}\n' +
+            '}\n' +
+            '</script>',
+            //  -- output --
+            '<script>\n' +
+            '    <?php ?>\n' +
+            '    var b = {\n' +
+            '        a: function _test() {\n' +
+            '            return 1;\n' +
+            '        }\n' +
+            '    }\n' +
+            '</script>');
+
+
+        //============================================================
         // Tests for script and style types (issue 453, 821)
         reset_options();
         set_name('Tests for script and style types (issue 453, 821)');
@@ -26200,12 +30559,68 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<script>\n' +
             '    < div > < /div>\n' +
             '</script>');
+
+        // text/html should beautify as html
+        bth(
+            '<script type="text/html">\n' +
+            '<div>\n' +
+            '<div></div><div></div></div></script>',
+            //  -- output --
+            '<script type="text/html">\n' +
+            '    <div>\n' +
+            '        <div></div>\n' +
+            '        <div></div>\n' +
+            '    </div>\n' +
+            '</script>');
+
+        // null beatifier behavior - should still indent
+        test_fragment(
+            '<script type="test/null">\n' +
+            '    <div>\n' +
+            '  <div></div><div></div></div></script>',
+            //  -- output --
+            '<script type="test/null">\n' +
+            '    <div>\n' +
+            '      <div></div><div></div></div>\n' +
+            '</script>');
+        bth(
+            '<script type="test/null">\n' +
+            '   <div>\n' +
+            '     <div></div><div></div></div></script>',
+            //  -- output --
+            '<script type="test/null">\n' +
+            '    <div>\n' +
+            '      <div></div><div></div></div>\n' +
+            '</script>');
+        bth(
+            '<script type="test/null">\n' +
+            '<div>\n' +
+            '<div></div><div></div></div></script>',
+            //  -- output --
+            '<script type="test/null">\n' +
+            '    <div>\n' +
+            '    <div></div><div></div></div>\n' +
+            '</script>');
         bth(
             '<script>var foo = "bar";</script>',
             //  -- output --
             '<script>\n' +
             '    var foo = "bar";\n' +
             '</script>');
+
+        // Issue #1606 - type attribute on other element
+        bth(
+            '<script>\n' +
+            'console.log(1  +  1);\n' +
+            '</script>\n' +
+            '\n' +
+            '<input type="submit"></input>',
+            //  -- output --
+            '<script>\n' +
+            '    console.log(1 + 1);\n' +
+            '</script>\n' +
+            '\n' +
+            '<input type="submit"></input>');
         bth(
             '<script type="text/javascript">var foo = "bar";</script>',
             //  -- output --
@@ -26302,9 +30717,9 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
 
         //============================================================
-        // Attribute Wrap alignment with spaces - (wrap_attributes = ""force-aligned"", indent_with_tabs = "true")
+        // Attribute Wrap alignment with spaces and tabs - (wrap_attributes = ""force-aligned"", indent_with_tabs = "true")
         reset_options();
-        set_name('Attribute Wrap alignment with spaces - (wrap_attributes = ""force-aligned"", indent_with_tabs = "true")');
+        set_name('Attribute Wrap alignment with spaces and tabs - (wrap_attributes = ""force-aligned"", indent_with_tabs = "true")');
         opts.wrap_attributes = 'force-aligned';
         opts.indent_with_tabs = true;
         test_fragment(
@@ -26312,29 +30727,76 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             //  -- output --
             '<div>\n' +
             '\t<div a="1"\n' +
-            '\t     b="2">\n' +
+            '\t\t b="2">\n' +
             '\t\t<div>test</div>\n' +
             '\t</div>\n' +
             '</div>');
         test_fragment(
             '<input type="radio"\n' +
-            '       name="garage"\n' +
-            '       id="garage-02"\n' +
-            '       class="ns-e-togg__radio ns-js-form-binding"\n' +
-            '       value="02"\n' +
-            '       {{#ifCond data.antragsart "05"}}\n' +
-            '       checked="checked"\n' +
-            '       {{/ifCond}}>');
+            '\t   name="garage"\n' +
+            '\t   id="garage-02"\n' +
+            '\t   class="ns-e-togg__radio ns-js-form-binding"\n' +
+            '\t   value="02"\n' +
+            '\t   {{#ifCond data.antragsart "05"}}\n' +
+            '\t   checked="checked"\n' +
+            '\t   {{/ifCond}}>');
         test_fragment(
             '<div>\n' +
             '\t<input type="radio"\n' +
-            '\t       name="garage"\n' +
-            '\t       id="garage-02"\n' +
-            '\t       class="ns-e-togg__radio ns-js-form-binding"\n' +
-            '\t       value="02"\n' +
-            '\t       {{#ifCond data.antragsart "05"}}\n' +
-            '\t       checked="checked"\n' +
-            '\t       {{/ifCond}}>\n' +
+            '\t\t   name="garage"\n' +
+            '\t\t   id="garage-02"\n' +
+            '\t\t   class="ns-e-togg__radio ns-js-form-binding"\n' +
+            '\t\t   value="02"\n' +
+            '\t\t   {{#ifCond data.antragsart "05"}}\n' +
+            '\t\t   checked="checked"\n' +
+            '\t\t   {{/ifCond}}>\n' +
+            '</div>');
+        test_fragment(
+            '---\n' +
+            'layout: mainLayout.html\n' +
+            'page: default.html\n' +
+            '---\n' +
+            '\n' +
+            '<div>\n' +
+            '\t{{> componentXYZ my.data.key}}\n' +
+            '\t{{> componentABC my.other.data.key}}\n' +
+            '\t<span>Hello World</span>\n' +
+            '\t<p>Your paragraph</p>\n' +
+            '</div>');
+
+        // Attribute Wrap alignment with spaces and tabs - (wrap_attributes = ""force"", indent_with_tabs = "true")
+        reset_options();
+        set_name('Attribute Wrap alignment with spaces and tabs - (wrap_attributes = ""force"", indent_with_tabs = "true")');
+        opts.wrap_attributes = 'force';
+        opts.indent_with_tabs = true;
+        test_fragment(
+            '<div><div a="1" b="2"><div>test</div></div></div>',
+            //  -- output --
+            '<div>\n' +
+            '\t<div a="1"\n' +
+            '\t\tb="2">\n' +
+            '\t\t<div>test</div>\n' +
+            '\t</div>\n' +
+            '</div>');
+        test_fragment(
+            '<input type="radio"\n' +
+            '\tname="garage"\n' +
+            '\tid="garage-02"\n' +
+            '\tclass="ns-e-togg__radio ns-js-form-binding"\n' +
+            '\tvalue="02"\n' +
+            '\t{{#ifCond data.antragsart "05"}}\n' +
+            '\tchecked="checked"\n' +
+            '\t{{/ifCond}}>');
+        test_fragment(
+            '<div>\n' +
+            '\t<input type="radio"\n' +
+            '\t\tname="garage"\n' +
+            '\t\tid="garage-02"\n' +
+            '\t\tclass="ns-e-togg__radio ns-js-form-binding"\n' +
+            '\t\tvalue="02"\n' +
+            '\t\t{{#ifCond data.antragsart "05"}}\n' +
+            '\t\tchecked="checked"\n' +
+            '\t\t{{/ifCond}}>\n' +
             '</div>');
         test_fragment(
             '---\n' +
@@ -26399,6 +30861,34 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
 
         //============================================================
+        // unformatted_content_delimiter ^^
+        reset_options();
+        set_name('unformatted_content_delimiter ^^');
+        opts.wrap_line_length = 80;
+        opts.unformatted_content_delimiter = '^^';
+        test_fragment(
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 ^^09 0010 0011 0012 0013 0014 0015 ^^16 0017 0018 0019 0020</span>',
+            //  -- output --
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008\n' +
+            '    ^^09 0010 0011 0012 0013 0014 0015 ^^16 0017 0018 0019 0020</span>');
+        test_fragment(
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020</span>',
+            //  -- output --
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014\n' +
+            '    0015 0016 0017 0018 0019 0020</span>');
+        test_fragment(
+            '<span>0   0001   0002   0003   0004   0005   0006   0007   0008   0009   ^^10   0011   0012   0013   0014   0015   0016   0^^7   0018   0019   0020</span>',
+            //  -- output --
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009\n' +
+            '    ^^10   0011   0012   0013   0014   0015   0016   0^^7 0018 0019 0020</span>');
+        test_fragment(
+            '<span>0   0001   0002   0003   0004   0005   0006   0007   0008   0009   0^^0   0011   0012   0013   0014   0015   0016   0^^7   0018   0019   0020</span>',
+            //  -- output --
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0^^0 0011 0012 0013 0014\n' +
+            '    0015 0016 0^^7 0018 0019 0020</span>');
+
+
+        //============================================================
         // Attribute Wrap - (wrap_attributes = ""force"")
         reset_options();
         set_name('Attribute Wrap - (wrap_attributes = ""force"")');
@@ -26411,17 +30901,17 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // issue #869
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
-        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>');
+        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment(
             '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
@@ -26430,13 +30920,13 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    attr1="123"\n' +
             '    data-attr2="hello    t here">This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '    attr0\n' +
             '    attr1="123"\n' +
             '    data-attr2="hello    t here"\n' +
-            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<img attr0 attr1="123" data-attr2="hello    t here"/>',
             //  -- output --
@@ -26452,20 +30942,20 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '    attr0\n' +
             '    attr1=12345\n' +
             '    data-attr2="hello    t here"\n' +
-            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
             '<?xml version="1.0" encoding="UTF-8" ?>\n' +
             '<root attr1=foo12\n' +
             '    attr2="bar" />');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
@@ -26501,12 +30991,12 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013\n' +
             '    0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010\n' +
+            '    <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment(
@@ -26515,19 +31005,19 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013\n' +
             '    0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic\n' +
+            '    <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
         test_fragment(
-            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>',
+            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>',
             //  -- output --
             '<p>Our forms for collecting address-related information follow a standard\n' +
-            '    design. Specific input elements will vary according to the form’s audience\n' +
+            '    design. Specific input elements willl vary according to the form’s audience\n' +
             '    and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment(
@@ -26537,13 +31027,13 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    attr1="123"\n' +
             '    data-attr2="hello    t here">This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '    attr0\n' +
             '    attr1="123"\n' +
             '    data-attr2="hello    t here"\n' +
-            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<img attr0 attr1="123" data-attr2="hello    t here"/>',
             //  -- output --
@@ -26559,23 +31049,24 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '    attr0\n' +
             '    attr1=12345\n' +
             '    data-attr2="hello    t here"\n' +
-            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
             '<?xml version="1.0" encoding="UTF-8" ?>\n' +
             '<root attr1=foo12\n' +
             '    attr2="bar" />');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
-            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '<link\n' +
+            '    href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
             '    rel="stylesheet"\n' +
             '    type="text/css">');
 
@@ -26592,17 +31083,17 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // issue #869
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
-        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>');
+        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment(
             '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
@@ -26611,13 +31102,13 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '        attr1="123"\n' +
             '        data-attr2="hello    t here">This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '        attr0\n' +
             '        attr1="123"\n' +
             '        data-attr2="hello    t here"\n' +
-            '        heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '        heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<img attr0 attr1="123" data-attr2="hello    t here"/>',
             //  -- output --
@@ -26633,20 +31124,20 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '        attr0\n' +
             '        attr1=12345\n' +
             '        data-attr2="hello    t here"\n' +
-            '        heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '        heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
             '<?xml version="1.0" encoding="UTF-8" ?>\n' +
             '<root attr1=foo12\n' +
             '        attr2="bar" />');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
@@ -26683,12 +31174,12 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013\n' +
             '    0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010\n' +
+            '    <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment(
@@ -26697,28 +31188,28 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013\n' +
             '    0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic\n' +
+            '    <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
         test_fragment(
-            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>',
+            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>',
             //  -- output --
             '<p>Our forms for collecting address-related information follow a standard\n' +
-            '    design. Specific input elements will vary according to the form’s audience\n' +
+            '    design. Specific input elements willl vary according to the form’s audience\n' +
             '    and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123"\n' +
-            'data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This\n' +
-            '    is some text</div>');
+            'data-attr2="hello    t here"\n' +
+            'heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
@@ -26728,20 +31219,21 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1=12345\n' +
-            'data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This\n' +
-            '    is some text</div>');
+            'data-attr2="hello    t here"\n' +
+            'heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
             '<?xml version="1.0" encoding="UTF-8" ?>\n' +
             '<root attr1=foo12 attr2="bar" />');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
-            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '<link\n' +
+            'href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
             'rel="stylesheet" type="text/css">');
 
         // Attribute Wrap - (wrap_attributes = ""auto"", wrap_line_length = "80", wrap_attributes_indent_size = "4")
@@ -26774,12 +31266,12 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013\n' +
             '    0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010\n' +
+            '    <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment(
@@ -26788,28 +31280,28 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013\n' +
             '    0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic\n' +
+            '    <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
         test_fragment(
-            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>',
+            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>',
             //  -- output --
             '<p>Our forms for collecting address-related information follow a standard\n' +
-            '    design. Specific input elements will vary according to the form’s audience\n' +
+            '    design. Specific input elements willl vary according to the form’s audience\n' +
             '    and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123"\n' +
-            '    data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This\n' +
-            '    is some text</div>');
+            '    data-attr2="hello    t here"\n' +
+            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
@@ -26819,20 +31311,21 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1=12345\n' +
-            '    data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This\n' +
-            '    is some text</div>');
+            '    data-attr2="hello    t here"\n' +
+            '    heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
             '<?xml version="1.0" encoding="UTF-8" ?>\n' +
             '<root attr1=foo12 attr2="bar" />');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
-            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '<link\n' +
+            '    href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
             '    rel="stylesheet" type="text/css">');
 
         // Attribute Wrap - (wrap_attributes = ""auto"", wrap_line_length = "0")
@@ -26848,20 +31341,20 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // issue #869
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
-        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>');
+        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
@@ -26870,13 +31363,13 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<root attr1="foo" attr2="bar" />');
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1=12345 data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1=12345 data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
             '<?xml version="1.0" encoding="UTF-8" ?>\n' +
             '<root attr1=foo12 attr2="bar" />');
-        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">');
+        bth('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">');
 
         // Attribute Wrap - (wrap_attributes = ""force-aligned"")
         reset_options();
@@ -26890,17 +31383,17 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // issue #869
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
-        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>');
+        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment(
             '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
@@ -26909,13 +31402,13 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '     attr1="123"\n' +
             '     data-attr2="hello    t here">This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '     attr0\n' +
             '     attr1="123"\n' +
             '     data-attr2="hello    t here"\n' +
-            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<img attr0 attr1="123" data-attr2="hello    t here"/>',
             //  -- output --
@@ -26931,20 +31424,20 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '     attr0\n' +
             '     attr1=12345\n' +
             '     data-attr2="hello    t here"\n' +
-            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
             '<?xml version="1.0" encoding="UTF-8" ?>\n' +
             '<root attr1=foo12\n' +
             '      attr2="bar" />');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
@@ -26980,12 +31473,12 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013\n' +
             '    0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010\n' +
+            '    <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment(
@@ -26994,19 +31487,19 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013\n' +
             '    0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic\n' +
+            '    <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
         test_fragment(
-            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>',
+            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>',
             //  -- output --
             '<p>Our forms for collecting address-related information follow a standard\n' +
-            '    design. Specific input elements will vary according to the form’s audience\n' +
+            '    design. Specific input elements willl vary according to the form’s audience\n' +
             '    and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment(
@@ -27016,13 +31509,13 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '     attr1="123"\n' +
             '     data-attr2="hello    t here">This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '     attr0\n' +
             '     attr1="123"\n' +
             '     data-attr2="hello    t here"\n' +
-            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<img attr0 attr1="123" data-attr2="hello    t here"/>',
             //  -- output --
@@ -27038,20 +31531,20 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '     attr0\n' +
             '     attr1=12345\n' +
             '     data-attr2="hello    t here"\n' +
-            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
             '<?xml version="1.0" encoding="UTF-8" ?>\n' +
             '<root attr1=foo12\n' +
             '      attr2="bar" />');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
@@ -27087,12 +31580,12 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013\n' +
             '    0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010\n' +
+            '    <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment(
@@ -27101,28 +31594,28 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013\n' +
             '    0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic\n' +
+            '    <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
         test_fragment(
-            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>',
+            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>',
             //  -- output --
             '<p>Our forms for collecting address-related information follow a standard\n' +
-            '    design. Specific input elements will vary according to the form’s audience\n' +
+            '    design. Specific input elements willl vary according to the form’s audience\n' +
             '    and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123"\n' +
-            '     data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This\n' +
-            '    is some text</div>');
+            '     data-attr2="hello    t here"\n' +
+            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
@@ -27132,17 +31625,17 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1=12345\n' +
-            '     data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This\n' +
-            '    is some text</div>');
+            '     data-attr2="hello    t here"\n' +
+            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
             '<?xml version="1.0" encoding="UTF-8" ?>\n' +
             '<root attr1=foo12 attr2="bar" />');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
@@ -27160,20 +31653,20 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // issue #869
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
-        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>');
+        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment('<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>');
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment('<img attr0 attr1="123" data-attr2="hello    t here"/>', '<img attr0 attr1="123" data-attr2="hello    t here" />');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
@@ -27182,13 +31675,13 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<root attr1="foo" attr2="bar" />');
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
-        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1=12345 data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+        test_fragment('<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>', '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1=12345 data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
             '<?xml version="1.0" encoding="UTF-8" ?>\n' +
             '<root attr1=foo12 attr2="bar" />');
-        test_fragment('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">');
+        bth('<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">');
 
         // Attribute Wrap - (wrap_attributes = ""force-aligned"", wrap_attributes_indent_size = "8")
         reset_options();
@@ -27203,17 +31696,17 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // issue #869
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
-        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>');
+        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment(
             '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
@@ -27222,13 +31715,13 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '     attr1="123"\n' +
             '     data-attr2="hello    t here">This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '     attr0\n' +
             '     attr1="123"\n' +
             '     data-attr2="hello    t here"\n' +
-            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<img attr0 attr1="123" data-attr2="hello    t here"/>',
             //  -- output --
@@ -27244,20 +31737,20 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
             '     attr0\n' +
             '     attr1=12345\n' +
             '     data-attr2="hello    t here"\n' +
-            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>');
+            '     heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
             '<?xml version="1.0" encoding="UTF-8" ?>\n' +
             '<root attr1=foo12\n' +
             '      attr2="bar" />');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
@@ -27277,17 +31770,17 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // issue #869
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
-        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>');
+        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment(
             '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
@@ -27298,7 +31791,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    data-attr2="hello    t here"\n' +
             '>This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div\n' +
             '    lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
@@ -27306,7 +31799,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    attr1="123"\n' +
             '    data-attr2="hello    t here"\n' +
             '    heymanimreallylongtoowhocomesupwiththesenames="false"\n' +
-            '>This is some text</div>');
+            '>This is text</div>');
         test_fragment(
             '<img attr0 attr1="123" data-attr2="hello    t here"/>',
             //  -- output --
@@ -27326,7 +31819,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div\n' +
             '    lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
@@ -27334,7 +31827,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    attr1=12345\n' +
             '    data-attr2="hello    t here"\n' +
             '    heymanimreallylongtoowhocomesupwiththesenames="false"\n' +
-            '>This is some text</div>');
+            '>This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
@@ -27343,7 +31836,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    attr1=foo12\n' +
             '    attr2="bar"\n' +
             '/>');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
             '<link\n' +
@@ -27382,12 +31875,12 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013\n' +
             '    0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010\n' +
+            '    <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment(
@@ -27396,19 +31889,19 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013\n' +
             '    0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment(
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>',
             //  -- output --
-            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015\n' +
-            '    0016 0017 0018 0019 0020</span>');
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic\n' +
+            '    <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
         test_fragment(
-            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>',
+            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>',
             //  -- output --
             '<p>Our forms for collecting address-related information follow a standard\n' +
-            '    design. Specific input elements will vary according to the form’s audience\n' +
+            '    design. Specific input elements willl vary according to the form’s audience\n' +
             '    and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment(
@@ -27420,7 +31913,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    data-attr2="hello    t here"\n' +
             '>This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div\n' +
             '    lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
@@ -27428,7 +31921,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    attr1="123"\n' +
             '    data-attr2="hello    t here"\n' +
             '    heymanimreallylongtoowhocomesupwiththesenames="false"\n' +
-            '>This is some text</div>');
+            '>This is text</div>');
         test_fragment(
             '<img attr0 attr1="123" data-attr2="hello    t here"/>',
             //  -- output --
@@ -27448,7 +31941,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div\n' +
             '    lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
@@ -27456,7 +31949,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    attr1=12345\n' +
             '    data-attr2="hello    t here"\n' +
             '    heymanimreallylongtoowhocomesupwiththesenames="false"\n' +
-            '>This is some text</div>');
+            '>This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
@@ -27465,7 +31958,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    attr1=foo12\n' +
             '    attr2="bar"\n' +
             '/>');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
             '<link\n' +
@@ -27487,17 +31980,17 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // issue #869
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects &nbsp;
+        // issue #1324
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
 
         // issue #1496 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
-        // TODO: This is wrong - goes over line length but respects unicode nbsp
+        // issue #1496 and #1324 - respect unicode non-breaking space
         test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
 
         // Issue 1222 -- P tags are formatting correctly
-        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements will vary according to the form’s audience and purpose.</p>');
+        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>');
         bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
         test_fragment(
             '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
@@ -27508,7 +32001,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '        data-attr2="hello    t here"\n' +
             '>This is some text</div>');
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div\n' +
             '        lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
@@ -27516,7 +32009,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '        attr1="123"\n' +
             '        data-attr2="hello    t here"\n' +
             '        heymanimreallylongtoowhocomesupwiththesenames="false"\n' +
-            '>This is some text</div>');
+            '>This is text</div>');
         test_fragment(
             '<img attr0 attr1="123" data-attr2="hello    t here"/>',
             //  -- output --
@@ -27536,7 +32029,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         // Issue #1094 - Beautify correctly without quotes and with extra spaces
         test_fragment(
-            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is some text</div>',
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
             //  -- output --
             '<div\n' +
             '        lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
@@ -27544,7 +32037,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '        attr1=12345\n' +
             '        data-attr2="hello    t here"\n' +
             '        heymanimreallylongtoowhocomesupwiththesenames="false"\n' +
-            '>This is some text</div>');
+            '>This is text</div>');
         test_fragment(
             '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
             //  -- output --
@@ -27553,13 +32046,313 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '        attr1=foo12\n' +
             '        attr2="bar"\n' +
             '/>');
-        test_fragment(
+        bth(
             '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
             //  -- output --
             '<link\n' +
             '        href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
             '        rel="stylesheet"\n' +
             '        type="text/css"\n' +
+            '>');
+
+        // Attribute Wrap - (wrap_attributes = ""force-expand-multiline"", wrap_attributes_indent_size = "4", indent_with_tabs = "true")
+        reset_options();
+        set_name('Attribute Wrap - (wrap_attributes = ""force-expand-multiline"", wrap_attributes_indent_size = "4", indent_with_tabs = "true")');
+        opts.wrap_attributes = 'force-expand-multiline';
+        opts.wrap_attributes_indent_size = 4;
+        opts.indent_with_tabs = true;
+        bth('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020</span>');
+        test_fragment('<span>0   0001   0002   0003   0004   0005   0006   0007   0008   0009   0010   0011   0012   0013   0014   0015   0016   0017   0018   0019   0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020</span>');
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014\t0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #869
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #1324
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #1496 - respect unicode non-breaking space
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #1496 and #1324 - respect unicode non-breaking space
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
+
+        // Issue 1222 -- P tags are formatting correctly
+        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>');
+        bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div\n' +
+            '\tattr0\n' +
+            '\tattr1="123"\n' +
+            '\tdata-attr2="hello    t here"\n' +
+            '>This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
+            //  -- output --
+            '<div\n' +
+            '\tlookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '\tattr0\n' +
+            '\tattr1="123"\n' +
+            '\tdata-attr2="hello    t here"\n' +
+            '\theymanimreallylongtoowhocomesupwiththesenames="false"\n' +
+            '>This is text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img\n' +
+            '\tattr0\n' +
+            '\tattr1="123"\n' +
+            '\tdata-attr2="hello    t here"\n' +
+            '/>');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root\n' +
+            '\tattr1="foo"\n' +
+            '\tattr2="bar"\n' +
+            '/>');
+
+        // Issue #1094 - Beautify correctly without quotes and with extra spaces
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
+            //  -- output --
+            '<div\n' +
+            '\tlookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '\tattr0\n' +
+            '\tattr1=12345\n' +
+            '\tdata-attr2="hello    t here"\n' +
+            '\theymanimreallylongtoowhocomesupwiththesenames="false"\n' +
+            '>This is text</div>');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root\n' +
+            '\tattr1=foo12\n' +
+            '\tattr2="bar"\n' +
+            '/>');
+        bth(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link\n' +
+            '\thref="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '\trel="stylesheet"\n' +
+            '\ttype="text/css"\n' +
+            '>');
+
+        // Attribute Wrap - (wrap_attributes = ""force-expand-multiline"", wrap_attributes_indent_size = "7", indent_with_tabs = "true")
+        reset_options();
+        set_name('Attribute Wrap - (wrap_attributes = ""force-expand-multiline"", wrap_attributes_indent_size = "7", indent_with_tabs = "true")');
+        opts.wrap_attributes = 'force-expand-multiline';
+        opts.wrap_attributes_indent_size = 7;
+        opts.indent_with_tabs = true;
+        bth('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020</span>');
+        test_fragment('<span>0   0001   0002   0003   0004   0005   0006   0007   0008   0009   0010   0011   0012   0013   0014   0015   0016   0017   0018   0019   0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020</span>');
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014\t0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #869
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #1324
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #1496 - respect unicode non-breaking space
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #1496 and #1324 - respect unicode non-breaking space
+        test_fragment('<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>', '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
+
+        // Issue 1222 -- P tags are formatting correctly
+        test_fragment('<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>');
+        bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div\n' +
+            '\t   attr0\n' +
+            '\t   attr1="123"\n' +
+            '\t   data-attr2="hello    t here"\n' +
+            '>This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
+            //  -- output --
+            '<div\n' +
+            '\t   lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '\t   attr0\n' +
+            '\t   attr1="123"\n' +
+            '\t   data-attr2="hello    t here"\n' +
+            '\t   heymanimreallylongtoowhocomesupwiththesenames="false"\n' +
+            '>This is text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img\n' +
+            '\t   attr0\n' +
+            '\t   attr1="123"\n' +
+            '\t   data-attr2="hello    t here"\n' +
+            '/>');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root\n' +
+            '\t   attr1="foo"\n' +
+            '\t   attr2="bar"\n' +
+            '/>');
+
+        // Issue #1094 - Beautify correctly without quotes and with extra spaces
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
+            //  -- output --
+            '<div\n' +
+            '\t   lookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '\t   attr0\n' +
+            '\t   attr1=12345\n' +
+            '\t   data-attr2="hello    t here"\n' +
+            '\t   heymanimreallylongtoowhocomesupwiththesenames="false"\n' +
+            '>This is text</div>');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root\n' +
+            '\t   attr1=foo12\n' +
+            '\t   attr2="bar"\n' +
+            '/>');
+        bth(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link\n' +
+            '\t   href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '\t   rel="stylesheet"\n' +
+            '\t   type="text/css"\n' +
+            '>');
+
+        // Attribute Wrap - (wrap_attributes = ""force-expand-multiline"", wrap_line_length = "80", indent_with_tabs = "true")
+        reset_options();
+        set_name('Attribute Wrap - (wrap_attributes = ""force-expand-multiline"", wrap_line_length = "80", indent_with_tabs = "true")');
+        opts.wrap_attributes = 'force-expand-multiline';
+        opts.wrap_line_length = 80;
+        opts.indent_with_tabs = true;
+        bth('<div  >This is some text</div>', '<div>This is some text</div>');
+        test_fragment(
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020</span>',
+            //  -- output --
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014\n' +
+            '\t0015 0016 0017 0018 0019 0020</span>');
+        test_fragment(
+            '<span>0   0001   0002   0003   0004   0005   0006   0007   0008   0009   0010   0011   0012   0013   0014   0015   0016   0017   0018   0019   0020</span>',
+            //  -- output --
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014\n' +
+            '\t0015 0016 0017 0018 0019 0020</span>');
+        test_fragment(
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014\t0015 0016 0017 0018 0019 0020</span>',
+            //  -- output --
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014\n' +
+            '\t0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #869
+        test_fragment(
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014&nbsp;0015 0016 0017 0018 0019 0020</span>',
+            //  -- output --
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013\n' +
+            '\t0014&nbsp;0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #1324
+        test_fragment(
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009  0010 <span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>',
+            //  -- output --
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010\n' +
+            '\t<span>&nbsp;</span>&nbsp;0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #1496 - respect unicode non-breaking space
+        test_fragment(
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic 0013 0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>',
+            //  -- output --
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic 0013\n' +
+            '\t0014' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
+
+        // issue #1496 and #1324 - respect unicode non-breaking space
+        test_fragment(
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011  unic <span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>',
+            //  -- output --
+            '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 unic\n' +
+            '\t<span>' + unicode_char(160) + '</span>' + unicode_char(160) + '0015 0016 0017 0018 0019 0020</span>');
+
+        // Issue 1222 -- P tags are formatting correctly
+        test_fragment(
+            '<p>Our forms for collecting address-related information follow a standard design. Specific input elements willl vary according to the form’s audience and purpose.</p>',
+            //  -- output --
+            '<p>Our forms for collecting address-related information follow a standard\n' +
+            '\tdesign. Specific input elements willl vary according to the form’s audience\n' +
+            '\tand purpose.</p>');
+        bth('<div attr="123"  >This is some text</div>', '<div attr="123">This is some text</div>');
+        test_fragment(
+            '<div attr0 attr1="123" data-attr2="hello    t here">This is some text</div>',
+            //  -- output --
+            '<div\n' +
+            '\tattr0\n' +
+            '\tattr1="123"\n' +
+            '\tdata-attr2="hello    t here"\n' +
+            '>This is some text</div>');
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0="true" attr0 attr1="123" data-attr2="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
+            //  -- output --
+            '<div\n' +
+            '\tlookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '\tattr0\n' +
+            '\tattr1="123"\n' +
+            '\tdata-attr2="hello    t here"\n' +
+            '\theymanimreallylongtoowhocomesupwiththesenames="false"\n' +
+            '>This is text</div>');
+        test_fragment(
+            '<img attr0 attr1="123" data-attr2="hello    t here"/>',
+            //  -- output --
+            '<img\n' +
+            '\tattr0\n' +
+            '\tattr1="123"\n' +
+            '\tdata-attr2="hello    t here"\n' +
+            '/>');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1="foo" attr2="bar"/>',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root\n' +
+            '\tattr1="foo"\n' +
+            '\tattr2="bar"\n' +
+            '/>');
+
+        // Issue #1094 - Beautify correctly without quotes and with extra spaces
+        test_fragment(
+            '<div lookatthissuperduperlongattributenamewhoahcrazy0 =    "true" attr0 attr1=  12345 data-attr2   ="hello    t here" heymanimreallylongtoowhocomesupwiththesenames="false">This is text</div>',
+            //  -- output --
+            '<div\n' +
+            '\tlookatthissuperduperlongattributenamewhoahcrazy0="true"\n' +
+            '\tattr0\n' +
+            '\tattr1=12345\n' +
+            '\tdata-attr2="hello    t here"\n' +
+            '\theymanimreallylongtoowhocomesupwiththesenames="false"\n' +
+            '>This is text</div>');
+        test_fragment(
+            '<?xml version="1.0" encoding="UTF-8" ?><root attr1   =   foo12   attr2  ="bar"    />',
+            //  -- output --
+            '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+            '<root\n' +
+            '\tattr1=foo12\n' +
+            '\tattr2="bar"\n' +
+            '/>');
+        bth(
+            '<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin" rel="stylesheet" type="text/css">',
+            //  -- output --
+            '<link\n' +
+            '\thref="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&amp;subset=latin"\n' +
+            '\trel="stylesheet"\n' +
+            '\ttype="text/css"\n' +
             '>');
 
 
@@ -27672,11 +32465,29 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '       {{em-input label="Place*" property="place" type="text" placeholder=""}}',
             //  -- output --
             '{{em-input\n' +
-            'label="Some Labe" property="amt"\n' +
-            'type="text" placeholder=""}}\n' +
+            '  label="Some Labe" property="amt"\n' +
+            '  type="text" placeholder=""}}\n' +
             '{{em-input label="Type*"\n' +
             'property="type" type="text" placeholder="(LTD)"}}\n' +
             '{{em-input label="Place*" property="place" type="text" placeholder=""}}');
+        bth(
+            '<div>\n' +
+            '{{em-input\n' +
+            '  label="Some Labe" property="amt"\n' +
+            '  type="text" placeholder=""}}\n' +
+            '   {{em-input label="Type*"\n' +
+            'property="type" type="text" placeholder="(LTD)"}}\n' +
+            '       {{em-input label="Place*" property="place" type="text" placeholder=""}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    {{em-input\n' +
+            '  label="Some Labe" property="amt"\n' +
+            '  type="text" placeholder=""}}\n' +
+            '    {{em-input label="Type*"\n' +
+            'property="type" type="text" placeholder="(LTD)"}}\n' +
+            '    {{em-input label="Place*" property="place" type="text" placeholder=""}}\n' +
+            '</div>');
         bth(
             '{{#if callOn}}\n' +
             '{{#unless callOn}}\n' +
@@ -27714,7 +32525,31 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '\n' +
             '{{field}}\n' +
             '{{#if condition}}\n' +
-            '    <div class="some-class">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '    <div  class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{field}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{field}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{field}}');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{field}}\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{field}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{field}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
             '{{/if}}\n' +
             '{{field}}');
 
@@ -27932,21 +32767,26 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    {{field}}\n' +
             '{{/if}}');
         bth(
-            '<div{{someStyle}}></div>',
+            '<div {{someStyle}}>  </div>',
             //  -- output --
-            '<div {{someStyle}}></div>');
+            '<div {{someStyle}}> </div>');
+
+        // only partial support for complex templating in attributes
         bth(
-            '<dIv{{#if test}}class="foo"{{/if}}>{{field}}</dIv>',
+            '<dIv {{#if test}}class="foo"{{/if}}>{{field}}</dIv>',
             //  -- output --
-            '<dIv {{#if test}} class="foo" {{/if}}>{{field}}</dIv>');
+            '<dIv {{#if test}}class="foo" {{/if}}>{{field}}</dIv>');
+        test_fragment(
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{field}}</diV>',
+            //  -- output --
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}" {{else}}class="{{class2}}" {{/if}}>{{field}}</diV>');
+
+        // partiial support for templating in attributes
         bth(
-            '<diV{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{field}}</diV>',
+            '<span {{#if condition}}class="foo"{{/if}}>{{field}}</span>',
             //  -- output --
-            '<diV {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{field}}</diV>');
-        bth(
-            '<span{{#if condition}}class="foo"{{/if}}>{{field}}</span>',
-            //  -- output --
-            '<span {{#if condition}} class="foo" {{/if}}>{{field}}</span>');
+            '<span {{#if condition}}class="foo" {{/if}}>{{field}}</span>');
+        bth('<{{ele}} unformatted="{{#if}}{{field}}{{/if}}">{{field}}</{{ele}}>');
         bth('<div unformatted="{{#if}}{{field}}{{/if}}">{{field}}</div>');
         bth('<div unformatted="{{#if  }}    {{field}}{{/if}}">{{field}}</div>');
         bth('<div class="{{#if thingIs "value"}}{{field}}{{/if}}"></div>');
@@ -27970,7 +32810,31 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '\n' +
             '{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}\n' +
             '{{#if condition}}\n' +
-            '    <div class="some-class">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '    <div  class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
             '{{/if}}\n' +
             '{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}');
 
@@ -28188,21 +33052,26 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    {{em-input label="Some Labe" property="amt" type="text" placeholder=""}}\n' +
             '{{/if}}');
         bth(
-            '<div{{someStyle}}></div>',
+            '<div {{someStyle}}>  </div>',
             //  -- output --
-            '<div {{someStyle}}></div>');
+            '<div {{someStyle}}> </div>');
+
+        // only partial support for complex templating in attributes
         bth(
-            '<dIv{{#if test}}class="foo"{{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</dIv>',
+            '<dIv {{#if test}}class="foo"{{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</dIv>',
             //  -- output --
-            '<dIv {{#if test}} class="foo" {{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</dIv>');
+            '<dIv {{#if test}}class="foo" {{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</dIv>');
+        test_fragment(
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</diV>',
+            //  -- output --
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}" {{else}}class="{{class2}}" {{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</diV>');
+
+        // partiial support for templating in attributes
         bth(
-            '<diV{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</diV>',
+            '<span {{#if condition}}class="foo"{{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</span>',
             //  -- output --
-            '<diV {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</diV>');
-        bth(
-            '<span{{#if condition}}class="foo"{{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</span>',
-            //  -- output --
-            '<span {{#if condition}} class="foo" {{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</span>');
+            '<span {{#if condition}}class="foo" {{/if}}>{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</span>');
+        bth('<{{ele}} unformatted="{{#if}}{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}{{/if}}">{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</{{ele}}>');
         bth('<div unformatted="{{#if}}{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}{{/if}}">{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</div>');
         bth('<div unformatted="{{#if  }}    {{em-input label="Some Labe" property="amt" type="text" placeholder=""}}{{/if}}">{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}</div>');
         bth('<div class="{{#if thingIs "value"}}{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}{{/if}}"></div>');
@@ -28226,7 +33095,31 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '\n' +
             '{{! comment}}\n' +
             '{{#if condition}}\n' +
-            '    <div class="some-class">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '    <div  class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{! comment}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{! comment}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{! comment}}');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{! comment}}\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{! comment}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{! comment}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
             '{{/if}}\n' +
             '{{! comment}}');
 
@@ -28444,21 +33337,26 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    {{! comment}}\n' +
             '{{/if}}');
         bth(
-            '<div{{someStyle}}></div>',
+            '<div {{someStyle}}>  </div>',
             //  -- output --
-            '<div {{someStyle}}></div>');
+            '<div {{someStyle}}> </div>');
+
+        // only partial support for complex templating in attributes
         bth(
-            '<dIv{{#if test}}class="foo"{{/if}}>{{! comment}}</dIv>',
+            '<dIv {{#if test}}class="foo"{{/if}}>{{! comment}}</dIv>',
             //  -- output --
-            '<dIv {{#if test}} class="foo" {{/if}}>{{! comment}}</dIv>');
+            '<dIv {{#if test}}class="foo" {{/if}}>{{! comment}}</dIv>');
+        test_fragment(
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{! comment}}</diV>',
+            //  -- output --
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}" {{else}}class="{{class2}}" {{/if}}>{{! comment}}</diV>');
+
+        // partiial support for templating in attributes
         bth(
-            '<diV{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{! comment}}</diV>',
+            '<span {{#if condition}}class="foo"{{/if}}>{{! comment}}</span>',
             //  -- output --
-            '<diV {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{! comment}}</diV>');
-        bth(
-            '<span{{#if condition}}class="foo"{{/if}}>{{! comment}}</span>',
-            //  -- output --
-            '<span {{#if condition}} class="foo" {{/if}}>{{! comment}}</span>');
+            '<span {{#if condition}}class="foo" {{/if}}>{{! comment}}</span>');
+        bth('<{{ele}} unformatted="{{#if}}{{! comment}}{{/if}}">{{! comment}}</{{ele}}>');
         bth('<div unformatted="{{#if}}{{! comment}}{{/if}}">{{! comment}}</div>');
         bth('<div unformatted="{{#if  }}    {{! comment}}{{/if}}">{{! comment}}</div>');
         bth('<div class="{{#if thingIs "value"}}{{! comment}}{{/if}}"></div>');
@@ -28482,7 +33380,31 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '\n' +
             '{{!-- comment--}}\n' +
             '{{#if condition}}\n' +
-            '    <div class="some-class">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '    <div  class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{!-- comment--}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{!-- comment--}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{!-- comment--}}');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{!-- comment--}}\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{!-- comment--}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{!-- comment--}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
             '{{/if}}\n' +
             '{{!-- comment--}}');
 
@@ -28700,21 +33622,26 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    {{!-- comment--}}\n' +
             '{{/if}}');
         bth(
-            '<div{{someStyle}}></div>',
+            '<div {{someStyle}}>  </div>',
             //  -- output --
-            '<div {{someStyle}}></div>');
+            '<div {{someStyle}}> </div>');
+
+        // only partial support for complex templating in attributes
         bth(
-            '<dIv{{#if test}}class="foo"{{/if}}>{{!-- comment--}}</dIv>',
+            '<dIv {{#if test}}class="foo"{{/if}}>{{!-- comment--}}</dIv>',
             //  -- output --
-            '<dIv {{#if test}} class="foo" {{/if}}>{{!-- comment--}}</dIv>');
+            '<dIv {{#if test}}class="foo" {{/if}}>{{!-- comment--}}</dIv>');
+        test_fragment(
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{!-- comment--}}</diV>',
+            //  -- output --
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}" {{else}}class="{{class2}}" {{/if}}>{{!-- comment--}}</diV>');
+
+        // partiial support for templating in attributes
         bth(
-            '<diV{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{!-- comment--}}</diV>',
+            '<span {{#if condition}}class="foo"{{/if}}>{{!-- comment--}}</span>',
             //  -- output --
-            '<diV {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{!-- comment--}}</diV>');
-        bth(
-            '<span{{#if condition}}class="foo"{{/if}}>{{!-- comment--}}</span>',
-            //  -- output --
-            '<span {{#if condition}} class="foo" {{/if}}>{{!-- comment--}}</span>');
+            '<span {{#if condition}}class="foo" {{/if}}>{{!-- comment--}}</span>');
+        bth('<{{ele}} unformatted="{{#if}}{{!-- comment--}}{{/if}}">{{!-- comment--}}</{{ele}}>');
         bth('<div unformatted="{{#if}}{{!-- comment--}}{{/if}}">{{!-- comment--}}</div>');
         bth('<div unformatted="{{#if  }}    {{!-- comment--}}{{/if}}">{{!-- comment--}}</div>');
         bth('<div class="{{#if thingIs "value"}}{{!-- comment--}}{{/if}}"></div>');
@@ -28736,9 +33663,318 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         bth(
             '{{textarea value=someContent}}\n' +
             '\n' +
+            '{{{unescaped_variable}}}\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{{unescaped_variable}}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{{unescaped_variable}}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{{unescaped_variable}}}');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{{unescaped_variable}}}\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{{unescaped_variable}}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{{unescaped_variable}}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{{unescaped_variable}}}');
+
+        // error case
+        bth(
+            '{{page-title}}\n' +
+            '{{ myHelper someValue}}\n' +
+            '{{{unescaped_variable}}}\n' +
+            '{{value-title}}');
+
+        // Issue #1469 - preserve newlines inside handlebars, including first one. BUG: does not fix indenting inside handlebars.
+        bth(
+            '{{em-input\n' +
+            '  label="Some Labe" property="amt"\n' +
+            '  type="text" placeholder=""}}\n' +
+            '{{{unescaped_variable}}}\n' +
+            '   {{em-input label="Type*"\n' +
+            'property="type" type="text" placeholder="(LTD)"}}\n' +
+            '       {{em-input label="Place*" property="place" type="text" placeholder=""}}',
+            //  -- output --
+            '{{em-input\n' +
+            '  label="Some Labe" property="amt"\n' +
+            '  type="text" placeholder=""}}\n' +
+            '{{{unescaped_variable}}}\n' +
+            '{{em-input label="Type*"\n' +
+            'property="type" type="text" placeholder="(LTD)"}}\n' +
+            '{{em-input label="Place*" property="place" type="text" placeholder=""}}');
+        bth(
+            '{{em-input label="Some Labe" property="amt" type="text" placeholder=""}}\n' +
+            '{{{unescaped_variable}}}\n' +
+            '{{em-input label="Type*" property="type" type="text" placeholder="(LTD)"}}\n' +
+            '{{em-input label="Place*" property="place" type="text" placeholder=""}}');
+        bth('{{#if 0}}{{/if}}');
+        bth('{{#if 0}}{{{unescaped_variable}}}{{/if}}');
+        bth(
+            '{{#if 0}}\n' +
+            '{{/if}}');
+        bth(
+            '{{#if     words}}{{/if}}',
+            //  -- output --
+            '{{#if words}}{{/if}}');
+        bth(
+            '{{#if     words}}{{{unescaped_variable}}}{{/if}}',
+            //  -- output --
+            '{{#if words}}{{{unescaped_variable}}}{{/if}}');
+        bth(
+            '{{#if     words}}{{{unescaped_variable}}}{{/if}}',
+            //  -- output --
+            '{{#if words}}{{{unescaped_variable}}}{{/if}}');
+        bth(
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        bth(
+            '{{#if 1}}\n' +
+            '<div>\n' +
+            '</div>\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        bth(
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
+        bth(
+            '<div>\n' +
+            '{{#if 1}}\n' +
+            '{{/if}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    {{#if 1}}\n' +
+            '    {{/if}}\n' +
+            '</div>');
+        bth(
+            '{{#if}}\n' +
+            '{{#each}}\n' +
+            '{{#if}}\n' +
+            '{{{unescaped_variable}}}\n' +
+            '{{/if}}\n' +
+            '{{#if}}\n' +
+            '{{{unescaped_variable}}}\n' +
+            '{{/if}}\n' +
+            '{{/each}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if}}\n' +
+            '    {{#each}}\n' +
+            '        {{#if}}\n' +
+            '            {{{unescaped_variable}}}\n' +
+            '        {{/if}}\n' +
+            '        {{#if}}\n' +
+            '            {{{unescaped_variable}}}\n' +
+            '        {{/if}}\n' +
+            '    {{/each}}\n' +
+            '{{/if}}');
+        bth(
+            '{{#if 1}}\n' +
+            '    <div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        bth(
+            '<div>\n' +
+            '    <small>SMALL TEXT</small>\n' +
+            '    <span>\n' +
+            '        {{#if isOwner}}\n' +
+            '    <span><i class="fa fa-close"></i></span>\n' +
+            '        {{else}}\n' +
+            '            <span><i class="fa fa-bolt"></i></span>\n' +
+            '        {{/if}}\n' +
+            '    </span>\n' +
+            '    <strong>{{userName}}:&nbsp;</strong>{{text}}\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    <small>SMALL TEXT</small>\n' +
+            '    <span>\n' +
+            '        {{#if isOwner}}\n' +
+            '            <span><i class="fa fa-close"></i></span>\n' +
+            '        {{else}}\n' +
+            '            <span><i class="fa fa-bolt"></i></span>\n' +
+            '        {{/if}}\n' +
+            '    </span>\n' +
+            '    <strong>{{userName}}:&nbsp;</strong>{{text}}\n' +
+            '</div>');
+        bth(
+            '<div>\n' +
+            '    <small>SMALL TEXT</small>\n' +
+            '    <span>\n' +
+            '        {{#if isOwner}}\n' +
+            '            <span><i class="fa fa-close"></i></span>\n' +
+            '        {{else}}\n' +
+            '            <span><i class="fa fa-bolt"></i></span>\n' +
+            '        {{/if}}\n' +
+            '    </span>\n' +
+            '    <strong>{{userName}}:&nbsp;</strong>{{text}}\n' +
+            '</div>');
+        bth(
+            '{{#if `this.customerSegment == "Active"`}}\n' +
+            '    ...\n' +
+            '{{/if}}');
+        bth(
+            '{{#isDealLink}}\n' +
+            '&nbsp;&nbsp;<a target="_blank" href="{{dealLink}}" class="weak">See</a>\n' +
+            '{{/isDealLink}}',
+            //  -- output --
+            '{{#isDealLink}}\n' +
+            '    &nbsp;&nbsp;<a target="_blank" href="{{dealLink}}" class="weak">See</a>\n' +
+            '{{/isDealLink}}');
+        bth(
+            '{{#if 1}}\n' +
+            '    {{{unescaped_variable}}}\n' +
+            '    {{else}}\n' +
+            '    {{{unescaped_variable}}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '    {{{unescaped_variable}}}\n' +
+            '{{else}}\n' +
+            '    {{{unescaped_variable}}}\n' +
+            '{{/if}}');
+        bth(
+            '{{#if 1}}\n' +
+            '    {{else}}\n' +
+            '    {{/if}}',
+            //  -- output --
+            '{{#if 1}}\n' +
+            '{{else}}\n' +
+            '{{/if}}');
+        bth(
+            '{{#if thing}}\n' +
+            '{{#if otherthing}}\n' +
+            '    {{{unescaped_variable}}}\n' +
+            '    {{else}}\n' +
+            '{{{unescaped_variable}}}\n' +
+            '    {{/if}}\n' +
+            '       {{else}}\n' +
+            '{{{unescaped_variable}}}\n' +
+            '{{/if}}',
+            //  -- output --
+            '{{#if thing}}\n' +
+            '    {{#if otherthing}}\n' +
+            '        {{{unescaped_variable}}}\n' +
+            '    {{else}}\n' +
+            '        {{{unescaped_variable}}}\n' +
+            '    {{/if}}\n' +
+            '{{else}}\n' +
+            '    {{{unescaped_variable}}}\n' +
+            '{{/if}}');
+
+        // ISSUE #800 and #1123: else if and #unless
+        bth(
+            '{{#if callOn}}\n' +
+            '{{#unless callOn}}\n' +
+            '      {{{unescaped_variable}}}\n' +
+            '   {{else}}\n' +
+            '{{translate "offText"}}\n' +
+            '{{/unless callOn}}\n' +
+            '   {{else if (eq callOn false)}}\n' +
+            '{{{unescaped_variable}}}\n' +
+            '        {{/if}}',
+            //  -- output --
+            '{{#if callOn}}\n' +
+            '    {{#unless callOn}}\n' +
+            '        {{{unescaped_variable}}}\n' +
+            '    {{else}}\n' +
+            '        {{translate "offText"}}\n' +
+            '    {{/unless callOn}}\n' +
+            '{{else if (eq callOn false)}}\n' +
+            '    {{{unescaped_variable}}}\n' +
+            '{{/if}}');
+        bth(
+            '<div {{someStyle}}>  </div>',
+            //  -- output --
+            '<div {{someStyle}}> </div>');
+
+        // only partial support for complex templating in attributes
+        bth(
+            '<dIv {{#if test}}class="foo"{{/if}}>{{{unescaped_variable}}}</dIv>',
+            //  -- output --
+            '<dIv {{#if test}}class="foo" {{/if}}>{{{unescaped_variable}}}</dIv>');
+        test_fragment(
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{{unescaped_variable}}}</diV>',
+            //  -- output --
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}" {{else}}class="{{class2}}" {{/if}}>{{{unescaped_variable}}}</diV>');
+
+        // partiial support for templating in attributes
+        bth(
+            '<span {{#if condition}}class="foo"{{/if}}>{{{unescaped_variable}}}</span>',
+            //  -- output --
+            '<span {{#if condition}}class="foo" {{/if}}>{{{unescaped_variable}}}</span>');
+        bth('<{{ele}} unformatted="{{#if}}{{{unescaped_variable}}}{{/if}}">{{{unescaped_variable}}}</{{ele}}>');
+        bth('<div unformatted="{{#if}}{{{unescaped_variable}}}{{/if}}">{{{unescaped_variable}}}</div>');
+        bth('<div unformatted="{{#if  }}    {{{unescaped_variable}}}{{/if}}">{{{unescaped_variable}}}</div>');
+        bth('<div class="{{#if thingIs "value"}}{{{unescaped_variable}}}{{/if}}"></div>');
+        bth('<div class="{{#if thingIs \'value\'}}{{{unescaped_variable}}}{{/if}}"></div>');
+        bth('<div class=\'{{#if thingIs "value"}}{{{unescaped_variable}}}{{/if}}\'></div>');
+        bth('<div class=\'{{#if thingIs \'value\'}}{{{unescaped_variable}}}{{/if}}\'></div>');
+        bth('<span>{{condition < 0 ? "result1" : "result2"}}</span>');
+        bth('<span>{{condition1 && condition2 && condition3 && condition4 < 0 ? "resForTrue" : "resForFalse"}}</span>');
+
+        // Handlebars Indenting On - (indent_handlebars = "true")
+        reset_options();
+        set_name('Handlebars Indenting On - (indent_handlebars = "true")');
+        opts.indent_handlebars = true;
+        bth('{{page-title}}');
+        bth(
+            '{{page-title}}\n' +
+            '{{a}}\n' +
+            '{{value-title}}');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
             '{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}\n' +
             '{{#if condition}}\n' +
-            '    <div class="some-class">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '    <div  class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
             '{{/if}}\n' +
             '{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}');
 
@@ -28956,21 +34192,26 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    {{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}\n' +
             '{{/if}}');
         bth(
-            '<div{{someStyle}}></div>',
+            '<div {{someStyle}}>  </div>',
             //  -- output --
-            '<div {{someStyle}}></div>');
+            '<div {{someStyle}}> </div>');
+
+        // only partial support for complex templating in attributes
         bth(
-            '<dIv{{#if test}}class="foo"{{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</dIv>',
+            '<dIv {{#if test}}class="foo"{{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</dIv>',
             //  -- output --
-            '<dIv {{#if test}} class="foo" {{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</dIv>');
+            '<dIv {{#if test}}class="foo" {{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</dIv>');
+        test_fragment(
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</diV>',
+            //  -- output --
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}" {{else}}class="{{class2}}" {{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</diV>');
+
+        // partiial support for templating in attributes
         bth(
-            '<diV{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</diV>',
+            '<span {{#if condition}}class="foo"{{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</span>',
             //  -- output --
-            '<diV {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</diV>');
-        bth(
-            '<span{{#if condition}}class="foo"{{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</span>',
-            //  -- output --
-            '<span {{#if condition}} class="foo" {{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</span>');
+            '<span {{#if condition}}class="foo" {{/if}}>{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</span>');
+        bth('<{{ele}} unformatted="{{#if}}{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}{{/if}}">{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</{{ele}}>');
         bth('<div unformatted="{{#if}}{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}{{/if}}">{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</div>');
         bth('<div unformatted="{{#if  }}    {{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}{{/if}}">{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}</div>');
         bth('<div class="{{#if thingIs "value"}}{{Hello "woRld"}} {{!-- comment--}} {{heLloWorlD}}{{/if}}"></div>');
@@ -28994,7 +34235,31 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '\n' +
             '{pre{{field1}} {{field2}} {{field3}}post\n' +
             '{{#if condition}}\n' +
-            '    <div class="some-class">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '    <div  class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{pre{{field1}} {{field2}} {{field3}}post',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{pre{{field1}} {{field2}} {{field3}}post\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{pre{{field1}} {{field2}} {{field3}}post');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{pre{{field1}} {{field2}} {{field3}}post\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{pre{{field1}} {{field2}} {{field3}}post',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{pre{{field1}} {{field2}} {{field3}}post\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
             '{{/if}}\n' +
             '{pre{{field1}} {{field2}} {{field3}}post');
 
@@ -29212,21 +34477,26 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    {pre{{field1}} {{field2}} {{field3}}post\n' +
             '{{/if}}');
         bth(
-            '<div{{someStyle}}></div>',
+            '<div {{someStyle}}>  </div>',
             //  -- output --
-            '<div {{someStyle}}></div>');
+            '<div {{someStyle}}> </div>');
+
+        // only partial support for complex templating in attributes
         bth(
-            '<dIv{{#if test}}class="foo"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</dIv>',
+            '<dIv {{#if test}}class="foo"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</dIv>',
             //  -- output --
-            '<dIv {{#if test}} class="foo" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</dIv>');
+            '<dIv {{#if test}}class="foo" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</dIv>');
+        test_fragment(
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"{{else}}class="{{class2}}"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</diV>',
+            //  -- output --
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}" {{else}}class="{{class2}}" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</diV>');
+
+        // partiial support for templating in attributes
         bth(
-            '<diV{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</diV>',
+            '<span {{#if condition}}class="foo"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</span>',
             //  -- output --
-            '<diV {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</diV>');
-        bth(
-            '<span{{#if condition}}class="foo"{{/if}}>{pre{{field1}} {{field2}} {{field3}}post</span>',
-            //  -- output --
-            '<span {{#if condition}} class="foo" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</span>');
+            '<span {{#if condition}}class="foo" {{/if}}>{pre{{field1}} {{field2}} {{field3}}post</span>');
+        bth('<{{ele}} unformatted="{{#if}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}">{pre{{field1}} {{field2}} {{field3}}post</{{ele}}>');
         bth('<div unformatted="{{#if}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}">{pre{{field1}} {{field2}} {{field3}}post</div>');
         bth('<div unformatted="{{#if  }}    {pre{{field1}} {{field2}} {{field3}}post{{/if}}">{pre{{field1}} {{field2}} {{field3}}post</div>');
         bth('<div class="{{#if thingIs "value"}}{pre{{field1}} {{field2}} {{field3}}post{{/if}}"></div>');
@@ -29254,7 +34524,55 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '     with spacing\n' +
             '}}\n' +
             '{{#if condition}}\n' +
-            '    <div class="some-class">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '    <div  class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
             '{{/if}}\n' +
             '{{! \n' +
             ' mult-line\n' +
@@ -29585,45 +34903,59 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '}}\n' +
             '{{/if}}');
         bth(
-            '<div{{someStyle}}></div>',
+            '<div {{someStyle}}>  </div>',
             //  -- output --
-            '<div {{someStyle}}></div>');
+            '<div {{someStyle}}> </div>');
+
+        // only partial support for complex templating in attributes
         bth(
-            '<dIv{{#if test}}class="foo"{{/if}}>{{! \n' +
+            '<dIv {{#if test}}class="foo"{{/if}}>{{! \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '}}</dIv>',
             //  -- output --
-            '<dIv {{#if test}} class="foo" {{/if}}>{{! \n' +
+            '<dIv {{#if test}}class="foo" {{/if}}>{{! \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '}}</dIv>');
-        bth(
-            '<diV{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{! \n' +
+        test_fragment(
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{! \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '}}</diV>',
             //  -- output --
-            '<diV {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{! \n' +
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}" {{else}}class="{{class2}}" {{/if}}>{{! \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '}}</diV>');
+
+        // partiial support for templating in attributes
         bth(
-            '<span{{#if condition}}class="foo"{{/if}}>{{! \n' +
+            '<span {{#if condition}}class="foo"{{/if}}>{{! \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '}}</span>',
             //  -- output --
-            '<span {{#if condition}} class="foo" {{/if}}>{{! \n' +
+            '<span {{#if condition}}class="foo" {{/if}}>{{! \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '}}</span>');
+        bth(
+            '<{{ele}} unformatted="{{#if}}{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}{{/if}}">{{! \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '}}</{{ele}}>');
         bth(
             '<div unformatted="{{#if}}{{! \n' +
             ' mult-line\n' +
@@ -29689,7 +35021,55 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '     with spacing\n' +
             '--}}\n' +
             '{{#if condition}}\n' +
-            '    <div class="some-class">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '    <div  class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
             '{{/if}}\n' +
             '{{!-- \n' +
             ' mult-line\n' +
@@ -30020,45 +35400,59 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '--}}\n' +
             '{{/if}}');
         bth(
-            '<div{{someStyle}}></div>',
+            '<div {{someStyle}}>  </div>',
             //  -- output --
-            '<div {{someStyle}}></div>');
+            '<div {{someStyle}}> </div>');
+
+        // only partial support for complex templating in attributes
         bth(
-            '<dIv{{#if test}}class="foo"{{/if}}>{{!-- \n' +
+            '<dIv {{#if test}}class="foo"{{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '--}}</dIv>',
             //  -- output --
-            '<dIv {{#if test}} class="foo" {{/if}}>{{!-- \n' +
+            '<dIv {{#if test}}class="foo" {{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '--}}</dIv>');
-        bth(
-            '<diV{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{!-- \n' +
+        test_fragment(
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '--}}</diV>',
             //  -- output --
-            '<diV {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{!-- \n' +
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}" {{else}}class="{{class2}}" {{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '--}}</diV>');
+
+        // partiial support for templating in attributes
         bth(
-            '<span{{#if condition}}class="foo"{{/if}}>{{!-- \n' +
+            '<span {{#if condition}}class="foo"{{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '--}}</span>',
             //  -- output --
-            '<span {{#if condition}} class="foo" {{/if}}>{{!-- \n' +
+            '<span {{#if condition}}class="foo" {{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment  \n' +
             '     with spacing\n' +
             '--}}</span>');
+        bth(
+            '<{{ele}} unformatted="{{#if}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}{{/if}}">{{!-- \n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            '--}}</{{ele}}>');
         bth(
             '<div unformatted="{{#if}}{{!-- \n' +
             ' mult-line\n' +
@@ -30127,7 +35521,73 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '     with spacing\n' +
             ' {{/ component}}--}}\n' +
             '{{#if condition}}\n' +
-            '    <div class="some-class">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '    <div  class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            '{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
             '{{/if}}\n' +
             '{{!-- \n' +
             ' mult-line\n' +
@@ -30542,11 +36002,13 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             ' {{/ component}}--}}\n' +
             '{{/if}}');
         bth(
-            '<div{{someStyle}}></div>',
+            '<div {{someStyle}}>  </div>',
             //  -- output --
-            '<div {{someStyle}}></div>');
+            '<div {{someStyle}}> </div>');
+
+        // only partial support for complex templating in attributes
         bth(
-            '<dIv{{#if test}}class="foo"{{/if}}>{{!-- \n' +
+            '<dIv {{#if test}}class="foo"{{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment \n' +
             '{{#> component}}\n' +
@@ -30555,7 +36017,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '     with spacing\n' +
             ' {{/ component}}--}}</dIv>',
             //  -- output --
-            '<dIv {{#if test}} class="foo" {{/if}}>{{!-- \n' +
+            '<dIv {{#if test}}class="foo" {{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment \n' +
             '{{#> component}}\n' +
@@ -30563,8 +36025,8 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             'comment  \n' +
             '     with spacing\n' +
             ' {{/ component}}--}}</dIv>');
-        bth(
-            '<diV{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{!-- \n' +
+        test_fragment(
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"{{else}}class="{{class2}}"{{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment \n' +
             '{{#> component}}\n' +
@@ -30573,7 +36035,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '     with spacing\n' +
             ' {{/ component}}--}}</diV>',
             //  -- output --
-            '<diV {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}" {{/if}}>{{!-- \n' +
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}" {{else}}class="{{class2}}" {{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment \n' +
             '{{#> component}}\n' +
@@ -30581,8 +36043,10 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             'comment  \n' +
             '     with spacing\n' +
             ' {{/ component}}--}}</diV>');
+
+        // partiial support for templating in attributes
         bth(
-            '<span{{#if condition}}class="foo"{{/if}}>{{!-- \n' +
+            '<span {{#if condition}}class="foo"{{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment \n' +
             '{{#> component}}\n' +
@@ -30591,7 +36055,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '     with spacing\n' +
             ' {{/ component}}--}}</span>',
             //  -- output --
-            '<span {{#if condition}} class="foo" {{/if}}>{{!-- \n' +
+            '<span {{#if condition}}class="foo" {{/if}}>{{!-- \n' +
             ' mult-line\n' +
             'comment \n' +
             '{{#> component}}\n' +
@@ -30599,6 +36063,22 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             'comment  \n' +
             '     with spacing\n' +
             ' {{/ component}}--}}</span>');
+        bth(
+            '<{{ele}} unformatted="{{#if}}{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}{{/if}}">{{!-- \n' +
+            ' mult-line\n' +
+            'comment \n' +
+            '{{#> component}}\n' +
+            ' mult-line\n' +
+            'comment  \n' +
+            '     with spacing\n' +
+            ' {{/ component}}--}}</{{ele}}>');
         bth(
             '<div unformatted="{{#if}}{{!-- \n' +
             ' mult-line\n' +
@@ -30685,7 +36165,34 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '\n' +
             'content\n' +
             '{{#if condition}}\n' +
-            '    <div class="some-class">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '    <div  class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            'content',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            'content\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some">{{helper "hello"}}<strong>{{helper "world"}}</strong>\n' +
+            '    </div>\n' +
+            '{{/if}}\n' +
+            'content');
+        bth(
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            'content\n' +
+            '{{#if condition}}\n' +
+            '    <div  class="some-class-detail">{{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong></div>\n' +
+            '{{/if}}\n' +
+            'content',
+            //  -- output --
+            '{{textarea value=someContent}}\n' +
+            '\n' +
+            'content\n' +
+            '{{#if condition}}\n' +
+            '    <div class="some-class-detail">\n' +
+            '        {{helper "hello"}}<strong>{{helper "world"}}</strong>{{helper "hello"}}<strong>{{helper "world"}}</strong>\n' +
+            '    </div>\n' +
             '{{/if}}\n' +
             'content');
 
@@ -30903,22 +36410,27 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    content\n' +
             '{{/if}}');
         bth(
-            '<div{{someStyle}}></div>',
+            '<div {{someStyle}}>  </div>',
             //  -- output --
-            '<div {{someStyle}}></div>');
+            '<div {{someStyle}}> </div>');
+
+        // only partial support for complex templating in attributes
         bth(
-            '<dIv{{#if test}}class="foo"{{/if}}>content</dIv>',
+            '<dIv {{#if test}}class="foo"{{/if}}>content</dIv>',
             //  -- output --
-            '<dIv {{#if test}} class="foo" {{/if}}>content</dIv>');
+            '<dIv {{#if test}}class="foo" {{/if}}>content</dIv>');
+        test_fragment(
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"{{else}}class="{{class2}}"{{/if}}>content</diV>',
+            //  -- output --
+            '<diV {{#if thing}}{{somestyle}}class_spacing_for="{{class}}"\n' +
+            '    {{else}}class="{{class2}}" {{/if}}>content</diV>');
+
+        // partiial support for templating in attributes
         bth(
-            '<diV{{#if thing}}{{somestyle}}class="{{class}}"{{else}}class="{{class2}}"{{/if}}>content</diV>',
+            '<span {{#if condition}}class="foo"{{/if}}>content</span>',
             //  -- output --
-            '<diV {{#if thing}} {{somestyle}} class="{{class}}" {{else}} class="{{class2}}"\n' +
-            '    {{/if}}>content</diV>');
-        bth(
-            '<span{{#if condition}}class="foo"{{/if}}>content</span>',
-            //  -- output --
-            '<span {{#if condition}} class="foo" {{/if}}>content</span>');
+            '<span {{#if condition}}class="foo" {{/if}}>content</span>');
+        bth('<{{ele}} unformatted="{{#if}}content{{/if}}">content</{{ele}}>');
         bth('<div unformatted="{{#if}}content{{/if}}">content</div>');
         bth('<div unformatted="{{#if  }}    content{{/if}}">content</div>');
         bth('<div class="{{#if thingIs "value"}}content{{/if}}"></div>');
@@ -30930,9 +36442,9 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
 
         //============================================================
-        // Handlebars Else If and Each tag indenting
+        // Handlebars Else If, Each, and Inverted Section tag indenting
         reset_options();
-        set_name('Handlebars Else If and Each tag indenting');
+        set_name('Handlebars Else If, Each, and Inverted Section tag indenting');
         opts.indent_handlebars = true;
         bth(
             '{{#if test}}<div></div>{{else}}<div></div>{{/if}}',
@@ -30968,6 +36480,12 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '{{else}}\n' +
             '    <p>Unfortunately no clinics found.</p>\n' +
             '{{/each}}');
+
+        // Issue #1623 - Fix indentation of `^` inverted section tags in Handlebars/Mustache code
+        bth(
+            '{{^inverted-condition}}\n' +
+            '    <p>Unfortunately this condition is false.</p>\n' +
+            '{{/inverted-condition}}');
 
 
         //============================================================
@@ -31102,6 +36620,29 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '        <option>\n' +
             '            test content\n' +
             '</select>');
+
+        // Regression test for #1649
+        bth(
+            '<table>\n' +
+            '    <tbody>\n' +
+            '        <tr>\n' +
+            '            <td>\n' +
+            '                <table>\n' +
+            '                    <thead>\n' +
+            '                        <th>\n' +
+            '                        </th>\n' +
+            '                    </thead>\n' +
+            '                    <tbody>\n' +
+            '                        <tr>\n' +
+            '                            <td>\n' +
+            '                            </td>\n' +
+            '                        </tr>\n' +
+            '                    </tbody>\n' +
+            '                </table>\n' +
+            '            </td>\n' +
+            '        </tr>\n' +
+            '    </tbody>\n' +
+            '</table>');
         bth(
             '<table>\n' +
             '    <caption>37547 TEE Electric Powered Rail Car Train Functions (Abbreviated)\n' +
@@ -31179,6 +36720,32 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '            <td>\n' +
             '            <td>✔\n' +
             '</table>');
+
+        // Regression test for #1213
+        bth(
+            '<ul><li>ab<li>cd</li><li>cd</li></ul><dl><dt>ef<dt>gh</dt><dt>gh</dt></dl>\n' +
+            '<ul><li>ab</li><li>cd<li>cd</li></ul><dl><dt>ef</dt><dt>gh<dt>gh</dt></dl>',
+            //  -- output --
+            '<ul>\n' +
+            '    <li>ab\n' +
+            '    <li>cd</li>\n' +
+            '    <li>cd</li>\n' +
+            '</ul>\n' +
+            '<dl>\n' +
+            '    <dt>ef\n' +
+            '    <dt>gh</dt>\n' +
+            '    <dt>gh</dt>\n' +
+            '</dl>\n' +
+            '<ul>\n' +
+            '    <li>ab</li>\n' +
+            '    <li>cd\n' +
+            '    <li>cd</li>\n' +
+            '</ul>\n' +
+            '<dl>\n' +
+            '    <dt>ef</dt>\n' +
+            '    <dt>gh\n' +
+            '    <dt>gh</dt>\n' +
+            '</dl>');
 
 
         //============================================================
@@ -31346,17 +36913,20 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // #1304
         bth('<label>Every</label><input class="scheduler__minutes-input" type="text">');
 
+        // #1377
+        bth(
+            '<a href=\'\' onclick=\'doIt("<?php echo str_replace("\'", "\\ ", $var); ?>  "); \'>\n' +
+            '    Test\n' +
+            '</a>\n' +
+            '\n' +
+            '<?php include_once $_SERVER[\'DOCUMENT_ROOT\'] . "/shared/helpModal.php";  ?>');
+
 
         //============================================================
-        // Php formatting
+        // minimal template handling - ()
         reset_options();
-        set_name('Php formatting');
-        bth(
-            '<h1 class="content-page-header"><?=$view["name"]; ?></h1>',
-            //  -- output --
-            '<h1 class="content-page-header">\n' +
-            '    <?=$view["name"]; ?>\n' +
-            '</h1>');
+        set_name('minimal template handling - ()');
+        bth('<h1  class="content-page-header"><?php$view["name"]; ?></h1>', '<h1 class="content-page-header"><?php$view["name"]; ?></h1>');
         bth(
             '<?php\n' +
             'for($i = 1; $i <= 100; $i++;) {\n' +
@@ -31376,14 +36946,326 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '\n' +
             '</html>');
         bth(
-            '<?= "A" ?>\n' +
-            '<?= "B" ?>\n' +
-            '<?= "C" ?>');
+            '<?php "A" ?>abc<?php "D" ?>\n' +
+            '<?php "B" ?>\n' +
+            '<?php "C" ?>');
         bth(
             '<?php\n' +
             'echo "A";\n' +
             '?>\n' +
             '<span>Test</span>');
+        bth('<<?php html_element(); ?> <?phplanguage_attributes();?>>abc</<?php html_element(); ?>>');
+        bth('<input type="text" value="<?php$x["test"] . $x[\'test\']?>">');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        bth('<h1  class="content-page-header"><?=$view["name"]; ?></h1>', '<h1 class="content-page-header"><?=$view["name"]; ?></h1>');
+        bth(
+            '<?=\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '?>');
+        test_fragment(
+            '<?= ?>\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '<?= "A" ?>abc<?= "D" ?>\n' +
+            '<?= "B" ?>\n' +
+            '<?= "C" ?>');
+        bth(
+            '<?=\n' +
+            'echo "A";\n' +
+            '?>\n' +
+            '<span>Test</span>');
+        bth('<<?= html_element(); ?> <?=language_attributes();?>>abc</<?= html_element(); ?>>');
+        bth('<input type="text" value="<?=$x["test"] . $x[\'test\']?>">');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        bth('<h1  class="content-page-header"><%$view["name"]; %></h1>', '<h1 class="content-page-header"><%$view["name"]; %></h1>');
+        bth(
+            '<%\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '%>');
+        test_fragment(
+            '<% %>\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '<% "A" %>abc<% "D" %>\n' +
+            '<% "B" %>\n' +
+            '<% "C" %>');
+        bth(
+            '<%\n' +
+            'echo "A";\n' +
+            '%>\n' +
+            '<span>Test</span>');
+        bth('<<% html_element(); %> <%language_attributes();%>>abc</<% html_element(); %>>');
+        bth('<input type="text" value="<%$x["test"] . $x[\'test\']%>">');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        bth('<h1  class="content-page-header">{{$view["name"]; }}</h1>', '<h1 class="content-page-header">{{$view["name"]; }}</h1>');
+        bth(
+            '{{\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '}}');
+        test_fragment(
+            '{{ }}\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '{{ "A" }}abc{{ "D" }}\n' +
+            '{{ "B" }}\n' +
+            '{{ "C" }}');
+        bth(
+            '{{\n' +
+            'echo "A";\n' +
+            '}}\n' +
+            '<span>Test</span>');
+        bth('<{{ html_element(); }} {{language_attributes();}}>abc</{{ html_element(); }}>');
+        bth('<input type="text" value="{{$x["test"] . $x[\'test\']}}">');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        bth('<h1  class="content-page-header">{#$view["name"]; #}</h1>', '<h1 class="content-page-header">{#$view["name"]; #}</h1>');
+        bth(
+            '{#\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '#}');
+        test_fragment(
+            '{# #}\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '{# "A" #}abc{# "D" #}\n' +
+            '{# "B" #}\n' +
+            '{# "C" #}');
+        bth(
+            '{#\n' +
+            'echo "A";\n' +
+            '#}\n' +
+            '<span>Test</span>');
+        bth('<{# html_element(); #} {#language_attributes();#}>abc</{# html_element(); #}>');
+        bth('<input type="text" value="{#$x["test"] . $x[\'test\']#}">');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
+        bth('<h1  class="content-page-header">{%$view["name"]; %}</h1>', '<h1 class="content-page-header">{%$view["name"]; %}</h1>');
+        bth(
+            '{%\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '%}');
+        test_fragment(
+            '{% %}\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '{% "A" %}abc{% "D" %}\n' +
+            '{% "B" %}\n' +
+            '{% "C" %}');
+        bth(
+            '{%\n' +
+            'echo "A";\n' +
+            '%}\n' +
+            '<span>Test</span>');
+        bth('<{% html_element(); %} {%language_attributes();%}>abc</{% html_element(); %}>');
+        bth('<input type="text" value="{%$x["test"] . $x[\'test\']%}">');
+
+        // minimal template handling - (indent_handlebars = "false")
+        reset_options();
+        set_name('minimal template handling - (indent_handlebars = "false")');
+        opts.indent_handlebars = false;
+        bth('<h1  class="content-page-header">{{$view["name"]; }}</h1>', '<h1 class="content-page-header">{{$view["name"]; }}</h1>');
+        bth(
+            '{{\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '}}');
+        test_fragment(
+            '{{ }}\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '{{ "A" }}abc{{ "D" }}\n' +
+            '{{ "B" }}\n' +
+            '{{ "C" }}');
+        bth(
+            '{{\n' +
+            'echo "A";\n' +
+            '}}\n' +
+            '<span>Test</span>');
+        bth('<{{ html_element(); }} {{language_attributes();}}>abc</{{ html_element(); }}>');
+        bth('<input type="text" value="{{$x["test"] . $x[\'test\']}}">');
+
+        // minimal template handling - (indent_handlebars = "false")
+        reset_options();
+        set_name('minimal template handling - (indent_handlebars = "false")');
+        opts.indent_handlebars = false;
+        bth('<h1  class="content-page-header">{{#$view["name"]; }}</h1>', '<h1 class="content-page-header">{{#$view["name"]; }}</h1>');
+        bth(
+            '{{#\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '}}');
+        test_fragment(
+            '{{# }}\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '{{# "A" }}abc{{# "D" }}\n' +
+            '{{# "B" }}\n' +
+            '{{# "C" }}');
+        bth(
+            '{{#\n' +
+            'echo "A";\n' +
+            '}}\n' +
+            '<span>Test</span>');
+        bth('<{{# html_element(); }} {{#language_attributes();}}>abc</{{# html_element(); }}>');
+        bth('<input type="text" value="{{#$x["test"] . $x[\'test\']}}">');
+
+        // minimal template handling - (indent_handlebars = "false")
+        reset_options();
+        set_name('minimal template handling - (indent_handlebars = "false")');
+        opts.indent_handlebars = false;
+        bth('<h1  class="content-page-header">{{!$view["name"]; }}</h1>', '<h1 class="content-page-header">{{!$view["name"]; }}</h1>');
+        bth(
+            '{{!\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '}}');
+        test_fragment(
+            '{{! }}\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '{{! "A" }}abc{{! "D" }}\n' +
+            '{{! "B" }}\n' +
+            '{{! "C" }}');
+        bth(
+            '{{!\n' +
+            'echo "A";\n' +
+            '}}\n' +
+            '<span>Test</span>');
+        bth('<{{! html_element(); }} {{!language_attributes();}}>abc</{{! html_element(); }}>');
+        bth('<input type="text" value="{{!$x["test"] . $x[\'test\']}}">');
+
+        // minimal template handling - (indent_handlebars = "false")
+        reset_options();
+        set_name('minimal template handling - (indent_handlebars = "false")');
+        opts.indent_handlebars = false;
+        bth('<h1  class="content-page-header">{{!--$view["name"]; --}}</h1>', '<h1 class="content-page-header">{{!--$view["name"]; --}}</h1>');
+        bth(
+            '{{!--\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '--}}');
+        test_fragment(
+            '{{!-- --}}\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '{{!-- "A" --}}abc{{!-- "D" --}}\n' +
+            '{{!-- "B" --}}\n' +
+            '{{!-- "C" --}}');
+        bth(
+            '{{!--\n' +
+            'echo "A";\n' +
+            '--}}\n' +
+            '<span>Test</span>');
+        bth('<{{!-- html_element(); --}} {{!--language_attributes();--}}>abc</{{!-- html_element(); --}}>');
+        bth('<input type="text" value="{{!--$x["test"] . $x[\'test\']--}}">');
 
 
         //============================================================
@@ -31855,18 +37737,6 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
 
         //============================================================
-        // underscore.js  formatting
-        reset_options();
-        set_name('underscore.js  formatting');
-        bth(
-            '<div class="col-sm-9">\n' +
-            '    <textarea id="notes" class="form-control" rows="3">\n' +
-            '        <%= notes %>\n' +
-            '    </textarea>\n' +
-            '</div>');
-
-
-        //============================================================
         // ASP(X) and JSP directives <%@ indent formatting
         reset_options();
         set_name('ASP(X) and JSP directives <%@ indent formatting');
@@ -31920,7 +37790,8 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<body>\n' +
             '    <div>\n' +
             '        <div>\n' +
-            '            <p>Reconstruct the schematic editor the EDA system <a href="http://www.jedat.co.jp/eng/products.html"><i>AlphaSX</i></a>\n' +
+            '            <p>Reconstruct the schematic editor the EDA system <a\n' +
+            '                    href="http://www.jedat.co.jp/eng/products.html"><i>AlphaSX</i></a>\n' +
             '                series</p>\n' +
             '        </div>\n' +
             '    </div>\n' +
@@ -31930,6 +37801,78 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             //  -- output --
             '<span>0 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014\n' +
             '    0015 0016 0017 0018 0019 0020</span>');
+        test_fragment('<div>----1---------2---------3---------4---------5---------6---------7----</div>');
+        bth('<span>----1---------2---------3---------4---------5---------6---------7----</span>');
+        bth('<span>----1---------2---------3---------4---------5---------6---------7----<br /></span>');
+        bth(
+            '<div>----1---------2---------3---------4---------5---------6---------7-----</div>',
+            //  -- output --
+            '<div>----1---------2---------3---------4---------5---------6---------7-----\n' +
+            '</div>');
+        test_fragment(
+            '<div>----1---------2---------3---------4---------5---------6---------7-----<br /></div>',
+            //  -- output --
+            '<div>\n' +
+            '    ----1---------2---------3---------4---------5---------6---------7-----<br />\n' +
+            '</div>');
+        test_fragment(
+            '<div>----1---------2---------3---------4---------5---------6---------7-----<hr /></div>',
+            //  -- output --
+            '<div>----1---------2---------3---------4---------5---------6---------7-----\n' +
+            '    <hr />\n' +
+            '</div>');
+        test_fragment(
+            '<div>----1---------2---------3---------4---------5---------6---------7-----<hr />-</div>',
+            //  -- output --
+            '<div>----1---------2---------3---------4---------5---------6---------7-----\n' +
+            '    <hr />-</div>');
+        bth(
+            '<div>----1---------2---------3---------4---------5---------6---------7 --------81 ----2---------3---------4---------5---------6---------7-----</div>',
+            //  -- output --
+            '<div>----1---------2---------3---------4---------5---------6---------7\n' +
+            '    --------81 ----2---------3---------4---------5---------6---------7-----\n' +
+            '</div>');
+        bth(
+            '<span>---1---------2---------3---------4---------5---------6---------7 --------81 ----2---------3---------4---------5---------6</span>',
+            //  -- output --
+            '<span>---1---------2---------3---------4---------5---------6---------7\n' +
+            '    --------81 ----2---------3---------4---------5---------6</span>');
+        bth(
+            '<p>---------1---------2---------3---------4 ---------1---------2---------3---------4</p>',
+            //  -- output --
+            '<p>---------1---------2---------3---------4\n' +
+            '    ---------1---------2---------3---------4</p>');
+        bth(
+            '<div>----1---------2---------3---------4---------5---------6---------7 --------81 ----2---------3---------4---------5---------6</div>',
+            //  -- output --
+            '<div>----1---------2---------3---------4---------5---------6---------7\n' +
+            '    --------81 ----2---------3---------4---------5---------6</div>');
+        bth(
+            '<div>----1---------2---------3---------4---------5---------6---------7 --------81 ----2---------3---------4---------5---------6<br /></div>',
+            //  -- output --
+            '<div>----1---------2---------3---------4---------5---------6---------7\n' +
+            '    --------81 ----2---------3---------4---------5---------6<br /></div>');
+        bth(
+            '<div>----1---------2---------3---------4---------5---------6---------7 --------81 ----2---------3---------4---------5---------6<hr /></div>',
+            //  -- output --
+            '<div>----1---------2---------3---------4---------5---------6---------7\n' +
+            '    --------81 ----2---------3---------4---------5---------6\n' +
+            '    <hr />\n' +
+            '</div>');
+
+        // #1238  Fixed
+        bth(
+            '<span uib-tooltip="[[firstName]] [[lastName]]" tooltip-enable="showToolTip">\n' +
+            '   <ng-letter-avatar charCount="2" data="[[data]]"\n' +
+            '        shape="round" fontsize="[[font]]" height="[[height]]" width="[[width]]"\n' +
+            '   avatarcustombgcolor="[[bgColor]]" dynamic="true"></ng-letter-avatar>\n' +
+            '     </span>',
+            //  -- output --
+            '<span uib-tooltip="[[firstName]] [[lastName]]" tooltip-enable="showToolTip">\n' +
+            '    <ng-letter-avatar charCount="2" data="[[data]]" shape="round"\n' +
+            '        fontsize="[[font]]" height="[[height]]" width="[[width]]"\n' +
+            '        avatarcustombgcolor="[[bgColor]]" dynamic="true"></ng-letter-avatar>\n' +
+            '</span>');
 
         // Issue #1122
         test_fragment(
@@ -31974,29 +37917,24 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '            и глубина зондирования), текущие отсчеты сохраняются в контроллере\n' +
             '            при нажатии кнопки «ПУСК». Одновременно, они распечатываются на\n' +
             '            минипринтере. Управлять контроллером для записи данных зондирования\n' +
-            '            можно при помощи <link_row to="РК.05.01.01">Радиокнопки РК-11</link_row>.\n' +
+            '            можно при помощи <link_row to="РК.05.01.01">Радиокнопки РК-11\n' +
+            '            </link_row>.\n' +
             '        </p>\n' +
             '    </div>\n' +
             '</div>');
 
-
-        //============================================================
-        // Linewrap length
-        reset_options();
-        set_name('Linewrap length');
-        opts.wrap_line_length = 40;
-
-        // Issue #740 -- Negative values ending a line are wrapped as a unit
+        // #607 - preserve-newlines makes this look a bit odd now, but it much better
         test_fragment(
-            'return  someLongExpressionThatGe !== -1;\n' +
-            'return someLongExpressionThatGet !== -10;\n' +
-            'return someLongExpressionThatGet !== -100;',
+            '<p>В РАБОЧЕМ РЕЖИМЕ, после ввода параметров опыта (номер, шаг отсчетов и глубина зондирования), текущие\n' +
+            '    отсчеты сохраняются в контроллере при нажатии кнопки «ПУСК». Одновременно, они распечатываются\n' +
+            '    на минипринтере. Управлять контроллером для записи данных зондирования можно при помощи <link_row to="РК.05.01.01">Радиокнопки РК-11</link_row>.</p>',
             //  -- output --
-            'return someLongExpressionThatGe !== -1;\n' +
-            'return someLongExpressionThatGet !==\n' +
-            '-10;\n' +
-            'return someLongExpressionThatGet !==\n' +
-            '-100;');
+            '<p>В РАБОЧЕМ РЕЖИМЕ, после ввода параметров опыта (номер, шаг отсчетов и глубина\n' +
+            '    зондирования), текущие\n' +
+            '    отсчеты сохраняются в контроллере при нажатии кнопки «ПУСК». Одновременно,\n' +
+            '    они распечатываются\n' +
+            '    на минипринтере. Управлять контроллером для записи данных зондирования можно\n' +
+            '    при помощи <link_row to="РК.05.01.01">Радиокнопки РК-11</link_row>.</p>');
 
 
         //============================================================
@@ -32655,6 +38593,44 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
 
         //============================================================
+        // indent_empty_lines true
+        reset_options();
+        set_name('indent_empty_lines true');
+        opts.indent_empty_lines = true;
+        test_fragment(
+            '<div>\n' +
+            '\n' +
+            '    <div>\n' +
+            '\n' +
+            '    </div>\n' +
+            '\n' +
+            '</div>',
+            //  -- output --
+            '<div>\n' +
+            '    \n' +
+            '    <div>\n' +
+            '        \n' +
+            '    </div>\n' +
+            '    \n' +
+            '</div>');
+
+
+        //============================================================
+        // indent_empty_lines false
+        reset_options();
+        set_name('indent_empty_lines false');
+        opts.indent_empty_lines = false;
+        test_fragment(
+            '<div>\n' +
+            '\n' +
+            '    <div>\n' +
+            '\n' +
+            '    </div>\n' +
+            '\n' +
+            '</div>');
+
+
+        //============================================================
         // New Test Suite
         reset_options();
         set_name('New Test Suite');
@@ -32733,10 +38709,10 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    </div>',
             '<div>\n' +
             '</div>');
-        bth('    <div>\n' +
+        test_fragment('   <div>\n' +
             '    </div>',
-            '<div>\n' +
-            '</div>');
+            '   <div>\n' +
+            '   </div>');
         bth('<div>\n' +
             '</div>\n' +
             '    <div>\n' +
@@ -32745,10 +38721,10 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '</div>\n' +
             '<div>\n' +
             '</div>');
-        bth('    <div>\n' +
+        test_fragment('   <div>\n' +
             '</div>',
-            '<div>\n' +
-            '</div>');
+            '   <div>\n' +
+            '   </div>');
         bth('<div        >content</div>',
             '<div>content</div>');
         bth('<div     thinger="preserve  space  here"   ></div  >',
@@ -32834,9 +38810,6 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
         bth('<div><span>content</span></div>');
 
-        // Handlebars tests
-        // Without the indent option on, handlebars are treated as content.
-
         opts.wrap_line_length = 0;
         //...---------1---------2---------3---------4---------5---------6---------7
         //...1234567890123456789012345678901234567890123456789012345678901234567890
@@ -32865,51 +38838,24 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             /* expected */
             '<div>Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all. Some text that should not wrap at all.</div>');
 
-        //BUGBUG: This should wrap before 40 not after.
         opts.wrap_line_length = 40;
         //...---------1---------2---------3---------4---------5---------6---------7
         //...1234567890123456789012345678901234567890123456789012345678901234567890
-        bth('<div>Some test text that should wrap_inside_this section here.</div>',
+        bth('<div>Some test text that should wrap_inside_this section here__.</div>',
             /* expected */
             '<div>Some test text that should\n' +
-            '    wrap_inside_this section here.</div>');
+            '    wrap_inside_this section here__.\n' +
+            '</div>');
 
         // Support passing string of number
         opts.wrap_line_length = "40";
         //...---------1---------2---------3---------4---------5---------6---------7
         //...1234567890123456789012345678901234567890123456789012345678901234567890
-        bth('<div>Some test text that should wrap_inside_this section here.</div>',
+        bth('<div>Some test text that should wrap_inside_this section here__.</div>',
             /* expected */
             '<div>Some test text that should\n' +
-            '    wrap_inside_this section here.</div>');
-
-        opts.wrap_line_length = 80;
-        // BUGBUG #1238  This is still wrong but is also a good regression test
-        //...---------1---------2---------3---------4---------5---------6---------7---------8---------9--------10--------11--------12--------13--------14--------15--------16--------17--------18--------19--------20--------21--------22--------23--------24--------25--------26--------27--------28--------29
-        bth('<span uib-tooltip="[[firstName]] [[lastName]]" tooltip-enable="showToolTip">\n' +
-            '   <ng-letter-avatar charCount="2" data="[[data]]"\n' +
-            '        shape="round" fontsize="[[font]]" height="[[height]]" width="[[width]]"\n' +
-            '   avatarcustombgcolor="[[bgColor]]" dynamic="true"></ng-letter-avatar>\n' +
-            '     </span>',
-            /* expected */
-            '<span uib-tooltip="[[firstName]] [[lastName]]" tooltip-enable="showToolTip">\n' +
-            '    <ng-letter-avatar charCount="2" data="[[data]]" shape="round" fontsize="[[font]]"\n' +
-            '        height="[[height]]" width="[[width]]" avatarcustombgcolor="[[bgColor]]"\n' +
-            '        dynamic="true"></ng-letter-avatar>\n' +
-            '</span>');
-
-        // ISSUE #607 - preserve-newlines makes this look a bit odd now, but it much better
-        test_fragment(
-            '<p>В РАБОЧЕМ РЕЖИМЕ, после ввода параметров опыта (номер, шаг отсчетов и глубина зондирования), текущие\n' +
-            '    отсчеты сохраняются в контроллере при нажатии кнопки «ПУСК». Одновременно, они распечатываются\n' +
-            '    на минипринтере. Управлять контроллером для записи данных зондирования можно при помощи <link_row to="РК.05.01.01">Радиокнопки РК-11</link_row>.</p>',
-            /* expected */
-            '<p>В РАБОЧЕМ РЕЖИМЕ, после ввода параметров опыта (номер, шаг отсчетов и\n' +
-            '    глубина зондирования), текущие\n' +
-            '    отсчеты сохраняются в контроллере при нажатии кнопки «ПУСК». Одновременно,\n' +
-            '    они распечатываются\n' +
-            '    на минипринтере. Управлять контроллером для записи данных зондирования\n' +
-            '    можно при помощи <link_row to="РК.05.01.01">Радиокнопки РК-11</link_row>.</p>');
+            '    wrap_inside_this section here__.\n' +
+            '</div>');
 
         reset_options();
         //============================================================
