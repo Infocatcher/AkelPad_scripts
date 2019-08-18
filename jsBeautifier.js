@@ -221,6 +221,26 @@ if(!String.prototype.trim) {
 		return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, "");
 	};
 }
+if(!Object.assign) {
+	// Based on code from
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign#Polyfill
+	Object.assign = function(target, varArgs) {
+		if(target === null || target === undefined)
+			throw new TypeError("Cannot convert undefined or null to object");
+		var to = Object(target);
+		for(var index = 1; index < arguments.length; ++index) {
+			var nextSource = arguments[index];
+			if(nextSource !== null && nextSource !== undefined) {
+				for(var nextKey in nextSource) {
+					// Avoid bugs when hasOwnProperty is shadowed
+					if(Object.prototype.hasOwnProperty.call(nextSource, nextKey))
+						to[nextKey] = nextSource[nextKey];
+				}
+			}
+		}
+		return to;
+	};
+}
 
 //== index.html
 // https://github.com/beautify-web/js-beautify/blob/master/index.html
