@@ -9973,29 +9973,41 @@ function selfUpdate() {
 
 	function onComplete() {
 		tl.log("Update: check data");
-		var selfCode = AkelPad.ReadFile(WScript.ScriptFullName, 0, 65001, 1)
+
+		var selfFile = WScript.ScriptFullName;
+		var testFile = AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/) + "\\" + WScript.ScriptBaseName + "_tests.js";
+		var code = {};
+		code.self = code.selfOld = AkelPad.ReadFile(selfFile, 0, 65001, 1)
 			.replace(/\r\n?|\n\r?/g, "\r\n");
-		var selfCodeOld = selfCode;
+		code.test = code.testOld = AkelPad.ReadFile(testFile, 0, 65001, 1)
+			.replace(/\r\n?|\n\r?/g, "\r\n");
+
 		for(var file in data) {
+			var key = file.indexOf("/test/") == -1 ? "self" : "test";
+			var str = code[key];
 			var start = "\r\n//== " + file + "\r\n";
 			var end = "\r\n//== " + file + " end\r\n";
-			var indexStart = selfCode.indexOf(start);
-			var indexEnd = selfCode.indexOf(end, indexStart);
+			var indexStart = str.indexOf(start);
+			var indexEnd = str.indexOf(end, indexStart);
 			if(indexStart == -1 || indexEnd == -1) {
 				AkelPad.MessageBox(hMainWnd, _localize("Not found:\n") + start + end, WScript.ScriptBaseName, 48 /*MB_ICONEXCLAMATION*/);
 				continue;
 			}
-			selfCode = selfCode.substr(0, indexStart + start.length)
+			code[key] = str.substr(0, indexStart + start.length)
 				+ data[file]
-				+ selfCode.substr(indexEnd);
+				+ str.substr(indexEnd);
 		}
-		var noRealChanges = selfCode == selfCodeOld;
+		var noRealChanges = code.self == code.selfOld
+			&& code.test == code.testOld;
 		tl.log("Update: get last modified date");
-		selfCode = selfCode.replace(
-			/(\r\n?|\n)\/\/+ *\[built from http\S+ [^\n\r]+\](\r\n?|\n)/,
-			"$1// [built from " + sourceUrl + " " + date() + "]$2"
-		);
-		if(selfCode == selfCodeOld) {
+		var builtPattern = /(\r\n?|\n)\/\/+ *\[built from http\S+ [^\n\r]+\](\r\n?|\n)/;
+		var builtDate = "$1// [built from " + sourceUrl + " " + date() + "]$2";
+		code.self = code.self.replace(builtPattern, builtDate);
+		code.test = code.test.replace(builtPattern, builtDate);
+		if(
+			code.self == code.selfOld
+			&& code.test == code.testOld
+		) {
 			AkelPad.MessageBox(hMainWnd, _localize("Already updated!"), WScript.ScriptBaseName, 64 /*MB_ICONINFORMATION*/);
 			return;
 		}
@@ -10005,15 +10017,20 @@ function selfUpdate() {
 		tl.log("Update: save");
 		// Create backup
 		var fso = new ActiveXObject("Scripting.FileSystemObject");
-		var scriptPath = WScript.ScriptFullName;
-		fso.CopyFile(scriptPath, scriptPath.slice(0, -3) + ts() + ".js.bak", true);
+		var bakExt = ts() + ".js.bak";
+		fso.CopyFile(testFile, testFile.slice(0, -3) + bakExt, true);
+		fso.CopyFile(selfFile, selfFile.slice(0, -3) + bakExt, true);
 
-		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
-		AkelPad.SetSel(0, -1);
-		AkelPad.ReplaceSel(selfCode);
-		AkelPad.Command(4184); // IDM_EDIT_NEWLINE_WIN
-		AkelPad.SetSel(0, 0);
-		AkelPad.SaveFile(AkelPad.GetEditWnd(), scriptPath, 65001, 1);
+		function saveFile(file, code) {
+			AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+			AkelPad.SetSel(0, -1);
+			AkelPad.ReplaceSel(code);
+			AkelPad.Command(4184); // IDM_EDIT_NEWLINE_WIN
+			AkelPad.SetSel(0, 0);
+			AkelPad.SaveFile(AkelPad.GetEditWnd(), file, 65001, 1);
+		}
+		saveFile(testFile, code.test);
+		saveFile(selfFile, code.self);
 	}
 
 	function ts() {
