@@ -99,6 +99,9 @@ function _localize(s) {
 		},
 		"No real changes, only updated header information": {
 			ru: "Нет реальных изменений, только обновлена информация в заголовке"
+		},
+		"Can't create backup files:\n": {
+			ru: "Не удалось создать резервные копии:\n"
 		}
 	};
 	var lng = "en";
@@ -10018,8 +10021,16 @@ function selfUpdate() {
 		// Create backup
 		var fso = new ActiveXObject("Scripting.FileSystemObject");
 		var bakExt = ts() + ".js.bak";
-		fso.CopyFile(testFile, testFile.slice(0, -3) + bakExt, true);
-		fso.CopyFile(selfFile, selfFile.slice(0, -3) + bakExt, true);
+		var testFileBak = testFile.slice(0, -3) + bakExt;
+		var selfFileBak = selfFile.slice(0, -3) + bakExt;
+		try {
+			fso.CopyFile(testFile, testFileBak, true);
+			fso.CopyFile(selfFile, selfFileBak, true);
+		}
+		catch(e) {
+			AkelPad.MessageBox(hMainWnd, _localize("Can't create backup files:\n") + [e.message, selfFileBak, testFileBak].join("\n"), WScript.ScriptBaseName, 16 /*MB_ICONERROR*/);
+			return;
+		}
 
 		function saveFile(file, code) {
 			AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
