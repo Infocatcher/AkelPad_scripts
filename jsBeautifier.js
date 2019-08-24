@@ -9802,8 +9802,11 @@ function beautifyAkelEdit() {
 	if(action == ACT_INSERT && AkelPad.GetEditReadOnly(hWndEdit))
 		action = ACT_INSERT_NEW_DOC;
 
-	if(action == ACT_INSERT)
+	if(action == ACT_INSERT) {
 		var lpFrameTarget = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
+		var ss = AkelPad.GetSelStart();
+		var se = AkelPad.GetSelEnd();
+	}
 
 	if(
 		selectAll
@@ -9837,6 +9840,7 @@ function beautifyAkelEdit() {
 		&& lpFrameTarget != AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0)
 	) {
 		AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrameTarget);
+		AkelPad.SetSel(ss, se);
 	}
 	if(!res)
 		return;
