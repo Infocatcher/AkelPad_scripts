@@ -9804,6 +9804,7 @@ function beautifyAkelEdit() {
 
 	if(action == ACT_INSERT) {
 		var lpFrameTarget = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
+		AkelPad.Command(4216 /*IDM_VIEW_READONLY*/); // Prevent modifications
 		var ss = AkelPad.GetSelStart();
 		var se = AkelPad.GetSelEnd();
 	}
@@ -9834,12 +9835,10 @@ function beautifyAkelEdit() {
 		res = beautify(src, syntax);
 	}
 
-	if(
-		action == ACT_INSERT
-		&& lpFrameTarget
-		&& lpFrameTarget != AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0)
-	) {
-		AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrameTarget);
+	if(action == ACT_INSERT) {
+		if(lpFrameTarget && lpFrameTarget != AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0))
+			AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrameTarget);
+		AkelPad.Command(4216 /*IDM_VIEW_READONLY*/); // Restore: make editable
 		AkelPad.SetSel(ss, se);
 	}
 	if(!res)
