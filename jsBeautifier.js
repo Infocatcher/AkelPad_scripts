@@ -9835,12 +9835,18 @@ function beautifyAkelEdit() {
 		res = beautify(src, syntax);
 	}
 
-	if(action == ACT_INSERT) {
-		if(lpFrameTarget && lpFrameTarget != AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0))
+	restoreState: if(action == ACT_INSERT) {
+		if(lpFrameTarget && lpFrameTarget != AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0)) {
 			AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrameTarget);
+			if(lpFrameTarget != AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0)) { // Was closed?
+				action = ACT_INSERT_NEW_DOC;
+				break restoreState;
+			}
+		}
 		AkelPad.Command(4216 /*IDM_VIEW_READONLY*/); // Restore: make editable
 		AkelPad.SetSel(ss, se);
 	}
+
 	if(!res)
 		return;
 	if(res == src) {
