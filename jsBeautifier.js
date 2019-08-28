@@ -13,7 +13,7 @@
 
 // Arguments:
 //   -onlySelected=true            - use only selected text
-//   -action=1                     - 0 - insert (default), 1 - insert to new document, 2 - copy, 3 - show
+//   -action=1                     - 0 - insert (default), 1 - insert to new document, 2 - copy, 3 - show, 4 - use Log plugin
 //   -restoreCaretPos=true         - restore caret position (works only without selection)
 //   -setSyntax=0                  - don't change syntax theme (Coder plugin)
 //             =1                  - set syntax theme only in documents without theme
@@ -118,6 +118,7 @@ var ACT_INSERT         = 0;
 var ACT_INSERT_NEW_DOC = 1;
 var ACT_COPY           = 2;
 var ACT_SHOW           = 3;
+var ACT_LOG            = 4;
 
 // Read arguments:
 // getArg(argName, defaultValue)
@@ -9858,16 +9859,20 @@ function beautifyAkelEdit() {
 		insertNoScroll(res, selectAll, getCaretPos(res, selStart));
 		setSyntax(syntax.value);
 	}
-	if(action == ACT_INSERT_NEW_DOC) {
+	else if(action == ACT_INSERT_NEW_DOC) {
 		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
 		AkelPad.SetSel(0, 0);
 		insertNoScroll(res, true, getCaretPos(res, selStart));
 		setSyntax(syntax.value);
 	}
-	if(action == ACT_COPY && res != AkelPad.GetClipboardText())
+	else if(action == ACT_COPY && res != AkelPad.GetClipboardText())
 		AkelPad.SetClipboardText(res);
-	if(action == ACT_SHOW)
+	else if(action == ACT_SHOW)
 		AkelPad.MessageBox(hMainWnd, res.substr(0, 3000), WScript.ScriptName, 64 /*MB_ICONINFORMATION*/);
+	else if(action == ACT_LOG) {
+		var alias = setSyntaxMode ? "." + syntax.value : "";
+		AkelPad.Call("Log::Output", 4, res, res.length, 2, 0, alias);
+	}
 }
 
 function convertSource(file, text) {
