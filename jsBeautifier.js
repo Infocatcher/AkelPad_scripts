@@ -9800,11 +9800,12 @@ function beautifyAkelEdit() {
 		return;
 	}
 
+	var isMDI = AkelPad.IsMDI() != 0 /*WMD_SDI*/;
 	if(action == ACT_INSERT && AkelPad.GetEditReadOnly(hWndEdit))
-		action = ACT_INSERT_NEW_DOC;
+		action = isMDI ? ACT_INSERT_NEW_DOC : ACT_LOG;
 
 	if(action == ACT_INSERT) {
-		var lpFrameTarget = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
+		var lpFrameTarget = isMDI && AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
 		AkelPad.Command(4216 /*IDM_VIEW_READONLY*/); // Prevent modifications
 		var ss = AkelPad.GetSelStart();
 		var se = AkelPad.GetSelEnd();
