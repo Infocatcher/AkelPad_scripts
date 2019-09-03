@@ -9872,6 +9872,21 @@ function beautifyAkelEdit() {
 		AkelPad.MessageBox(hMainWnd, res.substr(0, 3000), WScript.ScriptName, 64 /*MB_ICONINFORMATION*/);
 	else if(action == ACT_LOG) {
 		var alias = setSyntaxMode ? "." + syntax.value : "";
+
+		var lpWnd = AkelPad.MemAlloc(_X64 ? 8 : 4 /*sizeof(HWND)*/);
+		if(lpWnd) {
+			AkelPad.Call("Log::Output", 2, lpWnd);
+			var hWndOutput = AkelPad.MemRead(lpWnd, 2 /*DT_QWORD*/);
+			AkelPad.MemFree(lpWnd);
+			if(hWndOutput) {
+				AkelPad.SetEditWnd(hWndOutput);
+				var hasLogs = !!AkelPad.GetTextRange(0, 1);
+				AkelPad.SetEditWnd(0);
+				var spacer = "\n\n";
+				AkelPad.Call("Log::Output", 4, spacer, spacer.length, 2, 0, alias);
+			}
+		}
+
 		AkelPad.Call("Log::Output", 4, res, res.length, 2, 0, alias);
 	}
 }
