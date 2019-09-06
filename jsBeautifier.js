@@ -294,7 +294,7 @@ function beautify(source, syntax) { // Based on beautify function
 			opts[rawArg] = rawArgs[rawArg];
 
 	var res = "";
-	if(looks_like_html(source)) {
+	if(/^\s*</.test(source)) { // Looks like HTML
 		if(syntax)
 			syntax.value = detectXMLType(source);
 		res = html_beautify(source, opts);
@@ -326,11 +326,6 @@ function runTests() { // Based on run_tests function
 
 	//return st.results();
 	return st.results_raw();
-}
-function looks_like_html(source) {
-    // <foo> - looks like html
-    var trimmed = source.replace(/^[ \t\n\r]+/, '');
-    return trimmed && (trimmed.substring(0, 1) === '<');
 }
 function unpacker_filter(source) {
   var leading_comments = '',
