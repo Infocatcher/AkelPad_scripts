@@ -5,7 +5,7 @@
 // (c) Infocatcher 2011-2018
 // Version: 0.2.9 - 2018-03-31
 // Author: Infocatcher
-// Based on scripts from http://jsbeautifier.org/
+// Based on scripts from https://beautifier.io/ (http://jsbeautifier.org/)
 // [built from https://github.com/beautify-web/js-beautify/tree/release 2019-08-06 18:14:27 UTC]
 
 //===================
@@ -42,7 +42,7 @@
 //   -endWithNewline=false         - end output with a newline
 //   -commaFirst=false             - put commas at the beginning of new line instead of end
 //   -e4x=true                     - handle E4X XML literals
-//   -detectPackers=true           - detect packers
+//   -detectPackers=true           - detect packers and obfuscators
 
 //   -unformattedTags=["a"]        - list of tags, that shouldn't be reformatted (only for HTML)
 //   -voidElements=["br"]          - list of HTML void elements - aka self-closing tags - aka singletons
