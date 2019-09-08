@@ -58,8 +58,8 @@
 //   -css=true                     - force beautify CSS (just automatically wrap code into <style>...</style>)
 //   -keepCSSIndentation=true      - keep initial CSS indentation (only for -css=true)
 
-//   -update=1                     - update source from https://github.com/beautify-web/js-beautify/
-//          =2                     - update source from https://github.com/beautify-web/js-beautify/tree/release
+//   -update=true                  - update source from https://github.com/beautify-web/js-beautify/tree/release
+//          ="some-branch"         - update source from https://github.com/beautify-web/js-beautify/tree/some-branch
 //   -forceNoCache                 - prevent caching during update
 //   -test=1                       - force run the tests
 //        =-1                      - run the tests, if called for empty source (+ see -onlySelected argument)
@@ -9948,15 +9948,10 @@ function convertSource(file, text) {
 	return text;
 }
 function selfUpdate() {
-	var baseUrl = update == 2
-		? "https://raw.githubusercontent.com/beautify-web/js-beautify/release/"
-		: "https://raw.githubusercontent.com/beautify-web/js-beautify/master/";
-	var sourceUrl = update == 2
-		? "https://github.com/beautify-web/js-beautify/tree/release"
-		: "https://github.com/beautify-web/js-beautify/tree/master";
-	var rssUrl = update == 2
-		? "https://github.com/beautify-web/js-beautify/commits/release.atom"
-		: "https://github.com/beautify-web/js-beautify/commits/master.atom";
+	var branch = typeof update == "string" ? update : "release";
+	var baseUrl = "https://raw.githubusercontent.com/beautify-web/js-beautify/" + branch + "/";
+	var sourceUrl = "https://github.com/beautify-web/js-beautify/tree/" + branch;
+	var rssUrl = "https://github.com/beautify-web/js-beautify/commits/" + branch + ".atom";
 	var data = {
 		"js/lib/beautify.js": "",
 		"js/lib/beautify-css.js": "",
