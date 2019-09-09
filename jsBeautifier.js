@@ -83,7 +83,7 @@ function _localize(s) {
 			ru: "Нечего обрабатывать!"
 		},
 		"Code not changed!": {
-			ru: "Код оставлен без изменений!"
+			ru: "Код не изменился!"
 		},
 		"All %S tests passed.": {
 			ru: "Все %S тестов пройдены."
