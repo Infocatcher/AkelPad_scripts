@@ -9879,8 +9879,10 @@ function beautifyAkelEdit() {
 				AkelPad.SetEditWnd(hWndOutput);
 				var hasLogs = !!AkelPad.GetTextRange(0, 1);
 				AkelPad.SetEditWnd(0);
-				var spacer = "\n\n";
-				AkelPad.Call("Log::Output", 4, spacer, spacer.length, 2, 0, alias);
+				if(hasLogs) {
+					var spacer = "\n\n";
+					AkelPad.Call("Log::Output", 4, spacer, spacer.length, 2, 0, alias);
+				}
 			}
 		}
 
