@@ -9868,25 +9868,39 @@ function beautifyAkelEdit() {
 	else if(action == ACT_SHOW)
 		AkelPad.MessageBox(hMainWnd, res.substr(0, 3000), WScript.ScriptName, 64 /*MB_ICONINFORMATION*/);
 	else if(action == ACT_LOG) {
+		var selStart = 0;
 		var alias = setSyntaxMode ? "." + syntax.value : "";
 
 		var lpWnd = AkelPad.MemAlloc(_X64 ? 8 : 4 /*sizeof(HWND)*/);
 		if(lpWnd) {
 			AkelPad.Call("Log::Output", 2, lpWnd);
 			var hWndOutput = AkelPad.MemRead(lpWnd, 2 /*DT_QWORD*/);
-			AkelPad.MemFree(lpWnd);
 			if(hWndOutput) {
 				AkelPad.SetEditWnd(hWndOutput);
-				var hasLogs = !!AkelPad.GetTextRange(0, 1);
+				var logs = AkelPad.GetTextRange(0, -1);
 				AkelPad.SetEditWnd(0);
-				if(hasLogs) {
+				if(logs) {
 					var spacer = "\n\n";
 					AkelPad.Call("Log::Output", 4, spacer, spacer.length, 2, 0, alias);
+					selStart = logs.length + spacer.length + 1;
 				}
 			}
 		}
 
 		AkelPad.Call("Log::Output", 4, res, res.length, 2, 0, alias);
+
+		if(lpWnd) {
+			if(!hWndOutput) {
+				AkelPad.Call("Log::Output", 2, lpWnd); // Was opened right now?
+				hWndOutput = AkelPad.MemRead(lpWnd, 2 /*DT_QWORD*/);
+			}
+			AkelPad.MemFree(lpWnd);
+			if(hWndOutput) {
+				AkelPad.SetEditWnd(hWndOutput);
+				AkelPad.SetSel(selStart, selStart);
+				AkelPad.SetEditWnd(0);
+			}
+		}
 	}
 }
 
