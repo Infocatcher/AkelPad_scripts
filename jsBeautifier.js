@@ -1,6 +1,8 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11246#11246
 // http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
+// http://infocatcher.ucoz.net/js/akelpad_scripts/Include/jsBeautifier_tests.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/jsBeautifier_tests.js
 
 // (c) Infocatcher 2011-2018
 // Version: 0.2.9 - 2018-03-31

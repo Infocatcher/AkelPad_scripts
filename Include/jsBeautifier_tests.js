@@ -1,8 +1,10 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11246#11246
-// http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier_tests.js
+// http://infocatcher.ucoz.net/js/akelpad_scripts/Include/jsBeautifier_tests.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/jsBeautifier_tests.js
 
 // Tests part of jsBeautifier.js, don't use directly!
+// http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // Scripts from http://jsbeautifier.org/
 // [built from https://github.com/beautify-web/js-beautify/tree/release 2019-08-06 18:14:27 UTC]
