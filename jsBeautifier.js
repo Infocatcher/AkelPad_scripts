@@ -4,8 +4,8 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/jsBeautifier_tests.js
 
-// (c) Infocatcher 2011-2018
-// Version: 0.2.9 - 2018-03-31
+// (c) Infocatcher 2011-2019
+// Version: 0.3.0 - 2019-09-21
 // Author: Infocatcher
 // Based on scripts from https://beautifier.io/ (http://jsbeautifier.org/)
 // [built from https://github.com/beautify-web/js-beautify/tree/release 2019-08-06 18:14:27 UTC]
