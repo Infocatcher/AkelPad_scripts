@@ -3213,27 +3213,27 @@ function converterDialog(modal) {
 		var lpRect = AkelPad.MemAlloc(16); //sizeof(RECT)
 		if(lpRect) {
 			// Measures lists
-			AkelPad.MemCopy(lpRect,      scale.x(msrX),         3 /*DT_DWORD*/);
-			AkelPad.MemCopy(lpRect + 4,  scale.y(msrY),         3 /*DT_DWORD*/);
-			AkelPad.MemCopy(lpRect + 8,  scale.x(msr2X + msrW), 3 /*DT_DWORD*/);
-			AkelPad.MemCopy(lpRect + 12, scale.y(dlgH),         3 /*DT_DWORD*/);
+			AkelPad.MemCopy(_PtrAdd(lpRect,  0), scale.x(msrX),         3 /*DT_DWORD*/);
+			AkelPad.MemCopy(_PtrAdd(lpRect,  4), scale.y(msrY),         3 /*DT_DWORD*/);
+			AkelPad.MemCopy(_PtrAdd(lpRect,  8), scale.x(msr2X + msrW), 3 /*DT_DWORD*/);
+			AkelPad.MemCopy(_PtrAdd(lpRect, 12), scale.y(dlgH),         3 /*DT_DWORD*/);
 			oSys.Call("user32::InvalidateRect", hWndDialog, lpRect, true);
 
 			// Round and sort controls
 			if(isCurrency + (curType == "&Currency") == 1 || type == curType) {
-				AkelPad.MemCopy(lpRect,      scale.x(msr2X + msrW),     3 /*DT_DWORD*/);
-				AkelPad.MemCopy(lpRect + 4,  scale.y(12 + btnH*3 + 13), 3 /*DT_DWORD*/);
-				AkelPad.MemCopy(lpRect + 8,  scale.x(dlgW),             3 /*DT_DWORD*/);
-				AkelPad.MemCopy(lpRect + 12, scale.y(dlgH),             3 /*DT_DWORD*/);
+				AkelPad.MemCopy(_PtrAdd(lpRect,  0), scale.x(msr2X + msrW),     3 /*DT_DWORD*/);
+				AkelPad.MemCopy(_PtrAdd(lpRect,  4), scale.y(12 + btnH*3 + 13), 3 /*DT_DWORD*/);
+				AkelPad.MemCopy(_PtrAdd(lpRect,  8), scale.x(dlgW),             3 /*DT_DWORD*/);
+				AkelPad.MemCopy(_PtrAdd(lpRect, 12), scale.y(dlgH),             3 /*DT_DWORD*/);
 				oSys.Call("user32::InvalidateRect", hWndDialog, lpRect, true);
 			}
 
 			if(typeChanged && (!windowsVersion || windowsVersion < 6.1)) {
 				// Only for Windows XP? Not needed on Windows 7
-				AkelPad.MemCopy(lpRect,      scale.x(typeX + 8),     3 /*DT_DWORD*/);
-				AkelPad.MemCopy(lpRect + 4,  scale.y(typeY + 12),    3 /*DT_DWORD*/);
-				AkelPad.MemCopy(lpRect + 8,  scale.x(typeW - 16),    3 /*DT_DWORD*/);
-				AkelPad.MemCopy(lpRect + 12, scale.y(typesCount*dy), 3 /*DT_DWORD*/);
+				AkelPad.MemCopy(_PtrAdd(lpRect,  0), scale.x(typeX + 8),     3 /*DT_DWORD*/);
+				AkelPad.MemCopy(_PtrAdd(lpRect,  4), scale.y(typeY + 12),    3 /*DT_DWORD*/);
+				AkelPad.MemCopy(_PtrAdd(lpRect,  8), scale.x(typeW - 16),    3 /*DT_DWORD*/);
+				AkelPad.MemCopy(_PtrAdd(lpRect, 12), scale.y(typesCount*dy), 3 /*DT_DWORD*/);
 				oSys.Call("user32::InvalidateRect", hWndDialog, lpRect, true);
 			}
 
@@ -3773,10 +3773,10 @@ function calcNum(val, showErrors, hWnd, hWndEdit) {
 			var lpText = AkelPad.MemStrPtr(e.name ? e.name + "\n" + e.message : e);
 			var sizeofEditBalloonTip = 4 + 4 + 4 + 4;
 			var lpTip = AkelPad.MemAlloc(sizeofEditBalloonTip);
-			AkelPad.MemCopy(lpTip,      sizeofEditBalloonTip, 3 /*DT_DWORD*/);
-			AkelPad.MemCopy(lpTip + 4,  lpTitle,              3 /*DT_DWORD*/);
-			AkelPad.MemCopy(lpTip + 8,  lpText,               3 /*DT_DWORD*/);
-			AkelPad.MemCopy(lpTip + 12, 2 /*TTI_WARNING*/,    3 /*DT_DWORD*/);
+			AkelPad.MemCopy(_PtrAdd(lpTip,  0), sizeofEditBalloonTip, 3 /*DT_DWORD*/);
+			AkelPad.MemCopy(_PtrAdd(lpTip,  4), lpTitle,              3 /*DT_DWORD*/);
+			AkelPad.MemCopy(_PtrAdd(lpTip,  8), lpText,               3 /*DT_DWORD*/);
+			AkelPad.MemCopy(_PtrAdd(lpTip, 12), 2 /*TTI_WARNING*/,    3 /*DT_DWORD*/);
 			if(AkelPad.SendMessage(hWndEdit, 0x1503 /*EM_SHOWBALLOONTIP*/, 0, lpTip))
 				calcNum._hasTipFor = origVal;
 			AkelPad.MemFree(lpTitle);
