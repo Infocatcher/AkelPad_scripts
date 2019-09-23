@@ -2329,13 +2329,13 @@ function converterDialog(modal) {
 			case 36: //WM_GETMINMAXINFO
 				if(!handleResize)
 					break;
-				AkelPad.MemCopy(lParam + 24, dlgMinW, 3 /*DT_DWORD*/); //ptMinTrackSize.x
-				AkelPad.MemCopy(lParam + 32, dlgMinW, 3 /*DT_DWORD*/); //ptMaxTrackSize.x
+				AkelPad.MemCopy(_PtrAdd(lParam, 24), dlgMinW, 3 /*DT_DWORD*/); //ptMinTrackSize.x
+				AkelPad.MemCopy(_PtrAdd(lParam, 32), dlgMinW, 3 /*DT_DWORD*/); //ptMaxTrackSize.x
 				if(checked(hWndActShow))
-					AkelPad.MemCopy(lParam + 28, dlgMinH + outputMinH + 12, 3 /*DT_DWORD*/); //ptMinTrackSize.y
+					AkelPad.MemCopy(_PtrAdd(lParam, 28), dlgMinH + outputMinH + 12, 3 /*DT_DWORD*/); //ptMinTrackSize.y
 				else {
-					AkelPad.MemCopy(lParam + 28, dlgH, 3 /*DT_DWORD*/); //ptMinTrackSize.y
-					AkelPad.MemCopy(lParam + 36, dlgH, 3 /*DT_DWORD*/); //ptMaxTrackSize.y
+					AkelPad.MemCopy(_PtrAdd(lParam, 28), dlgH, 3 /*DT_DWORD*/); //ptMinTrackSize.y
+					AkelPad.MemCopy(_PtrAdd(lParam, 36), dlgH, 3 /*DT_DWORD*/); //ptMaxTrackSize.y
 				}
 			break;
 			case 5: //WM_SIZE

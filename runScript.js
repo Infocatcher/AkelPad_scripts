@@ -455,8 +455,8 @@ function selectScriptDialog(modal) {
 				}
 			break;
 			case 36: //WM_GETMINMAXINFO
-				AkelPad.MemCopy(lParam + 24, dlgMinW, 3 /*DT_DWORD*/); //ptMinTrackSize.x
-				AkelPad.MemCopy(lParam + 28, dlgMinH, 3 /*DT_DWORD*/); //ptMinTrackSize.y
+				AkelPad.MemCopy(_PtrAdd(lParam, 24), dlgMinW, 3 /*DT_DWORD*/); //ptMinTrackSize.x
+				AkelPad.MemCopy(_PtrAdd(lParam, 28), dlgMinH, 3 /*DT_DWORD*/); //ptMinTrackSize.y
 			break;
 			case 5: //WM_SIZE
 				if(oSys.Call("user32::IsIconic", hWnd))
