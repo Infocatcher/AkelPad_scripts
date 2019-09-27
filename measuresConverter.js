@@ -1744,6 +1744,8 @@ var ROUND_DEFAULT = 2;
 var ROUND_MAX = 20; // Built-in Number.prototype.toFixed() throws on numbers > 20
 
 function getDefaultCurrencyData() {
+	if(!saveOffline)
+		return "";
 	var ts = 1569430725568; // 2019-09-25
 	return "RUB=0.0159|AED=0.27228|AMD=0.00208|ANG=0.54348|ARS=0.03653|AUD=0.73877|BBD=0.5|\
 BDT=0.01191|BGN=0.59902|BHD=2.6469|BIF=0.00057|BMD=1|BND=0.74063|BOB=0.14577|BRL=0.26727|BSD=1|\
