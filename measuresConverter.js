@@ -266,6 +266,7 @@ var measures = {
 		"Joul (J)": 1,
 		"Kilojoul (kJ)": 1e+3,
 		"Megajoul (MJ)": 1e+6,
+		"Gigajoul (GJ)": 1e+9,
 		"Erg":           1e-7,
 		"Calorie (cal)":      4.1868,
 		"Kilocalorie (kcal)": 4.1868*1e+3,
@@ -1112,6 +1113,9 @@ function _localize(s) {
 		},
 		"Megajoul (MJ)": {
 			ru: "Мегаджоуль (МДж, MJ)"
+		},
+		"Gigajoul (GJ)": {
+			ru: "Гигаджоуль (ГДж, GJ)"
 		},
 		"Erg": {
 			ru: "Эрг"
