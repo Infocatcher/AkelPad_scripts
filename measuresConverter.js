@@ -171,6 +171,9 @@ var measures = {
 		"Light-minute": 9460730472580820/365.25/24/60,
 		"Light-second": 9460730472580820/365.25/24/60/60,
 		"Parsec (pc)": 3.08567782e+16,
+		"Kiloparsec (kpc)": 3.08567782e+16*1e3,
+		"Megaparsec (Mpc)": 3.08567782e+16*1e6,
+		"Gigaparsec (Gpc)": 3.08567782e+16*1e9,
 		"Inch (in)": 0.0254,
 		"Foot (ft)": 0.0254*12,
 		"Yard (yd)": 0.0254*12*3,
@@ -862,6 +865,15 @@ function _localize(s) {
 		},
 		"Parsec (pc)": {
 			ru: "Парсек (пк, pc)"
+		},
+		"Kiloparsec (kpc)": {
+			ru: "Килопарсек (кпк, kpc)"
+		},
+		"Megaparsec (Mpc)": {
+			ru: "Мегапарсек (Мпк, Mpc)"
+		},
+		"Gigaparsec (Gpc)": {
+			ru: "Гигапарсек (Гпк, Gpc)"
 		},
 		"Inch (in)": {
 			ru: "Дюйм (in)"
