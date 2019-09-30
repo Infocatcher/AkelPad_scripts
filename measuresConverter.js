@@ -248,11 +248,13 @@ var measures = {
 		"Julian year*": 86400*365.25
 	},
 	"&Speed": {
+		"Centimeter per second (cm/s)": 1e-2,
 		"Meter per second (m/s)": 1,
 		"Kilometer per second (km/s)": 1e+3,
 		"Kilometer per hour (km/h)": 1/3.6,
 		"Mile per hour (mph)": 0.44704,
-		"Knot (kn)": 1.852/3.6
+		"Knot (kn)": 1.852/3.6,
+		"Speed of light in vacuum (c)": 299792458
 	},
 	"Temperat&ure": {
 		"Celsius degree (°C)": 1,
@@ -1085,6 +1087,9 @@ function _localize(s) {
 		"&Speed": {
 			ru: "&Скорость"
 		},
+		"Centimeter per second (cm/s)": {
+			ru: "Сантиметр в секунду (см/с, cm/s)"
+		},
 		"Meter per second (m/s)": {
 			ru: "Метр в секунду (м/с, m/s)"
 		},
@@ -1099,6 +1104,9 @@ function _localize(s) {
 		},
 		"Knot (kn)": {
 			ru: "Узел (kn)"
+		},
+		"Speed of light in vacuum (c)": {
+			ru: "Скорости света в вакууме (c)"
 		},
 
 		"Temperat&ure": {
