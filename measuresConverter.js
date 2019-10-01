@@ -254,6 +254,7 @@ var measures = {
 		"Kilometer per hour (km/h)": 1/3.6,
 		"Mile per hour (mph)": 0.44704,
 		"Knot (kn)": 1.852/3.6,
+		"Foot per second (ft/s)": 0.3048,
 		"Speed of light in vacuum (c)": 299792458
 	},
 	"Temperat&ure": {
@@ -1104,6 +1105,9 @@ function _localize(s) {
 		},
 		"Knot (kn)": {
 			ru: "Узел (kn)"
+		},
+		"Foot per second (ft/s)": {
+			ru: "Фут в секунду (ft/s)"
 		},
 		"Speed of light in vacuum (c)": {
 			ru: "Скорости света в вакууме (c)"
