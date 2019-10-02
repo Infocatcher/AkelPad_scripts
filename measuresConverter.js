@@ -1896,7 +1896,6 @@ function convert(val, from, to) {
 	return fromBase(base, to);
 }
 var currencyRatios = {}; // code => ratio
-var maxRequestErrors = 3;
 var requestErrors = 0;
 function getCurrencyRatio(code) {
 	if(
@@ -1925,7 +1924,7 @@ function getCurrencyRatio(code) {
 	}
 	catch(e) {
 	}
-	if(++requestErrors > maxRequestErrors)
+	if(++requestErrors > updateMaxErrors)
 		offlineExpire = Infinity; // Disable update
 	if(currencyRatios[code]) // Return expired value
 		return currencyRatios[code].ratio;
