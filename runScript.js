@@ -253,6 +253,10 @@ function selectScriptDialog(modal) {
 				// Dialog caption
 				oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, dialogTitle);
 
+				//centerWindow(hWnd);
+				//centerWindow(hWnd, hMainWnd);
+				restoreWindowPosition(hWnd, hMainWnd);
+
 				hWndListBox = createWindowEx(
 					0x204,        //WS_EX_CLIENTEDGE|WS_EX_NOPARENTNOTIFY
 					"LISTBOX",    //lpClassName
@@ -377,10 +381,6 @@ function selectScriptDialog(modal) {
 
 				fillListBox();
 				updArgs();
-
-				//centerWindow(hWnd);
-				//centerWindow(hWnd, hMainWnd);
-				restoreWindowPosition(hWnd, hMainWnd);
 			break;
 			case 7: //WM_SETFOCUS
 				oSys.Call("user32::SetFocus", curName ? hWndArgs : hWndListBox);

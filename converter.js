@@ -1561,6 +1561,10 @@ function converterDialog(modal) {
 				// Dialog caption
 				oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, dialogTitle);
 
+				//centerWindow(hWnd);
+				//centerWindow(hWnd, hMainWnd);
+				restoreWindowPosition(hWnd, hMainWnd);
+
 				// GroupBox converter
 				hWndGroupType = createWindowEx(
 					0,            //dwExStyle
@@ -2130,10 +2134,6 @@ function converterDialog(modal) {
 				setHTMLOptions();
 				setBase64Options();
 				enableConvertButtons();
-
-				//centerWindow(hWnd);
-				//centerWindow(hWnd, hMainWnd);
-				restoreWindowPosition(hWnd, hMainWnd);
 
 				outputMinH = scale.y(outputMinH);
 				outputH = scale.y(outputH);

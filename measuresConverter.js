@@ -2440,6 +2440,9 @@ function converterDialog(modal) {
 			case 1: //WM_CREATE
 				setDialogTitle(hWnd);
 
+				//centerWindow(hWnd);
+				restoreWindowPosition(hWnd, hMainWnd);
+
 				var y = typeY;
 				for(var type in measures) {
 					if(!curType)
@@ -2787,8 +2790,6 @@ function converterDialog(modal) {
 				setRoundValue();
 
 				draw(curType, hWnd);
-				//centerWindow(hWnd);
-				restoreWindowPosition(hWnd, hMainWnd);
 				//oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_VALUE, 0);
 				oSys.Call("user32::SetFocus", hWndValue); // D'oh...
 
