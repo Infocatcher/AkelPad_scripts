@@ -68,16 +68,15 @@ var delimitersStop = {
 var maxLength = 2000;
 //== Settings end
 
-var optionsPath = WScript.ScriptFullName.replace(/(\.[^.]+)?$/, "-options$&");
-if(new ActiveXObject("Scripting.FileSystemObject").FileExists(optionsPath))
-	eval(AkelPad.ReadFile(optionsPath));
-
-var showPath = AkelPad.GetArgValue("showPath", false);
-
 var hMainWnd = AkelPad.GetMainWnd();
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var wsh = new ActiveXObject("WScript.Shell");
 
+var optionsPath = WScript.ScriptFullName.replace(/(\.[^.]+)?$/, "-options$&");
+if(fso.FileExists(optionsPath))
+	eval(AkelPad.ReadFile(optionsPath));
+
+var showPath = AkelPad.GetArgValue("showPath", false);
 if(hMainWnd)
 	openRelative();
 
