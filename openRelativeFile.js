@@ -72,9 +72,9 @@ var hMainWnd = AkelPad.GetMainWnd();
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var wsh = new ActiveXObject("WScript.Shell");
 
-var optionsFile = WScript.ScriptName.replace(/(\.[^.]+)?$/, "-options$&");
-if(fso.FileExists(AkelPad.GetAkelDir(5 /*ADTYPE_SCRIPTS*/) + "\\" + optionsFile))
-	AkelPad.Include("..\\" + optionsFile);
+var optionsPath = WScript.ScriptFullName.replace(/(\.[^.]+)?$/, "-options$&");
+if(fso.FileExists(optionsPath))
+	AkelPad.Include(".." + optionsPath.replace(/^.*(\\|\/)/, "$1"));
 
 var showPath = AkelPad.GetArgValue("showPath", false);
 if(hMainWnd)

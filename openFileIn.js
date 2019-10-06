@@ -151,10 +151,10 @@ var appsData = {
 };
 //== Settings end
 
-var optionsPath = WScript.ScriptFullName.replace(/(\.[^.]+)?$/, "-options$&");
 var fso = new ActiveXObject("Scripting.FileSystemObject");
+var optionsPath = WScript.ScriptFullName.replace(/(\.[^.]+)?$/, "-options$&");
 if(fso.FileExists(optionsPath))
-	eval(AkelPad.ReadFile(optionsPath));
+	AkelPad.Include(".." + optionsPath.replace(/^.*(\\|\/)/, "$1"));
 
 var allowMappings = AkelPad.GetArgValue("mappings", true);
 
