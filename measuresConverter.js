@@ -2790,7 +2790,7 @@ function converterDialog(modal) {
 				setRoundValue();
 
 				draw(curType, hWnd);
-				//oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_VALUE, 0);
+				//postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_VALUE, 0);
 				oSys.Call("user32::SetFocus", hWndValue); // D'oh...
 
 				// Force repaint: our optimizations to redraw only changed parts inside draw() function
@@ -2800,7 +2800,7 @@ function converterDialog(modal) {
 				//updateOnStartup && update(false, updateOnStartupReport);
 				if(updateOnStartup) {
 					var upd = function() {
-						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
+						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
 					};
 					var lib = AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/);
 					if(oSys.Call("kernel32::GetFileAttributes" + _TCHAR, lib + "\\timer.js") != -1)
@@ -2817,22 +2817,22 @@ function converterDialog(modal) {
 				var shift = shiftPressed();
 				if(wParam == 27 /*VK_ESCAPE*/) { // Escape
 					if(!calcNum._hasTipFor)
-						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
+						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
 					else
 						AkelPad.SendMessage(hWndValue, 0x1504 /*EM_HIDEBALLOONTIP*/, 0, 0);
 				}
 				else if(wParam == 13 /*VK_RETURN*/) {
 					if(ctrl || shift) // Ctrl+Enter, Shift+Enter
-						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_CONVERT, 0);
+						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CONVERT, 0);
 					else // Enter
-						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
+						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
 				}
 				else if(ctrl && shift && wParam == 85 /*U*/ || (shift || ctrl) && wParam == 115 /*VK_F4*/)
 					// Ctrl+Shift+U, Ctrl+F4, Shift+F4
-					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_SWITCH, 0);
+					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_SWITCH, 0);
 				else if(ctrl && wParam == 85 /*U*/ || wParam == 115 /*VK_F4*/)
 					// Ctrl+U, F4
-					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_SWITCH2, 0);
+					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_SWITCH2, 0);
 				else if(wParam == 112 /*VK_F1*/) // F1, Ctrl+F1, Shift+F1
 					navigate(hWndTypes, IDCTypes, curType, !ctrl && !shift);
 				else if(wParam == 113 /*VK_F2*/) // F2, Ctrl+F2, Shift+F2
@@ -2971,7 +2971,7 @@ function converterDialog(modal) {
 			break;
 			case 123: //WM_CONTEXTMENU
 				if(wParam == hWndSwitch)
-					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_SWITCH2, 0);
+					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_SWITCH2, 0);
 				else if(wParam == hWndUpdate)
 					update(true, 2);
 			break;
@@ -3435,7 +3435,7 @@ function converterDialog(modal) {
 					i = max;
 			}
 			AkelPad.SendMessage(hWndLB,  0x186 /*LB_SETCURSEL*/, i, 0);
-			oSys.Call("user32::PostMessage" + _TCHAR, hWndDialog, 273 /*WM_COMMAND*/, idc, 0);
+			postMessage(hWndDialog, 273 /*WM_COMMAND*/, idc, 0);
 			return;
 		}
 
@@ -3458,7 +3458,7 @@ function converterDialog(modal) {
 		}
 		if(!_sid)
 			_sid = down ? _first : _last;
-		oSys.Call("user32::PostMessage" + _TCHAR, hWndDialog, 273 /*WM_COMMAND*/, idcs[_sid], 0);
+		postMessage(hWndDialog, 273 /*WM_COMMAND*/, idcs[_sid], 0);
 	}
 	function updateCommand(force, onlyCurrent) {
 		if(onlyCurrent) {
@@ -3724,7 +3724,7 @@ function converterDialog(modal) {
 		oSys.Call("user32::DestroyWindow", hWnd);
 	}
 	function closeDialog() {
-		oSys.Call("user32::PostMessage" + _TCHAR, hWndDialog, 16 /*WM_CLOSE*/, 0, 0);
+		postMessage(hWndDialog, 16 /*WM_CLOSE*/, 0, 0);
 	}
 	function ctrlPressed() {
 		return Boolean(
@@ -3737,6 +3737,9 @@ function converterDialog(modal) {
 			oSys.Call("user32::GetAsyncKeyState", 160 /*VK_LSHIFT*/)
 			|| oSys.Call("user32::GetAsyncKeyState", 161 /*VK_RSHIFT*/)
 		);
+	}
+	function postMessage(hWnd, msg, wParam, lParam) {
+		oSys.Call("user32::PostMessage" + _TCHAR, hWnd, msg, wParam, lParam);
 	}
 
 	function Scale(hDC, hWnd) {
