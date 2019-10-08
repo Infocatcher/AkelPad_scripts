@@ -393,15 +393,15 @@ function selectScriptDialog(modal) {
 				//var alt = oSys.Call("user32::GetAsyncKeyState", 164 /*VK_LMENU*/)
 				//	|| oSys.Call("user32::GetAsyncKeyState", 165 /*VK_RMENU*/);
 				if(wParam == 27) //VK_ESCAPE
-					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
+					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
 				else if(wParam == 13) { //VK_RETURN
 					if(ctrl || shift) // Ctrl+Enter, Shift+Enter
-						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
+						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
 					else // Enter
-						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
+						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
 				}
 				else if(wParam == 114 /*VK_F3*/) // F3
-					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
+					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
 				else if(wParam == 112 /*VK_F1*/)
 					navigate(ctrl || shift);
 				else if(wParam == 113 /*VK_F2*/ || ctrl && wParam == 83 /*S*/) { // F2, Ctrl+S
@@ -411,7 +411,7 @@ function selectScriptDialog(modal) {
 					saveOptions = so;
 				}
 				else if(wParam == 115 /*VK_F4*/ || ctrl && wParam == 69 /*E*/) // F4, Ctrl+E
-					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_EDIT, 0);
+					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EDIT, 0);
 				else if(wParam == 116 /*VK_F5*/)
 					redrawListbox();
 
@@ -451,7 +451,7 @@ function selectScriptDialog(modal) {
 					case IDC_LISTBOX:
 						updArgs();
 						if((wParam >> 16 & 0xFFFF) == 2 /*LBN_DBLCLK*/)
-							oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
+							postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
 				}
 			break;
 			case 36: //WM_GETMINMAXINFO
@@ -639,7 +639,7 @@ function selectScriptDialog(modal) {
 				i = 0;
 		}
 		AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, i, 0);
-		oSys.Call("user32::PostMessage" + _TCHAR, hWndDialog, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
+		postMessage(hWndDialog, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
 	}
 
 	function restoreWindowPosition(hWnd, hWndParent) {
@@ -815,7 +815,10 @@ function selectScriptDialog(modal) {
 		oSys.Call("user32::DestroyWindow", hWnd);
 	}
 	function closeDialog() {
-		oSys.Call("user32::PostMessage" + _TCHAR, hWndDialog, 16 /*WM_CLOSE*/, 0, 0);
+		postMessage(hWndDialog, 16 /*WM_CLOSE*/, 0, 0);
+	}
+	function postMessage(hWnd, msg, wParam, lParam) {
+		oSys.Call("user32::PostMessage" + _TCHAR, hWnd, msg, wParam, lParam);
 	}
 	function Scale(hDC, hWnd) {
 		var hNewDC = hDC || oSys.Call("user32::GetDC", hWnd);
