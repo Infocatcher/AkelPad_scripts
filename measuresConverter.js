@@ -216,7 +216,9 @@ var measures = {
 		"Cubic mile": Math.pow(0.0254*12*3*1760, 3), // Math.pow(1609.344, 2)
 		"Cubic nautical mile": Math.pow(1852, 3),
 		"Gallon (USA)": Math.pow(1e-1, 3)*3.785411784,
-		"Barrel (USA)": Math.pow(1e-1, 3)*3.785411784*42
+		"Barrel (USA)": Math.pow(1e-1, 3)*3.785411784*42,
+		"Fluid pint (USA)":         Math.pow(1e-1, 3)/1e3*473.176473,
+		"Fluid ounce (USA, fl oz)": Math.pow(1e-1, 3)/1e3*29.5735295625
 	},
 	"Plane &angle": {
 		"Radian (rad)": 1,
@@ -1002,6 +1004,12 @@ function _localize(s) {
 		},
 		"Barrel (USA)": {
 			ru: "Баррель (США)"
+		},
+		"Fluid pint (USA)": {
+			ru: "Жидкая пинта (США)"
+		},
+		"Fluid ounce (USA, fl oz)": {
+			ru: "Жидкая унция (США, fl oz)"
 		},
 
 		"Plane &angle": {
