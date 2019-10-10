@@ -213,7 +213,7 @@ var measures = {
 		"Cubic inch (in³)": Math.pow(0.0254, 3),
 		"Cubic foot (ft³)": Math.pow(0.0254*12, 3),
 		"Cubic yard (yd³)": Math.pow(0.0254*12*3, 3),
-		"Cubic mile": Math.pow(0.0254*12*3*1760, 3), // Math.pow(1609.344, 2)
+		"Cubic mile": Math.pow(0.0254*12*3*1760, 3), // Math.pow(1609.344, 3)
 		"Cubic nautical mile": Math.pow(1852, 3),
 		"Gallon (USA)": Math.pow(1e-1, 3)*3.785411784,
 		"Barrel (USA)": Math.pow(1e-1, 3)*3.785411784*42,
@@ -225,6 +225,7 @@ var measures = {
 		"Degree (°)":     Math.PI/180,
 		"Arcminute (′)":  Math.PI/180/60,
 		"Arcsecond (\″)": Math.PI/180/60/60,
+		"Turn": Math.PI*2,
 		"Grad": Math.PI/200,
 		"Bearing": Math.PI/16
 	},
@@ -1026,6 +1027,9 @@ function _localize(s) {
 		},
 		"Arcsecond (\″)": {
 			ru: "Угловая секунда (\″)"
+		},
+		"Turn": {
+			ru: "Оборот"
 		},
 		"Grad": {
 			ru: "Град"
