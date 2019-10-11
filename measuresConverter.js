@@ -3577,8 +3577,10 @@ function converterDialog(modal) {
 				dialogTitle,
 				33 /*MB_OKCANCEL|MB_ICONQUESTION*/
 			) == 1 /*IDOK*/
-		)
+		) {
 			asyncUpdater.abort();
+			return false;
+		}
 		return true;
 	}
 	function onCodeUpdated(code) {
