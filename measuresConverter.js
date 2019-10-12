@@ -23,6 +23,7 @@
 //   F3, Ctrl+F3 (Shift+F3)            - Next/previous target measure
 //   F4, Ctrl+U                        - Switch values (left-click on "<=>" button)
 //   Ctrl+F4 (Shift+F4), Ctrl+Shift+U  - Switch measures (right-click on "<=>" button)
+//   Ctrl+Shift+C                      - Copy result
 //   F5                                - Update currencies data
 //   Ctrl+F5                           - Force update currencies data (right-click or Ctrl+click on "Update" button)
 //   Shift+F5                          - Force update data only for current currencies (double click on row)
@@ -2853,6 +2854,8 @@ function converterDialog(modal) {
 					navigate(hWndItems2, IDCItems2, curItem2, !ctrl && !shift, curItem);
 				else if(wParam == 116 /*VK_F5*/) // F5, Ctrl+F5, Shift+F5
 					updateCommand(ctrl || shift, shift);
+				else if(ctrl && shift && wParam == 67 /*C*/) // Ctrl+Shift+C
+					AkelPad.SetClipboardText(windowText(hWndResult));
 			break;
 			case 273: //WM_COMMAND
 				var idc = wParam & 0xffff;
