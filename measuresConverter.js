@@ -2355,7 +2355,8 @@ function converterDialog(modal) {
 	var IDC_SORT_BY_CODE   = 1013;
 	var IDC_UPDATE         = 1014;
 	var IDC_UPDATE_STARTUP = 1015;
-	var idcCntr            = 1016;
+	var IDC_COPY_RES       = 1016;
+	var idcCntr            = 1017;
 
 	// internal name => control ID
 	var IDCTypes  = {};
@@ -2855,7 +2856,7 @@ function converterDialog(modal) {
 				else if(wParam == 116 /*VK_F5*/) // F5, Ctrl+F5, Shift+F5
 					updateCommand(ctrl || shift, shift);
 				else if(ctrl && shift && wParam == 67 /*C*/) // Ctrl+Shift+C
-					AkelPad.SetClipboardText(windowText(hWndResult));
+					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_COPY_RES, 0);
 			break;
 			case 273: //WM_COMMAND
 				var idc = wParam & 0xffff;
@@ -2959,6 +2960,9 @@ function converterDialog(modal) {
 					break msgLoop;
 					case IDC_UPDATE_STARTUP:
 						update(false, updateOnStartupReport);
+					break msgLoop;
+					case IDC_COPY_RES: // Used message to override Ctrl+C
+						AkelPad.SetClipboardText(windowText(hWndResult));
 					break msgLoop;
 				}
 				if((wParam >> 16 & 0xFFFF) == 5 /*BN_DOUBLECLICKED*/) {
