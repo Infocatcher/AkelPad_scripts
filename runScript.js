@@ -75,17 +75,19 @@ function getPrefName(scriptName) {
 }
 
 // Read arguments:
-var scriptName   = AkelPad.GetArgValue("script", "");
+var scriptName   = AkelPad.GetArgValue("script", "") || getCurScript();
 var saveOptions  = AkelPad.GetArgValue("saveOptions", 1);
 var savePosition = AkelPad.GetArgValue("savePosition", true);
 var saveSize     = AkelPad.GetArgValue("saveSize", true);
 
-var filePath = AkelPad.GetEditFile(0);
-if(!scriptName && fso.GetParentFolderName(filePath).toLowerCase() == scriptsDir.toLowerCase())
-	scriptName = fso.GetFileName(filePath);
-
 selectScriptDialog();
 
+function getCurScript() {
+	var filePath = AkelPad.GetEditFile(0);
+	if(fso.GetParentFolderName(filePath).toLowerCase() == scriptsDir.toLowerCase())
+		return fso.GetFileName(filePath);
+	return "";
+}
 function isScript(path) {
 	return /\.(js|vbs)$/i.test(path);
 }
