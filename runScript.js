@@ -385,6 +385,15 @@ function selectScriptDialog(modal) {
 				updArgs();
 			break;
 			case 7: //WM_SETFOCUS
+				var scriptName = getCurScript();
+				if(scriptName) {
+					var indx = getIndexFromString(scriptName);
+					if(indx != undefined) {
+						curName = scriptName;
+						AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, indx, 0);
+						AkelPad.SendMessage(hWndDialog, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
+					}
+				}
 				oSys.Call("user32::SetFocus", curName ? hWndArgs : hWndListBox);
 			break;
 			case 256: //WM_KEYDOWN
