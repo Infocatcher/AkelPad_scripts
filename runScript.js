@@ -24,6 +24,8 @@
 //               =2               - always save options
 //   -savePosition=true           - allow store last window position
 //   -saveSize=true               - allow store last window size
+//   -selectOpenedScript=3        - select currently opened script in the list, sum of flags:
+//                                  1 - select on startup, 2 - select on window focus
 //   -script="someScript.js"      - select someScript.js in the list
 
 // Usage:
@@ -75,7 +77,8 @@ function getPrefName(scriptName) {
 }
 
 // Read arguments:
-var scriptName   = AkelPad.GetArgValue("script", "") || getCurScript();
+var selectScript = AkelPad.GetArgValue("selectOpenedScript", 3);
+var scriptName   = AkelPad.GetArgValue("script", "") || selectScript & 1 && getCurScript();
 var saveOptions  = AkelPad.GetArgValue("saveOptions", 1);
 var savePosition = AkelPad.GetArgValue("savePosition", true);
 var saveSize     = AkelPad.GetArgValue("saveSize", true);
@@ -385,7 +388,7 @@ function selectScriptDialog(modal) {
 				updArgs();
 			break;
 			case 7: //WM_SETFOCUS
-				var scriptName = getCurScript();
+				var scriptName = selectScript & 2 && getCurScript();
 				if(scriptName) {
 					var indx = getIndexFromString(scriptName);
 					if(indx != undefined) {
