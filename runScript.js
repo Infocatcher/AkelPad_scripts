@@ -197,6 +197,7 @@ function selectScriptDialog(modal) {
 	var selfRun = false;
 	var runned, runnedName;
 	var argsObj = {};
+	var startTime = new Date().getTime();
 
 	var hWndListBox, hWndGroupArgs, hWndArgs;
 	var hWndOK, hWndExec, hWndEdit, hWndCancel;
@@ -388,7 +389,9 @@ function selectScriptDialog(modal) {
 				updArgs();
 			break;
 			case 7: //WM_SETFOCUS
-				var scriptName = selectScript & 2 && getCurScript();
+				var scriptName = selectScript & 2
+					&& new Date().getTime() - startTime > 250 // Don't handle twice at startup
+					&& getCurScript();
 				if(scriptName) {
 					var indx = getIndexFromString(scriptName);
 					if(indx != undefined) {
