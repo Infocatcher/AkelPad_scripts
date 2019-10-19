@@ -3697,12 +3697,8 @@ function converterDialog(modal) {
 		return str;
 	}
 	function getIndexFromString(str) {
-		for(var i = 0, l = AkelPad.SendMessage(hWndListBox, 0x18B /*LB_GETCOUNT*/, 0, 0); i < l; ++i) {
-			var s = getStringFromIndex(i);
-			if(s == str)
-				return i;
-		}
-		return undefined;
+		// Note: not case sensitive!
+		return AkelPad.SendMessage(hWndListBox, 0x1A2 /*LB_FINDSTRINGEXACT*/, -1, str);
 	}
 
 	function windowText(hWnd, pText) {
