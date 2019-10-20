@@ -3744,16 +3744,13 @@ function converterDialog(modal) {
 		postMessage(hWndDialog, 16 /*WM_CLOSE*/, 0, 0);
 	}
 	function ctrlPressed() {
-		return Boolean(
-			oSys.Call("user32::GetAsyncKeyState", 162 /*VK_LCONTROL*/)
-			|| oSys.Call("user32::GetAsyncKeyState", 163 /*VK_RCONTROL*/)
-		);
+		return keyPressed(162 /*VK_LCONTROL*/) || keyPressed(163 /*VK_RCONTROL*/);
 	}
 	function shiftPressed() {
-		return Boolean(
-			oSys.Call("user32::GetAsyncKeyState", 160 /*VK_LSHIFT*/)
-			|| oSys.Call("user32::GetAsyncKeyState", 161 /*VK_RSHIFT*/)
-		);
+		return keyPressed(160 /*VK_LSHIFT*/) || keyPressed(161 /*VK_RSHIFT*/);
+	}
+	function keyPressed(key) {
+		return !!oSys.Call("user32::GetAsyncKeyState", key);
 	}
 	function postMessage(hWnd, msg, wParam, lParam) {
 		oSys.Call("user32::PostMessage" + _TCHAR, hWnd, msg, wParam, lParam);
