@@ -45,6 +45,7 @@
 //                                    0 => always use listboxes
 //   -disableRadios=true           - (see -maxHeight) forbid to select the same on left and right radio buttons
 //   -showLastUpdate=2             - 0 - don't show, 1 - show only if selected currencies, 2 - always show
+//   -useSelected=true             - pick up selected number or expression
 //   -from="Pound"                 - set source measure (you should use English names!)
 //   -to="Kilogram"                - set target measure (you should use English names!)
 //   -dialog=false                 - don't show dialog
@@ -1829,6 +1830,7 @@ var roundMeasures         = getArg("roundMeasures");
 var roundCurrencies       = getArg("roundCurrencies");
 var dlgMaxH               = getArg("maxHeight", 0); // -1 => no resize
 var disableRadios         = getArg("disableRadios", false);
+var useSelected           = getArg("useSelected", true);
 var showLastUpdate        = getArg("showLastUpdate", 2);
 
 var from   = getArg("from");
@@ -2212,7 +2214,7 @@ Number.prototype.toFixed = function(r) {
 };
 
 if(hMainWnd) {
-	var num = AkelPad.GetSelText();
+	var num = useSelected ? AkelPad.GetSelText() : "";
 	var _num = calcNum(num, !dialog);
 	if(!dialog && _num != undefined && curType && curItem && curItem2) {
 		saveOffline && loadOfflineCurrencyData(true);
