@@ -3015,10 +3015,12 @@ function converterDialog(modal) {
 		if(showLastUpdate > 1 || showLastUpdate == 1 && curType == "&Currency") {
 			var lastUpdate = getLastUpdate();
 			var lastUpdateStr;
-			if(lastUpdate == undefined || lastUpdate == Infinity)
+			if(asyncUpdater.activeRequests)
+				lastUpdateStr = _localize("now…");
+			else if(lastUpdate == undefined || lastUpdate == Infinity)
 				lastUpdateStr = _localize("n/a");
 			else if(lastUpdate == 0)
-				lastUpdateStr = _localize(asyncUpdater.activeRequests ? "now…" : "never");
+				lastUpdateStr = _localize("never");
 			else
 				lastUpdateStr = new Date(lastUpdate).toLocaleString();
 			caption += _localize(" [last update: %t]").replace("%t", lastUpdateStr);
