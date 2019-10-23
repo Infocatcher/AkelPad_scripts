@@ -2955,7 +2955,9 @@ function converterDialog(modal) {
 						draw(curType, hWnd);
 					break msgLoop;
 					case IDC_UPDATE:
-						if(!cancelUpdate()) {
+						if(asyncUpdater.activeRequests)
+							cancelUpdate();
+						else {
 							var shift = shiftPressed();
 							updateCommand(shift || ctrlPressed(), shift);
 						}
