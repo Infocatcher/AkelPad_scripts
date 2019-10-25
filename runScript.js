@@ -87,7 +87,7 @@ selectScriptDialog();
 
 function getCurScript() {
 	var filePath = AkelPad.GetEditFile(0);
-	if(fso.GetParentFolderName(filePath).toLowerCase() == scriptsDir.toLowerCase())
+	if(isScript(filePath) && fso.GetParentFolderName(filePath).toLowerCase() == scriptsDir.toLowerCase())
 		return fso.GetFileName(filePath);
 	return "";
 }
@@ -129,7 +129,7 @@ function selectScriptDialog(modal) {
 	)
 		return;
 
-	var curName = isScript(scriptName) && scriptName;
+	var curName = scriptName || "";
 
 	var dlgX, dlgY;
 	var lastW, lastH;
