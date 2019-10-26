@@ -431,9 +431,6 @@ function selectScriptDialog(modal) {
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EDIT, 0);
 				else if(wParam == 116 /*VK_F5*/)
 					redrawListbox();
-
-				//else if(wParam != 16 /*VK_SHIFT*/ && wParam != 17 /*VK_CONTROL*/ && wParam != 18 /*VK_MENU*/)
-				//	AkelPad.MessageBox(hWnd, wParam, dialogTitle, 0 /*MB_OK*/);
 			break;
 			case 273: //WM_COMMAND
 				var idc = wParam & 0xffff;
@@ -595,16 +592,6 @@ function selectScriptDialog(modal) {
 		fillListBox();
 
 		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, true, 0);
-		//var lpRect = AkelPad.MemAlloc(16); //sizeof(RECT)
-		//if(lpRect) {
-		//	var rc = getWindowRect(hWndListBox, hWndDialog);
-		//	AkelPad.MemCopy(lpRect,      rc.left,   3 /*DT_DWORD*/);
-		//	AkelPad.MemCopy(lpRect + 4,  rc.top,    3 /*DT_DWORD*/);
-		//	AkelPad.MemCopy(lpRect + 8,  rc.right,  3 /*DT_DWORD*/);
-		//	AkelPad.MemCopy(lpRect + 12, rc.bottom, 3 /*DT_DWORD*/);
-		//	oSys.Call("user32::InvalidateRect", hWndDialog, lpRect, true);
-		//	AkelPad.MemFree(lpRect);
-		//}
 		oSys.Call("user32::InvalidateRect", hWndListBox, 0, true);
 
 		updArgs();
