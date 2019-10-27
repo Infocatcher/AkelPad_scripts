@@ -541,6 +541,9 @@ function selectScriptDialog(modal) {
 			var fName = AkelPad.MemRead(_PtrAdd(lpFindData, 44 /*offsetof(WIN32_FIND_DATAW, cFileName)*/), _TSTR);
 			if(fName == "." || fName == "..")
 				continue;
+			var dwAttributes = AkelPad.MemRead(_PtrAdd(lpFindData, 0) /*offsetof(WIN32_FIND_DATAW, dwAttributes)*/, 3 /*DT_DWORD*/);
+			if(dwAttributes & 0x10 /*FILE_ATTRIBUTE_DIRECTORY*/)
+				continue;
 			if(isScript(fName))
 				files[files.length] = fName;
 		}
