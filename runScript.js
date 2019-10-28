@@ -385,7 +385,7 @@ function selectScriptDialog(modal) {
 				if(lastW != undefined || lastH != undefined)
 					resizeDialog(hWnd, lastW || dlgW, lastH || dlgH);
 
-				fillListBox();
+				fillListBox(hWnd);
 				updArgs();
 			break;
 			case 7: //WM_SETFOCUS
@@ -519,7 +519,7 @@ function selectScriptDialog(modal) {
 		return 0;
 	}
 
-	function fillListBox() {
+	function fillListBox(hWndDialog) {
 		//var t = new Date().getTime();
 		var files = [];
 		// Foollowing is very slow (especially on slow devices like USB flash):
@@ -550,7 +550,8 @@ function selectScriptDialog(modal) {
 		while(oSys.Call("kernel32::FindNextFile" + _TCHAR, hSearch, lpFindData));
 		oSys.Call("kernel32::FindClose", hSearch);
 		AkelPad.MemFree(lpFindData);
-		//WScript.Echo(new Date().getTime() - t);
+		//var dt = new Date().getTime() - t;
+		//oSys.Call("user32::SetWindowText" + _TCHAR, hWndDialog, dialogTitle + " [" + dt + " ms]");
 		//files.sort();
 
 		var lpStr = AkelPad.MemAlloc(256*_TSIZE);
@@ -592,7 +593,7 @@ function selectScriptDialog(modal) {
 		var maxIndx = AkelPad.SendMessage(hWndListBox,  0x18B /*LB_GETCOUNT*/, 0, 0) - 1;
 		for(var i = maxIndx; i >= 0; --i)
 			AkelPad.SendMessage(hWndListBox,  0x182 /*LB_DELETESTRING*/, i, 0);
-		fillListBox();
+		fillListBox(hWndDialog);
 
 		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, true, 0);
 		oSys.Call("user32::InvalidateRect", hWndListBox, 0, true);
