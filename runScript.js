@@ -590,9 +590,7 @@ function selectScriptDialog(modal) {
 
 		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
 
-		var maxIndx = AkelPad.SendMessage(hWndListBox,  0x18B /*LB_GETCOUNT*/, 0, 0) - 1;
-		for(var i = maxIndx; i >= 0; --i)
-			AkelPad.SendMessage(hWndListBox,  0x182 /*LB_DELETESTRING*/, i, 0);
+		AkelPad.SendMessage(hWndListBox,  0x184 /*LB_RESETCONTENT*/, 0, 0);
 		fillListBox(hWndDialog);
 
 		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, true, 0);
