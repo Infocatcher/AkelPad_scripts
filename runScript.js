@@ -573,7 +573,16 @@ function selectScriptDialog(modal) {
 			}
 
 			AkelPad.MemCopy(lpStr, name.substr(0, 255), _TSTR);
-			AkelPad.SendMessage(hWndListBox,  0x180 /*LB_ADDSTRING*/, 0, lpStr);
+			var pos = AkelPad.SendMessage(hWndListBox,  0x180 /*LB_ADDSTRING*/, 0, lpStr);
+			if(pos < 0) {
+				AkelPad.MessageBox(
+					hWndDialog,
+					"LB_ADDSTRING failed! Error: " + (({"-1": "LB_ERR", "-2": "LB_ERRSPACE"})[pos] || pos),
+					dialogTitle,
+					16 /*MB_ICONERROR*/
+				);
+				break;
+			}
 		}
 		AkelPad.MemFree(lpStr);
 		read && oSet.End();
