@@ -3017,7 +3017,7 @@ function converterDialog(modal) {
 		if(showLastUpdate > 1 || showLastUpdate == 1 && curType == "&Currency") {
 			var lastUpdate = getLastUpdate();
 			var lastUpdateStr;
-			if(asyncUpdater.activeRequests)
+			if(asyncUpdater.activeRequests && (curType != "&Currency" || !lastUpdate))
 				lastUpdateStr = _localize("now…");
 			else if(lastUpdate == undefined || lastUpdate == Infinity)
 				lastUpdateStr = _localize("n/a");
