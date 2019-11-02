@@ -1784,6 +1784,7 @@ var BASE_CURRENCY = "USD";
 var ROUND_OFF = 0xffff;
 var ROUND_DEFAULT = 2;
 var ROUND_MAX = 20; // Built-in Number.prototype.toFixed() throws on numbers > 20
+var CURRENCY = "&Currency";
 
 function getDefaultCurrencyData() {
 	if(!saveOffline)
@@ -2157,7 +2158,7 @@ var asyncUpdater = {
 };
 function updateCurrencyDataAsync(force, onStart, onProgress, onComplete, maskInclude) {
 	var codes = [];
-	var currencies = measures["&Currency"];
+	var currencies = measures[CURRENCY];
 	var now = new Date().getTime();
 	for(var currency in currencies) {
 		var code = currencies[currency];
@@ -2923,7 +2924,7 @@ function converterDialog(modal) {
 					case IDC_LISTBOX:
 					case IDC_LISTBOX2:
 						if((wParam >> 16 & 0xFFFF) == 2 /*LBN_DBLCLK*/) {
-							if(curType == "&Currency")
+							if(curType == CURRENCY)
 								updateCommand(true, true);
 							break msgLoop;
 						}
@@ -2932,7 +2933,7 @@ function converterDialog(modal) {
 						else
 							curItem2 = lbStrings[AkelPad.SendMessage(hWndListBox2, 0x188 /*LB_GETCURSEL*/, 0, 0)];
 						convertGUI();
-						if(curType == "&Currency")
+						if(curType == CURRENCY)
 							setDialogTitle(hWnd);
 					break msgLoop;
 					case IDC_ROUND:
@@ -2970,7 +2971,7 @@ function converterDialog(modal) {
 					break msgLoop;
 				}
 				if((wParam >> 16 & 0xFFFF) == 5 /*BN_DOUBLECLICKED*/) {
-					if(curType == "&Currency")
+					if(curType == CURRENCY)
 						updateCommand(true, true);
 					break;
 				}
@@ -3014,10 +3015,10 @@ function converterDialog(modal) {
 
 	function setDialogTitle(hWnd) {
 		var caption = dialogTitle;
-		if(showLastUpdate > 1 || showLastUpdate == 1 && curType == "&Currency") {
+		if(showLastUpdate > 1 || showLastUpdate == 1 && curType == CURRENCY) {
 			var lastUpdate = getLastUpdate();
 			var lastUpdateStr;
-			if(asyncUpdater.activeRequests && (curType != "&Currency" || !lastUpdate))
+			if(asyncUpdater.activeRequests && (curType != CURRENCY || !lastUpdate))
 				lastUpdateStr = _localize("now…");
 			else if(lastUpdate == undefined || lastUpdate == Infinity)
 				lastUpdateStr = _localize("n/a");
@@ -3033,12 +3034,12 @@ function converterDialog(modal) {
 		windowText(hWnd || hWndDialog, caption);
 	}
 	function getLastUpdate() {
-		var selected = curType == "&Currency" && curItem && curItem2
+		var selected = curType == CURRENCY && curItem && curItem2
 			? [curItem, curItem2]
-			: selectedItems["&Currency"];
+			: selectedItems[CURRENCY];
 		if(!selected)
 			return undefined;
-		var currencies = measures["&Currency"];
+		var currencies = measures[CURRENCY];
 		return Math.min(
 			getLastUpdateForCurrency(currencies[selected[0]]),
 			getLastUpdateForCurrency(currencies[selected[1]])
@@ -3083,7 +3084,7 @@ function converterDialog(modal) {
 		var dlgH = Math.max(dlgMinH, y + dh);
 		var useListboxes = dlgH > (dlgMaxH == -1 ? dlgMinH : dlgMaxH);
 
-		var isCurrency = type == "&Currency";
+		var isCurrency = type == CURRENCY;
 		if(!useListboxes && (isCurrency || sortMeasures)) {
 			var sortArr = [];
 			for(var measure in mo) {
@@ -3297,7 +3298,7 @@ function converterDialog(modal) {
 			oSys.Call("user32::InvalidateRect", hWndDialog, lpRect, true);
 
 			// Round and sort controls
-			if(isCurrency + (curType == "&Currency") == 1 || type == curType) {
+			if(isCurrency + (curType == CURRENCY) == 1 || type == curType) {
 				AkelPad.MemCopy(_PtrAdd(lpRect,  0), scale.x(msr2X + msrW),     3 /*DT_DWORD*/);
 				AkelPad.MemCopy(_PtrAdd(lpRect,  4), scale.y(12 + btnH*3 + 13), 3 /*DT_DWORD*/);
 				AkelPad.MemCopy(_PtrAdd(lpRect,  8), scale.x(dlgW),             3 /*DT_DWORD*/);
@@ -3378,7 +3379,7 @@ function converterDialog(modal) {
 		return Math.max(-ROUND_MAX, Math.min(ROUND_MAX, roundVal));
 	}
 	function setRoundValue() {
-		var roundVal = curType == "&Currency" ? roundCurrencies : roundMeasures;
+		var roundVal = curType == CURRENCY ? roundCurrencies : roundMeasures;
 		var dontRound = roundVal == ROUND_OFF;
 		checked(hWndRound, !dontRound);
 		roundVal = validateRoundValue(roundVal);
@@ -3395,7 +3396,7 @@ function converterDialog(modal) {
 				setEditText(hWndRoundValue, "" + r);
 			}
 		}
-		if(curType == "&Currency")
+		if(curType == CURRENCY)
 			roundCurrencies = r;
 		else
 			roundMeasures = r;
@@ -3526,7 +3527,7 @@ function converterDialog(modal) {
 				onCodeUpdated(code);
 				if(btnLabel && !pendingUpdates.length) {
 					windowText(hWndUpdate, btnLabel);
-					//if(curType != "&Currency")
+					//if(curType != CURRENCY)
 					setDialogTitle();
 					saveOffline && saveOfflineCurrencyData(true);
 				}
@@ -3597,7 +3598,7 @@ function converterDialog(modal) {
 		return true;
 	}
 	function onCodeUpdated(code) {
-		if(code && curType == "&Currency" && (measures[curType][curItem] == code || measures[curType][curItem2] == code)) {
+		if(code && curType == CURRENCY && (measures[curType][curItem] == code || measures[curType][curItem2] == code)) {
 			convertGUI();
 			setDialogTitle();
 		}
@@ -3879,7 +3880,7 @@ function prepareExpression(str) {
 		.replace(/([.,]|[-+*\/\s](\([-\s]?)*)\s*$/, ""); // Looks like non-terminated expression (e.g. "2+2*")
 }
 function numToStr(n) {
-	var roundVal = curType == "&Currency" ? roundCurrencies : roundMeasures;
+	var roundVal = curType == CURRENCY ? roundCurrencies : roundMeasures;
 	if(roundVal != ROUND_OFF && roundVal != undefined)
 		n = n.toFixed(roundVal);
 	else
