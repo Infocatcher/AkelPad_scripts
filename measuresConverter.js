@@ -1948,9 +1948,8 @@ function getCurrencyRatio(code) {
 }
 var missingCurrencies = {
 	"exchange-rates.org": [
-		"ALL", "AWG", "BTN", "EEK", "FKP", "GNF", "GYD", "KGS", "KMF", "KPW",
-		"LRD", "MKD", "MNT", "MRO", "MVR", "NAD", "PGK", "SBD", "SDG", "SHP",
-		"SKK", "SLL", "STD", "SVC", "TOP", "UZS", "VUV", "WST", "YER"
+		"AWG", "BTN", "BYR", "EEK", "FKP", "GYD", "KMF", "KPW", "LRD", "LTL", "LVL", "MNT", "MRO",
+		"MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC", "TOP", "VUV", "WST", "ZMK", "ZWD"
 	],
 	"fxexchangerate.com": []
 };
