@@ -69,7 +69,7 @@
 ) {
 
 var measures = {
-	//~ todo: http://en.wikipedia.org/wiki/Conversion_of_units
+	//~ todo: https://en.wikipedia.org/wiki/Conversion_of_units
 	"Prefi&xes": {
 		"Yocto (y)": 1e-24,
 		"Zepto (z)": 1e-21,
@@ -311,7 +311,7 @@ var measures = {
 	},
 	"&Currency": {
 		// Sorted by code (in each "section")
-		// http://exchange-rates.org/AddCustomContent/RatesTable/Preview/RT000B8OF
+		// https://exchange-rates.org/AddCustomContent/RatesTable/Preview/RT000B8OF
 		"United Arab Emirates Dirham":   "AED",
 		"Armenian Dram":                 "AMD",
 		"Netherlands Antillian Guilder": "ANG",
@@ -430,7 +430,7 @@ var measures = {
 		"Zambian Kwacha":                "ZMK",
 		"Zimbabwe Dollar":               "ZWD",
 
-		// http://www.fxexchangerate.com/currency-converter-widget.html
+		// https://www.fxexchangerate.com/currency-converter-widget.html
 		"Albanian Lek":                  "ALL",
 		"Aruba Florin":                  "AWG",
 		"Bhutan Ngultrum":               "BTN",
@@ -578,8 +578,8 @@ var measures = {
 		"Zimbabwe dollar":               "ZWD",
 		*/
 
-		// http://bitcoincharts.com/about/markets-api/
-		// + http://bitcoincharts.com/markets/currencies/
+		// https://bitcoincharts.com/about/markets-api/
+		// + https://bitcoincharts.com/markets/currencies/
 		"Bitcoin": "BTC"
 	}
 };
@@ -1245,7 +1245,7 @@ function _localize(s) {
 		"&Currency": {
 			ru: "Вал&юта"
 		},
-		// http://ru.exchange-rates.org/AddCustomContent/RatesTable/Preview/RT0007HHO
+		// https://ru.exchange-rates.org/AddCustomContent/RatesTable/Preview/RT0007HHO
 		"United Arab Emirates Dirham": {
 			ru: "ОАЭ дирхам"
 		},
@@ -1597,7 +1597,7 @@ function _localize(s) {
 		"Zimbabwe Dollar": {
 			ru: "Зимбабве доллар"
 		},
-		// http://www.fxexchangerate.com/preview.php?ws=&fm=EUR&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=ru&tz=0s&wh=200x250
+		// https://www.fxexchangerate.com/preview.php?ws=&fm=EUR&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=ru&tz=0s&wh=200x250
 		"Albanian Lek": {
 			ru: "Албанский лек"
 		},
@@ -1963,27 +1963,27 @@ function available(server, code) {
 }
 function getRequestURL(code) {
 	if(code == "BTC")
-		return "http://api.bitcoincharts.com/v1/weighted_prices.json?" + new Date().getTime();
+		return "https://api.bitcoincharts.com/v1/weighted_prices.json?" + new Date().getTime();
 	if(
 		available("fxexchangerate.com", code)
 		&& (preferFXExchangeRate || !available("exchange-rates.org", code))
 	) {
-		//return "http://www.fxexchangerate.com/preview.php?ws=&fm=" + code + "&ft=" + BASE_CURRENCY
+		//return "https://www.fxexchangerate.com/preview.php?ws=&fm=" + code + "&ft=" + BASE_CURRENCY
 		//	+ "&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250";
-		return "http://www.fxexchangerate.com/getdata.php?fxfrom="
+		return "https://www.fxexchangerate.com/getdata.php?fxfrom="
 			+ code + "&fxto=" + BASE_CURRENCY + "&amount=1"
 			+ "&" + new Date().getTime();
 	}
-	return "http://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
+	return "https://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
 }
 function getRatioFromResponse(response) {
-	// http://exchange-rates.org/converter/EUR/USD/1/N
+	// https://exchange-rates.org/converter/EUR/USD/1/N
 	// <span id="ctl00_M_lblToAmount">0.0003295</span>
 	if(/<span id="ctl00_M_lblToAmount">([^<>]+)<\/span>/.test(response))
 		return validateRatio(stringToNumber(RegExp.$1));
 
 	if(response.charAt(0) == "{") { // Looks like JSON
-		// http://api.bitcoincharts.com/v1/weighted_prices.json
+		// https://api.bitcoincharts.com/v1/weighted_prices.json
 		var btcPattern = getRatioFromResponse.btcPattern || (
 			getRatioFromResponse.btcPattern = new RegExp(
 				// "USD": {"7d": "860.00", "30d": "732.82", "24h": "898.98"}
@@ -2002,12 +2002,12 @@ function getRatioFromResponse(response) {
 		}
 	}
 
-	// http://www.fxexchangerate.com/preview.php?ws=&fm=EUR&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250
+	// https://www.fxexchangerate.com/preview.php?ws=&fm=EUR&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250
 	// <td align="center" id="resultTD"  style="font-weight:bold;font-size:26px;color:#2D6AB4;">0.08629</td>
 	//if(/\sid="resultTD"\s+\w+\s*=\s*"[^"]+"\s*>([^<>]+)</i.test(response))
 	//	return validateRatio(stringToNumber(RegExp.$1));
 
-	// http://www.fxexchangerate.com/getdata.php?fxfrom=EUR&fxto=USD&amount=1
+	// https://www.fxexchangerate.com/getdata.php?fxfrom=EUR&fxto=USD&amount=1
 	return validateRatio(stringToNumber(response));
 }
 function stringToNumber(s) {
