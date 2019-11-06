@@ -82,6 +82,7 @@ var scriptName   = AkelPad.GetArgValue("script", "") || selectScript & 1 && getC
 var saveOptions  = AkelPad.GetArgValue("saveOptions", 1);
 var savePosition = AkelPad.GetArgValue("savePosition", true);
 var saveSize     = AkelPad.GetArgValue("saveSize", true);
+var argsLines    = AkelPad.GetArgValue("argsLines", 1);
 
 selectScriptDialog();
 
@@ -103,7 +104,8 @@ function expandArgs(args) {
 			.replace(/%d/ig, fso.GetParentFolderName(file))
 			.replace(/%a/ig, AkelPad.GetAkelDir())
 			.replace(/%([^%]|$)/g, "$1")
-			.replace(/%%/g, "%");
+			.replace(/%%/g, "%")
+			.replace(/\r\n?|\n\r?/g, " ");
 	};
 	return expandArgs(args);
 }
@@ -181,9 +183,15 @@ function selectScriptDialog(modal) {
 	function saveArgs(name, args) {
 		var prefName = getPrefName(name);
 		if(args)
-			oSet.Write(prefName, 3 /*PO_STRING*/, args);
+			oSet.Write(prefName, 3 /*PO_STRING*/, argsToStorage(args));
 		else
 			oSet.Delete(prefName);
+	}
+	function argsToStorage(args) {
+		return args.replace(/\r\n?|\n\r?/g, " -<BR> ");
+	}
+	function argsFromStorage(str) {
+		return str.replace(/ -<BR> /g, argsLines > 1 ? "\r\n" : " ");
 	}
 
 	var IDC_STATIC  = -1;
@@ -209,7 +217,8 @@ function selectScriptDialog(modal) {
 	var btnH = 23;
 	var btnSep = 4;
 
-	var gbH = 48;
+	var argsH = 21 + (argsLines > 1 ? 14*(argsLines - 1) : 0);
+	var gbH = 27 + argsH;
 	var gbW = lbW + 12 + btnW;
 
 	var dlgW = 12 + lbW + 12 + btnW + 12;
@@ -297,15 +306,18 @@ function selectScriptDialog(modal) {
 				setWindowFontAndText(hWndGroupArgs, hGuiFont, _localize("&Arguments"));
 
 				// Edit: arguments
+				var ml = argsLines > 1
+					? 0x0040|0x0004|0x1000 // ES_AUTOVSCROLL|ES_MULTILINE|ES_WANTRETURN
+					: 0;
 				hWndArgs = createWindowEx(
 					0x200,              //WS_EX_CLIENTEDGE
 					"EDIT",             //lpClassName
 					0,                  //lpWindowName
-					0x50010080,         //WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_AUTOHSCROLL
+					0x50010080|ml,      //WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_AUTOHSCROLL
 					12 + 8,             //x
 					12 + lbH + 12 + 18, //y
 					gbW - 8*2,          //nWidth
-					21,                 //nHeight
+					argsH,                 //nHeight
 					hWnd,               //hWndParent
 					IDC_ARGS,           //ID
 					hInstanceDLL,       //hInstance
@@ -412,9 +424,9 @@ function selectScriptDialog(modal) {
 				if(wParam == 27) //VK_ESCAPE
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
 				else if(wParam == 13) { //VK_RETURN
-					if(ctrl || shift) // Ctrl+Enter, Shift+Enter
+					if(ctrl || shift && argsLines <= 1) // Ctrl+Enter, Shift+Enter
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
-					else // Enter
+					else if(!ctrl && !shift) // Enter
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
 				}
 				else if(wParam == 114 /*VK_F3*/) // F3
@@ -565,7 +577,7 @@ function selectScriptDialog(modal) {
 			var name = files[i];
 
 			if(read) {
-				var args = oSet.Read(getPrefName(name), 3 /*PO_STRING*/);
+				var args = argsFromStorage(oSet.Read(getPrefName(name), 3 /*PO_STRING*/) || "");
 				var oldArgs = oSet.Read("lastArgs-" + encodeURIComponent(name), 3 /*PO_STRING*/);
 				if(oldArgs != undefined)
 					_cleanup[name] = oldArgs;
