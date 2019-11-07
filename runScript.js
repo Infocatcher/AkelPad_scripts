@@ -84,6 +84,8 @@ var savePosition = AkelPad.GetArgValue("savePosition", true);
 var saveSize     = AkelPad.GetArgValue("saveSize", true);
 var argsLines    = AkelPad.GetArgValue("argsLines", 1);
 
+var argsMultiline = argsLines > 1;
+
 selectScriptDialog();
 
 function getCurScript() {
@@ -191,7 +193,7 @@ function selectScriptDialog(modal) {
 		return args.replace(/\r\n?|\n\r?/g, " -<BR> ");
 	}
 	function argsFromStorage(str) {
-		return str.replace(/ -<BR> /g, argsLines > 1 ? "\r\n" : " ");
+		return str.replace(/ -<BR> /g, argsMultiline ? "\r\n" : " ");
 	}
 
 	var IDC_STATIC  = -1;
@@ -217,7 +219,7 @@ function selectScriptDialog(modal) {
 	var btnH = 23;
 	var btnSep = 4;
 
-	var argsH = 21 + (argsLines > 1 ? 14*(argsLines - 1) : 0);
+	var argsH = 21 + (argsMultiline ? 14*(argsLines - 1) : 0);
 	var gbH = 27 + argsH;
 	var gbW = lbW + 12 + btnW;
 
@@ -306,7 +308,7 @@ function selectScriptDialog(modal) {
 				setWindowFontAndText(hWndGroupArgs, hGuiFont, _localize("&Arguments"));
 
 				// Edit: arguments
-				var ml = argsLines > 1
+				var ml = argsMultiline
 					? 0x0040|0x0004|0x1000 // ES_AUTOVSCROLL|ES_MULTILINE|ES_WANTRETURN
 					: 0;
 				hWndArgs = createWindowEx(
@@ -424,7 +426,7 @@ function selectScriptDialog(modal) {
 				if(wParam == 27) //VK_ESCAPE
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
 				else if(wParam == 13) { //VK_RETURN
-					if(ctrl || shift && argsLines <= 1) // Ctrl+Enter, Shift+Enter
+					if(ctrl || shift && !argsMultiline) // Ctrl+Enter, Shift+Enter
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
 					else if(!ctrl && !shift) // Enter
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
