@@ -309,7 +309,7 @@ function selectScriptDialog(modal) {
 
 				// Edit: arguments
 				var ml = argsMultiline
-					? 0x0040|0x0004|0x1000 // ES_AUTOVSCROLL|ES_MULTILINE|ES_WANTRETURN
+					? 0x201044 // ES_MULTILINE|ES_WANTRETURN|WS_VSCROLL|ES_AUTOVSCROLL
 					: 0;
 				hWndArgs = createWindowEx(
 					0x200,              //WS_EX_CLIENTEDGE
