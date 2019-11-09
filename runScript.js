@@ -203,6 +203,8 @@ function selectScriptDialog(modal) {
 	var IDC_EXEC    = 1003;
 	var IDC_EDIT    = 1004;
 	var IDC_CANCEL  = 1005;
+	var IDC_ARG_INC = 1006;
+	var IDC_ARG_DEC = 1007;
 
 	var selfRun = false;
 	var runned, runnedName;
@@ -211,6 +213,7 @@ function selectScriptDialog(modal) {
 
 	var hWndListBox, hWndGroupArgs, hWndArgs;
 	var hWndOK, hWndExec, hWndEdit, hWndCancel;
+	var hWndArgsInc, hWndArgsDec;
 
 	var lbW = 260;
 	var lbH = 320;
@@ -222,6 +225,10 @@ function selectScriptDialog(modal) {
 	var argsH = 21 + (argsMultiline ? 14*(argsLines - 1) : 0);
 	var gbH = 27 + argsH;
 	var gbW = lbW + 12 + btnW;
+
+	var incDecX = gbW - 14;
+	var incDecW = 16;
+	var incDecH = 16;
 
 	var dlgW = 12 + lbW + 12 + btnW + 12;
 	var dlgH = 12 + lbH + 12 + gbH + 12;
@@ -307,6 +314,40 @@ function selectScriptDialog(modal) {
 				);
 				setWindowFontAndText(hWndGroupArgs, hGuiFont, _localize("&Arguments"));
 
+				// Arguments lines increase button window
+				hWndArgsInc = createWindowEx(
+					0,                     //dwExStyle
+					"BUTTON",              //lpClassName
+					0,                     //lpWindowName
+					0x50010000,            //WS_VISIBLE|WS_CHILD|WS_TABSTOP
+					incDecX - incDecW - 4, //x
+					12 + lbH + 10,         //y
+					incDecW,               //nWidth
+					incDecH,               //nHeight
+					hWnd,                  //hWndParent
+					IDC_ARG_INC,           //ID
+					hInstanceDLL,          //hInstance
+					0                      //lpParam
+				);
+				setWindowFontAndText(hWndArgsInc, hGuiFont, "+");
+
+				// Arguments lines decrease button window
+				hWndArgsDec = createWindowEx(
+					0,             //dwExStyle
+					"BUTTON",      //lpClassName
+					0,             //lpWindowName
+					0x50010000,    //WS_VISIBLE|WS_CHILD|WS_TABSTOP
+					incDecX,       //x
+					12 + lbH + 10, //y
+					incDecW,       //nWidth
+					incDecH,       //nHeight
+					hWnd,          //hWndParent
+					IDC_ARG_DEC,   //ID
+					hInstanceDLL,  //hInstance
+					0              //lpParam
+				);
+				setWindowFontAndText(hWndArgsDec, hGuiFont, "−");
+
 				// Edit: arguments
 				var ml = argsMultiline
 					? 0x201044 // ES_MULTILINE|ES_WANTRETURN|WS_VSCROLL|ES_AUTOVSCROLL
@@ -319,7 +360,7 @@ function selectScriptDialog(modal) {
 					12 + 8,             //x
 					12 + lbH + 12 + 18, //y
 					gbW - 8*2,          //nWidth
-					argsH,                 //nHeight
+					argsH,              //nHeight
 					hWnd,               //hWndParent
 					IDC_ARGS,           //ID
 					hInstanceDLL,       //hInstance
@@ -763,6 +804,9 @@ function selectScriptDialog(modal) {
 		resizeWindow(hWndArgs,      dw, 0);
 		moveWindow(hWndGroupArgs, 0, dh, hWnd);
 		moveWindow(hWndArgs,      0, dh, hWnd);
+
+		moveWindow(hWndArgsInc, dw, dh, hWnd);
+		moveWindow(hWndArgsDec, dw, dh, hWnd);
 
 		moveWindow(hWndOK,     dw, 0, hWnd);
 		moveWindow(hWndExec,   dw, 0, hWnd);
