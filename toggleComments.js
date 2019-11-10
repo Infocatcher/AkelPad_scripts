@@ -1297,5 +1297,19 @@ function getArg(argName, defaultVal) {
 	return getArg(argName, defaultVal);
 }
 function escaper(str) {
-	return new Array(str.length + 1).join("_");
+	//return new Array(str.length + 1).join("_");
+	return stringRepeat("_", str.length);
+}
+function stringRepeat(pattern, count) {
+	// See https://stackoverflow.com/questions/202605/repeat-string-javascript
+	if(count < 1)
+		return "";
+	var result = "";
+	while(count > 1) {
+		if(count & 1)
+			result += pattern;
+		count >>= 1;
+		pattern += pattern;
+	}
+	return result + pattern;
 }
