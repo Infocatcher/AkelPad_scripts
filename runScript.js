@@ -222,6 +222,7 @@ function selectScriptDialog(modal) {
 	var btnH = 23;
 	var btnSep = 4;
 
+	var mlStyle = 0x201044; // ES_MULTILINE|ES_WANTRETURN|WS_VSCROLL|ES_AUTOVSCROLL
 	var argsH = 21 + (argsMultiline ? 14*(argsLines - 1) : 0);
 	var gbH = 27 + argsH;
 	var gbW = lbW + 12 + btnW;
@@ -349,9 +350,7 @@ function selectScriptDialog(modal) {
 				setWindowFontAndText(hWndArgsDec, hGuiFont, "−");
 
 				// Edit: arguments
-				var ml = argsMultiline
-					? 0x201044 // ES_MULTILINE|ES_WANTRETURN|WS_VSCROLL|ES_AUTOVSCROLL
-					: 0;
+				var ml = argsMultiline ? mlStyle : 0;
 				hWndArgs = createWindowEx(
 					0x200,              //WS_EX_CLIENTEDGE
 					"EDIT",             //lpClassName
@@ -521,6 +520,24 @@ function selectScriptDialog(modal) {
 						updArgs();
 						if((wParam >> 16 & 0xFFFF) == 2 /*LBN_DBLCLK*/)
 							postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
+					break;
+					case IDC_ARG_INC:
+					case IDC_ARG_DEC:
+						var inc = idc == IDC_ARG_INC;
+						if(inc)
+							++argsLines;
+						else
+							argsLines = Math.max(1, argsLines - 1);
+						argsMultiline = argsLines > 1;
+
+						var oldStyle = oSys.Call("User32::GetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/);
+						var newStyle = argsMultiline
+							? oldStyle | mlStyle
+							: oldStyle & ~mlStyle;
+						if(newStyle != oldStyle)
+							oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
+
+						resizeWindow(hWndArgs, 0, inc ? 14 : -14);
 				}
 			break;
 			case 36: //WM_GETMINMAXINFO
