@@ -223,7 +223,9 @@ function selectScriptDialog(modal) {
 	var btnSep = 4;
 
 	var mlStyle = 0x201044; // ES_MULTILINE|ES_WANTRETURN|WS_VSCROLL|ES_AUTOVSCROLL
-	var argsH = 21 + (argsMultiline ? 14*(argsLines - 1) : 0);
+	var ignoreResize = false;
+	var argsLineH = 14;
+	var argsH = 21 + (argsMultiline ? argsLineH*(argsLines - 1) : 0);
 	var gbH = 27 + argsH;
 	var gbW = lbW + 12 + btnW;
 
@@ -537,7 +539,15 @@ function selectScriptDialog(modal) {
 						if(newStyle != oldStyle)
 							oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
 
-						resizeWindow(hWndArgs, 0, inc ? 14 : -14);
+						var dh = (inc ? 1 : -1)*argsLineH;
+						AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
+						resizeWindow(hWndArgs, 0, dh);
+						resizeWindow(hWndGroupArgs, 0, dh);
+						ignoreResize = true;
+						resizeWindow(hWnd, 0, dh);
+						ignoreResize = false;
+						AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, true, 0);
+						oSys.Call("user32::InvalidateRect", hWnd, 0, true);
 				}
 			break;
 			case 36: //WM_GETMINMAXINFO
@@ -545,7 +555,7 @@ function selectScriptDialog(modal) {
 				AkelPad.MemCopy(_PtrAdd(lParam, 28), dlgMinH, 3 /*DT_DWORD*/); //ptMinTrackSize.y
 			break;
 			case 5: //WM_SIZE
-				if(oSys.Call("user32::IsIconic", hWnd))
+				if(ignoreResize || oSys.Call("user32::IsIconic", hWnd))
 					break;
 				var rcWnd = getWindowRect(hWnd);
 				var curW = rcWnd.right - rcWnd.left;
