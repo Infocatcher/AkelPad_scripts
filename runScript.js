@@ -223,6 +223,7 @@ function selectScriptDialog(modal) {
 	var btnSep = 4;
 
 	var mlStyle = 0x201044; // ES_MULTILINE|ES_WANTRETURN|WS_VSCROLL|ES_AUTOVSCROLL
+	var hGuiFont = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
 	var ignoreResize = false;
 	var argsLineH = 14;
 	var argsH = 21 + (argsMultiline ? argsLineH*(argsLines - 1) : 0);
@@ -274,8 +275,6 @@ function selectScriptDialog(modal) {
 				dlgH = scale.y(dlgH) + sizeNonClientY;
 				dlgMinW = scale.x(dlgMinW) + sizeNonClientX;
 				dlgMinH = scale.y(dlgMinH) + sizeNonClientY;
-
-				var hGuiFont = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
 
 				// Dialog caption
 				oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, dialogTitle);
@@ -532,22 +531,45 @@ function selectScriptDialog(modal) {
 						else
 							argsLines = Math.max(1, argsLines - 1);
 						argsMultiline = argsLines > 1;
+						AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
 						if(argsLines <= 2) {
 							var hWndFocused = oSys.Call("user32::GetFocus");
 							enabled(hWndArgsDec, argsMultiline);
 							if(!argsMultiline && hWndFocused == hWndArgsDec)
 								oSys.Call("user32::SetFocus", hWndArgsInc);
 
-							var oldStyle = oSys.Call("User32::GetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/);
-							var newStyle = argsMultiline
-								? oldStyle | mlStyle
-								: oldStyle & ~mlStyle;
-							if(newStyle != oldStyle)
-								oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
+							//var oldStyle = oSys.Call("User32::GetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/);
+							//var newStyle = argsMultiline
+							//	? oldStyle | mlStyle
+							//	: oldStyle & ~mlStyle;
+							//if(newStyle != oldStyle)
+							//	oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
+
+							var args = windowText(hWndArgs);
+							var rc = getWindowRect(hWndArgs, hWnd);
+							var rcr = getWindowRect(hWndArgs);
+							destroyWindow(hWndArgs);
+							var ml = argsMultiline ? mlStyle : 0;
+							hWndArgs = oSys.Call(
+								"user32::CreateWindowEx" + _TCHAR,
+								0x200,                //WS_EX_CLIENTEDGE
+								"EDIT",               //lpClassName
+								0,                    //lpWindowName
+								0x50010080|ml,        //WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_AUTOHSCROLL
+								rc.left,              //x
+								rc.top,               //y
+								rcr.right - rcr.left, //nWidth
+								rcr.bottom - rcr.top, //nHeight
+								hWnd,                 //hWndParent
+								IDC_ARGS,             //ID
+								hInstanceDLL,         //hInstance
+								0                     //lpParam
+							);
+							setWindowFont(hWndArgs, hGuiFont);
+							setEditText(hWndArgs, args);
 						}
 
 						var dh = (inc ? 1 : -1)*argsLineH;
-						AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
 						resizeWindow(hWndArgs, 0, dh);
 						resizeWindow(hWndGroupArgs, 0, dh);
 						ignoreResize = true;
