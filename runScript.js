@@ -350,6 +350,7 @@ function selectScriptDialog(modal) {
 					0              //lpParam
 				);
 				setWindowFontAndText(hWndArgsDec, hGuiFont, "−");
+				!argsMultiline && enabled(hWndArgsDec, false);
 
 				// Edit: arguments
 				var ml = argsMultiline ? mlStyle : 0;
@@ -531,13 +532,19 @@ function selectScriptDialog(modal) {
 						else
 							argsLines = Math.max(1, argsLines - 1);
 						argsMultiline = argsLines > 1;
+						if(argsLines <= 2) {
+							var hWndFocused = oSys.Call("user32::GetFocus");
+							enabled(hWndArgsDec, argsMultiline);
+							if(!argsMultiline && hWndFocused == hWndArgsDec)
+								oSys.Call("user32::SetFocus", hWndArgsInc);
 
-						var oldStyle = oSys.Call("User32::GetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/);
-						var newStyle = argsMultiline
-							? oldStyle | mlStyle
-							: oldStyle & ~mlStyle;
-						if(newStyle != oldStyle)
-							oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
+							var oldStyle = oSys.Call("User32::GetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/);
+							var newStyle = argsMultiline
+								? oldStyle | mlStyle
+								: oldStyle & ~mlStyle;
+							if(newStyle != oldStyle)
+								oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
+						}
 
 						var dh = (inc ? 1 : -1)*argsLineH;
 						AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
