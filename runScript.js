@@ -546,6 +546,8 @@ function selectScriptDialog(modal) {
 							//	oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
 
 							var args = windowText(hWndArgs);
+							if(!argsMultiline)
+								args = args.replace(/\r\n?|\n\r?/g, " ");
 							var rc = getWindowRect(hWndArgs, hWnd);
 							var rcr = getWindowRect(hWndArgs);
 							destroyWindow(hWndArgs);
