@@ -550,6 +550,7 @@ function selectScriptDialog(modal) {
 								args = args.replace(/\r\n?|\n\r?/g, " ");
 							var rc = getWindowRect(hWndArgs, hWnd);
 							var rcr = getWindowRect(hWndArgs);
+							var restoreFocus = hWndFocused == hWndArgs;
 							destroyWindow(hWndArgs);
 							var ml = argsMultiline ? mlStyle : 0;
 							hWndArgs = oSys.Call(
@@ -569,6 +570,7 @@ function selectScriptDialog(modal) {
 							);
 							setWindowFont(hWndArgs, hGuiFont);
 							setEditText(hWndArgs, args);
+							restoreFocus && oSys.Call("user32::SetFocus", hWndArgs);
 						}
 
 						var dh = (inc ? 1 : -1)*argsLineH;
