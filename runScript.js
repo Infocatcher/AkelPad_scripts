@@ -140,6 +140,10 @@ function selectScriptDialog(modal) {
 	if((saveOptions || savePosition || saveSize) && oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/)) {
 		if(saveOptions && !curName)
 			curName = oSet.Read("lastScript", 3 /*PO_STRING*/, "");
+		if(saveOptions && AkelPad.GetArgValue("argsLines", null) === null) {
+			argsLines = Math.max(1, oSet.Read("argsLines", 1 /*PO_DWORD*/) || 1);
+			argsMultiline = argsLines > 1;
+		}
 		if(savePosition) {
 			dlgX = oSet.Read("windowLeft", 1 /*PO_DWORD*/);
 			dlgY = oSet.Read("windowTop",  1 /*PO_DWORD*/);
@@ -157,6 +161,7 @@ function selectScriptDialog(modal) {
 		if(!oSet.Begin(WScript.ScriptBaseName, 0x2 /*POB_SAVE*/ | (rewrite ? 0x4 /*POB_CLEAR*/ : 0)))
 			return;
 		if(saveOptions) {
+			oSet.Write("argsLines", 1 /*PO_DWORD*/, argsLines);
 			if(runned || saveOptions == 2)
 				oSet.Write("lastScript", 3 /*PO_STRING*/, saveOptions == 2 ? curName : runnedName);
 			var names = saveOptions == 2 ? argsObj : runned || {};
