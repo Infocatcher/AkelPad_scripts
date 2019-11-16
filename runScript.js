@@ -26,6 +26,7 @@
 //   -saveSize=true               - allow store last window size
 //   -selectOpenedScript=3        - select currently opened script in the list, sum of flags:
 //                                  1 - select on startup, 2 - select on window focus
+//   -argsLines=1                 - force specify lines count for arguments text field
 //   -script="someScript.js"      - select someScript.js in the list
 
 // Usage:
