@@ -587,9 +587,14 @@ function selectScriptDialog(modal) {
 						ignoreResize = false;
 						AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, true, 0);
 						oSys.Call("user32::InvalidateRect", hWnd, 0, true);
+
+						dlgMinH += dh;
+						dlgH += dh;
 				}
 			break;
 			case 36: //WM_GETMINMAXINFO
+				if(ignoreResize)
+					break;
 				AkelPad.MemCopy(_PtrAdd(lParam, 24), dlgMinW, 3 /*DT_DWORD*/); //ptMinTrackSize.x
 				AkelPad.MemCopy(_PtrAdd(lParam, 28), dlgMinH, 3 /*DT_DWORD*/); //ptMinTrackSize.y
 			break;
