@@ -532,10 +532,19 @@ function selectScriptDialog(modal) {
 					case IDC_ARG_INC:
 					case IDC_ARG_DEC:
 						var inc = idc == IDC_ARG_INC;
-						if(inc)
+						if(inc) {
 							++argsLines;
-						else
+							if(argsLines > 15) {
+								argsLines = 15;
+								oSys.Call("user32::SetFocus", hWndArgsDec);
+								enabled(hWndArgsInc, false);
+								break;
+							}
+						}
+						else {
 							argsLines = Math.max(1, argsLines - 1);
+							enabled(hWndArgsInc, true);
+						}
 						argsMultiline = argsLines > 1;
 						AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
 						if(argsLines <= 2) {
