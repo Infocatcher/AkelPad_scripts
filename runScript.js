@@ -588,7 +588,7 @@ function selectScriptDialog(modal) {
 							restoreFocus && oSys.Call("user32::SetFocus", hWndArgs);
 						}
 
-						var dh = (inc ? 1 : -1)*argsLineH;
+						var dh = (inc ? 1 : -1)*scale.y(argsLineH);
 						resizeWindow(hWndArgs, 0, dh);
 						resizeWindow(hWndGroupArgs, 0, dh);
 						ignoreResize = true;
