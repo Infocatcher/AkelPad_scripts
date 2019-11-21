@@ -476,8 +476,10 @@ function selectScriptDialog(modal) {
 				else if(wParam == 13) { //VK_RETURN
 					if(ctrl || shift && !argsMultiline) // Ctrl+Enter, Shift+Enter
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
-					else if(!ctrl && !shift) // Enter
+					else if(!ctrl && !shift) { // Enter
+						argsMultiline && postMessage(hWndArgs, 256 /*WM_KEYDOWN*/, 8 /*VK_BACK*/, 0);
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
+					}
 				}
 				else if(wParam == 114 /*VK_F3*/) // F3
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
