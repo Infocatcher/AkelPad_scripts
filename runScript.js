@@ -533,74 +533,7 @@ function selectScriptDialog(modal) {
 					break;
 					case IDC_ARG_INC:
 					case IDC_ARG_DEC:
-						var inc = idc == IDC_ARG_INC;
-						if(inc) {
-							++argsLines;
-							if(argsLines > 15) {
-								argsLines = 15;
-								oSys.Call("user32::SetFocus", hWndArgsDec);
-								enabled(hWndArgsInc, false);
-								break;
-							}
-						}
-						else {
-							argsLines = Math.max(1, argsLines - 1);
-							enabled(hWndArgsInc, true);
-						}
-						argsMultiline = argsLines > 1;
-						AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
-						if(argsLines <= 2) {
-							var hWndFocused = oSys.Call("user32::GetFocus");
-							enabled(hWndArgsDec, argsMultiline);
-							if(!argsMultiline && hWndFocused == hWndArgsDec)
-								oSys.Call("user32::SetFocus", hWndArgsInc);
-
-							//var oldStyle = oSys.Call("User32::GetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/);
-							//var newStyle = argsMultiline
-							//	? oldStyle | mlStyle
-							//	: oldStyle & ~mlStyle;
-							//if(newStyle != oldStyle)
-							//	oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
-
-							var args = windowText(hWndArgs);
-							if(!argsMultiline)
-								args = args.replace(/\r\n?|\n\r?/g, " ");
-							var rc = getWindowRect(hWndArgs, hWnd);
-							var rcr = getWindowRect(hWndArgs);
-							var restoreFocus = hWndFocused == hWndArgs;
-							destroyWindow(hWndArgs);
-							var ml = argsMultiline ? mlStyle : 0;
-							hWndArgs = oSys.Call(
-								"user32::CreateWindowEx" + _TCHAR,
-								0x200,                //WS_EX_CLIENTEDGE
-								"EDIT",               //lpClassName
-								0,                    //lpWindowName
-								0x50010080|ml,        //WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_AUTOHSCROLL
-								rc.left,              //x
-								rc.top,               //y
-								rcr.right - rcr.left, //nWidth
-								rcr.bottom - rcr.top, //nHeight
-								hWnd,                 //hWndParent
-								IDC_ARGS,             //ID
-								hInstanceDLL,         //hInstance
-								0                     //lpParam
-							);
-							setWindowFont(hWndArgs, hGuiFont);
-							setEditText(hWndArgs, args);
-							restoreFocus && oSys.Call("user32::SetFocus", hWndArgs);
-						}
-
-						var dh = (inc ? 1 : -1)*scale.y(argsLineH);
-						resizeWindow(hWndArgs, 0, dh);
-						resizeWindow(hWndGroupArgs, 0, dh);
-						ignoreResize = true;
-						resizeWindow(hWnd, 0, dh);
-						ignoreResize = false;
-						AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, true, 0);
-						oSys.Call("user32::InvalidateRect", hWnd, 0, true);
-
-						dlgMinH += dh;
-						dlgH += dh;
+						setArgsLines(idc == IDC_ARG_INC ? 1 : -1);
 				}
 			break;
 			case 36: //WM_GETMINMAXINFO
@@ -792,6 +725,75 @@ function selectScriptDialog(modal) {
 		}
 		AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, i, 0);
 		postMessage(hWndDialog, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
+	}
+	function setArgsLines(dl) {
+		if(dl > 0) {
+			++argsLines;
+			if(argsLines > 15) {
+				argsLines = 15;
+				oSys.Call("user32::SetFocus", hWndArgsDec);
+				enabled(hWndArgsInc, false);
+				return;
+			}
+		}
+		else {
+			argsLines = Math.max(1, argsLines - 1);
+			enabled(hWndArgsInc, true);
+		}
+		argsMultiline = argsLines > 1;
+		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
+		if(argsLines <= 2) {
+			var hWndFocused = oSys.Call("user32::GetFocus");
+			enabled(hWndArgsDec, argsMultiline);
+			if(!argsMultiline && hWndFocused == hWndArgsDec)
+				oSys.Call("user32::SetFocus", hWndArgsInc);
+
+			//var oldStyle = oSys.Call("User32::GetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/);
+			//var newStyle = argsMultiline
+			//	? oldStyle | mlStyle
+			//	: oldStyle & ~mlStyle;
+			//if(newStyle != oldStyle)
+			//	oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
+
+			var args = windowText(hWndArgs);
+			if(!argsMultiline)
+				args = args.replace(/\r\n?|\n\r?/g, " ");
+			var rc = getWindowRect(hWndArgs, hWndDialog);
+			var rcr = getWindowRect(hWndArgs);
+			var restoreFocus = hWndFocused == hWndArgs;
+			destroyWindow(hWndArgs);
+			var ml = argsMultiline ? mlStyle : 0;
+			hWndArgs = oSys.Call(
+				"user32::CreateWindowEx" + _TCHAR,
+				0x200,                //WS_EX_CLIENTEDGE
+				"EDIT",               //lpClassName
+				0,                    //lpWindowName
+				0x50010080|ml,        //WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_AUTOHSCROLL
+				rc.left,              //x
+				rc.top,               //y
+				rcr.right - rcr.left, //nWidth
+				rcr.bottom - rcr.top, //nHeight
+				hWndDialog,           //hWndParent
+				IDC_ARGS,             //ID
+				hInstanceDLL,         //hInstance
+				0                     //lpParam
+			);
+			setWindowFont(hWndArgs, hGuiFont);
+			setEditText(hWndArgs, args);
+			restoreFocus && oSys.Call("user32::SetFocus", hWndArgs);
+		}
+
+		var dh = dl*scale.y(argsLineH);
+		resizeWindow(hWndArgs, 0, dh);
+		resizeWindow(hWndGroupArgs, 0, dh);
+		ignoreResize = true;
+		resizeWindow(hWndDialog, 0, dh);
+		ignoreResize = false;
+		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, true, 0);
+		oSys.Call("user32::InvalidateRect", hWndDialog, 0, true);
+
+		dlgMinH += dh;
+		dlgH += dh;
 	}
 
 	function restoreWindowPosition(hWnd, hWndParent) {
