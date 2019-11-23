@@ -727,27 +727,29 @@ function selectScriptDialog(modal) {
 		postMessage(hWndDialog, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
 	}
 	function setArgsLines(dl) {
-		if(dl > 0) {
-			++argsLines;
-			if(argsLines > 15) {
-				argsLines = 15;
-				oSys.Call("user32::SetFocus", hWndArgsDec);
-				enabled(hWndArgsInc, false);
-				return;
-			}
+		argsLines += dl;
+		if(argsLines > 15) {
+			dl -= argsLines - 15;
+			argsLines = 15;
 		}
-		else {
-			argsLines = Math.max(1, argsLines - 1);
-			enabled(hWndArgsInc, true);
+		else if(argsLines < 1) {
+			dl += 1 - argsLines;
+			argsLines = 1;
 		}
+		var wasMultiline = argsMultiline;
 		argsMultiline = argsLines > 1;
-		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
-		if(argsLines <= 2) {
-			var hWndFocused = oSys.Call("user32::GetFocus");
-			enabled(hWndArgsDec, argsMultiline);
-			if(!argsMultiline && hWndFocused == hWndArgsDec)
-				oSys.Call("user32::SetFocus", hWndArgsInc);
 
+		var noInc = argsLines == 15;
+		var noDec = argsLines == 1;
+		enabled(hWndArgsInc, !noInc);
+		enabled(hWndArgsDec, !noDec);
+		noInc && oSys.Call("user32::SetFocus", hWndArgsDec);
+		noDec && oSys.Call("user32::SetFocus", hWndArgsInc);
+		if(!dl)
+			return;
+
+		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
+		if(wasMultiline ^ argsMultiline) {
 			//var oldStyle = oSys.Call("User32::GetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/);
 			//var newStyle = argsMultiline
 			//	? oldStyle | mlStyle
@@ -760,7 +762,7 @@ function selectScriptDialog(modal) {
 				args = args.replace(/\r\n?|\n\r?/g, " ");
 			var rc = getWindowRect(hWndArgs, hWndDialog);
 			var rcr = getWindowRect(hWndArgs);
-			var restoreFocus = hWndFocused == hWndArgs;
+			var restoreFocus = oSys.Call("user32::GetFocus") == hWndArgs;
 			destroyWindow(hWndArgs);
 			var ml = argsMultiline ? mlStyle : 0;
 			hWndArgs = oSys.Call(
