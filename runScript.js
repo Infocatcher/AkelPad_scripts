@@ -578,6 +578,12 @@ function selectScriptDialog(modal) {
 					AkelPad.MemFree(ps);
 				}
 			break;
+			case 123: //WM_CONTEXTMENU
+				if(wParam == hWndArgsInc)
+					setArgsLines(-argsLines + ARGS_LINES_MAX);
+				else if(wParam == hWndArgsDec)
+					setArgsLines(-argsLines + 1);
+				return 1;
 			case 16: //WM_CLOSE
 				saveSettings();
 				modal && enabled(hMainWnd, true); // Enable main window
@@ -726,11 +732,12 @@ function selectScriptDialog(modal) {
 		AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, i, 0);
 		postMessage(hWndDialog, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
 	}
+	var ARGS_LINES_MAX = 15;
 	function setArgsLines(dl) {
 		argsLines += dl;
-		if(argsLines > 15) {
-			dl -= argsLines - 15;
-			argsLines = 15;
+		if(argsLines > ARGS_LINES_MAX) {
+			dl -= argsLines - ARGS_LINES_MAX;
+			argsLines = ARGS_LINES_MAX;
 		}
 		else if(argsLines < 1) {
 			dl += 1 - argsLines;
@@ -739,7 +746,7 @@ function selectScriptDialog(modal) {
 		var wasMultiline = argsMultiline;
 		argsMultiline = argsLines > 1;
 
-		var noInc = argsLines == 15;
+		var noInc = argsLines == ARGS_LINES_MAX;
 		var noDec = argsLines == 1;
 		enabled(hWndArgsInc, !noInc);
 		enabled(hWndArgsDec, !noDec);
