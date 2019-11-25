@@ -86,6 +86,7 @@ var saveSize     = AkelPad.GetArgValue("saveSize", true);
 var argsLines    = AkelPad.GetArgValue("argsLines", 1);
 
 var argsMultiline = argsLines > 1;
+var ARGS_LINES_MAX = 15;
 
 selectScriptDialog();
 
@@ -338,6 +339,7 @@ function selectScriptDialog(modal) {
 					0                      //lpParam
 				);
 				setWindowFontAndText(hWndArgsInc, hGuiFont, "+");
+				argsLines >= ARGS_LINES_MAX && enabled(hWndArgsInc, false);
 
 				// Arguments lines decrease button window
 				hWndArgsDec = createWindowEx(
@@ -732,7 +734,6 @@ function selectScriptDialog(modal) {
 		AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, i, 0);
 		postMessage(hWndDialog, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
 	}
-	var ARGS_LINES_MAX = 15;
 	function setArgsLines(dl) {
 		argsLines += dl;
 		if(argsLines > ARGS_LINES_MAX) {
