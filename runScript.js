@@ -109,7 +109,7 @@ function expandArgs(args) {
 			.replace(/%a/ig, AkelPad.GetAkelDir())
 			.replace(/%([^%]|$)/g, "$1")
 			.replace(/%%/g, "%")
-			.replace(/\r\n?|\n\r?/g, " ");
+			.replace(/ ?\r\n?| ?\n\r?/g, " ");
 	};
 	return expandArgs(args);
 }
@@ -197,10 +197,10 @@ function selectScriptDialog(modal) {
 			oSet.Delete(prefName);
 	}
 	function argsToStorage(args) {
-		return args.replace(/\r\n?|\n\r?/g, " -<BR> ");
+		return args.replace(/ ?\r\n?| ?\n\r?/g, " -<BR> ");
 	}
 	function argsFromStorage(str) {
-		return str.replace(/ -<BR> /g, argsMultiline ? "\r\n" : " ");
+		return str.replace(/ -<BR> /g, argsMultiline ? "\r\n" : " \r\n");
 	}
 
 	var IDC_STATIC  = -1;
@@ -766,8 +766,9 @@ function selectScriptDialog(modal) {
 			//	oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
 
 			var args = windowText(hWndArgs);
-			if(!argsMultiline)
-				args = args.replace(/\r\n?|\n\r?/g, " ");
+			args = argsMultiline
+				? args.replace(/ (\r|\n)/g, "$1")
+				: args.replace(/ ?\r\n?| ?\n\r?/g, " \r\n");
 			var rc = getWindowRect(hWndArgs, hWndDialog);
 			var rcr = getWindowRect(hWndArgs);
 			var restoreFocus = oSys.Call("user32::GetFocus") == hWndArgs;
