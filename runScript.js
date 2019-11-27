@@ -696,7 +696,8 @@ function selectScriptDialog(modal) {
 			return;
 		}
 		curName = str;
-		setEditText(hWndArgs, argsObj[str] || "");
+		var args = updMultilineArgs(argsObj[str] || "");
+		setEditText(hWndArgs, args);
 		enableControls({
 			exec: str != WScript.ScriptName,
 			edit: true,
@@ -765,10 +766,7 @@ function selectScriptDialog(modal) {
 			//if(newStyle != oldStyle)
 			//	oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
 
-			var args = windowText(hWndArgs);
-			args = argsMultiline
-				? args.replace(/ (\r|\n)/g, "$1")
-				: args.replace(/ ?\r\n?| ?\n\r?/g, " \r\n");
+			var args = updMultilineArgs(windowText(hWndArgs));
 			var rc = getWindowRect(hWndArgs, hWndDialog);
 			var rcr = getWindowRect(hWndArgs);
 			var restoreFocus = oSys.Call("user32::GetFocus") == hWndArgs;
@@ -805,6 +803,11 @@ function selectScriptDialog(modal) {
 
 		dlgMinH += dh;
 		dlgH += dh;
+	}
+	function updMultilineArgs(args) {
+		return argsMultiline
+			? args.replace(/ (\r|\n)/g, "$1")
+			: args.replace(/ ?\r\n?| ?\n\r?/g, " \r\n");
 	}
 
 	function restoreWindowPosition(hWnd, hWndParent) {
