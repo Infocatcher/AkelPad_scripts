@@ -85,8 +85,12 @@ var savePosition = AkelPad.GetArgValue("savePosition", true);
 var saveSize     = AkelPad.GetArgValue("saveSize", true);
 var argsLines    = AkelPad.GetArgValue("argsLines", 1);
 
-var argsMultiline = argsLines > 1;
 var ARGS_LINES_MAX = 15;
+function limitArgsLines(al) {
+	return Math.max(1, Math.min(ARGS_LINES_MAX, al || 1));
+}
+argsLines = limitArgsLines(argsLines);
+var argsMultiline = argsLines > 1;
 
 selectScriptDialog();
 
@@ -143,7 +147,7 @@ function selectScriptDialog(modal) {
 		if(saveOptions && !curName)
 			curName = oSet.Read("lastScript", 3 /*PO_STRING*/, "");
 		if(saveOptions && AkelPad.GetArgValue("argsLines", null) === null) {
-			argsLines = Math.max(1, oSet.Read("argsLines", 1 /*PO_DWORD*/) || 1);
+			argsLines = limitArgsLines(oSet.Read("argsLines", 1 /*PO_DWORD*/));
 			argsMultiline = argsLines > 1;
 		}
 		if(savePosition) {
