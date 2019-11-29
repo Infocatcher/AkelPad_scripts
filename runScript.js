@@ -79,13 +79,13 @@ function getPrefName(scriptName) {
 }
 
 // Read arguments:
-var selectScript = AkelPad.GetArgValue("selectOpenedScript", 3);
-var scriptName   = AkelPad.GetArgValue("script", "") || selectScript & 1 && getCurScript();
-var saveOptions  = AkelPad.GetArgValue("saveOptions", 1);
-var savePosition = AkelPad.GetArgValue("savePosition", true);
-var saveSize     = AkelPad.GetArgValue("saveSize", true);
+var selectScript  = AkelPad.GetArgValue("selectOpenedScript", 3);
+var scriptName    = AkelPad.GetArgValue("script", "") || selectScript & 1 && getCurScript();
+var saveOptions   = AkelPad.GetArgValue("saveOptions", 1);
+var savePosition  = AkelPad.GetArgValue("savePosition", true);
+var saveSize      = AkelPad.GetArgValue("saveSize", true);
 var saveArgsLines = AkelPad.GetArgValue("saveArgsLines", true);
-var argsLines    = AkelPad.GetArgValue("argsLines", 1);
+var argsLines     = AkelPad.GetArgValue("argsLines", 1);
 
 var ARGS_LINES_MAX = 15;
 function limitArgsLines(al) {
