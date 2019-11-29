@@ -22,8 +22,9 @@
 //   -saveOptions=0               - don't save options
 //               =1               - save options only for runned scripts (default)
 //               =2               - always save options
-//   -savePosition=true           - allow store last window position
-//   -saveSize=true               - allow store last window size
+//   -savePosition=true           - save last window position
+//   -saveSize=true               - save last window size
+//   -saveArgsLines=true          - save lines count for arguments text field
 //   -selectOpenedScript=3        - select currently opened script in the list, sum of flags:
 //                                  1 - select on startup, 2 - select on window focus
 //   -argsLines=1                 - force specify lines count for arguments text field
@@ -83,6 +84,7 @@ var scriptName   = AkelPad.GetArgValue("script", "") || selectScript & 1 && getC
 var saveOptions  = AkelPad.GetArgValue("saveOptions", 1);
 var savePosition = AkelPad.GetArgValue("savePosition", true);
 var saveSize     = AkelPad.GetArgValue("saveSize", true);
+var saveArgsLines = AkelPad.GetArgValue("saveArgsLines", true);
 var argsLines    = AkelPad.GetArgValue("argsLines", 1);
 
 var ARGS_LINES_MAX = 15;
@@ -143,10 +145,11 @@ function selectScriptDialog(modal) {
 
 	var dlgX, dlgY;
 	var lastW, lastH;
-	if((saveOptions || savePosition || saveSize) && oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/)) {
+	var save = saveOptions || savePosition || saveSize || saveArgsLines;
+	if(save && oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/)) {
 		if(saveOptions && !curName)
 			curName = oSet.Read("lastScript", 3 /*PO_STRING*/, "");
-		if(saveOptions && AkelPad.GetArgValue("argsLines", null) === null) {
+		if(saveArgsLines && AkelPad.GetArgValue("argsLines", null) === null) {
 			argsLines = limitArgsLines(oSet.Read("argsLines", 1 /*PO_DWORD*/));
 			argsMultiline = argsLines > 1;
 		}
@@ -167,7 +170,8 @@ function selectScriptDialog(modal) {
 		if(!oSet.Begin(WScript.ScriptBaseName, 0x2 /*POB_SAVE*/ | (rewrite ? 0x4 /*POB_CLEAR*/ : 0)))
 			return;
 		if(saveOptions) {
-			oSet.Write("argsLines", 1 /*PO_DWORD*/, argsLines);
+			if(saveArgsLines)
+				oSet.Write("argsLines", 1 /*PO_DWORD*/, argsLines);
 			if(runned || saveOptions == 2)
 				oSet.Write("lastScript", 3 /*PO_STRING*/, saveOptions == 2 ? curName : runnedName);
 			var names = saveOptions == 2 ? argsObj : runned || {};
