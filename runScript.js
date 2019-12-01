@@ -487,7 +487,8 @@ function selectScriptDialog(modal) {
 					if(ctrl || shift && !argsMultiline) // Ctrl+Enter, Shift+Enter
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
 					else if(!ctrl && !shift) { // Enter
-						argsMultiline && postMessage(hWndArgs, 256 /*WM_KEYDOWN*/, 8 /*VK_BACK*/, 0);
+						if(argsMultiline && oSys.Call("user32::GetFocus") == hWndArgs)
+							postMessage(hWndArgs, 256 /*WM_KEYDOWN*/, 8 /*VK_BACK*/, 0);
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
 					}
 				}
