@@ -12,6 +12,7 @@
 // Hotkeys:
 //   Enter                         - Ok
 //   Ctrl+Enter (Shift+Enter), F3  - Exec
+//   Shift+Enter                   - Insert newline in multiline arguments text field
 //   F4, Ctrl+E                    - Edit
 //   F2, Ctrl+S                    - Rewrite options (and remove arguments for removed files)
 //   F1, Shift+F1                  - Next/previous script
