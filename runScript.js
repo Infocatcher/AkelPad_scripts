@@ -530,7 +530,10 @@ function selectScriptDialog(modal) {
 							ensureVisibility();
 					break;
 					case IDC_EDIT:
-						curName && AkelPad.Call("Scripts::Main", 3, curName);
+						if(curName) {
+							AkelPad.Call("Scripts::Main", 3, curName);
+							oSys.Call("user32::SetFocus", hMainWnd);
+						}
 					break;
 					case IDC_CANCEL:
 						closeDialog();
