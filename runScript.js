@@ -52,6 +52,9 @@ function _localize(s) {
 		},
 		"Cancel": {
 			ru: "Отмена"
+		},
+		"File not found:\n%p\nUse F5 to reload list": {
+			ru: "Файл не найден:\n%p\nИспользуйте F5 для обновления списка"
 		}
 	};
 	var lng = "en";
@@ -517,6 +520,13 @@ function selectScriptDialog(modal) {
 						selfRun = false;
 						if(!curName || isSelf && idc == IDC_EXEC)
 							break;
+						var scriptPath = scriptsDir + "\\" + curName;
+						if(oSys.Call("kernel32::GetFileAttributes" + _TCHAR, scriptPath) == -1) {
+							var msg = _localize("File not found:\n%p\nUse F5 to reload list")
+								.replace("%p", scriptPath);
+							AkelPad.MessageBox(hWnd, msg, WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
+							break;
+						}
 						if(!runned)
 							runned = {};
 						runned[runnedName = curName] = true;
