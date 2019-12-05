@@ -224,6 +224,7 @@ function selectScriptDialog(modal) {
 	var IDC_CANCEL  = 1005;
 	var IDC_ARG_INC = 1006;
 	var IDC_ARG_DEC = 1007;
+	var IDC_CUR_SCRIPT = 1008;
 
 	var selfRun = false;
 	var runned, runnedName;
@@ -465,17 +466,8 @@ function selectScriptDialog(modal) {
 				updArgs();
 			break;
 			case 7: //WM_SETFOCUS
-				var scriptName = selectScript & 2
-					&& new Date().getTime() - startTime > 250 // Don't handle twice at startup
-					&& getCurScript();
-				if(scriptName) {
-					var indx = getIndexFromString(scriptName);
-					if(indx != undefined) {
-						curName = scriptName;
-						AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, indx, 0);
-						AkelPad.SendMessage(hWndDialog, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
-					}
-				}
+				if(!(selectScript & 2) || new Date().getTime() - startTime > 250) // Don't handle twice at startup
+					AkelPad.SendMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CUR_SCRIPT, 0);
 				oSys.Call("user32::SetFocus", curName ? hWndArgs : hWndListBox);
 			break;
 			case 256: //WM_KEYDOWN
@@ -559,6 +551,17 @@ function selectScriptDialog(modal) {
 					case IDC_ARG_INC:
 					case IDC_ARG_DEC:
 						setArgsLines(idc == IDC_ARG_INC ? 1 : -1);
+					break;
+					case IDC_CUR_SCRIPT:
+						var scriptName = getCurScript();
+						if(!scriptName)
+							break;
+						var indx = getIndexFromString(scriptName);
+						if(indx != undefined) {
+							curName = scriptName;
+							AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, indx, 0);
+							AkelPad.SendMessage(hWnd, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
+						}
 				}
 			break;
 			case 36: //WM_GETMINMAXINFO
