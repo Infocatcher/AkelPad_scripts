@@ -26,8 +26,10 @@
 //   -savePosition=true           - save last window position
 //   -saveSize=true               - save last window size
 //   -saveArgsLines=true          - save lines count for arguments text field
-//   -selectOpenedScript=3        - select currently opened script in the list, sum of flags:
-//                                  1 - select on startup, 2 - select on window focus
+//   -selectOpenedScript=5        - select currently opened script in the list, sum of flags:
+//                                    1 - select on startup,
+//                                    2 - select on window focus,
+//                                    4 - select on window focus only after second runScript.js call
 //   -argsLines=1                 - force specify lines count for arguments text field
 //   -script="someScript.js"      - select someScript.js in the list
 
@@ -128,11 +130,26 @@ function selectScriptDialog(modal) {
 	var hInstanceDLL = AkelPad.GetInstanceDll();
 	var dialogClass = "AkelPad::Scripts::" + WScript.ScriptName + "::" + oSys.Call("kernel32::GetCurrentProcessId");
 
+	var IDC_STATIC  = -1;
+	var IDC_LISTBOX = 1000;
+	var IDC_ARGS    = 1001;
+	var IDC_OK      = 1002;
+	var IDC_EXEC    = 1003;
+	var IDC_EDIT    = 1004;
+	var IDC_CANCEL  = 1005;
+	var IDC_ARG_INC = 1006;
+	var IDC_ARG_DEC = 1007;
+	var IDC_CUR_SCRIPT = 1008;
+	var IDC_FOCUS      = 1009;
+
 	var hWndDialog = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, dialogClass, 0);
 	if(hWndDialog) {
 		if(oSys.Call("user32::IsIconic", hWndDialog))
 			oSys.Call("user32::ShowWindow", hWndDialog, 9 /*SW_RESTORE*/);
-		AkelPad.SendMessage(hWndDialog, 7 /*WM_SETFOCUS*/, 0, 0);
+		if(selectScript & 4)
+			AkelPad.SendMessage(hWndDialog, 273 /*WM_COMMAND*/, IDC_FOCUS, 0);
+		else
+			AkelPad.SendMessage(hWndDialog, 7 /*WM_SETFOCUS*/, 0, 0);
 		return;
 	}
 
@@ -214,17 +231,6 @@ function selectScriptDialog(modal) {
 	function argsFromStorage(str) {
 		return str.replace(/ -<BR> /g, argsMultiline ? "\r\n" : " \r\n");
 	}
-
-	var IDC_STATIC  = -1;
-	var IDC_LISTBOX = 1000;
-	var IDC_ARGS    = 1001;
-	var IDC_OK      = 1002;
-	var IDC_EXEC    = 1003;
-	var IDC_EDIT    = 1004;
-	var IDC_CANCEL  = 1005;
-	var IDC_ARG_INC = 1006;
-	var IDC_ARG_DEC = 1007;
-	var IDC_CUR_SCRIPT = 1008;
 
 	var selfRun = false;
 	var runned, runnedName;
@@ -466,7 +472,8 @@ function selectScriptDialog(modal) {
 				updArgs();
 			break;
 			case 7: //WM_SETFOCUS
-				if(!(selectScript & 2) || new Date().getTime() - startTime > 250) // Don't handle twice at startup
+				var alreadyOpened = new Date().getTime() - startTime > 250;
+				if(alreadyOpened ? selectScript & 2 && !(selectScript & 4) : selectScript & 1)
 					AkelPad.SendMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CUR_SCRIPT, 0);
 				oSys.Call("user32::SetFocus", curName ? hWndArgs : hWndListBox);
 			break;
@@ -562,6 +569,11 @@ function selectScriptDialog(modal) {
 							AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, indx, 0);
 							AkelPad.SendMessage(hWnd, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
 						}
+					break;
+					case IDC_FOCUS:
+						if(selectScript & 4)
+							AkelPad.SendMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CUR_SCRIPT, 0);
+						AkelPad.SendMessage(hWnd, 7 /*WM_SETFOCUS*/, 0, 0);
 				}
 			break;
 			case 36: //WM_GETMINMAXINFO
