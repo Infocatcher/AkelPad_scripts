@@ -130,15 +130,15 @@ function selectScriptDialog(modal) {
 	var hInstanceDLL = AkelPad.GetInstanceDll();
 	var dialogClass = "AkelPad::Scripts::" + WScript.ScriptName + "::" + oSys.Call("kernel32::GetCurrentProcessId");
 
-	var IDC_STATIC  = -1;
-	var IDC_LISTBOX = 1000;
-	var IDC_ARGS    = 1001;
-	var IDC_OK      = 1002;
-	var IDC_EXEC    = 1003;
-	var IDC_EDIT    = 1004;
-	var IDC_CANCEL  = 1005;
-	var IDC_ARG_INC = 1006;
-	var IDC_ARG_DEC = 1007;
+	var IDC_STATIC     = -1;
+	var IDC_LISTBOX    = 1000;
+	var IDC_ARGS       = 1001;
+	var IDC_OK         = 1002;
+	var IDC_EXEC       = 1003;
+	var IDC_EDIT       = 1004;
+	var IDC_CANCEL     = 1005;
+	var IDC_ARG_INC    = 1006;
+	var IDC_ARG_DEC    = 1007;
 	var IDC_CUR_SCRIPT = 1008;
 
 	var hWndDialog = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, dialogClass, 0);
