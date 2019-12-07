@@ -140,16 +140,14 @@ function selectScriptDialog(modal) {
 	var IDC_ARG_INC = 1006;
 	var IDC_ARG_DEC = 1007;
 	var IDC_CUR_SCRIPT = 1008;
-	var IDC_FOCUS      = 1009;
 
 	var hWndDialog = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, dialogClass, 0);
 	if(hWndDialog) {
 		if(oSys.Call("user32::IsIconic", hWndDialog))
 			oSys.Call("user32::ShowWindow", hWndDialog, 9 /*SW_RESTORE*/);
+		AkelPad.SendMessage(hWndDialog, 7 /*WM_SETFOCUS*/, 0, 0);
 		if(selectScript & 4)
-			AkelPad.SendMessage(hWndDialog, 273 /*WM_COMMAND*/, IDC_FOCUS, 0);
-		else
-			AkelPad.SendMessage(hWndDialog, 7 /*WM_SETFOCUS*/, 0, 0);
+			AkelPad.SendMessage(hWndDialog, 273 /*WM_COMMAND*/, IDC_CUR_SCRIPT, 0);
 		return;
 	}
 
@@ -569,11 +567,6 @@ function selectScriptDialog(modal) {
 							AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, indx, 0);
 							AkelPad.SendMessage(hWnd, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
 						}
-					break;
-					case IDC_FOCUS:
-						if(selectScript & 4)
-							AkelPad.SendMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CUR_SCRIPT, 0);
-						AkelPad.SendMessage(hWnd, 7 /*WM_SETFOCUS*/, 0, 0);
 				}
 			break;
 			case 36: //WM_GETMINMAXINFO
