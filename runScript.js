@@ -85,7 +85,7 @@ function getPrefName(scriptName) {
 }
 
 // Read arguments:
-var selectScript  = AkelPad.GetArgValue("selectOpenedScript", 3);
+var selectScript  = AkelPad.GetArgValue("selectOpenedScript", 1|4);
 var scriptName    = AkelPad.GetArgValue("script", "") || selectScript & 1 && getCurScript();
 var saveOptions   = AkelPad.GetArgValue("saveOptions", 1);
 var savePosition  = AkelPad.GetArgValue("savePosition", true);
