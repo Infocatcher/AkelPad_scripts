@@ -10,19 +10,20 @@
 //// Run script from AkelFiles\Plugs\Scripts\ directory
 
 // Hotkeys:
-//   Enter                         - Ok
-//   Ctrl+Enter (Shift+Enter), F3  - Exec
-//   Shift+Enter                   - Insert newline in multiline arguments text field
-//   F4, Ctrl+E                    - Edit
-//   F2, Ctrl+S                    - Rewrite options (and remove arguments for removed files)
-//   F1, Shift+F1                  - Next/previous script
-//   F5                            - Refresh scripts list
-//   Escape                        - Cancel
+//   Enter                        - Ok
+//   Ctrl+Enter (Shift+Enter), F3 - Exec
+//   Shift+Enter                  - Insert newline in multiline arguments text field
+//   F4, Ctrl+E                   - Edit
+//   F2, Ctrl+S                   - Rewrite options (and remove arguments for removed files)
+//   F1, Shift+F1                 - Next/previous script
+//   F5                           - Refresh scripts list
+//   Escape                       - Cancel
 
 // Arguments:
-//   -saveOptions=0               - don't save options
-//               =1               - save options only for runned scripts (default)
-//               =2               - always save options
+//   -saveOptions=1               - save options:
+//                                    0 - don't save
+//                                    1 - save only for runned scripts
+//                                    2 - always save
 //   -savePosition=true           - save last window position
 //   -saveSize=true               - save last window size
 //   -saveArgsLines=true          - save lines count for arguments text field
