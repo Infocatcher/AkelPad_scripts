@@ -185,7 +185,7 @@ function selectScriptDialog(modal) {
 	}
 	var _cleanup = {};
 	function saveSettings(rewrite) {
-		if(!saveOptions && !savePosition && !saveSize)
+		if(!save)
 			return;
 		if(!oSet.Begin(WScript.ScriptBaseName, 0x2 /*POB_SAVE*/ | (rewrite ? 0x4 /*POB_CLEAR*/ : 0)))
 			return;
