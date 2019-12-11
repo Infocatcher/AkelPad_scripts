@@ -189,9 +189,9 @@ function selectScriptDialog(modal) {
 			return;
 		if(!oSet.Begin(WScript.ScriptBaseName, 0x2 /*POB_SAVE*/ | (rewrite ? 0x4 /*POB_CLEAR*/ : 0)))
 			return;
+		if(saveArgsLines)
+			oSet.Write("argsLines", 1 /*PO_DWORD*/, argsLines);
 		if(saveOptions) {
-			if(saveArgsLines)
-				oSet.Write("argsLines", 1 /*PO_DWORD*/, argsLines);
 			if(runned || saveOptions == 2)
 				oSet.Write("lastScript", 3 /*PO_STRING*/, saveOptions == 2 ? curName : runnedName);
 			var names = saveOptions == 2 ? argsObj : runned || {};
