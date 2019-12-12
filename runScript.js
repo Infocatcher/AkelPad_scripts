@@ -189,19 +189,6 @@ function selectScriptDialog(modal) {
 			return;
 		if(!oSet.Begin(WScript.ScriptBaseName, 0x2 /*POB_SAVE*/ | (rewrite ? 0x4 /*POB_CLEAR*/ : 0)))
 			return;
-		if(saveArgsLines)
-			oSet.Write("argsLines", 1 /*PO_DWORD*/, argsLines);
-		if(saveOptions) {
-			if(runned || saveOptions == 2)
-				oSet.Write("lastScript", 3 /*PO_STRING*/, saveOptions == 2 ? curName : runnedName);
-			var names = saveOptions == 2 ? argsObj : runned || {};
-			for(var name in names)
-				saveArgs(name, argsObj[name]);
-			for(var name in _cleanup) {
-				oSet.Delete("lastArgs-" + encodeURIComponent(name));
-				!names[name] && saveArgs(name, _cleanup[name]);
-			}
-		}
 		if((savePosition || saveSize) && !oSys.Call("user32::IsIconic", hWndDialog)) {
 			var rcWnd = getWindowRect(hWndDialog);
 			if(rcWnd) {
@@ -213,6 +200,19 @@ function selectScriptDialog(modal) {
 					oSet.Write("windowWidth",  1 /*PO_DWORD*/, Math.round((rcWnd.right - rcWnd.left)/scale.x(10000)*10000) - sizeNonClientX);
 					oSet.Write("windowHeight", 1 /*PO_DWORD*/, Math.round((rcWnd.bottom - rcWnd.top)/scale.y(10000)*10000) - sizeNonClientY);
 				}
+			}
+		}
+		if(saveArgsLines)
+			oSet.Write("argsLines", 1 /*PO_DWORD*/, argsLines);
+		if(saveOptions) {
+			if(runned || saveOptions == 2)
+				oSet.Write("lastScript", 3 /*PO_STRING*/, saveOptions == 2 ? curName : runnedName);
+			var names = saveOptions == 2 ? argsObj : runned || {};
+			for(var name in names)
+				saveArgs(name, argsObj[name]);
+			for(var name in _cleanup) {
+				oSet.Delete("lastArgs-" + encodeURIComponent(name));
+				!names[name] && saveArgs(name, _cleanup[name]);
 			}
 		}
 		oSet.End();
