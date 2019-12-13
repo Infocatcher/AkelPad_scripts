@@ -790,7 +790,12 @@ function selectScriptDialog(modal) {
 			return;
 
 		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
-		if(wasMultiline ^ argsMultiline) {
+		var rc, rcr;
+		if(
+			wasMultiline ^ argsMultiline
+			&& (rc = getWindowRect(hWndArgs, hWndDialog))
+			&& (rcr = getWindowRect(hWndArgs))
+		) {
 			//var oldStyle = oSys.Call("User32::GetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/);
 			//var newStyle = argsMultiline
 			//	? oldStyle | mlStyle
@@ -799,8 +804,6 @@ function selectScriptDialog(modal) {
 			//	oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
 
 			var args = updMultilineArgs(windowText(hWndArgs));
-			var rc = getWindowRect(hWndArgs, hWndDialog);
-			var rcr = getWindowRect(hWndArgs);
 			var restoreFocus = oSys.Call("user32::GetFocus") == hWndArgs;
 			destroyWindow(hWndArgs);
 			var ml = argsMultiline ? mlStyle : 0;
