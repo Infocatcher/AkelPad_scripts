@@ -201,13 +201,16 @@ function _moveWindow(hWnd, x, y) {
 function _resizeWindow(hWnd, w, h) {
 	return oSys.Call("user32::SetWindowPos", hWnd, 0, 0, 0, w, h, 0x16 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOMOVE*/);
 }
-function getWindowRect(hWnd) {
+function getWindowRect(hWnd, hWndParent) {
 	var lpRect = AkelPad.MemAlloc(16); //sizeof(RECT)
-	if(!lpRect)
-		return null;
-	oSys.Call("user32::GetWindowRect", hWnd, lpRect);
-	var rcWnd = parseRect(lpRect);
-	AkelPad.MemFree(lpRect);
+	getRect: if(lpRect) {
+		if(!oSys.Call("user32::GetWindowRect", hWnd, lpRect))
+			break getRect;
+		if(hWndParent && !oSys.Call("user32::ScreenToClient", hWndParent, lpRect))
+			break getRect;
+		var rcWnd = parseRect(lpRect);
+	}
+	lpRect && AkelPad.MemFree(lpRect);
 	return rcWnd;
 }
 function parseRect(lpRect) {
