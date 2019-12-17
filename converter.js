@@ -2342,6 +2342,8 @@ function converterDialog(modal) {
 				if(!handleResize || oSys.Call("user32::IsIconic", hWnd))
 					break;
 				var rcWnd = getWindowRect(hWnd);
+				if(!rcWnd)
+					break;
 				var curW = rcWnd.right - rcWnd.left;
 				var curH = rcWnd.bottom - rcWnd.top;
 				resizeDialog(hWnd, curW, curH);
@@ -2461,13 +2463,17 @@ function converterDialog(modal) {
 	function moveWindow(hWnd, x, y, hWndParent) {
 		if(hWndParent) {
 			var rcWnd = getWindowRect(hWnd, hWndParent);
-			x += rcWnd.left;
-			y += rcWnd.top;
+			if(rcWnd) {
+				x += rcWnd.left;
+				y += rcWnd.top;
+			}
 		}
 		oSys.Call("user32::SetWindowPos", hWnd, 0, x, y, 0, 0, 0x15 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE*/);
 	}
 	function resizeWindow(hWnd, dw, dh) {
 		var rcWnd = getWindowRect(hWnd);
+		if(!rcWnd)
+			return;
 		var w = rcWnd.right - rcWnd.left + dw;
 		var h = rcWnd.bottom - rcWnd.top + dh;
 		oSys.Call("user32::SetWindowPos", hWnd, 0, 0, 0, w, h, 0x16 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOMOVE*/);
