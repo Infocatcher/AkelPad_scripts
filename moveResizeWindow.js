@@ -60,6 +60,8 @@ function resizeWindow(hWnd, resize, hWndParent) {
 	var rcWork = hWndParent
 		? getWindowRect(hWndParent)
 		: getWorkArea(hWnd);
+	if(!rcWnd || !rcWork)
+		return;
 
 	var ww = rcWork.right - rcWork.left;
 	var wh = rcWork.bottom - rcWork.top;
@@ -97,6 +99,8 @@ function moveWindow(hWnd, move, hWndParent) {
 	var rcWork = hWndParent
 		? getWindowRect(hWndParent)
 		: getWorkArea(hWnd);
+	if(!rcWnd || !rcWork)
+		return;
 
 	var w = rcWnd.right - rcWnd.left;
 	var h = rcWnd.bottom - rcWnd.top;
