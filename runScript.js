@@ -565,7 +565,7 @@ function selectScriptDialog(modal) {
 						var indx = getIndexFromString(scriptName);
 						if(indx != undefined) {
 							curName = scriptName;
-							AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, indx, 0);
+							setListBoxSel(indx);
 							AkelPad.SendMessage(hWnd, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
 						}
 				}
@@ -701,7 +701,7 @@ function selectScriptDialog(modal) {
 
 		var indx = getIndexFromString(curName);
 		if(indx != undefined)
-			AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, indx, 0);
+			setListBoxSel(indx);
 		else
 			curName = "";
 	}
@@ -718,6 +718,9 @@ function selectScriptDialog(modal) {
 		oSys.Call("user32::InvalidateRect", hWndListBox, 0, true);
 
 		updArgs();
+	}
+	function setListBoxSel(i) {
+		AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, i, 0);
 	}
 	function updArgs() {
 		var str = getStringFromIndex(AkelPad.SendMessage(hWndListBox, 0x188 /*LB_GETCURSEL*/, 0, 0));
@@ -753,7 +756,7 @@ function selectScriptDialog(modal) {
 	function ensureVisibility() {
 		var indx = AkelPad.SendMessage(hWndListBox, 0x188 /*LB_GETCURSEL*/, 0, 0);
 		if(indx != -1)
-			AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, indx, 0);
+			setListBoxSel(indx);
 	}
 	function navigate(up) {
 		var i = AkelPad.SendMessage(hWndListBox,  0x188 /*LB_GETCURSEL*/, 0, 0);
@@ -766,7 +769,7 @@ function selectScriptDialog(modal) {
 			if(++i > max)
 				i = 0;
 		}
-		AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, i, 0);
+		setListBoxSel(i);
 		postMessage(hWndDialog, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
 	}
 	function setArgsLines(dl) {
