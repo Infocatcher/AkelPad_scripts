@@ -720,6 +720,12 @@ function selectScriptDialog(modal) {
 		updArgs();
 	}
 	function setListBoxSel(i) {
+		var cur = AkelPad.SendMessage(hWndListBox, 0x188 /*LB_GETCURSEL*/, 0, 0);
+		var max = AkelPad.SendMessage(hWndListBox, 0x18B /*LB_GETCOUNT*/, 0, 0) - 1;
+		var context = 3; // Trick to show context (items before/after selected)
+		var ni = Math.max(0, Math.min(max, i + (i > cur ? 1 : -1)*context));
+		if(ni != i)
+			AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, ni, 0);
 		AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, i, 0);
 	}
 	function updArgs() {
