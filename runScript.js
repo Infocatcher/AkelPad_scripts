@@ -31,6 +31,7 @@
 //                                    1 - select on startup,
 //                                    2 - select on window focus,
 //                                    4 - select on window focus only after second runScript.js call
+//   -selectContext=3             - show N items before/after selected, 0 to disable
 //   -argsLines=1                 - force specify lines count for arguments text field
 //   -script="someScript.js"      - select someScript.js in the list
 
@@ -91,6 +92,7 @@ var scriptName    = AkelPad.GetArgValue("script", "") || selectScript & 1 && get
 var saveOptions   = AkelPad.GetArgValue("saveOptions", 1);
 var savePosition  = AkelPad.GetArgValue("savePosition", true);
 var saveSize      = AkelPad.GetArgValue("saveSize", true);
+var selectContext = AkelPad.GetArgValue("selectContext", 3);
 var saveArgsLines = AkelPad.GetArgValue("saveArgsLines", true);
 var argsLines     = AkelPad.GetArgValue("argsLines", 1);
 
@@ -720,12 +722,13 @@ function selectScriptDialog(modal) {
 		updArgs();
 	}
 	function setListBoxSel(i) {
-		var cur = AkelPad.SendMessage(hWndListBox, 0x188 /*LB_GETCURSEL*/, 0, 0);
-		var max = AkelPad.SendMessage(hWndListBox, 0x18B /*LB_GETCOUNT*/, 0, 0) - 1;
-		var context = 3; // Trick to show context (items before/after selected)
-		var ni = Math.max(0, Math.min(max, i + (i > cur ? 1 : -1)*context));
-		if(ni != i)
-			AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, ni, 0);
+		if(selectContext > 0) { // Trick to show context (items before/after selected)
+			var cur = AkelPad.SendMessage(hWndListBox, 0x188 /*LB_GETCURSEL*/, 0, 0);
+			var max = AkelPad.SendMessage(hWndListBox, 0x18B /*LB_GETCOUNT*/, 0, 0) - 1;
+			var ni = Math.max(0, Math.min(max, i + (i > cur ? 1 : -1)*selectContext));
+			if(ni != i)
+				AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, ni, 0);
+		}
 		AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, i, 0);
 	}
 	function updArgs() {
