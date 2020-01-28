@@ -722,10 +722,28 @@ function selectScriptDialog(modal) {
 		updArgs();
 	}
 	function setListBoxSel(i) {
-		if(selectContext > 0) { // Trick to show context (items before/after selected)
+		var context = selectContext;
+		if(context > 0) { // Trick to show context (items before/after selected)
 			var cur = AkelPad.SendMessage(hWndListBox, 0x188 /*LB_GETCURSEL*/, 0, 0);
 			var max = AkelPad.SendMessage(hWndListBox, 0x18B /*LB_GETCOUNT*/, 0, 0) - 1;
-			var ni = Math.max(0, Math.min(max, i + (i > cur ? 1 : -1)*selectContext));
+
+			var lpRect = max > 0 && AkelPad.MemAlloc(16); //sizeof(RECT)
+			var rcLB;
+			if(
+				lpRect
+				&& AkelPad.SendMessage(hWndListBox, 0x198 /*LB_GETITEMRECT*/, Math.max(0, cur), lpRect) != -1 /*LB_ERR*/
+				&& (rcLB = getWindowRect(hWndListBox))
+			) {
+				var rcItem = parseRect(lpRect);
+				var itemH = rcItem.top - rcItem.bottom;
+				var lbH = rcLB.top - rcLB.bottom;
+				var maxContext = Math.round(lbH/itemH/2) - 1;
+				if(context > maxContext)
+					context = maxContext;
+			}
+			lpRect && AkelPad.MemFree(lpRect);
+
+			var ni = Math.max(0, Math.min(max, i + (i > cur ? 1 : -1)*context));
 			if(ni != i)
 				AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, ni, 0);
 		}
