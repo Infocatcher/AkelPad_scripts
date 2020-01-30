@@ -8,7 +8,7 @@
 // Version: 0.3.0 - 2019-09-21
 // Author: Infocatcher
 // Based on scripts from https://beautifier.io/ (http://jsbeautifier.org/)
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2019-08-06 18:14:27 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2020-01-14 19:54:21 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -2593,11 +2593,11 @@ module.exports.Token = Token;
 
 // acorn used char codes to squeeze the last bit of performance out
 // Beautifier is okay without that, so we're using regex
-// permit $ (36) and @ (64). @ is used in ES7 decorators.
+// permit # (23), $ (36), and @ (64). @ is used in ES7 decorators.
 // 65 through 91 are uppercase letters.
 // permit _ (95).
 // 97 through 123 are lowercase letters.
-var baseASCIIidentifierStartChars = "\\x24\\x40\\x41-\\x5a\\x5f\\x61-\\x7a";
+var baseASCIIidentifierStartChars = "\\x23\\x24\\x40\\x41-\\x5a\\x5f\\x61-\\x7a";
 
 // inside an identifier @ is not allowed but 0-9 are.
 var baseASCIIidentifierChars = "\\x24\\x30-\\x39\\x41-\\x5a\\x5f\\x61-\\x7a";
@@ -3103,13 +3103,13 @@ Tokenizer.prototype._get_next_token = function(previous_token, open_token) { // 
     return this._create_token(TOKEN.EOF, '');
   }
 
+  token = token || this._read_non_javascript(c);
   token = token || this._read_string(c);
   token = token || this._read_word(previous_token);
   token = token || this._read_singles(c);
   token = token || this._read_comment(c);
   token = token || this._read_regexp(c, previous_token);
   token = token || this._read_xml(c, previous_token);
-  token = token || this._read_non_javascript(c);
   token = token || this._read_punctuation();
   token = token || this._create_token(TOKEN.UNKNOWN, this._input.next());
 
@@ -8939,7 +8939,7 @@ var Tokenizer = function(input_string, options) {
     word: templatable_reader.until(/[\n\r\t <]/),
     single_quote: templatable_reader.until_after(/'/),
     double_quote: templatable_reader.until_after(/"/),
-    attribute: templatable_reader.until(/[\n\r\t =\/>]/),
+    attribute: templatable_reader.until(/[\n\r\t =>]|\/>/),
     element_name: templatable_reader.until(/[\n\r\t >\/]/),
 
     handlebars_comment: pattern_reader.starting_with(/{{!--/).until_after(/--}}/),

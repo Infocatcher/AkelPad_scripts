@@ -7,7 +7,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // Scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2019-08-06 18:14:27 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2020-01-14 19:54:21 UTC]
 
 
 //== js/test/generated/beautify-javascript-tests.js
@@ -415,6 +415,26 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '            return `${host}/vwapi/Pay?SessionId=${par}`;\n' +
             '    };\n' +
             '};');
+
+
+        //============================================================
+        // Private Class Fields
+        reset_options();
+        set_name('Private Class Fields');
+        bt('#foo');
+        bt(
+            'class X {\n' +
+            '    #foo = null;\n' +
+            '    get foo() {\n' +
+            '        return this.#foo;\n' +
+            '    }\n' +
+            '}');
+        bt(
+            'class X {#foo=null;}',
+            //  -- output --
+            'class X {\n' +
+            '    #foo = null;\n' +
+            '}');
 
 
         //============================================================
@@ -6531,13 +6551,13 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         // Issue 508
         bt('set["name"]');
         bt('get["name"]');
-        bt(
+        test_fragment(
             'a = {\n' +
             '    set b(x) {},\n' +
             '    c: 1,\n' +
             '    d: function() {}\n' +
             '};');
-        bt(
+        test_fragment(
             'a = {\n' +
             '    get b() {\n' +
             '        retun 0;\n' +
@@ -27227,6 +27247,12 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '</a>\n' +
             '\n' +
             '<?php include_once $_SERVER[\'DOCUMENT_ROOT\'] . "/shared/helpModal.php";  ?>');
+
+        // #1736 - unquoted attribute with slashes
+        bth(
+            '<div>\n' +
+            '    <a href=http://www.example.com></a>\n' +
+            '</div>');
 
 
         //============================================================
