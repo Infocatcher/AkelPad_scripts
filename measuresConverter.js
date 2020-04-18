@@ -1780,7 +1780,7 @@ function _localize(s) {
 	return _localize(s);
 }
 
-var BASE_CURRENCY = "USD";
+var BASE_CURRENCY = "USD"; // Always "USD" for fxexchangerate.com
 var ROUND_OFF = 0xffff;
 var ROUND_DEFAULT = 2;
 var ROUND_MAX = 20; // Built-in Number.prototype.toFixed() throws on numbers > 20
@@ -1968,9 +1968,14 @@ function getRequestURL(code) {
 		&& (preferFXExchangeRate || !available("exchange-rates.org", code))
 	) {
 		// See https://www.fxexchangerate.com/currency-converter-widget.html
-		return "https://w.fxexchangerate.com/converter.php"; // BASE_CURRENCY == "USD" !
+		return "https://w.fxexchangerate.com/converter.php?" + new Date().getTime(); // BASE_CURRENCY == "USD" !
 	}
 	return "https://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
+}
+function shouldCacheURL(url) {
+	if(url.replace(/\d+$/, "") == "https://w.fxexchangerate.com/converter.php?")
+		return "fxexchangerate.com";
+	return "";
 }
 function getRatioFromResponse(response, code) {
 	// https://exchange-rates.org/converter/EUR/USD/1/N
@@ -2054,6 +2059,7 @@ var asyncUpdater = {
 	maxErrors: updateMaxErrors,
 	queue: [],
 	requests: {},
+	cache: {},
 	init: function(onProgress, onComplete, total) {
 		this.onProgress = onProgress;
 		this.onComplete = onComplete;
@@ -2061,6 +2067,7 @@ var asyncUpdater = {
 		this.activeRequests = this.processed = this.success = this.errors = this.abortedErrors = this.parseErrors = 0;
 		this.aborted = this.stopped = false;
 		this.details = [];
+		this.cache = {};
 		this.queue.length = 0;
 	},
 	abort: function() {
@@ -2081,7 +2088,7 @@ var asyncUpdater = {
 		var request = new ActiveXObject("Microsoft.XMLHTTP");
 		this.requests[code] = request;
 		var _this = this;
-		request.onreadystatechange = function() {
+		var onReadyStateChange = request.onreadystatechange = function() {
 			if(request.readyState != 4)
 				return;
 			var err = false;
@@ -2105,6 +2112,12 @@ var asyncUpdater = {
 				while(cnt++ < _this.maxActiveRequests && _this.queue.length > 0)
 					_this.nextRequest();
 			if(!err) {
+				if(cacheKey && !_this.cache[cacheKey]) {
+					_this.cache[cacheKey] = {
+						request: request,
+						timestamp: new Date().getTime()
+					};
+				}
 				var ratio = getRatioFromResponse(request.responseText, code);
 				if(isNaN(ratio)) {
 					++_this.parseErrors;
@@ -2114,7 +2127,7 @@ var asyncUpdater = {
 					++_this.success;
 					currencyRatios[code] = {
 						ratio: ratio,
-						timestamp: new Date().getTime()
+						timestamp: _timestamp || new Date().getTime()
 					};
 				}
 			}
@@ -2126,6 +2139,16 @@ var asyncUpdater = {
 			request = code = _this = null; // Avoid memory leaks in old JScript versions (not tested)
 		};
 		var url = getRequestURL(code);
+		var cacheKey = shouldCacheURL(url);
+		var cached = cacheKey && this.cache[cacheKey];
+		if(cached) {
+			++this.activeRequests; // Fake...
+			var requestOrig = request;
+			var _timestamp = cached.timestamp;
+			request = cached.request;
+			onReadyStateChange();
+			return requestOrig;
+		}
 		request.open("GET", url, true);
 		if(typeof request.setRequestHeader != "undefined") {
 			request.setRequestHeader("Accept-Language", "en-us,en;q=0.5");
