@@ -1929,7 +1929,7 @@ function getCurrencyRatio(code) {
 		var request = new ActiveXObject("Microsoft.XMLHTTP");
 		request.open("GET", url, false);
 		request.send(null);
-		var ratio = getRatioFromResponse(request.responseText);
+		var ratio = getRatioFromResponse(request.responseText, code);
 		if(!isNaN(ratio)) {
 			currencyRatios[code] = {
 				ratio: ratio,
@@ -1967,15 +1967,12 @@ function getRequestURL(code) {
 		available("fxexchangerate.com", code)
 		&& (preferFXExchangeRate || !available("exchange-rates.org", code))
 	) {
-		//return "https://www.fxexchangerate.com/preview.php?ws=&fm=" + code + "&ft=" + BASE_CURRENCY
-		//	+ "&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250";
-		return "https://www.fxexchangerate.com/getdata.php?fxfrom="
-			+ code + "&fxto=" + BASE_CURRENCY + "&amount=1"
-			+ "&" + new Date().getTime();
+		// See https://www.fxexchangerate.com/currency-converter-widget.html
+		return "https://w.fxexchangerate.com/converter.php"; // BASE_CURRENCY == "USD" !
 	}
 	return "https://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
 }
-function getRatioFromResponse(response) {
+function getRatioFromResponse(response, code) {
 	// https://exchange-rates.org/converter/EUR/USD/1/N
 	// <span id="ctl00_M_lblToAmount">0.0003295</span>
 	if(/<span id="ctl00_M_lblToAmount">([^<>]+)<\/span>/.test(response))
@@ -2001,13 +1998,14 @@ function getRatioFromResponse(response) {
 		}
 	}
 
-	// https://www.fxexchangerate.com/preview.php?ws=&fm=EUR&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=en&tz=0s&wh=200x250
-	// <td align="center" id="resultTD"  style="font-weight:bold;font-size:26px;color:#2D6AB4;">0.08629</td>
-	//if(/\sid="resultTD"\s+\w+\s*=\s*"[^"]+"\s*>([^<>]+)</i.test(response))
-	//	return validateRatio(stringToNumber(RegExp.$1));
+	// https://w.fxexchangerate.com/converter.php
+	if(
+		response.substr(0, 12) == "var fxrates="
+		&& new RegExp('\\["' + code + '"\\]=(\\d+(\\.\\d+)?);').test(response)
+	)
+		return validateRatio(stringToNumber(RegExp.$1));
 
-	// https://www.fxexchangerate.com/getdata.php?fxfrom=EUR&fxto=USD&amount=1
-	return validateRatio(stringToNumber(response));
+	return NaN;
 }
 function stringToNumber(s) {
 	// Expected English format: 12,345.6
@@ -2107,7 +2105,7 @@ var asyncUpdater = {
 				while(cnt++ < _this.maxActiveRequests && _this.queue.length > 0)
 					_this.nextRequest();
 			if(!err) {
-				var ratio = getRatioFromResponse(request.responseText);
+				var ratio = getRatioFromResponse(request.responseText, code);
 				if(isNaN(ratio)) {
 					++_this.parseErrors;
 					_this.details.push("Parse error: " + code + " " + url);
