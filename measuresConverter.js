@@ -2026,7 +2026,7 @@ function getRatioFromResponse(response, code) {
 		response.substr(0, 12) == "var fxrates="
 		&& new RegExp('\\["' + code + '"\\]=(\\d+(\\.\\d+)?);').test(response)
 	)
-		return 1/validateRatio(stringToNumber(RegExp.$1));
+		return 1/validateRatio(+RegExp.$1);
 
 	return NaN;
 }
