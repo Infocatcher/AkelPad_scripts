@@ -2024,7 +2024,7 @@ function getRatioFromResponse(response, code) {
 	// https://w.fxexchangerate.com/converter.php
 	if(
 		response.substr(0, 12) == "var fxrates="
-		&& new RegExp('\\["' + code + '"\\]=(\\d+(\\.\\d+)?);').test(response)
+		&& new RegExp('\\["' + code + '"\\]=([^;]+);').test(response)
 	)
 		return 1/validateRatio(+RegExp.$1);
 
