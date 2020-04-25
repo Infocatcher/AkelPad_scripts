@@ -1887,17 +1887,22 @@ if(from && to && from != to) {
 			.replace(/&&/g, "&")
 			.replace(/\s+\(.+\)$/, "");
 	};
+	var getCurrencyName = function(s) {
+		return (s === 1 ? BASE_CURRENCY : s).toLowerCase();
+	};
 	from = getName(from);
 	to   = getName(to);
 	for(var type in measures) {
+		var isCurrency = type == CURRENCY;
 		var mo = measures[type];
 		var foundFrom = false;
 		var foundTo   = false;
 		for(var item in mo) {
 			var name = getName(item);
-			if(name == from)
+			var cName = isCurrency && getCurrencyName(mo[item]);
+			if(name == from || cName == from)
 				from = foundFrom = item;
-			else if(name == to)
+			else if(name == to || cName == to)
 				to = foundTo = item;
 		}
 		if(foundFrom && foundTo) {
