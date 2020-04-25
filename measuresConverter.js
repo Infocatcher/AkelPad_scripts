@@ -2256,14 +2256,15 @@ if(hMainWnd) {
 	var num = useSelected ? AkelPad.GetSelText() : "";
 	var _num = calcNum(num, !dialog);
 	if(!dialog && _num != undefined && curType && curItem && curItem2) {
-		saveOffline && loadOfflineCurrencyData(true);
+		var isCurrency = curType == CURRENCY;
+		isCurrency && saveOffline && loadOfflineCurrencyData(true);
 		var mo = measures[curType];
 		var from = mo[curItem];
 		var to   = mo[curItem2];
 		var res = convert(_num, from, to);
 		res = numToStr(res);
 		AkelPad.ReplaceSel(res);
-		saveOffline && saveOfflineCurrencyData(true);
+		isCurrency && saveOffline && saveOfflineCurrencyData(true);
 	}
 	else {
 		if(_num == undefined)
