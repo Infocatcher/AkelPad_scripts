@@ -3938,7 +3938,7 @@ function numToStr(n) {
 function fixPrecision(n) {
 	// Try fix "bugs" with floating point operations
 	// E.g. 0.3/0.1 = 2.9999999999999995
-	return n.toPrecision(13).toString()
+	return n.toPrecision(13)
 		.replace(/\.0+(e|$)/, "$1") // 1.000 and 1.000e5 => 1
 		.replace(/(\.\d*[^0])0+(e|$)/, "$1$2"); // 1.200 and 1.200e5 => 1.2
 }
