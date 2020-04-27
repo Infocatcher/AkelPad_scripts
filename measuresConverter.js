@@ -2722,7 +2722,7 @@ function converterDialog(modal) {
 					0                              //lpParam
 				);
 				AkelPad.SendMessage(hWndUpDown, 0x400 + 105 /*UDM_SETBUDDY*/, hWndRoundValue, 0);
-				AkelPad.SendMessage(hWndUpDown, 0x400 + 101 /*UDM_SETRANGE*/, 0, ((-16 & 0xFFFF) << 16) + (16 & 0xFFFF));
+				AkelPad.SendMessage(hWndUpDown, 0x400 + 101 /*UDM_SETRANGE*/, 0, ((-ROUND_MAX & 0xFFFF) << 16) + (ROUND_MAX & 0xFFFF));
 
 
 				// GroupBox sort measures
