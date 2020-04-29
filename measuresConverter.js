@@ -3927,18 +3927,20 @@ function prepareExpression(str) {
 }
 function numToStr(n) {
 	var roundVal = curType == CURRENCY ? roundCurrencies : roundMeasures;
-	if(roundVal != ROUND_OFF && roundVal != undefined)
-		n = n.toFixed(roundVal);
-	else
-		n = fixPrecision(n);
+	var roundEnabled = roundVal != ROUND_OFF && roundVal != undefined;
+	var ns = roundEnabled
+		? n.toFixed(roundVal)
+		: fixPrecision(n);
+	if(roundEnabled && roundVal >= 0 && /^[0.]+$/.test(ns))
+		ns = fixPrecision(n, Math.max(1, roundVal));
 	if(convertNumbers)
-		return toLocaleNum(formatNum(n));
-	return n;
+		return toLocaleNum(formatNum(ns));
+	return ns;
 }
-function fixPrecision(n) {
+function fixPrecision(n, prec) {
 	// Try fix "bugs" with floating point operations
 	// E.g. 0.3/0.1 = 2.9999999999999995
-	return n.toPrecision(13)
+	return n.toPrecision(prec || 13)
 		.replace(/\.0+(e|$)/, "$1") // 1.000 and 1.000e5 => 1
 		.replace(/(\.\d*[^0])0+(e|$)/, "$1$2"); // 1.200 and 1.200e5 => 1.2
 }
