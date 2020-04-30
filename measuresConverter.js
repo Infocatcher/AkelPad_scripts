@@ -37,7 +37,9 @@
 //   -convertNumbers=true          - convert numbers (1234.5 -> 1 234,5)
 //   -displayCalcErrors=true       - always display calculation errors (e.g. for "1++2")
 //   -roundMeasures=3              - round measures (number or special ROUND_OFF value)
+//   -roundMeasuresSmart=true      - show too small rounded values (e.g. 0.00 -> 0.00019)
 //   -roundCurrencies=2            - round currencies (number or special ROUND_OFF value)
+//   -roundCurrenciesSmart=true    - show too small rounded values (e.g. 0.00 -> 0.00019)
 //   -sortMeasures=true            - sort measures alphabetically
 //   -sortByName=true              - sort currencies by name (otherwise - by code)
 //   -maxHeight=0                  - maximum window height for create listboxes instead of radio buttons
@@ -1846,7 +1848,9 @@ var displayCalcErrors     = getArg("displayCalcErrors");
 var sortMeasures          = getArg("sortMeasures");
 var sortByName            = getArg("sortByName");
 var roundMeasures         = getArg("roundMeasures");
+var roundMeasuresSmart    = getArg("roundMeasuresSmart");
 var roundCurrencies       = getArg("roundCurrencies");
+var roundCurrenciesSmart  = getArg("roundCurrenciesSmart");
 var dlgMaxH               = getArg("maxHeight", 0); // -1 => no resize
 var disableRadios         = getArg("disableRadios", false);
 var useSelected           = getArg("useSelected", true);
@@ -3926,12 +3930,14 @@ function prepareExpression(str) {
 		.replace(/([.,]|[-+*\/\s](\([-\s]?)*)\s*$/, ""); // Looks like non-terminated expression (e.g. "2+2*")
 }
 function numToStr(n) {
-	var roundVal = curType == CURRENCY ? roundCurrencies : roundMeasures;
+	var isCurrency = curType == CURRENCY;
+	var roundVal = isCurrency ? roundCurrencies : roundMeasures;
 	var roundEnabled = roundVal != ROUND_OFF && roundVal != undefined;
 	var ns = roundEnabled
 		? n.toFixed(roundVal)
 		: fixPrecision(n);
-	if(roundEnabled && roundVal >= 0 && /^[0.]+$/.test(ns))
+	var roundSmart = roundEnabled && (isCurrency ? roundCurrenciesSmart : roundMeasuresSmart);
+	if(roundSmart && roundVal >= 0 && /^[0.]+$/.test(ns))
 		ns = fixPrecision(n, Math.max(1, roundVal));
 	if(convertNumbers)
 		return toLocaleNum(formatNum(ns));
