@@ -2315,8 +2315,12 @@ function converterDialog(modal) {
 				curType = undefined;
 			if(roundMeasures === undefined)
 				roundMeasures = oSet.Read("roundMeasures", 1 /*PO_DWORD*/);
+			if(roundMeasuresSmart === undefined)
+				roundMeasuresSmart = !!oSet.Read("roundMeasuresSmart", 1 /*PO_DWORD*/);
 			if(roundCurrencies === undefined)
 				roundCurrencies = oSet.Read("roundCurrencies", 1 /*PO_DWORD*/);
+			if(roundCurrenciesSmart === undefined)
+				roundCurrenciesSmart = !!oSet.Read("roundCurrenciesSmart", 1 /*PO_DWORD*/);
 			if(sortMeasures === undefined)
 				sortMeasures = oSet.Read("sortMeasures", 1 /*PO_DWORD*/);
 			if(sortByName === undefined)
@@ -2354,10 +2358,12 @@ function converterDialog(modal) {
 			curType && oSet.Write("type",  3 /*PO_STRING*/, curType);
 			if(curType && curItem && curItem2)
 				selectedItems[curType] = [curItem, curItem2];
-			oSet.Write("roundMeasures",   1 /*PO_DWORD*/, roundMeasures);
-			oSet.Write("roundCurrencies", 1 /*PO_DWORD*/, roundCurrencies);
-			oSet.Write("sortMeasures",    1 /*PO_DWORD*/, sortMeasures);
-			oSet.Write("sortByName",      1 /*PO_DWORD*/, sortByName);
+			oSet.Write("roundMeasures",        1 /*PO_DWORD*/,  roundMeasures);
+			oSet.Write("roundMeasuresSmart",   1 /*PO_DWORD*/, +roundMeasuresSmart);
+			oSet.Write("roundCurrencies",      1 /*PO_DWORD*/,  roundCurrencies);
+			oSet.Write("roundCurrenciesSmart", 1 /*PO_DWORD*/, +roundCurrenciesSmart);
+			oSet.Write("sortMeasures",         1 /*PO_DWORD*/,  sortMeasures);
+			oSet.Write("sortByName",           1 /*PO_DWORD*/,  sortByName);
 			var selected = [];
 			for(var type in selectedItems) {
 				var entries = selectedItems[type];
@@ -2681,7 +2687,7 @@ function converterDialog(modal) {
 					0,                 //dwExStyle
 					"BUTTON",          //lpClassName
 					0,                 //lpWindowName
-					0x50010003,        //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
+					0x50010006,        //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTO3STATE
 					msr2X + msrW + 20, //x
 					12 + btnH*3 + 28,  //y
 					btnW - 54,         //nWidth
@@ -3427,16 +3433,19 @@ function converterDialog(modal) {
 		return Math.max(-ROUND_MAX, Math.min(ROUND_MAX, roundVal));
 	}
 	function setRoundValue() {
-		var roundVal = curType == CURRENCY ? roundCurrencies : roundMeasures;
+		var isCurrency = curType == CURRENCY;
+		var roundVal = isCurrency ? roundCurrencies : roundMeasures;
+		var roundSmart = isCurrency ? roundCurrenciesSmart : roundMeasuresSmart;
 		var dontRound = roundVal == ROUND_OFF;
-		checked(hWndRound, !dontRound);
+		checked(hWndRound, dontRound ? false : 1 + roundSmart);
 		roundVal = validateRoundValue(roundVal);
 		setEditText(hWndRoundValue, "" + (dontRound ? ROUND_DEFAULT : roundVal));
 		enableRoundValue();
 	}
 	function readRoundValue() {
 		var r = ROUND_OFF;
-		if(checked(hWndRound)) {
+		var ch = checked(hWndRound);
+		if(ch) {
 			r = Math.ceil(+windowText(hWndRoundValue));
 			var r2 = validateRoundValue(r);
 			if(r2 != r) {
@@ -3444,10 +3453,14 @@ function converterDialog(modal) {
 				setEditText(hWndRoundValue, "" + r);
 			}
 		}
-		if(curType == CURRENCY)
+		if(curType == CURRENCY) {
 			roundCurrencies = r;
-		else
+			roundCurrenciesSmart = ch == 2 /*BST_INDETERMINATE*/;
+		}
+		else {
 			roundMeasures = r;
+			roundMeasuresSmart = ch == 2 /*BST_INDETERMINATE*/;
+		}
 	}
 	function enableRoundValue() {
 		var on = checked(hWndRound);
@@ -3781,10 +3794,13 @@ function converterDialog(modal) {
 		windowText(hWnd, pText);
 		pText && AkelPad.SendMessage(hWnd, 177 /*EM_SETSEL*/, selectAll ? 0 : pText.length, -1);
 	}
-	function checked(hWnd, val) {
+	function checked(hWnd, checked) {
+		// BST_UNCHECKED:     0
+		// BST_CHECKED:       1
+		// BST_INDETERMINATE: 2
 		return arguments.length == 1
 			? AkelPad.SendMessage(hWnd, 240 /*BM_GETCHECK*/, 0, 0)
-			: AkelPad.SendMessage(hWnd, 241 /*BM_SETCHECK*/, val ? 1 /*BST_CHECKED*/ : 0, 0);
+			: AkelPad.SendMessage(hWnd, 241 /*BM_SETCHECK*/, +checked, 0);
 	}
 	function enabled(hWnd, val) {
 		return arguments.length == 1
