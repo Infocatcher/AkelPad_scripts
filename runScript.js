@@ -745,9 +745,9 @@ function selectScriptDialog(modal) {
 
 			var ni = Math.max(0, Math.min(max, i + (i > cur ? 1 : -1)*context));
 			if(ni != i)
-				AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, ni, 0);
+				AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, ni, 0);
 		}
-		AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, i, 0);
+		AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, i, 0);
 	}
 	function updArgs() {
 		var str = getStringFromIndex(AkelPad.SendMessage(hWndListBox, 0x188 /*LB_GETCURSEL*/, 0, 0));
