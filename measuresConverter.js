@@ -36,10 +36,12 @@
 //   -updateMaxErrors=4            - abort update, if reached many errors (use -1 to ignore errors)
 //   -convertNumbers=true          - convert numbers (1234.5 -> 1 234,5)
 //   -displayCalcErrors=true       - always display calculation errors (e.g. for "1++2")
-//   -roundMeasures=3              - round measures (number or special ROUND_OFF value)
-//   -roundMeasuresSmart=true      - show too small rounded values (e.g. 0.00 -> 0.00019)
-//   -roundCurrencies=2            - round currencies (number or special ROUND_OFF value)
-//   -roundCurrenciesSmart=true    - show too small rounded values (e.g. 0.00 -> 0.00019)
+//   -roundMeasures=3              - round measures (e.g. for 3: 0.1234 -> 0.123)
+//   -roundMeasuresState=1         - 0 - don't round
+//                                   1 - round (0.1234 -> 0.12, 0.00019 -> 0.00)
+//                                   2 - round and show too small rounded values (e.g. 0.00 -> 0.00019)
+//   -roundCurrencies=2            - round currencies (e.g. for 3: 0.1234 -> 0.123)
+//   -roundCurrenciesState=1       - see -roundMeasuresState
 //   -sortMeasures=true            - sort measures alphabetically
 //   -sortByName=true              - sort currencies by name (otherwise - by code)
 //   -maxHeight=0                  - maximum window height for create listboxes instead of radio buttons
@@ -57,7 +59,7 @@
 
 // Usage:
 //   Call("Scripts::Main", 1, "measuresConverter.js")
-//   Call("Scripts::Main", 1, "measuresConverter.js", '-roundMeasures=ROUND_OFF -roundCurrencies=2')
+//   Call("Scripts::Main", 1, "measuresConverter.js", '-roundMeasuresState=0 -roundCurrencies=2 -roundCurrenciesState=1')
 //   Call("Scripts::Main", 1, "measuresConverter.js", '-dialog=false -from="Pound" -to="Kilogram"')
 //===================
 
@@ -1783,7 +1785,7 @@ function _localize(s) {
 }
 
 var BASE_CURRENCY = "USD"; // Always "USD" for fxexchangerate.com
-var ROUND_OFF = 0xffff;
+var ROUND_OFF = 0xffff; // Legacy
 var ROUND_DEFAULT = 2;
 var ROUND_MAX = 20; // Built-in Number.prototype.toFixed() throws on numbers > 20
 var CURRENCY = "&Currency";
@@ -1848,9 +1850,9 @@ var displayCalcErrors     = getArg("displayCalcErrors");
 var sortMeasures          = getArg("sortMeasures");
 var sortByName            = getArg("sortByName");
 var roundMeasures         = getArg("roundMeasures");
-var roundMeasuresSmart    = getArg("roundMeasuresSmart");
+var roundMeasuresState    = getArg("roundMeasuresState");
 var roundCurrencies       = getArg("roundCurrencies");
-var roundCurrenciesSmart  = getArg("roundCurrenciesSmart");
+var roundCurrenciesState  = getArg("roundCurrenciesState");
 var dlgMaxH               = getArg("maxHeight", 0); // -1 => no resize
 var disableRadios         = getArg("disableRadios", false);
 var useSelected           = getArg("useSelected", true);
@@ -2315,12 +2317,12 @@ function converterDialog(modal) {
 				curType = undefined;
 			if(roundMeasures === undefined)
 				roundMeasures = oSet.Read("roundMeasures", 1 /*PO_DWORD*/);
-			if(roundMeasuresSmart === undefined)
-				roundMeasuresSmart = !!oSet.Read("roundMeasuresSmart", 1 /*PO_DWORD*/);
+			if(roundMeasuresState === undefined)
+				roundMeasuresState = oSet.Read("roundMeasuresState", 1 /*PO_DWORD*/);
 			if(roundCurrencies === undefined)
 				roundCurrencies = oSet.Read("roundCurrencies", 1 /*PO_DWORD*/);
-			if(roundCurrenciesSmart === undefined)
-				roundCurrenciesSmart = !!oSet.Read("roundCurrenciesSmart", 1 /*PO_DWORD*/);
+			if(roundCurrenciesState === undefined)
+				roundCurrenciesState = oSet.Read("roundCurrenciesState", 1 /*PO_DWORD*/);
 			if(sortMeasures === undefined)
 				sortMeasures = oSet.Read("sortMeasures", 1 /*PO_DWORD*/);
 			if(sortByName === undefined)
@@ -2358,12 +2360,12 @@ function converterDialog(modal) {
 			curType && oSet.Write("type",  3 /*PO_STRING*/, curType);
 			if(curType && curItem && curItem2)
 				selectedItems[curType] = [curItem, curItem2];
-			oSet.Write("roundMeasures",        1 /*PO_DWORD*/,  roundMeasures);
-			oSet.Write("roundMeasuresSmart",   1 /*PO_DWORD*/, +roundMeasuresSmart);
-			oSet.Write("roundCurrencies",      1 /*PO_DWORD*/,  roundCurrencies);
-			oSet.Write("roundCurrenciesSmart", 1 /*PO_DWORD*/, +roundCurrenciesSmart);
-			oSet.Write("sortMeasures",         1 /*PO_DWORD*/,  sortMeasures);
-			oSet.Write("sortByName",           1 /*PO_DWORD*/,  sortByName);
+			oSet.Write("roundMeasures",        1 /*PO_DWORD*/, roundMeasures);
+			oSet.Write("roundMeasuresState",   1 /*PO_DWORD*/, roundMeasuresState);
+			oSet.Write("roundCurrencies",      1 /*PO_DWORD*/, roundCurrencies);
+			oSet.Write("roundCurrenciesState", 1 /*PO_DWORD*/, roundCurrenciesState);
+			oSet.Write("sortMeasures",         1 /*PO_DWORD*/, sortMeasures);
+			oSet.Write("sortByName",           1 /*PO_DWORD*/, sortByName);
 			var selected = [];
 			for(var type in selectedItems) {
 				var entries = selectedItems[type];
@@ -2387,9 +2389,9 @@ function converterDialog(modal) {
 	}
 
 	if(!isFinite(roundMeasures))
-		roundMeasures = ROUND_OFF;
+		roundMeasures = ROUND_DEFAULT;
 	if(!isFinite(roundCurrencies))
-		roundCurrencies = ROUND_OFF;
+		roundCurrencies = ROUND_DEFAULT;
 	if(sortMeasures === undefined)
 		sortMeasures = false;
 	if(sortByName === undefined)
@@ -3435,31 +3437,27 @@ function converterDialog(modal) {
 	function setRoundValue() {
 		var isCurrency = curType == CURRENCY;
 		var roundVal = isCurrency ? roundCurrencies : roundMeasures;
-		var roundSmart = isCurrency ? roundCurrenciesSmart : roundMeasuresSmart;
+		var roundState = isCurrency ? roundCurrenciesState : roundMeasuresState;
 		var dontRound = roundVal == ROUND_OFF;
-		checked(hWndRound, dontRound ? false : 1 + roundSmart);
-		roundVal = validateRoundValue(roundVal);
-		setEditText(hWndRoundValue, "" + (dontRound ? ROUND_DEFAULT : roundVal));
+		checked(hWndRound, roundState);
+		setEditText(hWndRoundValue, "" + (dontRound ? ROUND_DEFAULT : validateRoundValue(roundVal)));
 		enableRoundValue();
 	}
 	function readRoundValue() {
-		var r = ROUND_OFF;
 		var ch = checked(hWndRound);
-		if(ch) {
-			r = Math.ceil(+windowText(hWndRoundValue));
-			var r2 = validateRoundValue(r);
-			if(r2 != r) {
-				r = r2;
-				setEditText(hWndRoundValue, "" + r);
-			}
+		var r = Math.ceil(+windowText(hWndRoundValue));
+		var r2 = isFinite(r) ? validateRoundValue(r) : ROUND_DEFAULT;
+		if(r2 != r) {
+			r = r2;
+			setEditText(hWndRoundValue, "" + r);
 		}
 		if(curType == CURRENCY) {
 			roundCurrencies = r;
-			roundCurrenciesSmart = ch == 2 /*BST_INDETERMINATE*/;
+			roundCurrenciesState = ch;
 		}
 		else {
 			roundMeasures = r;
-			roundMeasuresSmart = ch == 2 /*BST_INDETERMINATE*/;
+			roundMeasuresState = ch;
 		}
 	}
 	function enableRoundValue() {
@@ -3948,12 +3946,12 @@ function prepareExpression(str) {
 function numToStr(n) {
 	var isCurrency = curType == CURRENCY;
 	var roundVal = isCurrency ? roundCurrencies : roundMeasures;
-	var roundEnabled = roundVal != ROUND_OFF && roundVal != undefined;
+	var roundState = isCurrency ? roundCurrenciesState : roundMeasuresState;
+	var roundEnabled = roundState > 0 && roundVal != ROUND_OFF && roundVal != undefined;
 	var ns = roundEnabled
 		? n.toFixed(roundVal)
 		: fixPrecision(n);
-	var roundSmart = roundEnabled && (isCurrency ? roundCurrenciesSmart : roundMeasuresSmart);
-	if(roundSmart && roundVal >= 0 && /^[0.]+$/.test(ns))
+	if(roundState == 2 /*BST_INDETERMINATE*/ && roundVal >= 0 && /^[0.]+$/.test(ns))
 		ns = fixPrecision(n, Math.max(1, roundVal));
 	if(convertNumbers)
 		return toLocaleNum(formatNum(ns));
