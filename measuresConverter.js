@@ -2955,8 +2955,8 @@ function converterDialog(modal) {
 						if(hWndListBox) {
 							var i1 = AkelPad.SendMessage(hWndListBox,  0x188 /*LB_GETCURSEL*/, 0, 0);
 							var i2 = AkelPad.SendMessage(hWndListBox2, 0x188 /*LB_GETCURSEL*/, 0, 0);
-							AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, i2, 0);
-							AkelPad.SendMessage(hWndListBox2, 0x186 /*LB_SETCURSEL*/, i1, 0);
+							setListBoxSel(hWndListBox,  i2);
+							setListBoxSel(hWndListBox2, i1);
 
 							var tmp = curItem;
 							curItem = curItem2;
@@ -3231,8 +3231,8 @@ function converterDialog(modal) {
 				++indx;
 			}
 
-			AkelPad.SendMessage(hWndListBox,  0x186 /*LB_SETCURSEL*/, getIndexFromString(lbText[curItem])  || 0, 0);
-			AkelPad.SendMessage(hWndListBox2, 0x186 /*LB_SETCURSEL*/, getIndexFromString(lbText[curItem2]) || 0, 0);
+			setListBoxSel(hWndListBox,  getIndexFromString(lbText[curItem])  || 0);
+			setListBoxSel(hWndListBox2, getIndexFromString(lbText[curItem2]) || 0);
 		}
 		else {
 			var y = msrY;
@@ -3519,7 +3519,7 @@ function converterDialog(modal) {
 				if(--i < 0)
 					i = max;
 			}
-			AkelPad.SendMessage(hWndLB,  0x186 /*LB_SETCURSEL*/, i, 0);
+			setListBoxSel(hWndLB, i);
 			postMessage(hWndDialog, 273 /*WM_COMMAND*/, idc, 0);
 			return;
 		}
@@ -3544,6 +3544,9 @@ function converterDialog(modal) {
 		if(!_sid)
 			_sid = down ? _first : _last;
 		postMessage(hWndDialog, 273 /*WM_COMMAND*/, idcs[_sid], 0);
+	}
+	function setListBoxSel(hWndListBox, i) {
+		AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, i, 0);
 	}
 	function updateCommand(force, onlyCurrent) {
 		if(onlyCurrent) {
