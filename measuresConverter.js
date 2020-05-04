@@ -44,9 +44,10 @@
 //   -roundCurrenciesState=1       - see -roundMeasuresState
 //   -sortMeasures=true            - sort measures alphabetically
 //   -sortByName=true              - sort currencies by name (otherwise - by code)
-//   -maxHeight=0                  - maximum window height for create listboxes instead of radio buttons
+//   -maxHeight=0                  - maximum window height to create listboxes instead of radio buttons
 //                                   -1 => no resize window
 //                                    0 => always use listboxes
+//   -selectContext=7              - show N items before/after selected, 0 to disable (for listboxes)
 //   -disableRadios=true           - (see -maxHeight) forbid to select the same on left and right radio buttons
 //   -showLastUpdate=2             - 0 - don't show, 1 - show only if selected currencies, 2 - always show
 //   -useSelected=true             - pick up selected number or expression
@@ -1854,6 +1855,7 @@ var roundMeasuresState    = getArg("roundMeasuresState");
 var roundCurrencies       = getArg("roundCurrencies");
 var roundCurrenciesState  = getArg("roundCurrenciesState");
 var dlgMaxH               = getArg("maxHeight", 0); // -1 => no resize
+var selectContext         = getArg("selectContext", 7);
 var disableRadios         = getArg("disableRadios", false);
 var useSelected           = getArg("useSelected", true);
 var showLastUpdate        = getArg("showLastUpdate", 2);
@@ -3546,6 +3548,31 @@ function converterDialog(modal) {
 		postMessage(hWndDialog, 273 /*WM_COMMAND*/, idcs[_sid], 0);
 	}
 	function setListBoxSel(hWndListBox, i) {
+		var context = selectContext;
+		if(context > 0) { // Trick to show context (items before/after selected)
+			var cur = AkelPad.SendMessage(hWndListBox, 0x188 /*LB_GETCURSEL*/, 0, 0);
+			var max = AkelPad.SendMessage(hWndListBox, 0x18B /*LB_GETCOUNT*/, 0, 0) - 1;
+
+			var lpRect = max > 0 && AkelPad.MemAlloc(16); //sizeof(RECT)
+			var rcLB;
+			if(
+				lpRect
+				&& AkelPad.SendMessage(hWndListBox, 0x198 /*LB_GETITEMRECT*/, Math.max(0, cur), lpRect) != -1 /*LB_ERR*/
+				&& (rcLB = getWindowRect(hWndListBox))
+			) {
+				var rcItem = parseRect(lpRect);
+				var itemH = rcItem.top - rcItem.bottom;
+				var lbH = rcLB.top - rcLB.bottom;
+				var maxContext = Math.round(lbH/itemH/2) - 1;
+				if(context > maxContext)
+					context = maxContext;
+			}
+			lpRect && AkelPad.MemFree(lpRect);
+
+			var ni = Math.max(0, Math.min(max, i + (i > cur ? 1 : -1)*context));
+			if(ni != i)
+				AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, ni, 0);
+		}
 		AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, i, 0);
 	}
 	function updateCommand(force, onlyCurrent) {
