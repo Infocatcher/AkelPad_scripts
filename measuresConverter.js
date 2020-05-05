@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/measuresConverter.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/measuresConverter.js
 
-// (c) Infocatcher 2011-2019
-// Version: 0.2.8.1 - 2019-11-05
+// (c) Infocatcher 2011-2020
+// Version: 0.2.9pre - 2020-05-05
 // Author: Infocatcher
 
 //===================
