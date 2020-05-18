@@ -7,7 +7,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // Scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2020-01-14 19:54:21 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2020-04-05 19:25:03 UTC]
 
 
 //== js/test/generated/beautify-javascript-tests.js
@@ -2263,6 +2263,43 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             //  -- output --
             'this.something.xxx = foo.moo.bar()');
 
+        // optional chaining operator
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo?.bar()?.baz()?.cucumber(fat)');
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat); foo?.bar()?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo?.bar()?.baz()?.cucumber(fat);\n' +
+            'foo?.bar()?.baz()?.cucumber(fat)');
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat)\n' +
+            ' foo?.bar()?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo?.bar()?.baz()?.cucumber(fat)\n' +
+            'foo?.bar()?.baz()?.cucumber(fat)');
+        bt(
+            'this\n' +
+            '?.something = foo?.bar()\n' +
+            '?.baz()?.cucumber(fat)',
+            //  -- output --
+            'this?.something = foo?.bar()?.baz()?.cucumber(fat)');
+        bt('this?.something?.xxx = foo?.moo?.bar()');
+        bt(
+            'this\n' +
+            '?.something\n' +
+            '?.xxx = foo?.moo\n' +
+            '?.bar()',
+            //  -- output --
+            'this?.something?.xxx = foo?.moo?.bar()');
+
         // break chained methods - (break_chained_methods = "false", preserve_newlines = "true")
         reset_options();
         set_name('break chained methods - (break_chained_methods = "false", preserve_newlines = "true")');
@@ -2314,6 +2351,54 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    .something\n' +
             '    .xxx = foo.moo\n' +
             '    .bar()');
+
+        // optional chaining operator
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    ?.bar()\n' +
+            '    ?.baz()?.cucumber(fat)');
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat); foo?.bar()?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    ?.bar()\n' +
+            '    ?.baz()?.cucumber(fat);\n' +
+            'foo?.bar()?.baz()?.cucumber(fat)');
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat)\n' +
+            ' foo?.bar()?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    ?.bar()\n' +
+            '    ?.baz()?.cucumber(fat)\n' +
+            'foo?.bar()?.baz()?.cucumber(fat)');
+        bt(
+            'this\n' +
+            '?.something = foo?.bar()\n' +
+            '?.baz()?.cucumber(fat)',
+            //  -- output --
+            'this\n' +
+            '    ?.something = foo?.bar()\n' +
+            '    ?.baz()?.cucumber(fat)');
+        bt('this?.something?.xxx = foo?.moo?.bar()');
+        bt(
+            'this\n' +
+            '?.something\n' +
+            '?.xxx = foo?.moo\n' +
+            '?.bar()',
+            //  -- output --
+            'this\n' +
+            '    ?.something\n' +
+            '    ?.xxx = foo?.moo\n' +
+            '    ?.bar()');
 
         // break chained methods - (break_chained_methods = "true", preserve_newlines = "false")
         reset_options();
@@ -2367,6 +2452,55 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '.bar()',
             //  -- output --
             'this.something.xxx = foo.moo.bar()');
+
+        // optional chaining operator
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat)');
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat); foo?.bar()?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat);\n' +
+            'foo?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat)');
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat)\n' +
+            ' foo?.bar()?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat)\n' +
+            'foo?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat)');
+        bt(
+            'this\n' +
+            '?.something = foo?.bar()\n' +
+            '?.baz()?.cucumber(fat)',
+            //  -- output --
+            'this?.something = foo?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat)');
+        bt('this?.something?.xxx = foo?.moo?.bar()');
+        bt(
+            'this\n' +
+            '?.something\n' +
+            '?.xxx = foo?.moo\n' +
+            '?.bar()',
+            //  -- output --
+            'this?.something?.xxx = foo?.moo?.bar()');
 
         // break chained methods - (break_chained_methods = "true", preserve_newlines = "true")
         reset_options();
@@ -2427,6 +2561,62 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    .something\n' +
             '    .xxx = foo.moo\n' +
             '    .bar()');
+
+        // optional chaining operator
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    ?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat)');
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat); foo?.bar()?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    ?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat);\n' +
+            'foo?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat)');
+        bt(
+            'foo\n' +
+            '?.bar()\n' +
+            '?.baz()?.cucumber(fat)\n' +
+            ' foo?.bar()?.baz()?.cucumber(fat)',
+            //  -- output --
+            'foo\n' +
+            '    ?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat)\n' +
+            'foo?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat)');
+        bt(
+            'this\n' +
+            '?.something = foo?.bar()\n' +
+            '?.baz()?.cucumber(fat)',
+            //  -- output --
+            'this\n' +
+            '    ?.something = foo?.bar()\n' +
+            '    ?.baz()\n' +
+            '    ?.cucumber(fat)');
+        bt('this?.something?.xxx = foo?.moo?.bar()');
+        bt(
+            'this\n' +
+            '?.something\n' +
+            '?.xxx = foo?.moo\n' +
+            '?.bar()',
+            //  -- output --
+            'this\n' +
+            '    ?.something\n' +
+            '    ?.xxx = foo?.moo\n' +
+            '    ?.bar()');
 
 
         //============================================================
@@ -3050,7 +3240,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.preserve_newlines = false;
         bt(
             'var res = a + b - c / d * e % f;\n' +
-            'var res = g & h | i ^ j;\n' +
+            'var res = g & h | i ^ j |> console.log;\n' +
             'var res = (k && l || m) ? n : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
@@ -3063,7 +3253,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'f;\n' +
             '   var res = g & h\n' +
             '| i ^\n' +
-            'j;\n' +
+            'j\n' +
+            '|> console.log;\n' +
             'var res = (k &&\n' +
             'l\n' +
             '|| m) ?\n' +
@@ -3087,7 +3278,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '-ad',
             //  -- output --
             'var res = a + b - c / d * e % f;\n' +
-            'var res = g & h | i ^ j;\n' +
+            'var res = g & h | i ^ j |> console.log;\n' +
             'var res = (k && l || m) ? n : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
@@ -3100,7 +3291,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.preserve_newlines = false;
         bt(
             'var res = a + b - c / d * e % f;\n' +
-            'var res = g & h | i ^ j;\n' +
+            'var res = g & h | i ^ j |> console.log;\n' +
             'var res = (k && l || m) ? n : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
@@ -3113,7 +3304,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'f;\n' +
             '   var res = g & h\n' +
             '| i ^\n' +
-            'j;\n' +
+            'j\n' +
+            '|> console.log;\n' +
             'var res = (k &&\n' +
             'l\n' +
             '|| m) ?\n' +
@@ -3137,7 +3329,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '-ad',
             //  -- output --
             'var res = a + b - c / d * e % f;\n' +
-            'var res = g & h | i ^ j;\n' +
+            'var res = g & h | i ^ j |> console.log;\n' +
             'var res = (k && l || m) ? n : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
@@ -3150,7 +3342,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.preserve_newlines = false;
         bt(
             'var res = a + b - c / d * e % f;\n' +
-            'var res = g & h | i ^ j;\n' +
+            'var res = g & h | i ^ j |> console.log;\n' +
             'var res = (k && l || m) ? n : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
@@ -3163,7 +3355,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'f;\n' +
             '   var res = g & h\n' +
             '| i ^\n' +
-            'j;\n' +
+            'j\n' +
+            '|> console.log;\n' +
             'var res = (k &&\n' +
             'l\n' +
             '|| m) ?\n' +
@@ -3187,7 +3380,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '-ad',
             //  -- output --
             'var res = a + b - c / d * e % f;\n' +
-            'var res = g & h | i ^ j;\n' +
+            'var res = g & h | i ^ j |> console.log;\n' +
             'var res = (k && l || m) ? n : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
@@ -3200,7 +3393,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         opts.preserve_newlines = false;
         bt(
             'var res = a + b - c / d * e % f;\n' +
-            'var res = g & h | i ^ j;\n' +
+            'var res = g & h | i ^ j |> console.log;\n' +
             'var res = (k && l || m) ? n : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
@@ -3213,7 +3406,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'f;\n' +
             '   var res = g & h\n' +
             '| i ^\n' +
-            'j;\n' +
+            'j\n' +
+            '|> console.log;\n' +
             'var res = (k &&\n' +
             'l\n' +
             '|| m) ?\n' +
@@ -3237,7 +3431,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '-ad',
             //  -- output --
             'var res = a + b - c / d * e % f;\n' +
-            'var res = g & h | i ^ j;\n' +
+            'var res = g & h | i ^ j |> console.log;\n' +
             'var res = (k && l || m) ? n : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
@@ -3258,7 +3452,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'f;\n' +
             '   var res = g & h\n' +
             '| i ^\n' +
-            'j;\n' +
+            'j\n' +
+            '|> console.log;\n' +
             'var res = (k &&\n' +
             'l\n' +
             '|| m) ?\n' +
@@ -3287,7 +3482,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    f;\n' +
             'var res = g & h |\n' +
             '    i ^\n' +
-            '    j;\n' +
+            '    j |>\n' +
+            '    console.log;\n' +
             'var res = (k &&\n' +
             '        l ||\n' +
             '        m) ?\n' +
@@ -3380,7 +3576,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'f;\n' +
             '   var res = g & h\n' +
             '| i ^\n' +
-            'j;\n' +
+            'j\n' +
+            '|> console.log;\n' +
             'var res = (k &&\n' +
             'l\n' +
             '|| m) ?\n' +
@@ -3409,7 +3606,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    f;\n' +
             'var res = g & h |\n' +
             '    i ^\n' +
-            '    j;\n' +
+            '    j |>\n' +
+            '    console.log;\n' +
             'var res = (k &&\n' +
             '        l ||\n' +
             '        m) ?\n' +
@@ -3504,7 +3702,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'f;\n' +
             '   var res = g & h\n' +
             '| i ^\n' +
-            'j;\n' +
+            'j\n' +
+            '|> console.log;\n' +
             'var res = (k &&\n' +
             'l\n' +
             '|| m) ?\n' +
@@ -3533,7 +3732,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    % f;\n' +
             'var res = g & h\n' +
             '    | i\n' +
-            '    ^ j;\n' +
+            '    ^ j\n' +
+            '    |> console.log;\n' +
             'var res = (k\n' +
             '        && l\n' +
             '        || m)\n' +
@@ -3627,7 +3827,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'f;\n' +
             '   var res = g & h\n' +
             '| i ^\n' +
-            'j;\n' +
+            'j\n' +
+            '|> console.log;\n' +
             'var res = (k &&\n' +
             'l\n' +
             '|| m) ?\n' +
@@ -3657,7 +3858,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    f;\n' +
             'var res = g & h\n' +
             '    | i ^\n' +
-            '    j;\n' +
+            '    j\n' +
+            '    |> console.log;\n' +
             'var res = (k &&\n' +
             '        l\n' +
             '        || m) ?\n' +
@@ -6743,6 +6945,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        b();\n' +
             '    }\n' +
             '})');
+
+        // Issue 1727 - Optional chaining
+        bt('true?.1:.2', 'true ? .1 : .2');
 
         // Issue 406 - Multiline array
         bt(
@@ -20949,10 +21154,18 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '\n' +
             '<input type="submit"></input>');
         bth(
-            '<script type="text/javascript">var foo = "bar";</script>',
+            '<script type="text/javascript">console.log(1  +  1);</script>',
             //  -- output --
             '<script type="text/javascript">\n' +
-            '    var foo = "bar";\n' +
+            '    console.log(1 + 1);\n' +
+            '</script>');
+
+        // Issue #1706 - es script module
+        bth(
+            '<script type="module">console.log(1  +  1);</script>',
+            //  -- output --
+            '<script type="module">\n' +
+            '    console.log(1 + 1);\n' +
             '</script>');
         bth(
             '<script type="application/javascript">var foo = "bar";</script>',
@@ -26814,6 +27027,16 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    <p>Unfortunately this condition is false.</p>\n' +
             '{{/inverted-condition}}');
 
+        // Issue #1756 - Fix indentation of partials
+        bth(
+            '{{#*inline "myPartial"}}\n' +
+            '    <p>Unfortunately this condition is false.</p>\n' +
+            '{{/inline}}');
+        bth(
+            '{{#> myPartial}}\n' +
+            '    <p>Unfortunately this condition is false.</p>\n' +
+            '{{/myPartial}}');
+
 
         //============================================================
         // Unclosed html elements
@@ -26943,7 +27166,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    <optgroup>\n' +
             '        test content\n' +
             '        <option>\n' +
-            '            test content\n' +
+            '            <p>test content\n' +
             '        <option>\n' +
             '            test content\n' +
             '</select>');
@@ -27003,7 +27226,8 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '                    <thead>\n' +
             '                        <tr>\n' +
             '                            <th>Function\n' +
-            '                            <th>Control Unit\n' +
+            '                            <th>\n' +
+            '                                <p>Control Unit\n' +
             '                            <th>Central Station\n' +
             '                    <tbody>\n' +
             '                        <tr>\n' +
@@ -27073,6 +27297,26 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    <dt>gh\n' +
             '    <dt>gh</dt>\n' +
             '</dl>');
+
+        // P element optional closing tag - #1503
+        bth(
+            '<p><p><dl><dt>ef<dt><p>gh</dt><dt>gh</dt></dl><p><h3>headers are outside paragraphs</h3>\n' +
+            '<p>.<textarea><p><p>.</textarea><textarea><p><p>.</textarea><p>.<p>.</p>',
+            //  -- output --
+            '<p>\n' +
+            '<p>\n' +
+            '<dl>\n' +
+            '    <dt>ef\n' +
+            '    <dt>\n' +
+            '        <p>gh\n' +
+            '    </dt>\n' +
+            '    <dt>gh</dt>\n' +
+            '</dl>\n' +
+            '<p>\n' +
+            '<h3>headers are outside paragraphs</h3>\n' +
+            '<p>.<textarea><p><p>.</textarea><textarea><p><p>.</textarea>\n' +
+            '<p>.\n' +
+            '<p>.</p>');
 
 
         //============================================================
@@ -28814,7 +29058,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    <p>Beautify me</p>\n' +
             '</div>\n' +
             '<p>\n' +
-            '    <p>But not me</p>\n' +
+            '<p>But not me</p>\n' +
             '</p>');
         bth(
             '<div><p\n' +
@@ -28827,7 +29071,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    <p class="beauty-me">Beautify me</p>\n' +
             '</div>\n' +
             '<p>\n' +
-            '    <p class="iamalreadybeauty">But not me</p>\n' +
+            '<p class="iamalreadybeauty">But not me</p>\n' +
             '</p>');
         bth('<div><span>blabla<div>something here</div></span></div>');
         bth('<div><br /></div>');
