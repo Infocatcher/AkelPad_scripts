@@ -3,6 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/jsBeautifier_tests.js
 
 // Tests part of jsBeautifier.js, don't use directly!
+// Should be placed in AkelFiles\Plugs\Scripts\Include\jsBeautifier_tests.js
 // http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
