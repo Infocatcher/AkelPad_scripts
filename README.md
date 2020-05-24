@@ -32,7 +32,7 @@ file.user.js -> file-%version%.user.js
 Close tabs to the left or right (temporary check “Switch tabs: right-left” option)
 
 ##### [closeUnsavedTabs.js](closeUnsavedTabs.js)
-Close all unsaved tabs
+Close all unsaved tabs or all empty unsaved tabs
 
 ##### [colorsConverter.js](colorsConverter.js)
 Convert color between “#fee” and “rgb(255, 238, 238)” formats
