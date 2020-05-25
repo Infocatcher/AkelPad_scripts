@@ -34,6 +34,22 @@ Close tabs to the left or right (temporary check “Switch tabs: right-left” o
 ##### [closeUnsavedTabs.js](closeUnsavedTabs.js)
 Close all unsaved tabs or all empty unsaved tabs
 
+Context menu example:
+```
+"CLOSE"
+{
+  "Other" Command(4320)
+  -"To the left" Call("Scripts::Main", 1, "closeLeftOrRightTabs.js", "-left")
+  -"To the right" Call("Scripts::Main", 1, "closeLeftOrRightTabs.js")
+  SEPARATOR
+  -"Empty unsaved" Call("Scripts::Main", 1, "closeUnsavedTabs.js", "-onlyEmpty=true -askToSave=false -closeCurrent=true")
+  -"All unsaved" Call("Scripts::Main", 1, "closeUnsavedTabs.js", "-onlyEmpty=false -askToSave=true -closeCurrent=true -stopOnCancel=false")
+  SEPARATOR
+  "All" Command(4319)
+  "All unchanged"	Command(4321)
+}
+```
+
 ##### [colorsConverter.js](colorsConverter.js)
 Convert color between “#fee” and “rgb(255, 238, 238)” formats
 
