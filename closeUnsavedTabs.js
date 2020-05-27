@@ -11,15 +11,17 @@
 //   -onlyEmpty=false     - close only empty tabs
 //   -askToSave=true      - ask to save (or mark file as not modified to silently close)
 //   -closeCurrent=true   - also close current tab
+//   -stopOnCancel=true   - stop tabs iteration, if pressed Cancel button
 
 // Usage:
 //   Call("Scripts::Main", 1, "closeUnsavedTabs.js")
-//   Call("Scripts::Main", 1, "closeUnsavedTabs.js", "-onlyEmpty=false -askToSave=false -closeCurrent=true")
+//   Call("Scripts::Main", 1, "closeUnsavedTabs.js", "-onlyEmpty=false -askToSave=false -closeCurrent=true -stopOnCancel=true")
 
 var hMainWnd = AkelPad.GetMainWnd();
 var onlyEmpty = AkelPad.GetArgValue("onlyEmpty", false);
 var askToSave = AkelPad.GetArgValue("askToSave", true);
 var closeCurrent = AkelPad.GetArgValue("closeCurrent", true);
+var stopOnCancel = AkelPad.GetArgValue("stopOnCancel", true);
 
 if(AkelPad.IsMDI())
 	closeEmptyTabs();
@@ -32,8 +34,12 @@ function closeEmptyTabs() {
 		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4316 /*IDM_WINDOW_FRAMENEXT*/, 0);
 		var lpFrame = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
 		var stop = lpFrame == lpFrameInitial;
-		if((!stop || closeCurrent) && !closeEmptyTab())
-			return; // Canceled
+		if((!stop || closeCurrent) && !closeEmptyTab()) { // Canceled
+			if(stopOnCancel)
+				return;
+			else
+				continue;
+		}
 	}
 	AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrameInitial);
 }
