@@ -5,7 +5,8 @@
 // Version: 0.1.0 - 2020-05-24
 // Author: Infocatcher
 
-//// Close all unsaved tabs
+//// Close unsaved tabs (all or only empty)
+// Required MDI or PMDI window mode!
 
 // Arguments:
 //   -onlyEmpty=false     - close only empty tabs
