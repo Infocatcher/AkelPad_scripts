@@ -35,12 +35,8 @@ function closeEmptyTabs() {
 		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4316 /*IDM_WINDOW_FRAMENEXT*/, 0);
 		var lpFrame = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
 		var stop = lpFrame == lpFrameInitial;
-		if((!stop || closeCurrent) && !closeEmptyTab()) { // Canceled
-			if(stopOnCancel)
-				return;
-			else
-				continue;
-		}
+		if((!stop || closeCurrent) && !closeEmptyTab() && stopOnCancel) // Canceled
+			return;
 	}
 	AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrameInitial);
 }
