@@ -2,7 +2,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/closeUnsavedTabs.js
 
 // (c) Infocatcher 2019-2020
-// Version: 0.1.0 - 2020-05-24
+// Version: 0.1.1 - 2020-05-30
 // Author: Infocatcher
 
 //// Close unsaved tabs (all or only empty)
