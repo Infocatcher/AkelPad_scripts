@@ -1,3 +1,4 @@
+// http://akelpad.sourceforge.net/forum/viewtopic.php?p=35014#35014
 // http://infocatcher.ucoz.net/js/akelpad_scripts/closeUnsavedTabs.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/closeUnsavedTabs.js
 
