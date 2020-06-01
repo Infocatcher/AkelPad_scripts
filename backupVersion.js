@@ -23,7 +23,7 @@
 //===================
 
 //== Settings begin
-var getVersionPattern  = /(^|[^a-z])(version|ver\.?|v\.?)[ \t]*[-:=]?[ \t]*(\S+)/i;
+var getVersionPattern  = /(^|[^a-z])(version|ver\.?|v\.?)[ \t]*[-:=|]?[ \t]*(\S+)/i;
 var versionBracketsNumber = 3; // We don't use (?:something) for backward compatibility with old JScript
 var testVersionPattern = /\d/; // Version string must contain number
 var linesLimit = 20; // Check only first 20 lines of file
