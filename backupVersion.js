@@ -13,7 +13,9 @@
 
 // Arguments:
 //   -forceDate=true  - force use last modification date
-//   -dateType=1      - see dateToString() in settings section
+//   -dateType=0      - yyyy-mm-dd (see dateToString())
+//            =1      - yyyy-mm-dd_hh-mm
+//            =2      - yyyy-mm-dd_hh-mm-ss
 //   -openBackup=true - open created backup file
 //   -warnings=false  - skip "Can't detect file version!" warning, just ask for file name
 
