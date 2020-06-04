@@ -39,6 +39,9 @@ function _localize(s) {
 		"WinMerge not found!": {
 			ru: "Не удалось найти WinMerge!"
 		},
+		"Compare tool not found!": {
+			ru: "Не удалось найти программу для сравнения!"
+		},
 		"Select tab!": {
 			ru: "Выберите вкладку!"
 		},
@@ -179,7 +182,8 @@ function compareTabs(lpFrame, lpFrame2) {
 	if(!winMerge) {
 		AkelPad.MessageBox(
 			hMainWnd,
-			_localize("WinMerge not found!") + "\n\n" + getWinMergePaths(),
+			_localize(paths ? "Compare tool not found!" : "WinMerge not found!")
+				+ "\n\n" + getWinMergePaths(),
 			WScript.ScriptName,
 			48 /*MB_ICONEXCLAMATION*/
 		);
