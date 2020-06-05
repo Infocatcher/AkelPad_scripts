@@ -13,12 +13,12 @@
 // (or use -noBlink=true argument to work without timer.js)
 
 // Arguments:
-//   -path="%ProgramFiles%\WinMerge\WinMerge.exe" - path to WinMerge executable
-//                                                  (or many paths: "path1|path2|path3")
-//   -cmd="<exe> /S=C <f1> <f2>"                  - set custom command line for any other compare tool
-//                                                  (an example for Total Commander)
-//   -save=true                                   - true  - save (already saved, but modified) file before compare
-//                                                  false - use temporary files for modified files
+//   -path="%ProgramFiles%\WinMerge\WinMerge.exe" - path to compare tool executable:
+//                                                  - "<HKLM\…\key>" to read value from registry
+//                                                  - "path1|path2|path3" to specify many paths
+//   -cmd="<exe> /S=C <f1> <f2>"                  - set custom command line (example for Total Commander)
+//   -save=true                                   - save (already saved, but modified) file before compare
+//        =false                                  - (default) use temporary files for modified files
 //   -temp="%AkelScripts%\temp"                   - path to temporary directory
 //   -useTabsOrder=true                           - always compare left tab with right tab
 //   -noBlink=true                                - disable blink in status bar (and just show "Select tab!" text)
