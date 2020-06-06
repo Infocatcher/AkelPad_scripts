@@ -238,19 +238,13 @@ function compareTabs(lpFrame, lpFrame2) {
 		.replace("<f2>", '"' + file2 + '"');
 	var wm = wsh.Exec(cmdLine);
 	if(file.isTemp || file2.isTemp) {
-		// If WinMerge are already opened, new process will be immediately closed,
+		// If WinMerge is already opened, new process will be closed immediately,
 		// so don't delete files too early
 		WScript.Sleep(4000);
-		for(;;) {
-			if(wm.Status != 0) {
-				if(file.isTemp)
-					fso.DeleteFile(file);
-				if(file2.isTemp)
-					fso.DeleteFile(file2);
-				break;
-			}
+		while(!wm.Status)
 			WScript.Sleep(1500);
-		}
+		file.isTemp  && fso.DeleteFile(file);
+		file2.isTemp && fso.DeleteFile(file2);
 	}
 }
 function getFile(lpFrame) {
