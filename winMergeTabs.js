@@ -270,7 +270,7 @@ function getFile(lpFrame) {
 				codePage = 65001;
 				hasBOM = 1;
 			}
-			AkelPad.SaveFile(AkelPad.GetEditWnd(), tempFile, codePage, hasBOM, 0 /* W/o SD_UPDATE */);
+			AkelPad.SaveFile(hWndEdit, tempFile, codePage, hasBOM, 0 /* W/o SD_UPDATE */);
 		}
 	}
 	return file;
