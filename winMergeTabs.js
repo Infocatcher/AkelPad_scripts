@@ -190,12 +190,8 @@ function compareTabs(lpFrame, lpFrame2) {
 		return;
 	}
 
-	setRedraw(hMainWnd, false);
 	var file  = getFile(lpFrame);
 	var file2 = getFile(lpFrame2);
-	setRedraw(hMainWnd, true);
-	// Force redraw current edit window
-	oSys.Call("user32::InvalidateRect", AkelPad.GetEditWnd(), 0, true);
 
 	var noFile  = !fso.FileExists(file);
 	var noFile2 = !fso.FileExists(file2);
@@ -244,15 +240,15 @@ function compareTabs(lpFrame, lpFrame2) {
 	}
 }
 function getFile(lpFrame) {
-	AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame);
-	var hWndEdit = AkelPad.GetEditWnd();
+	var hWndEdit = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 2 /*FI_WNDEDIT*/, lpFrame);
+	var hDocEdit = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 3 /*FI_DOCEDIT*/, lpFrame);
 	var origFile = AkelPad.GetEditFile(hWndEdit);
 	var file = origFile;
 	if(!origFile || AkelPad.SendMessage(hWndEdit, 3086 /*AEM_GETMODIFY*/, 0, 0)) {
 		if(origFile && save)
-			AkelPad.Command(4105); // IDM_FILE_SAVE
+			AkelPad.SaveFile(hWndEdit, origFile);
 		else {
-			var tempFile = file = getTempFile(hWndEdit, origFile);
+			var tempFile = file = getTempFile(hWndEdit, hDocEdit, origFile);
 			var codePage = -1;
 			var hasBOM = -1;
 			if(!origFile) {
@@ -284,7 +280,7 @@ function getWinMergePaths() {
 	}
 	return out.join("\n");
 }
-function getTempFile(hWndEdit, file) {
+function getTempFile(hWndEdit, hDocEdit, file) {
 	var fileName, fileExt;
 	var tmp = file && /[^\/\\]+$/.test(file) && RegExp.lastMatch;
 	if(tmp) {
@@ -292,7 +288,7 @@ function getTempFile(hWndEdit, file) {
 		fileName = tmp.slice(0, -fileExt.length);
 	}
 	else {
-		fileExt = getCurrentExtension();
+		fileExt = getExtension(hWndEdit, hDocEdit);
 		fileName = "AkelPad_winMergeTabs_temp";
 	}
 	var tmpDir = expandVariables(tempDir);
@@ -305,13 +301,13 @@ function getTempFile(hWndEdit, file) {
 	out.isTemp = true;
 	return out;
 }
-function getCurrentExtension() {
-	var alias = getCoderAlias();
+function getExtension(hWndEdit, hDocEdit) {
+	var alias = getCoderAlias(hWndEdit, hDocEdit);
 	if(/\.[^.]+$/.test(alias))
 		return RegExp.lastMatch;
 	return ".txt";
 }
-function getCoderAlias() {
+function getCoderAlias(hWndEdit, hDocEdit) {
 	if(
 		!AkelPad.IsPluginRunning("Coder::HighLight")
 		&& !AkelPad.IsPluginRunning("Coder::CodeFold")
@@ -319,8 +315,8 @@ function getCoderAlias() {
 	)
 		return "";
 	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
-	var hWndEdit = AkelPad.GetEditWnd();
-	var hDocEdit = AkelPad.GetEditDoc();
+	//hWndEdit = hWndEdit || AkelPad.GetEditWnd();
+	//hDocEdit = hDocEdit || AkelPad.GetEditDoc();
 	var pAlias = "";
 	if(hWndEdit && hDocEdit) {
 		var lpAlias = AkelPad.MemAlloc(256 * 2 /*sizeof(wchar_t)*/);
@@ -358,11 +354,6 @@ function getRegistryValue(path) {
 	catch(e) {
 	}
 	return "";
-}
-
-function setRedraw(hWnd, bRedraw) {
-	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
-	bRedraw && oSys.Call("user32::InvalidateRect", hWnd, 0, true);
 }
 
 function Item() {
