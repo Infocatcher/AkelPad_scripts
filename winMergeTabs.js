@@ -296,7 +296,7 @@ function getTempFile(hWndEdit, hDocEdit, file) {
 		fso.CreateFolder(tmpDir);
 	var i = -1;
 	do tmp = tmpDir + "\\" + fileName + (++i ? "-" + i : "") + fileExt;
-	while(fso.FileExists(tmp));
+	while(fso.FileExists(tmp) || fso.FolderExists(tmp));
 	var out = new String(tmp);
 	out.isTemp = true;
 	return out;
