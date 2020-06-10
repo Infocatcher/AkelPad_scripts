@@ -14,12 +14,14 @@
 
 // Arguments:
 //   -path="%ProgramFiles%\WinMerge\WinMerge.exe" - path to compare tool executable:
-//                                                  - "<HKLM\…\key>" to read value from registry
-//                                                  - "path1|path2|path3" to specify many paths
+//                                                  - %AkelDir% - path to AkelPad directory
+//                                                  - %AkelScripts% - path to scripts directory
+//                                                  - <HKLM\…\key> - value from registry
+//                                                  - path1|path2|path3 - to specify many paths
 //   -cmd="<exe> /S=C <f1> <f2>"                  - set custom command line (example for Total Commander)
 //   -save=true                                   - save (already saved, but modified) file before compare
 //        =false                                  - (default) use temporary files for modified files
-//   -temp="%AkelScripts%\temp"                   - path to temporary directory
+//   -temp="%AkelScripts%\temp"                   - path to temporary directory (%temp% by default)
 //   -useTabsOrder=true                           - always compare left tab with right tab
 //   -noBlink=true                                - disable blink in status bar (and just show "Select tab!" text)
 //   -item="%m:%i"                                - check toolbar button or menu item
