@@ -343,10 +343,7 @@ function expandEnvironmentVariables(s) {
 }
 function expandRegistryVariables(s) { // <HKCU\Software\Foo\installPath>\foo.exe
 	return s.replace(/<(.+?)>/g, function(s, path) {
-		var val = getRegistryValue(path);
-		if(val)
-			return val;
-		return s;
+		return getRegistryValue(path) || s;
 	});
 }
 function getRegistryValue(path) {
