@@ -278,7 +278,7 @@ function getWinMergePaths() {
 		var path = expandVariables(rawPath);
 		out[out.length] = path == rawPath
 			? path
-			: rawPath + " => " + path
+			: rawPath + "\n=> " + path
 	}
 	return out.join("\n");
 }
