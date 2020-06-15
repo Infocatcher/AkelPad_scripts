@@ -143,6 +143,7 @@ function selectScriptDialog(modal) {
 	var IDC_ARG_INC    = 1006;
 	var IDC_ARG_DEC    = 1007;
 	var IDC_CUR_SCRIPT = 1008;
+	var IDC_OK_DELAY   = 1009;
 
 	var hWndDialog = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, dialogClass, 0);
 	if(hWndDialog) {
@@ -493,7 +494,7 @@ function selectScriptDialog(modal) {
 					else if(!ctrl && !shift) { // Enter
 						if(argsMultiline && oSys.Call("user32::GetFocus") == hWndArgs)
 							postMessage(hWndArgs, 256 /*WM_KEYDOWN*/, 8 /*VK_BACK*/, 0);
-						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
+						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_OK_DELAY, 0);
 					}
 				}
 				else if(wParam == 114 /*VK_F3*/) // F3
@@ -570,6 +571,9 @@ function selectScriptDialog(modal) {
 							setListBoxSel(indx);
 							AkelPad.SendMessage(hWnd, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
 						}
+					break;
+					case IDC_OK_DELAY: // Trick for WM_KEYDOWN with focused multiline arguments
+						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
 				}
 			break;
 			case 36: //WM_GETMINMAXINFO
