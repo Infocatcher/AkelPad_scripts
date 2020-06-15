@@ -492,8 +492,11 @@ function selectScriptDialog(modal) {
 					if(ctrl || shift && !argsMultiline) // Ctrl+Enter, Shift+Enter
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
 					else if(!ctrl && !shift) { // Enter
-						if(argsMultiline && oSys.Call("user32::GetFocus") == hWndArgs)
+						if(argsMultiline && oSys.Call("user32::GetFocus") == hWndArgs) {
+							// Window will be closed, don't show just inserted newline
+							AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, false, 0);
 							postMessage(hWndArgs, 256 /*WM_KEYDOWN*/, 8 /*VK_BACK*/, 0);
+						}
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_OK_DELAY, 0);
 					}
 				}
