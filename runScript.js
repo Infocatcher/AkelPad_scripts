@@ -144,6 +144,7 @@ function selectScriptDialog(modal) {
 	var IDC_ARG_DEC    = 1007;
 	var IDC_CUR_SCRIPT = 1008;
 	var IDC_OK_DELAY   = 1009;
+	var IDC_EXEC_DELAY = 1010;
 
 	var hWndDialog = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, dialogClass, 0);
 	if(hWndDialog) {
@@ -489,8 +490,18 @@ function selectScriptDialog(modal) {
 				if(wParam == 27) //VK_ESCAPE
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
 				else if(wParam == 13) { //VK_RETURN
-					if(ctrl || shift && !argsMultiline) // Ctrl+Enter, Shift+Enter
-						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
+					if(ctrl || shift && !argsMultiline) { // Ctrl+Enter, Shift+Enter
+						if(argsMultiline && oSys.Call("user32::GetFocus") == hWndArgs) {
+							AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, false, 0);
+							var lpKeyState = AkelPad.MemAlloc(256);
+							if(lpKeyState) { // Reset to not send Ctrl+Backspace
+								oSys.Call("user32::SetKeyboardState", lpKeyState);
+								AkelPad.MemFree(lpKeyState);
+							}
+							postMessage(hWndArgs, 256 /*WM_KEYDOWN*/, 8 /*VK_BACK*/, 0);
+						}
+						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC_DELAY, 0);
+					}
 					else if(!ctrl && !shift) { // Enter
 						if(argsMultiline && oSys.Call("user32::GetFocus") == hWndArgs) {
 							// Window will be closed, don't show just inserted newline
@@ -575,8 +586,13 @@ function selectScriptDialog(modal) {
 							AkelPad.SendMessage(hWnd, 273 /*WM_COMMAND*/, IDC_LISTBOX, 0);
 						}
 					break;
-					case IDC_OK_DELAY: // Trick for WM_KEYDOWN with focused multiline arguments
+					// Tricks for WM_KEYDOWN with focused multiline arguments
+					case IDC_OK_DELAY:
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
+					break;
+					case IDC_EXEC_DELAY:
+						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
+						AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, true, 0);
 				}
 			break;
 			case 36: //WM_GETMINMAXINFO
