@@ -129,7 +129,6 @@ if(
 			}
 			tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder);
 		}
-		//AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame);
 	}
 	else {
 		stopTimers && stopTimers();
@@ -169,7 +168,6 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 
 	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi2, 0);
 	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi, 0);
-	AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame2);
 
 	var w = rcClient.right - rcClient.left;
 	var h = rcClient.bottom - rcClient.top;
