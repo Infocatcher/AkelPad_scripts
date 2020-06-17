@@ -120,7 +120,7 @@ function expandArgs(args) {
 		var file = AkelPad.GetEditFile(0);
 		return wsh.ExpandEnvironmentStrings(args)
 			.replace(/%f/ig, file)
-			.replace(/%d/ig, fso.GetParentFolderName(file))
+			.replace(/%d/ig, file && fso.GetParentFolderName(file))
 			.replace(/%a/ig, AkelPad.GetAkelDir())
 			.replace(/%([^%]|$)/g, "$1")
 			.replace(/%%/g, "%")
