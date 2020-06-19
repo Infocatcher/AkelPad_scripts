@@ -183,14 +183,16 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 	}
 
 	if(tileHorizontal) {
-		h /= 2;
-		moveMdiWindow(hWndMdi,  rcClient.left, rcClient.top,     w, h);
-		moveMdiWindow(hWndMdi2, rcClient.left, rcClient.top + h, w, h);
+		var h1 = Math.floor(h/2);
+		var h2 = h - h1;
+		moveMdiWindow(hWndMdi,  rcClient.left, rcClient.top,      w, h1);
+		moveMdiWindow(hWndMdi2, rcClient.left, rcClient.top + h1, w, h2);
 	}
 	else {
-		w /= 2;
-		moveMdiWindow(hWndMdi,  rcClient.left,     rcClient.top, w, h);
-		moveMdiWindow(hWndMdi2, rcClient.left + w, rcClient.top, w, h);
+		var w1 = Math.floor(w/2);
+		var w2 = w - w1;
+		moveMdiWindow(hWndMdi,  rcClient.left,      rcClient.top, w1, h);
+		moveMdiWindow(hWndMdi2, rcClient.left + w1, rcClient.top, w2, h);
 	}
 }
 function moveMdiWindow(hWndMdi, x, y, w, h) {
