@@ -24,8 +24,6 @@
 //   Call("Scripts::Main", 1, "tileTabs.js", "h")    - tile horizontal
 //   Call("Scripts::Main", 1, "tileTabs.js", "h o")  - tile horizontal and preserve tabs order
 
-// Also use -noBlink=true to disable blink in status bar (and just show "Select tab!" text)
-
 function _localize(s) {
 	var strings = {
 		"No tabs!": {
