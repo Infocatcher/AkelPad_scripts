@@ -163,14 +163,11 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 	if(!rcClient)
 		return;
 
-	var hWndMdi  = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame);
-	var hWndMdi2 = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame2);
-
-	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi2, 0);
-	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi, 0);
-
 	var w = rcClient.right - rcClient.left;
 	var h = rcClient.bottom - rcClient.top;
+
+	var hWndMdi  = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame);
+	var hWndMdi2 = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame2);
 
 	if(useTabsOrder) {
 		var pos  = AkelPad.SendMessage(hMainWnd, 1294 /*AKD_FRAMEINDEX*/, 0, lpFrame);
@@ -181,6 +178,9 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 			hWndMdi2 = tmp;
 		}
 	}
+
+	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi2, 0);
+	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi, 0);
 
 	if(tileHorizontal) {
 		var h1 = Math.floor(h/2);
