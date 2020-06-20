@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/tileTabs.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/tileTabs.js
 
-// (c) Infocatcher 2012-2014
-// Version: 0.1.3 - 2014-04-13
+// (c) Infocatcher 2012-2020
+// Version: 0.1.4 - 2020-06-20
 // Author: Infocatcher
 
 //// Tile current tab with next selected
