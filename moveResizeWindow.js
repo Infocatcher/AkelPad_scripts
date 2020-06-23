@@ -135,6 +135,8 @@ function getWindowPos(hWnd) {
 	var rcWnd = getWindowRect(hWnd);
 	if(!rcWnd)
 		return false;
+	if(oSys.Call("user32::IsZoomed", hWnd))
+		return "maximized";
 	return rcWnd.left + "x" + rcWnd.top + "|"
 		+ (rcWnd.right - rcWnd.left) + "x" + (rcWnd.bottom - rcWnd.top);
 }
@@ -158,6 +160,9 @@ function restoreWindowPos(windowId, hWnd) {
 
 	var pos = oSet.Read(windowId, 3 /*PO_STRING*/, "");
 	oSet.End();
+
+	if(pos == "maximized")
+		return oSys.Call("user32::ShowWindow", hWnd, 3 /*SW_MAXIMIZE*/);
 	if(!/^(\d+)x(\d+)\|(\d+)x(\d+)$/.test(pos))
 		return false;
 
