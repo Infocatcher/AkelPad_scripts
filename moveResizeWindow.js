@@ -10,6 +10,7 @@
 
 // Icons for context menu:
 //   http://infocatcher.ucoz.net/js/akelpad_scripts/moveResizeWindow_icons.zip
+//   or https://github.com/Infocatcher/AkelPad_menu/tree/master/icons window_*.ico + window.xcf
 //   (based on Actual Window Manager's icons: http://www.actualtools.com/windowmanager/)
 
 // Arguments:
