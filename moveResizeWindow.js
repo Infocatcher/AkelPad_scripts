@@ -70,14 +70,14 @@ function resizeWindow(hWnd, resize, hWndParent) {
 	var w = rcWnd.right - rcWnd.left;
 	var h = rcWnd.bottom - rcWnd.top;
 
-	if(rsW.charAt(rsW.length - 1) == "%")
+	if(rsW.slice(-1) == "%")
 		rsW = Math.round(parseFloat(rsW)/100*ww);
 	else if(!rsW)
 		rsW = w;
 	else
 		rsW = parseInt(rsW);
 
-	if(rsH.charAt(rsH.length - 1) == "%")
+	if(rsH.slice(-1) == "%")
 		rsH = Math.round(parseFloat(rsH)/100*wh);
 	else if(!rsH)
 		rsH = h;
