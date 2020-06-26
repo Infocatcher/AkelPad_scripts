@@ -551,8 +551,10 @@ function selectScriptDialog(modal) {
 							AkelPad.Call("Scripts::Main", 1, curName, expandArgs(argsObj[curName] || ""));
 						if(idc == IDC_OK)
 							closeDialog();
-						else
+						else {
 							ensureVisibility();
+							ensureTimers(notifyExec);
+						}
 					break;
 					case IDC_EDIT:
 						if(curName) {
@@ -802,6 +804,22 @@ function selectScriptDialog(modal) {
 			|| !enable.ok && hWndFocused == hWndOK
 		)
 			oSys.Call("user32::SetFocus", hWndDialog);
+	}
+	function ensureTimers(callback) {
+		var lib = "timer.js";
+		(ensureTimers = fso.FileExists(AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/) + "\\" + lib)
+			&& AkelPad.Include(lib)
+			? function(callback) { callback(); }
+			: function() {})(callback);
+	}
+	function notifyExec() {
+		var moveFocus = oSys.Call("user32::GetFocus") == hWndExec;
+		moveFocus && oSys.Call("user32::SetFocus", hWndArgs);
+		enabled(hWndExec, false);
+		setTimeout(function() {
+			enabled(hWndExec, true);
+			moveFocus && oSys.Call("user32::SetFocus", hWndExec);
+		}, 500);
 	}
 	function ensureVisibility() {
 		var indx = AkelPad.SendMessage(hWndListBox, 0x188 /*LB_GETCURSEL*/, 0, 0);
