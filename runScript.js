@@ -8,6 +8,9 @@
 
 //===================
 //// Run script from AkelFiles\Plugs\Scripts\ directory
+// Required timer.js library (to disable Exec button right after click):
+// http://akelpad.sourceforge.net/forum/viewtopic.php?p=24559#24559
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
 
 // Hotkeys:
 //   Enter                        - Ok
