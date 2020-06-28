@@ -556,7 +556,7 @@ function selectScriptDialog(modal) {
 							closeDialog();
 						else {
 							ensureVisibility();
-							ensureTimers(notifyExec);
+							ensureTimers(notifyButton, hWndExec);
 						}
 					break;
 					case IDC_EDIT:
@@ -808,20 +808,20 @@ function selectScriptDialog(modal) {
 		)
 			oSys.Call("user32::SetFocus", hWndDialog);
 	}
-	function ensureTimers(callback) {
+	function ensureTimers(callback, arg) {
 		var lib = "timer.js";
 		(ensureTimers = fso.FileExists(AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/) + "\\" + lib)
 			&& AkelPad.Include(lib)
-			? function(callback) { callback(); }
-			: function() {})(callback);
+			? function(callback, arg) { callback(arg); }
+			: function() {})(callback, arg);
 	}
-	function notifyExec() {
-		var moveFocus = oSys.Call("user32::GetFocus") == hWndExec;
+	function notifyButton(hWndBtn) {
+		var moveFocus = oSys.Call("user32::GetFocus") == hWndBtn;
 		moveFocus && oSys.Call("user32::SetFocus", hWndArgs);
-		enabled(hWndExec, false);
+		enabled(hWndBtn, false);
 		setTimeout(function() {
-			enabled(hWndExec, true);
-			moveFocus && oSys.Call("user32::SetFocus", hWndExec);
+			enabled(hWndBtn, true);
+			moveFocus && oSys.Call("user32::SetFocus", hWndBtn);
 		}, 500);
 	}
 	function ensureVisibility() {
