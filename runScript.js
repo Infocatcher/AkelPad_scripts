@@ -563,6 +563,7 @@ function selectScriptDialog(modal) {
 						if(curName) {
 							AkelPad.Call("Scripts::Main", 3, curName);
 							oSys.Call("user32::SetFocus", hMainWnd);
+							ensureTimers(notifyButton, hWndEdit);
 						}
 					break;
 					case IDC_CANCEL:
