@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/moveResizeWindow.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/moveResizeWindow.js
 
-// (c) Infocatcher 2012
-// Version: 0.1.1 - 2012-04-17
+// (c) Infocatcher 2012-2020
+// Version: 0.1.2 - 2020-06-30
 // Author: Infocatcher
 
 //// Move or/and align AkelPad's main window
