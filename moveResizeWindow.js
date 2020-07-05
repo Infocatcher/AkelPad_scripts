@@ -215,8 +215,9 @@ function _resizeWindow(hWnd, w, h) {
 	return oSys.Call("user32::SetWindowPos", hWnd, 0, 0, 0, w, h, 0x16 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOMOVE*/);
 }
 function ensureNotMaximized(hWnd) {
-	if(oSys.Call("user32::IsZoomed", hWnd))
-		oSys.Call("user32::ShowWindow", hWnd, 9 /*SW_RESTORE*/);
+	// Also exit from Windows 7+ docked to half screen state
+	//if(oSys.Call("user32::IsZoomed", hWnd))
+	oSys.Call("user32::ShowWindow", hWnd, 9 /*SW_RESTORE*/);
 }
 function getWindowRect(hWnd, hWndParent) {
 	var lpRect = AkelPad.MemAlloc(16); //sizeof(RECT)
