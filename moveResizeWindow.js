@@ -171,7 +171,7 @@ function restoreWindowPos(windowId, hWnd) {
 	var y = +RegExp.$2;
 	var w = +RegExp.$3;
 	var h = +RegExp.$4;
-	ensureNotMaximized(hWnd);
+	ensureRestored(hWnd);
 	return oSys.Call("user32::SetWindowPos", hWnd, 0, x, y, w, h, 0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
 }
 
@@ -207,14 +207,14 @@ function getWorkArea(hWnd) {
 	return rcWork;
 }
 function _moveWindow(hWnd, x, y) {
-	ensureNotMaximized(hWnd);
+	ensureRestored(hWnd);
 	return oSys.Call("user32::SetWindowPos", hWnd, 0, x, y, 0, 0, 0x15 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE*/);
 }
 function _resizeWindow(hWnd, w, h) {
-	ensureNotMaximized(hWnd);
+	ensureRestored(hWnd);
 	return oSys.Call("user32::SetWindowPos", hWnd, 0, 0, 0, w, h, 0x16 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOMOVE*/);
 }
-function ensureNotMaximized(hWnd) {
+function ensureRestored(hWnd) {
 	// Also exit from Windows 7+ docked to half screen state
 	//if(oSys.Call("user32::IsZoomed", hWnd))
 	oSys.Call("user32::ShowWindow", hWnd, 9 /*SW_RESTORE*/);
