@@ -118,8 +118,8 @@ function moveWindow(hWnd, move, hWndParent) {
 	else if(!mvY)            mvY = rcWnd.top;
 	else                     mvY = parseInt(mvY);
 
-	mvX = Math.max(rcWork.left, Math.min(rcWork.right - w,  mvX));
-	mvY = Math.max(rcWork.top,  Math.min(rcWork.bottom - h, mvY));
+	mvX = Math.round(Math.max(rcWork.left, Math.min(rcWork.right - w,  mvX)));
+	mvY = Math.round(Math.max(rcWork.top,  Math.min(rcWork.bottom - h, mvY)));
 
 	if(mvX == rcWnd.left && mvY == rcWnd.top)
 		return false;
