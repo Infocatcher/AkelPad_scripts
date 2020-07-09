@@ -70,14 +70,14 @@ function resizeWindow(hWnd, resize, hWndParent) {
 	var w = rcWnd.right - rcWnd.left;
 	var h = rcWnd.bottom - rcWnd.top;
 
-	if(rsW.slice(-1) == "%")
+	if(isPersent(rsW))
 		rsW = Math.round(parseFloat(rsW)/100*ww);
 	else if(!rsW)
 		rsW = w;
 	else
 		rsW = parseInt(rsW);
 
-	if(rsH.slice(-1) == "%")
+	if(isPersent(rsH))
 		rsH = Math.round(parseFloat(rsH)/100*wh);
 	else if(!rsH)
 		rsH = h;
@@ -130,6 +130,9 @@ function centerX(rcWnd, rcWndParent) {
 }
 function centerY(rcWnd, rcWndParent) {
 	return rcWndParent.top + ((rcWndParent.bottom - rcWndParent.top)/2 - (rcWnd.bottom - rcWnd.top)/2);
+}
+function isPersent(s) {
+	return s.slice(-1) == "%";
 }
 
 function getWindowPos(hWnd) {
