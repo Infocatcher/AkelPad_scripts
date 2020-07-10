@@ -110,12 +110,14 @@ function moveWindow(hWnd, move, hWndParent) {
 	else if(mvX == "center") mvX = centerX(rcWnd, rcWork);
 	else if(mvX == "right")  mvX = rcWork.right - w;
 	else if(!mvX)            mvX = rcWnd.left;
+	else if(isPersent(mvX))  mvX = parseFloat(mvX)/100*(rcWork.right - rcWork.left);
 	else                     mvX = parseInt(mvX);
 
 	if     (mvY == "top")    mvY = rcWork.top;
 	else if(mvY == "center") mvY = centerY(rcWnd, rcWork);
 	else if(mvY == "bottom") mvY = rcWork.bottom - h;
 	else if(!mvY)            mvY = rcWnd.top;
+	else if(isPersent(mvY))  mvY = parseFloat(mvY)/100*(rcWork.bottom - rcWork.top);
 	else                     mvY = parseInt(mvY);
 
 	mvX = Math.round(Math.max(rcWork.left, Math.min(rcWork.right - w,  mvX)));
