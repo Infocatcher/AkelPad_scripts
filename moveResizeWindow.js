@@ -26,6 +26,8 @@
 //        =left*bottom        - move window to bottom left corner of work area
 //        =right*bottom       - move window to bottom right corner of work area
 //        =left*              - move window to left side of work area
+//        =50%*               - move window to 50% of work area width
+//        =*50%               - move window to 50% of work area height
 //        =10*150             - move to x=10, y=150
 //   -allowRestore=true       - allow save last used size and position and restore them after second call
 
