@@ -31,6 +31,12 @@
 //        =10*150             - move to x=10, y=150
 //   -allowRestore=true       - allow save last used size and position and restore them after second call
 
+// Note: use "%%" to specify "%" in ContextMenu ant Toolbar
+
+// Usage:
+//   -"Stretch to width" Call("Scripts::Main", 1, "moveResizeWindow.js", "-resize=100%%* -move=left*")
+//   -"Move down and left + 1280x720" Call("Scripts::Main", 1, "moveResizeWindow.js", "-resize=1280*720 -move=left*bottom")
+
 var hMainWnd = AkelPad.GetMainWnd();
 var oSys = AkelPad.SystemFunction();
 
