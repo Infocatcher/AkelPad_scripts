@@ -97,7 +97,7 @@ function resizeWindow(hWnd, resize, hWndParent) {
 
 	if(rsW == w && rsH == h)
 		return false;
-	return _resizeWindow(hWnd, rsW, rsH);
+	return setWindowPos(hWnd, null, null, rsW, rsH);
 }
 function moveWindow(hWnd, move, hWndParent) {
 	var tokens = move.split("*");
@@ -133,7 +133,7 @@ function moveWindow(hWnd, move, hWndParent) {
 
 	if(mvX == rcWnd.left && mvY == rcWnd.top)
 		return false;
-	return _moveWindow(hWnd, mvX, mvY);
+	return setWindowPos(hWnd, mvX, mvY, null, null);
 }
 function centerX(rcWnd, rcWndParent) {
 	return rcWndParent.left + ((rcWndParent.right - rcWndParent.left)/2 - (rcWnd.right - rcWnd.left)/2);
@@ -184,8 +184,7 @@ function restoreWindowPos(windowId, hWnd) {
 	var y = +RegExp.$2;
 	var w = +RegExp.$3;
 	var h = +RegExp.$4;
-	ensureRestored(hWnd);
-	return oSys.Call("user32::SetWindowPos", hWnd, 0, x, y, w, h, 0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
+	return setWindowPos(hWnd, x, y, w, h);
 }
 
 function getWorkArea(hWnd) {
@@ -219,13 +218,12 @@ function getWorkArea(hWnd) {
 	AkelPad.MemFree(lpRect);
 	return rcWork;
 }
-function _moveWindow(hWnd, x, y) {
+function setWindowPos(hWnd, x, y, w, h) {
+	var flags = 0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/
+		| (x === null || y === null ? 0x2 /*SWP_NOMOVE*/ : 0)
+		| (w === null || h === null ? 0x1 /*SWP_NOSIZE*/ : 0);
 	ensureRestored(hWnd);
-	return oSys.Call("user32::SetWindowPos", hWnd, 0, x, y, 0, 0, 0x15 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE*/);
-}
-function _resizeWindow(hWnd, w, h) {
-	ensureRestored(hWnd);
-	return oSys.Call("user32::SetWindowPos", hWnd, 0, 0, 0, w, h, 0x16 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOMOVE*/);
+	return oSys.Call("user32::SetWindowPos", hWnd, 0, x, y, w, h, flags);
 }
 function ensureRestored(hWnd) {
 	// Also exit from Windows 7+ docked to half screen state
