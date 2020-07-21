@@ -560,11 +560,11 @@ function selectScriptDialog(modal) {
 						}
 					break;
 					case IDC_EDIT:
-						if(curName) {
-							AkelPad.Call("Scripts::Main", 3, curName);
-							oSys.Call("user32::SetFocus", hMainWnd);
-							ensureTimers(notifyButton, hWndEdit);
-						}
+						if(!curName)
+							break;
+						AkelPad.Call("Scripts::Main", 3, curName);
+						oSys.Call("user32::SetFocus", hMainWnd);
+						ensureTimers(notifyButton, hWndEdit);
 					break;
 					case IDC_CANCEL:
 						closeDialog();
