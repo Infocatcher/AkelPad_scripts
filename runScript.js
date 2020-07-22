@@ -874,13 +874,8 @@ function selectScriptDialog(modal) {
 			&& (rc = getWindowRect(hWndArgs, hWndDialog))
 			&& (rcr = getWindowRect(hWndArgs))
 		) {
-			//var oldStyle = oSys.Call("User32::GetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/);
-			//var newStyle = argsMultiline
-			//	? oldStyle | mlStyle
-			//	: oldStyle & ~mlStyle;
-			//if(newStyle != oldStyle)
-			//	oSys.Call("User32::SetWindowLongW", hWndArgs, -16 /*GWL_STYLE*/, newStyle);
-
+			// Will re-create EDIT control,
+			// see https://docs.microsoft.com/en-US/windows/win32/controls/edit-control-styles
 			var args = updMultilineArgs(windowText(hWndArgs));
 			var restoreFocus = oSys.Call("user32::GetFocus") == hWndArgs;
 			destroyWindow(hWndArgs);
