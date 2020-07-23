@@ -20,6 +20,8 @@
 //   F2, Ctrl+S                   - Rewrite options (and remove arguments for removed files)
 //   F1, Shift+F1                 - Next/previous script
 //   F5                           - Refresh scripts list
+//   Ctrl++                       - increase lines count for arguments text field
+//   Ctrl+-                       - decrease lines count for arguments text field
 //   Escape                       - Cancel
 
 // Arguments:
@@ -528,6 +530,10 @@ function selectScriptDialog(modal) {
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EDIT, 0);
 				else if(wParam == 116 /*VK_F5*/)
 					redrawListbox();
+				else if(ctrl && (wParam == 107 /*VK_ADD*/ || wParam == 187 /*+/=*/)) // Ctrl++
+					setArgsLines(1);
+				else if(ctrl && (wParam == 109 /*VK_SUBTRACT*/ || wParam == 189 /*-/_*/)) // Ctrl+-
+					setArgsLines(-1);
 			break;
 			case 273: //WM_COMMAND
 				var idc = wParam & 0xffff;
