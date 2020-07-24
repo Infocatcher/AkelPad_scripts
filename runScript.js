@@ -22,6 +22,8 @@
 //   F5                           - Refresh scripts list
 //   Ctrl++                       - increase lines count for arguments text field
 //   Ctrl+-                       - decrease lines count for arguments text field
+//   Ctrl+Shift++                 - set lines count for arguments text field to max value
+//   Ctrl+Shift+-                 - set lines count for arguments text field to 1
 //   Escape                       - Cancel
 
 // Arguments:
@@ -531,9 +533,9 @@ function selectScriptDialog(modal) {
 				else if(wParam == 116 /*VK_F5*/)
 					redrawListbox();
 				else if(ctrl && (wParam == 107 /*VK_ADD*/ || wParam == 187 /*+/=*/)) // Ctrl++
-					setArgsLines(1);
+					setArgsLines(shift ? -argsLines + ARGS_LINES_MAX : 1);
 				else if(ctrl && (wParam == 109 /*VK_SUBTRACT*/ || wParam == 189 /*-/_*/)) // Ctrl+-
-					setArgsLines(-1);
+					setArgsLines(shift ? -argsLines + 1 : -1);
 			break;
 			case 273: //WM_COMMAND
 				var idc = wParam & 0xffff;
