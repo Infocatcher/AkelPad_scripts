@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/moveResizeWindow.js
 
 // (c) Infocatcher 2012-2020
-// Version: 0.1.2 - 2020-06-30
+// Version: 0.1.3 - 2020-07-27
 // Author: Infocatcher
 
 //// Move or/and align AkelPad's main window
