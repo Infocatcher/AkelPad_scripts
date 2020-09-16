@@ -183,9 +183,11 @@ var commentsExcludes = { // Now used only in delLineComments()
 		// x = a ? /b/ : /c/    -> ? :
 		// x = !/a/.test(b)     -> !
 		return str.replace(
-			// Note: we use "[\s\S]{0,120}?" instead of "[\s\S]*?" to improve performance (less => faster)
-			/([=(\[,&|?:!]\s*((\/\/[^\n\r]*[\n\r]+|\/\*[\s\S]{0,120}?\*\/)\s*)*)\/([^*+?\\\/\n\r]|\\[^\n\r])(\\\/|[^\/\n\r])*\//g,
-			// special chars   line comments       block comments               regexp begin                         regexp end
+			// Performance improvements to not catch too many symbols (less => faster):
+			//   - [\s\S]*? => [\s\S]{0,120}?
+			//   - *        => {0,30}
+			/([=(\[,&|?:!]\s*((\/\/[^\n\r]*[\n\r]+|\/\*[\s\S]{0,120}?\*\/)\s*){0,30})\/([^*+?\\\/\n\r]|\\[^\n\r])(\\\/|[^\/\n\r])*\//g,
+			// special chars   line comments       block comments                    regexp begin                         regexp end
 			function(s, prefix) {
 				return prefix + escaper(s.substr(prefix.length));
 			}
