@@ -1993,7 +1993,7 @@ function available(server, code) {
 }
 function getRequestURL(code) {
 	if(code == "BTC")
-		return "https://api.bitcoincharts.com/v1/weighted_prices.json?" + new Date().getTime();
+		return "http://api.bitcoincharts.com/v1/weighted_prices.json?" + new Date().getTime();
 	if(
 		available("fxexchangerate.com", code)
 		&& (preferFXExchangeRate || !available("exchange-rates.org", code))
@@ -2015,7 +2015,7 @@ function getRatioFromResponse(response, code) {
 		return validateRatio(stringToNumber(RegExp.$1));
 
 	if(response.charAt(0) == "{") { // Looks like JSON
-		// https://api.bitcoincharts.com/v1/weighted_prices.json
+		// http://api.bitcoincharts.com/v1/weighted_prices.json
 		var btcPattern = getRatioFromResponse.btcPattern || (
 			getRatioFromResponse.btcPattern = new RegExp(
 				// "USD": {"7d": "860.00", "30d": "732.82", "24h": "898.98"}
