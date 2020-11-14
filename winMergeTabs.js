@@ -92,15 +92,15 @@ var winMergePaths = paths
 		"%COMMANDER_PATH%\\..\\WinMergePortable\\WinMergePortable.exe"
 	];
 
-var hMainWnd = AkelPad.GetMainWnd();
 var oSys = AkelPad.SystemFunction();
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var wsh = new ActiveXObject("WScript.Shell");
 
-if(
-	hMainWnd
-	&& AkelPad.IsMDI() // WMD_MDI or WMD_PMDI
-) {
+var hMainWnd = AkelPad.GetMainWnd();
+var isMDI = AkelPad.IsMDI(); // WMD_MDI or WMD_PMDI
+var isPMDI = isMDI == 2 /*WMD_PMDI*/;
+
+if(hMainWnd && isMDI) {
 	var lpFrame = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
 	var lpFrame2;
 	if(!lpFrame) {
@@ -192,8 +192,10 @@ function compareTabs(lpFrame, lpFrame2) {
 		return;
 	}
 
+	isPMDI && setRedraw(hMainWnd, false);
 	var file  = getFile(lpFrame);
 	var file2 = getFile(lpFrame2);
+	isPMDI && setRedraw(hMainWnd, true);
 
 	var noFile  = !fso.FileExists(file);
 	var noFile2 = !fso.FileExists(file2);
@@ -242,6 +244,8 @@ function compareTabs(lpFrame, lpFrame2) {
 	}
 }
 function getFile(lpFrame) {
+	isPMDI && AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrame);
+
 	var hWndEdit = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 2 /*FI_WNDEDIT*/, lpFrame);
 	var hDocEdit = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 3 /*FI_DOCEDIT*/, lpFrame);
 	var origFile = AkelPad.GetEditFile(hWndEdit);
@@ -354,7 +358,10 @@ function getRegistryValue(path) {
 	}
 	return "";
 }
-
+function setRedraw(hWnd, bRedraw) {
+	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
+	bRedraw && oSys.Call("user32::InvalidateRect", hWnd, 0, true);
+}
 function Item() {
 	this.check = function() {};
 	// "%m:%i" (legacy: "menu:%m:%i" or "toolbar:%m:%i")
