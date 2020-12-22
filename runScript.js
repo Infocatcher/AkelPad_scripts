@@ -831,7 +831,8 @@ function selectScriptDialog(modal) {
 		enabled(hWndBtn, false);
 		setTimeout(function() {
 			enabled(hWndBtn, true);
-			moveFocus && oSys.Call("user32::SetFocus", hWndBtn);
+			if(moveFocus && oSys.Call("user32::GetFocus") == hWndArgs)
+				oSys.Call("user32::SetFocus", hWndBtn);
 		}, 500);
 	}
 	function ensureVisibility() {
