@@ -2877,11 +2877,7 @@ function converterDialog(modal) {
 					var upd = function() {
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
 					};
-					var lib = AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/);
-					if(oSys.Call("kernel32::GetFileAttributes" + _TCHAR, lib + "\\timer.js") != -1)
-						AkelPad.Include("timer.js") && setTimeout(upd, 800);
-					else
-						upd();
+					ensureTimers() ? setTimeout(upd, 800) : upd();
 				}
 			break;
 			case 7: //WM_SETFOCUS
@@ -4019,6 +4015,17 @@ function localeNumbers() {
 		var ls = RegExp.$1;
 	localeNumbers.delimiter = ld && ls ? ld : ".";
 	localeNumbers.separator = ld && ls ? ls : "\xa0";
+}
+
+function ensureTimers() {
+	var lib = AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/);
+	if(oSys.Call("kernel32::GetFileAttributes" + _TCHAR, lib + "\\timer.js") != -1) {
+		AkelPad.Include("timer.js");
+		var hasTimers = true;
+	}
+	return (ensureTimers = function() {
+		return hasTimers;
+	})();
 }
 
 function getArg(argName, defaultVal) {
