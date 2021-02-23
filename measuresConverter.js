@@ -3078,8 +3078,23 @@ function converterDialog(modal) {
 				lastUpdateStr = _localize("n/a");
 			else if(lastUpdate == 0)
 				lastUpdateStr = _localize("never");
-			else
-				lastUpdateStr = new Date(lastUpdate).toLocaleString();
+			else {
+				var sdt = setDialogTitle;
+				var key = curItem + "|" + curItem2;
+				var prevLastUpdate = (sdt._lastUpdateKey || "") == key
+					&& sdt._lastUpdate || "";
+				lastUpdateStr = sdt._lastUpdate = new Date(lastUpdate).toLocaleString();
+				sdt._lastUpdateKey = key;
+				if(lastUpdateStr == prevLastUpdate) // Not changed
+					return;
+				if(prevLastUpdate && ensureTimers()) {
+					lastUpdateStr = prevLastUpdate + " -> " + lastUpdateStr;
+					setTimeout(function() {
+						sdt._lastUpdate = sdt._lastUpdateKey = "";
+						setDialogTitle(hWnd);
+					}, 3e3);
+				}
+			}
 			caption += _localize(" [last update: %t]").replace("%t", lastUpdateStr);
 		}
 		else if(!showLastUpdate) {
