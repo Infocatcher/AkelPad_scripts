@@ -29,7 +29,7 @@ var getVersionPattern  = /(^|[^a-z])(version|ver\.?|v\.?)[ \t]*[-:=|]?[ \t]*(\S+
 var versionBracketsNumber = 3; // We don't use (?:something) for backward compatibility with old JScript
 var testVersionPattern = /\d/; // Version string must contain number
 var linesLimit = 20; // Check only first 20 lines of file
-var addVersionPattern = /(\.user)?\.[^.\s_-]+$/; // {fileName}{versionSeparator}{version}{addVersionPattern}
+var addVersionPattern = /(\.user)?(\.[^.\s_-]+)?$/; // {fileName}{versionSeparator}{version}{addVersionPattern}
 function getVersionSeparator(version) {
 	return /-/.test(version) ? "_" : "-";
 }
