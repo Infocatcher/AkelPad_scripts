@@ -8,7 +8,7 @@
 // Version: 0.3.0 - 2019-09-21
 // Author: Infocatcher
 // Based on scripts from https://beautifier.io/ (http://jsbeautifier.org/)
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2020-04-05 19:25:03 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2021-04-16 21:52:16 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -484,98 +484,13 @@ function detectXMLType(str) {
 (function() {
 
 /* GENERATED_BUILD_OUTPUT */
-var legacy_beautify_js =
-/******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = function(exports) {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__webpack_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = __webpack_require__(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 		var ns = Object.create(null);
-/******/ 		__webpack_require__.r(ns);
-/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 		return ns;
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 0);
-/******/ })
-/************************************************************************/
-/******/ ([
+var legacy_beautify_js;
+/******/ (function() { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ([
 /* 0 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -622,9 +537,8 @@ module.exports.defaultOptions = function() {
 
 /***/ }),
 /* 1 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -1173,7 +1087,7 @@ Beautifier.prototype.handle_start_expr = function(current_token) {
       }
     }
 
-    if (!in_array(this._flags.last_token.type, [TOKEN.START_EXPR, TOKEN.END_EXPR, TOKEN.WORD, TOKEN.OPERATOR])) {
+    if (!in_array(this._flags.last_token.type, [TOKEN.START_EXPR, TOKEN.END_EXPR, TOKEN.WORD, TOKEN.OPERATOR, TOKEN.DOT])) {
       this._output.space_before_token = true;
     }
   } else {
@@ -1181,7 +1095,7 @@ Beautifier.prototype.handle_start_expr = function(current_token) {
       if (this._flags.last_token.text === 'for') {
         this._output.space_before_token = this._options.space_before_conditional;
         next_mode = MODE.ForInitializer;
-      } else if (in_array(this._flags.last_token.text, ['if', 'while'])) {
+      } else if (in_array(this._flags.last_token.text, ['if', 'while', 'switch'])) {
         this._output.space_before_token = this._options.space_before_conditional;
         next_mode = MODE.Conditional;
       } else if (in_array(this._flags.last_word, ['await', 'async'])) {
@@ -1684,7 +1598,9 @@ Beautifier.prototype.handle_semicolon = function(current_token) {
 };
 
 Beautifier.prototype.handle_string = function(current_token) {
-  if (this.start_of_statement(current_token)) {
+  if (current_token.text.startsWith("`") && current_token.newlines === 0 && current_token.whitespace_before === '' && (current_token.previous.text === ')' || this._flags.last_token.type === TOKEN.WORD)) {
+    //Conditional for detectign backtick strings
+  } else if (this.start_of_statement(current_token)) {
     // The conditional starts the statement if appropriate.
     // One difference - strings want at least a space before
     this._output.space_before_token = true;
@@ -1696,6 +1612,8 @@ Beautifier.prototype.handle_string = function(current_token) {
       if (!this.start_of_object_property()) {
         this.allow_wrap_or_preserved_newline(current_token);
       }
+    } else if ((current_token.text.startsWith("`") && this._flags.last_token.type === TOKEN.END_EXPR && (current_token.previous.text === ']' || current_token.previous.text === ')') && current_token.newlines === 0)) {
+      this._output.space_before_token = true;
     } else {
       this.print_newline();
     }
@@ -2084,9 +2002,8 @@ module.exports.Beautifier = Beautifier;
 
 /***/ }),
 /* 2 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
   The MIT License (MIT)
@@ -2510,9 +2427,8 @@ module.exports.Output = Output;
 
 /***/ }),
 /* 3 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -2571,9 +2487,8 @@ module.exports.Token = Token;
 
 /***/ }),
 /* 4 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports) {
 
-"use strict";
 /* jshint node: true, curly: false */
 // Parts of this section of code is taken from acorn.
 //
@@ -2635,9 +2550,8 @@ exports.allLineBreaks = new RegExp(exports.lineBreak.source, 'g');
 
 /***/ }),
 /* 5 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -2735,9 +2649,8 @@ module.exports.Options = Options;
 
 /***/ }),
 /* 6 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -2807,10 +2720,10 @@ function Options(options, merge_child_field) {
 
   this.indent_empty_lines = this._get_boolean('indent_empty_lines');
 
-  // valid templating languages ['django', 'erb', 'handlebars', 'php']
+  // valid templating languages ['django', 'erb', 'handlebars', 'php', 'smarty']
   // For now, 'auto' = all off for javascript, all on for html (and inline javascript).
   // other values ignored
-  this.templating = this._get_selection_list('templating', ['auto', 'none', 'django', 'erb', 'handlebars', 'php'], ['auto']);
+  this.templating = this._get_selection_list('templating', ['auto', 'none', 'django', 'erb', 'handlebars', 'php', 'smarty'], ['auto']);
 }
 
 Options.prototype._get_array = function(name, default_value) {
@@ -2935,9 +2848,8 @@ module.exports.mergeOpts = _mergeOpts;
 
 /***/ }),
 /* 7 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -3015,7 +2927,7 @@ var dot_pattern = /[^\d\.]/;
 
 var positionable_operators = (
   ">>> === !== " +
-  "<< && >= ** != == <= >> || |> " +
+  "<< && >= ** != == <= >> || ?? |> " +
   "< / - + > : & % ? ^ | *").split(' ');
 
 // IMPORTANT: this must be sorted longest to shortest or tokenizing many not work.
@@ -3023,7 +2935,7 @@ var positionable_operators = (
 var punct =
   ">>>= " +
   "... >>= <<= === >>> !== **= " +
-  "=> ^= :: /= << <= == && -= >= >> != -- += ** || ++ %= &= *= |= |> " +
+  "=> ^= :: /= << <= == && -= >= >> != -- += ** || ?? ++ %= &= *= |= |> " +
   "= ! ? > < : / ^ - + * & % ~ |";
 
 punct = punct.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&");
@@ -3066,7 +2978,7 @@ var Tokenizer = function(input_string, options) {
     html_comment_end: pattern_reader.matching(/-->/),
     include: pattern_reader.starting_with(/#include/).until_after(acorn.lineBreak),
     shebang: pattern_reader.starting_with(/#!/).until_after(acorn.lineBreak),
-    xml: pattern_reader.matching(/[\s\S]*?<(\/?)([-a-zA-Z:0-9_.]+|{[\s\S]+?}|!\[CDATA\[[\s\S]*?\]\])(\s+{[\s\S]+?}|\s+[-a-zA-Z:0-9_.]+|\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{[\s\S]+?}))*\s*(\/?)\s*>/),
+    xml: pattern_reader.matching(/[\s\S]*?<(\/?)([-a-zA-Z:0-9_.]+|{[\s\S]+?}|!\[CDATA\[[\s\S]*?\]\]|)(\s+{[\s\S]+?}|\s+[-a-zA-Z:0-9_.]+|\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{[\s\S]+?}))*\s*(\/?)\s*>/),
     single_quote: templatable.until(/['\\\n\r\u2028\u2029]/),
     double_quote: templatable.until(/["\\\n\r\u2028\u2029]/),
     template_text: templatable.until(/[`\\$]/),
@@ -3508,9 +3420,8 @@ module.exports.line_starters = line_starters.slice();
 
 /***/ }),
 /* 8 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -3707,9 +3618,8 @@ module.exports.InputScanner = InputScanner;
 
 /***/ }),
 /* 9 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -3854,9 +3764,8 @@ module.exports.TOKEN = TOKEN;
 
 /***/ }),
 /* 10 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -3939,9 +3848,8 @@ module.exports.TokenStream = TokenStream;
 
 /***/ }),
 /* 11 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -4051,9 +3959,8 @@ module.exports.WhitespacePattern = WhitespacePattern;
 
 /***/ }),
 /* 12 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -4152,9 +4059,8 @@ module.exports.Pattern = Pattern;
 
 /***/ }),
 /* 13 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -4221,9 +4127,8 @@ module.exports.Directives = Directives;
 
 /***/ }),
 /* 14 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -4261,7 +4166,8 @@ var template_names = {
   django: false,
   erb: false,
   handlebars: false,
-  php: false
+  php: false,
+  smarty: false
 };
 
 // This lets templates appear anywhere we would do a readUntil
@@ -4282,12 +4188,15 @@ function TemplatablePattern(input_scanner, parent) {
     handlebars_comment: pattern.starting_with(/{{!--/).until_after(/--}}/),
     handlebars_unescaped: pattern.starting_with(/{{{/).until_after(/}}}/),
     handlebars: pattern.starting_with(/{{/).until_after(/}}/),
-    php: pattern.starting_with(/<\?(?:[=]|php)/).until_after(/\?>/),
+    php: pattern.starting_with(/<\?(?:[= ]|php)/).until_after(/\?>/),
     erb: pattern.starting_with(/<%[^%]/).until_after(/[^%]%>/),
     // django coflicts with handlebars a bit.
     django: pattern.starting_with(/{%/).until_after(/%}/),
     django_value: pattern.starting_with(/{{/).until_after(/}}/),
-    django_comment: pattern.starting_with(/{#/).until_after(/#}/)
+    django_comment: pattern.starting_with(/{#/).until_after(/#}/),
+    smarty: pattern.starting_with(/{(?=[^}{\s\n])/).until_after(/[^\s\n]}/),
+    smarty_comment: pattern.starting_with(/{\*/).until_after(/\*}/),
+    smarty_literal: pattern.starting_with(/{literal}/).until_after(/{\/literal}/)
   };
 }
 TemplatablePattern.prototype = new Pattern();
@@ -4361,8 +4270,13 @@ TemplatablePattern.prototype.__set_templated_pattern = function() {
   }
   if (!this._disabled.django) {
     items.push(this.__patterns.django._starting_pattern.source);
+    // The starting pattern for django is more complex because it has different
+    // patterns for value, comment, and other sections
     items.push(this.__patterns.django_value._starting_pattern.source);
     items.push(this.__patterns.django_comment._starting_pattern.source);
+  }
+  if (!this._disabled.smarty) {
+    items.push(this.__patterns.smarty._starting_pattern.source);
   }
 
   if (this._until_pattern) {
@@ -4409,6 +4323,17 @@ TemplatablePattern.prototype._read_template = function() {
           this.__patterns.django.read();
       }
     }
+    if (!this._disabled.smarty) {
+      // smarty cannot be enabled with django or handlebars enabled
+      if (this._disabled.django && this._disabled.handlebars) {
+        resulting_string = resulting_string ||
+          this.__patterns.smarty_comment.read();
+        resulting_string = resulting_string ||
+          this.__patterns.smarty_literal.read();
+        resulting_string = resulting_string ||
+          this.__patterns.smarty.read();
+      }
+    }
   }
   return resulting_string;
 };
@@ -4418,7 +4343,42 @@ module.exports.TemplatablePattern = TemplatablePattern;
 
 
 /***/ })
-/******/ ]);
+/******/ 	]);
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/************************************************************************/
+/******/
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__(0);
+/******/ 	legacy_beautify_js = __webpack_exports__;
+/******/
+/******/ })()
+;
 var js_beautify = legacy_beautify_js;
 /* Footer */
 if (typeof define === "function" && define.amd) {
@@ -4510,100 +4470,15 @@ if (typeof define === "function" && define.amd) {
 (function() {
 
 /* GENERATED_BUILD_OUTPUT */
-var legacy_beautify_css =
-/******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = function(exports) {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__webpack_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = __webpack_require__(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 		var ns = Object.create(null);
-/******/ 		__webpack_require__.r(ns);
-/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 		return ns;
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 15);
-/******/ })
-/************************************************************************/
-/******/ ([
+var legacy_beautify_css;
+/******/ (function() { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ([
 /* 0 */,
 /* 1 */,
 /* 2 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
   The MIT License (MIT)
@@ -5030,9 +4905,8 @@ module.exports.Output = Output;
 /* 4 */,
 /* 5 */,
 /* 6 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -5102,10 +4976,10 @@ function Options(options, merge_child_field) {
 
   this.indent_empty_lines = this._get_boolean('indent_empty_lines');
 
-  // valid templating languages ['django', 'erb', 'handlebars', 'php']
+  // valid templating languages ['django', 'erb', 'handlebars', 'php', 'smarty']
   // For now, 'auto' = all off for javascript, all on for html (and inline javascript).
   // other values ignored
-  this.templating = this._get_selection_list('templating', ['auto', 'none', 'django', 'erb', 'handlebars', 'php'], ['auto']);
+  this.templating = this._get_selection_list('templating', ['auto', 'none', 'django', 'erb', 'handlebars', 'php', 'smarty'], ['auto']);
 }
 
 Options.prototype._get_array = function(name, default_value) {
@@ -5231,9 +5105,8 @@ module.exports.mergeOpts = _mergeOpts;
 /***/ }),
 /* 7 */,
 /* 8 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -5434,9 +5307,8 @@ module.exports.InputScanner = InputScanner;
 /* 11 */,
 /* 12 */,
 /* 13 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -5504,9 +5376,8 @@ module.exports.Directives = Directives;
 /***/ }),
 /* 14 */,
 /* 15 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -5553,9 +5424,8 @@ module.exports.defaultOptions = function() {
 
 /***/ }),
 /* 16 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -5649,13 +5519,12 @@ Beautifier.prototype.eatString = function(endChars) {
 // the first newline will be output
 Beautifier.prototype.eatWhitespace = function(allowAtLeastOneNewLine) {
   var result = whitespaceChar.test(this._input.peek());
-  var isFirstNewLine = true;
-
+  var newline_count = 0;
   while (whitespaceChar.test(this._input.peek())) {
     this._ch = this._input.next();
     if (allowAtLeastOneNewLine && this._ch === '\n') {
-      if (this._options.preserve_newlines || isFirstNewLine) {
-        isFirstNewLine = false;
+      if (newline_count === 0 || newline_count < this._options.max_preserve_newlines) {
+        newline_count++;
         this._output.add_new_line(true);
       }
     }
@@ -5849,23 +5718,34 @@ Beautifier.prototype.beautify = function() {
         insidePropertyValue = false;
         this.outdent();
       }
-      this.indent();
-      this._output.space_before_token = true;
-      this.print_string(this._ch);
 
       // when entering conditional groups, only rulesets are allowed
       if (enteringConditionalGroup) {
         enteringConditionalGroup = false;
-        insideRule = (this._indentLevel > this._nestedLevel);
+        insideRule = (this._indentLevel >= this._nestedLevel);
       } else {
         // otherwise, declarations are also allowed
-        insideRule = (this._indentLevel >= this._nestedLevel);
+        insideRule = (this._indentLevel >= this._nestedLevel - 1);
       }
       if (this._options.newline_between_rules && insideRule) {
         if (this._output.previous_line && this._output.previous_line.item(-1) !== '{') {
           this._output.ensure_empty_line_above('/', ',');
         }
       }
+
+      this._output.space_before_token = true;
+
+      // The difference in print_string and indent order is necessary to indent the '{' correctly
+      if (this._options.brace_style === 'expand') {
+        this._output.add_new_line();
+        this.print_string(this._ch);
+        this.indent();
+        this._output.set_indent(this._indentLevel);
+      } else {
+        this.indent();
+        this.print_string(this._ch);
+      }
+
       this.eatWhitespace(true);
       this._output.add_new_line();
     } else if (this._ch === '}') {
@@ -6030,9 +5910,8 @@ module.exports.Beautifier = Beautifier;
 
 /***/ }),
 /* 17 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -6073,6 +5952,16 @@ function Options(options) {
   var space_around_selector_separator = this._get_boolean('space_around_selector_separator');
   this.space_around_combinator = this._get_boolean('space_around_combinator') || space_around_selector_separator;
 
+  var brace_style_split = this._get_selection_list('brace_style', ['collapse', 'expand', 'end-expand', 'none', 'preserve-inline']);
+  this.brace_style = 'collapse';
+  for (var bs = 0; bs < brace_style_split.length; bs++) {
+    if (brace_style_split[bs] !== 'expand') {
+      // default to collapse, as only collapse|expand is implemented for now
+      this.brace_style = 'collapse';
+    } else {
+      this.brace_style = brace_style_split[bs];
+    }
+  }
 }
 Options.prototype = new BaseOptions();
 
@@ -6082,7 +5971,42 @@ module.exports.Options = Options;
 
 
 /***/ })
-/******/ ]);
+/******/ 	]);
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/************************************************************************/
+/******/
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__(15);
+/******/ 	legacy_beautify_css = __webpack_exports__;
+/******/
+/******/ })()
+;
 var css_beautify = legacy_beautify_css;
 /* Footer */
 if (typeof define === "function" && define.amd) {
@@ -6186,100 +6110,15 @@ if (typeof define === "function" && define.amd) {
 (function() {
 
 /* GENERATED_BUILD_OUTPUT */
-var legacy_beautify_html =
-/******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = function(exports) {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__webpack_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = __webpack_require__(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 		var ns = Object.create(null);
-/******/ 		__webpack_require__.r(ns);
-/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 		return ns;
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 18);
-/******/ })
-/************************************************************************/
-/******/ ([
+var legacy_beautify_html;
+/******/ (function() { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ([
 /* 0 */,
 /* 1 */,
 /* 2 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
   The MIT License (MIT)
@@ -6703,9 +6542,8 @@ module.exports.Output = Output;
 
 /***/ }),
 /* 3 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -6766,9 +6604,8 @@ module.exports.Token = Token;
 /* 4 */,
 /* 5 */,
 /* 6 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -6838,10 +6675,10 @@ function Options(options, merge_child_field) {
 
   this.indent_empty_lines = this._get_boolean('indent_empty_lines');
 
-  // valid templating languages ['django', 'erb', 'handlebars', 'php']
+  // valid templating languages ['django', 'erb', 'handlebars', 'php', 'smarty']
   // For now, 'auto' = all off for javascript, all on for html (and inline javascript).
   // other values ignored
-  this.templating = this._get_selection_list('templating', ['auto', 'none', 'django', 'erb', 'handlebars', 'php'], ['auto']);
+  this.templating = this._get_selection_list('templating', ['auto', 'none', 'django', 'erb', 'handlebars', 'php', 'smarty'], ['auto']);
 }
 
 Options.prototype._get_array = function(name, default_value) {
@@ -6967,9 +6804,8 @@ module.exports.mergeOpts = _mergeOpts;
 /***/ }),
 /* 7 */,
 /* 8 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -7166,9 +7002,8 @@ module.exports.InputScanner = InputScanner;
 
 /***/ }),
 /* 9 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -7313,9 +7148,8 @@ module.exports.TOKEN = TOKEN;
 
 /***/ }),
 /* 10 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -7398,9 +7232,8 @@ module.exports.TokenStream = TokenStream;
 
 /***/ }),
 /* 11 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -7510,9 +7343,8 @@ module.exports.WhitespacePattern = WhitespacePattern;
 
 /***/ }),
 /* 12 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -7611,9 +7443,8 @@ module.exports.Pattern = Pattern;
 
 /***/ }),
 /* 13 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -7680,9 +7511,8 @@ module.exports.Directives = Directives;
 
 /***/ }),
 /* 14 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -7720,7 +7550,8 @@ var template_names = {
   django: false,
   erb: false,
   handlebars: false,
-  php: false
+  php: false,
+  smarty: false
 };
 
 // This lets templates appear anywhere we would do a readUntil
@@ -7741,12 +7572,15 @@ function TemplatablePattern(input_scanner, parent) {
     handlebars_comment: pattern.starting_with(/{{!--/).until_after(/--}}/),
     handlebars_unescaped: pattern.starting_with(/{{{/).until_after(/}}}/),
     handlebars: pattern.starting_with(/{{/).until_after(/}}/),
-    php: pattern.starting_with(/<\?(?:[=]|php)/).until_after(/\?>/),
+    php: pattern.starting_with(/<\?(?:[= ]|php)/).until_after(/\?>/),
     erb: pattern.starting_with(/<%[^%]/).until_after(/[^%]%>/),
     // django coflicts with handlebars a bit.
     django: pattern.starting_with(/{%/).until_after(/%}/),
     django_value: pattern.starting_with(/{{/).until_after(/}}/),
-    django_comment: pattern.starting_with(/{#/).until_after(/#}/)
+    django_comment: pattern.starting_with(/{#/).until_after(/#}/),
+    smarty: pattern.starting_with(/{(?=[^}{\s\n])/).until_after(/[^\s\n]}/),
+    smarty_comment: pattern.starting_with(/{\*/).until_after(/\*}/),
+    smarty_literal: pattern.starting_with(/{literal}/).until_after(/{\/literal}/)
   };
 }
 TemplatablePattern.prototype = new Pattern();
@@ -7820,8 +7654,13 @@ TemplatablePattern.prototype.__set_templated_pattern = function() {
   }
   if (!this._disabled.django) {
     items.push(this.__patterns.django._starting_pattern.source);
+    // The starting pattern for django is more complex because it has different
+    // patterns for value, comment, and other sections
     items.push(this.__patterns.django_value._starting_pattern.source);
     items.push(this.__patterns.django_comment._starting_pattern.source);
+  }
+  if (!this._disabled.smarty) {
+    items.push(this.__patterns.smarty._starting_pattern.source);
   }
 
   if (this._until_pattern) {
@@ -7868,6 +7707,17 @@ TemplatablePattern.prototype._read_template = function() {
           this.__patterns.django.read();
       }
     }
+    if (!this._disabled.smarty) {
+      // smarty cannot be enabled with django or handlebars enabled
+      if (this._disabled.django && this._disabled.handlebars) {
+        resulting_string = resulting_string ||
+          this.__patterns.smarty_comment.read();
+        resulting_string = resulting_string ||
+          this.__patterns.smarty_literal.read();
+        resulting_string = resulting_string ||
+          this.__patterns.smarty.read();
+      }
+    }
   }
   return resulting_string;
 };
@@ -7881,9 +7731,8 @@ module.exports.TemplatablePattern = TemplatablePattern;
 /* 16 */,
 /* 17 */,
 /* 18 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -7930,9 +7779,8 @@ module.exports.defaultOptions = function() {
 
 /***/ }),
 /* 19 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -8481,6 +8329,7 @@ Beautifier.prototype._handle_tag_open = function(printer, raw_token, last_tag_to
   var parser_token = this._get_tag_open_token(raw_token);
 
   if ((last_tag_token.is_unformatted || last_tag_token.is_content_unformatted) &&
+    !last_tag_token.is_empty_element &&
     raw_token.type === TOKEN.TAG_OPEN && raw_token.text.indexOf('</') === 0) {
     // End element tags for unformatted or content_unformatted elements
     // are printed raw to keep any newlines inside them exactly the same.
@@ -8594,12 +8443,8 @@ Beautifier.prototype._set_tag_position = function(printer, raw_token, parser_tok
       // and do an ending needed
       if (this._do_optional_end_element(parser_token)) {
         if (!parser_token.is_inline_element) {
-          if (parser_token.parent) {
-            parser_token.parent.multiline_content = true;
-          }
           printer.print_newline(false);
         }
-
       }
 
       this._tag_stack.record_tag(parser_token); //push it on the tag stack
@@ -8636,21 +8481,28 @@ Beautifier.prototype._set_tag_position = function(printer, raw_token, parser_tok
     if (parser_token.tag_name === '!--' && last_token.type === TOKEN.TAG_CLOSE &&
       last_tag_token.is_end_tag && parser_token.text.indexOf('\n') === -1) {
       //Do nothing. Leave comments on same line.
-    } else if (!parser_token.is_inline_element && !parser_token.is_unformatted) {
-      printer.print_newline(false);
-    }
-  } else if (parser_token.is_unformatted || parser_token.is_content_unformatted) {
-    if (!parser_token.is_inline_element && !parser_token.is_unformatted) {
-      printer.print_newline(false);
+    } else {
+      if (!(parser_token.is_inline_element || parser_token.is_unformatted)) {
+        printer.print_newline(false);
+      }
+      this._calcluate_parent_multiline(printer, parser_token);
     }
   } else if (parser_token.is_end_tag) { //this tag is a double tag so check for tag-ending
-    if ((parser_token.start_tag_token && parser_token.start_tag_token.multiline_content) ||
-      !(parser_token.is_inline_element ||
-        (last_tag_token.is_inline_element) ||
-        (last_token.type === TOKEN.TAG_CLOSE &&
-          parser_token.start_tag_token === last_tag_token) ||
-        (last_token.type === 'TK_CONTENT')
-      )) {
+    var do_end_expand = false;
+
+    // deciding whether a block is multiline should not be this hard
+    do_end_expand = parser_token.start_tag_token && parser_token.start_tag_token.multiline_content;
+    do_end_expand = do_end_expand || (!parser_token.is_inline_element &&
+      !(last_tag_token.is_inline_element || last_tag_token.is_unformatted) &&
+      !(last_token.type === TOKEN.TAG_CLOSE && parser_token.start_tag_token === last_tag_token) &&
+      last_token.type !== 'TK_CONTENT'
+    );
+
+    if (parser_token.is_content_unformatted || parser_token.is_unformatted) {
+      do_end_expand = false;
+    }
+
+    if (do_end_expand) {
       printer.print_newline(false);
     }
   } else { // it's a start-tag
@@ -8666,12 +8518,19 @@ Beautifier.prototype._set_tag_position = function(printer, raw_token, parser_tok
       }
     }
 
-    if (!parser_token.is_inline_element && last_token.type !== 'TK_CONTENT') {
-      if (parser_token.parent) {
-        parser_token.parent.multiline_content = true;
-      }
+    if (!(parser_token.is_inline_element || parser_token.is_unformatted) &&
+      (last_token.type !== 'TK_CONTENT' || parser_token.is_content_unformatted)) {
       printer.print_newline(false);
     }
+
+    this._calcluate_parent_multiline(printer, parser_token);
+  }
+};
+
+Beautifier.prototype._calcluate_parent_multiline = function(printer, parser_token) {
+  if (parser_token.parent && printer._output.just_added_newline() &&
+    !((parser_token.is_inline_element || parser_token.is_unformatted) && parser_token.parent.is_inline_element)) {
+    parser_token.parent.multiline_content = true;
   }
 };
 
@@ -8791,9 +8650,8 @@ module.exports.Beautifier = Beautifier;
 
 /***/ }),
 /* 20 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -8889,9 +8747,8 @@ module.exports.Options = Options;
 
 /***/ }),
 /* 21 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-"use strict";
 /*jshint node:true */
 /*
 
@@ -9016,8 +8873,8 @@ Tokenizer.prototype._get_next_token = function(previous_token, open_token) { // 
 
   token = token || this._read_open_handlebars(c, open_token);
   token = token || this._read_attribute(c, previous_token, open_token);
-  token = token || this._read_raw_content(c, previous_token, open_token);
   token = token || this._read_close(c, open_token);
+  token = token || this._read_raw_content(c, previous_token, open_token);
   token = token || this._read_content_word(c);
   token = token || this._read_comment_or_cdata(c);
   token = token || this._read_processing(c);
@@ -9180,7 +9037,9 @@ Tokenizer.prototype._read_raw_content = function(c, previous_token, open_token) 
   var resulting_string = '';
   if (open_token && open_token.text.charAt(0) === '{') {
     resulting_string = this.__patterns.handlebars_raw_close.read();
-  } else if (previous_token.type === TOKEN.TAG_CLOSE && (previous_token.opened.text.charAt(0) === '<')) {
+  } else if (previous_token.type === TOKEN.TAG_CLOSE &&
+    previous_token.opened.text.charAt(0) === '<' && previous_token.text.charAt(0) !== '/') {
+    // ^^ empty tag has no content
     var tag_name = previous_token.opened.text.substr(1).toLowerCase();
     if (tag_name === 'script' || tag_name === 'style') {
       // Script and style tags are allowed to have comments wrapping their content
@@ -9192,6 +9051,7 @@ Tokenizer.prototype._read_raw_content = function(c, previous_token, open_token) 
       }
       resulting_string = this._input.readUntil(new RegExp('</' + tag_name + '[\\n\\r\\t ]*?>', 'ig'));
     } else if (this._is_content_unformatted(tag_name)) {
+
       resulting_string = this._input.readUntil(new RegExp('</' + tag_name + '[\\n\\r\\t ]*?>', 'ig'));
     }
   }
@@ -9224,7 +9084,42 @@ module.exports.TOKEN = TOKEN;
 
 
 /***/ })
-/******/ ]);
+/******/ 	]);
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/************************************************************************/
+/******/
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__(18);
+/******/ 	legacy_beautify_html = __webpack_exports__;
+/******/
+/******/ })()
+;
 var style_html = legacy_beautify_html;
 /* Footer */
 if (typeof define === "function" && define.amd) {
@@ -9626,6 +9521,14 @@ var P_A_C_K_E_R = {
     t.expect(pk1, unpk1);
     t.expect(pk2, unpk2);
     t.expect(pk3, unpk3);
+    t.expect("function test (){alert ('This is a test!')}; " +
+      "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String))" +
+      "{while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function" +
+      "(){return'\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp(" +
+      "'\\b'+e(c)+'\\b','g'),k[c]);return p}('0 2=\\\'{Íâ–+›ï;ã†Ù¥#\\\'',3,3," +
+      "'var||a'.split('|'),0,{}))",
+      "function test (){alert ('This is a test!')}; var a='{Íâ–+›ï;ã†Ù¥#'");
+
 
     var filler = '\nfiller\n';
     t.expect(filler + pk1 + "\n" + pk_broken + filler + pk2 + filler, filler + unpk1 + "\n" + pk_broken + filler + unpk2 + filler);

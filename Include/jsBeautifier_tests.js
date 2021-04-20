@@ -8,7 +8,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // Scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2020-04-05 19:25:03 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2021-04-16 21:52:16 UTC]
 
 
 //== js/test/generated/beautify-javascript-tests.js
@@ -3232,17 +3232,24 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '} else {\n' +
             '    c;\n' +
             '}');
+        bt('fn`tagged`');
+        bt('fn()`tagged`');
+        bt('fn`${algo} ${`6string`}`');
+        bt('fn`${fn2()} more text ${`${`more text`}`} banana ${fn3`test`} ${fn4()`moretest banana2`}`');
+        bt('`untagged`+`untagged`', '`untagged` + `untagged`');
+        bt('fun() `taggedd`');
+        bt('fn[0]`tagged`', 'fn[0] `tagged`');
 
 
         //============================================================
-        // operator_position option - ensure no neswlines if preserve_newlines is false - (preserve_newlines = "false")
+        // operator_position option - ensure no newlines if preserve_newlines is false - (preserve_newlines = "false")
         reset_options();
-        set_name('operator_position option - ensure no neswlines if preserve_newlines is false - (preserve_newlines = "false")');
+        set_name('operator_position option - ensure no newlines if preserve_newlines is false - (preserve_newlines = "false")');
         opts.preserve_newlines = false;
         bt(
             'var res = a + b - c / d * e % f;\n' +
             'var res = g & h | i ^ j |> console.log;\n' +
-            'var res = (k && l || m) ? n : o;\n' +
+            'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
             'ac + -ad');
@@ -3260,6 +3267,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'l\n' +
             '|| m) ?\n' +
             'n\n' +
+            '?? nn\n' +
             ': o\n' +
             ';\n' +
             'var res = p\n' +
@@ -3280,20 +3288,20 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             //  -- output --
             'var res = a + b - c / d * e % f;\n' +
             'var res = g & h | i ^ j |> console.log;\n' +
-            'var res = (k && l || m) ? n : o;\n' +
+            'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
             'ac + -ad');
 
-        // operator_position option - ensure no neswlines if preserve_newlines is false - (operator_position = ""before-newline"", preserve_newlines = "false")
+        // operator_position option - ensure no newlines if preserve_newlines is false - (operator_position = ""before-newline"", preserve_newlines = "false")
         reset_options();
-        set_name('operator_position option - ensure no neswlines if preserve_newlines is false - (operator_position = ""before-newline"", preserve_newlines = "false")');
+        set_name('operator_position option - ensure no newlines if preserve_newlines is false - (operator_position = ""before-newline"", preserve_newlines = "false")');
         opts.operator_position = 'before-newline';
         opts.preserve_newlines = false;
         bt(
             'var res = a + b - c / d * e % f;\n' +
             'var res = g & h | i ^ j |> console.log;\n' +
-            'var res = (k && l || m) ? n : o;\n' +
+            'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
             'ac + -ad');
@@ -3311,6 +3319,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'l\n' +
             '|| m) ?\n' +
             'n\n' +
+            '?? nn\n' +
             ': o\n' +
             ';\n' +
             'var res = p\n' +
@@ -3331,20 +3340,20 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             //  -- output --
             'var res = a + b - c / d * e % f;\n' +
             'var res = g & h | i ^ j |> console.log;\n' +
-            'var res = (k && l || m) ? n : o;\n' +
+            'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
             'ac + -ad');
 
-        // operator_position option - ensure no neswlines if preserve_newlines is false - (operator_position = ""after-newline"", preserve_newlines = "false")
+        // operator_position option - ensure no newlines if preserve_newlines is false - (operator_position = ""after-newline"", preserve_newlines = "false")
         reset_options();
-        set_name('operator_position option - ensure no neswlines if preserve_newlines is false - (operator_position = ""after-newline"", preserve_newlines = "false")');
+        set_name('operator_position option - ensure no newlines if preserve_newlines is false - (operator_position = ""after-newline"", preserve_newlines = "false")');
         opts.operator_position = 'after-newline';
         opts.preserve_newlines = false;
         bt(
             'var res = a + b - c / d * e % f;\n' +
             'var res = g & h | i ^ j |> console.log;\n' +
-            'var res = (k && l || m) ? n : o;\n' +
+            'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
             'ac + -ad');
@@ -3362,6 +3371,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'l\n' +
             '|| m) ?\n' +
             'n\n' +
+            '?? nn\n' +
             ': o\n' +
             ';\n' +
             'var res = p\n' +
@@ -3382,20 +3392,20 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             //  -- output --
             'var res = a + b - c / d * e % f;\n' +
             'var res = g & h | i ^ j |> console.log;\n' +
-            'var res = (k && l || m) ? n : o;\n' +
+            'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
             'ac + -ad');
 
-        // operator_position option - ensure no neswlines if preserve_newlines is false - (operator_position = ""preserve-newline"", preserve_newlines = "false")
+        // operator_position option - ensure no newlines if preserve_newlines is false - (operator_position = ""preserve-newline"", preserve_newlines = "false")
         reset_options();
-        set_name('operator_position option - ensure no neswlines if preserve_newlines is false - (operator_position = ""preserve-newline"", preserve_newlines = "false")');
+        set_name('operator_position option - ensure no newlines if preserve_newlines is false - (operator_position = ""preserve-newline"", preserve_newlines = "false")');
         opts.operator_position = 'preserve-newline';
         opts.preserve_newlines = false;
         bt(
             'var res = a + b - c / d * e % f;\n' +
             'var res = g & h | i ^ j |> console.log;\n' +
-            'var res = (k && l || m) ? n : o;\n' +
+            'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
             'ac + -ad');
@@ -3413,6 +3423,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'l\n' +
             '|| m) ?\n' +
             'n\n' +
+            '?? nn\n' +
             ': o\n' +
             ';\n' +
             'var res = p\n' +
@@ -3433,7 +3444,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             //  -- output --
             'var res = a + b - c / d * e % f;\n' +
             'var res = g & h | i ^ j |> console.log;\n' +
-            'var res = (k && l || m) ? n : o;\n' +
+            'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
             'ac + -ad');
@@ -3459,6 +3470,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'l\n' +
             '|| m) ?\n' +
             'n\n' +
+            '?? nn\n' +
             ': o\n' +
             ';\n' +
             'var res = p\n' +
@@ -3488,7 +3500,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var res = (k &&\n' +
             '        l ||\n' +
             '        m) ?\n' +
-            '    n :\n' +
+            '    n ??\n' +
+            '    nn :\n' +
             '    o;\n' +
             'var res = p >>\n' +
             '    q <<\n' +
@@ -3583,6 +3596,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'l\n' +
             '|| m) ?\n' +
             'n\n' +
+            '?? nn\n' +
             ': o\n' +
             ';\n' +
             'var res = p\n' +
@@ -3612,7 +3626,8 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var res = (k &&\n' +
             '        l ||\n' +
             '        m) ?\n' +
-            '    n :\n' +
+            '    n ??\n' +
+            '    nn :\n' +
             '    o;\n' +
             'var res = p >>\n' +
             '    q <<\n' +
@@ -3709,6 +3724,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'l\n' +
             '|| m) ?\n' +
             'n\n' +
+            '?? nn\n' +
             ': o\n' +
             ';\n' +
             'var res = p\n' +
@@ -3739,6 +3755,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        && l\n' +
             '        || m)\n' +
             '    ? n\n' +
+            '    ?? nn\n' +
             '    : o;\n' +
             'var res = p\n' +
             '    >> q\n' +
@@ -3834,6 +3851,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'l\n' +
             '|| m) ?\n' +
             'n\n' +
+            '?? nn\n' +
             ': o\n' +
             ';\n' +
             'var res = p\n' +
@@ -3865,6 +3883,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        l\n' +
             '        || m) ?\n' +
             '    n\n' +
+            '    ?? nn\n' +
             '    : o;\n' +
             'var res = p\n' +
             '    >> q <<\n' +
@@ -4420,6 +4439,17 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '       {children}\n' +
             '    </{a + b}>\n' +
             ');');
+        bt(
+            'class Columns extends React.Component {\n' +
+            '    render() {\n' +
+            '        return (\n' +
+            '            <>\n' +
+            '              <td>Hello</td>\n' +
+            '              <td>World</td>\n' +
+            '            </>\n' +
+            '        );\n' +
+            '    }\n' +
+            '}');
 
 
         //============================================================
@@ -4465,6 +4495,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'do\n' +
             '    c();\n' +
             'while(a) b()');
+        bt('switch(a) b()');
         bt(
             'if(a)\n' +
             'b();',
@@ -4485,6 +4516,12 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'do\n' +
             '    c();\n' +
             'while(a);');
+        bt(
+            'switch(a)\n' +
+            'b()',
+            //  -- output --
+            'switch(a)\n' +
+            '    b()');
         bt('return [];');
         bt('return ();');
 
@@ -4498,6 +4535,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'do\n' +
             '    c();\n' +
             'while (a) b()');
+        bt('switch (a) b()');
         bt(
             'if(a)\n' +
             'b();',
@@ -4518,6 +4556,12 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'do\n' +
             '    c();\n' +
             'while (a);');
+        bt(
+            'switch(a)\n' +
+            'b()',
+            //  -- output --
+            'switch (a)\n' +
+            '    b()');
         bt('return [];');
         bt('return ();');
 
@@ -6959,6 +7003,11 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    new Date().getTime()\n' +
             '].join("-");');
 
+        // Issue 1801 - Optional chaining w/ obj?.[expr] syntax
+        bt(
+            'let nestedProp = obj?.["prop" + "Name"];\n' +
+            'let arrayItem = arr?.[42];');
+
         // Issue 1374 - Parameters starting with ! or [ merged into single line
         bt(
             'fn(\n' +
@@ -7014,6 +7063,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    function(x) {\n' +
             '        return x;\n' +
             '    };');
+
+        // Issue #1794 - support nullish-coalescing
+        bt('a = b ?? c');
 
         // Issue #569 - function should not have blank line in a number of cases
         bt(
@@ -9532,6 +9584,7 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
     default_opts.indent_size = 4;
     default_opts.indent_char = ' ';
     default_opts.selector_separator_newline = true;
+    default_opts.brace_style = 'collapse';
     default_opts.end_with_newline = false;
     default_opts.newline_between_rules = false;
     default_opts.space_around_combinator = false;
@@ -10469,6 +10522,78 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'a:first-child,\na:first-child {\n' +
             '    color: red;\n' +
             '    div:first-child,\n    div:hover {\n' +
+            '        color: black;\n' +
+            '    }\n' +
+            '}');
+
+        // Selector Separator - (selector_separator_newline = "true", selector_separator = ""  "", brace_style = ""expand"", newline_between_rules = "false")
+        reset_options();
+        set_name('Selector Separator - (selector_separator_newline = "true", selector_separator = ""  "", brace_style = ""expand"", newline_between_rules = "false")');
+        opts.selector_separator_newline = true;
+        opts.selector_separator = "  ";
+        opts.brace_style = "expand";
+        opts.newline_between_rules = false;
+        t(
+            '#bla, #foo{color:green}',
+            //  -- output --
+            '#bla,\n#foo\n{\n' +
+            '    color: green\n' +
+            '}');
+        t(
+            '#bla, #foo{color:green}\n' +
+            '#bla, #foo{color:green}',
+            //  -- output --
+            '#bla,\n#foo\n{\n' +
+            '    color: green\n' +
+            '}\n' +
+            '#bla,\n#foo\n{\n' +
+            '    color: green\n' +
+            '}');
+        t(
+            '@media print {.tab{}}',
+            //  -- output --
+            '@media print\n{\n' +
+            '    .tab\n    {}\n' +
+            '}');
+
+        // This is bug #1489
+        t(
+            '@media print {.tab,.bat{}}',
+            //  -- output --
+            '@media print\n{\n' +
+            '    .tab,\n    .bat\n    {}\n' +
+            '}');
+
+        // This is bug #1489
+        t(
+            '@media print {// comment\n' +
+            '//comment 2\n' +
+            '.bat{}}',
+            //  -- output --
+            '@media print\n{\n' +
+            '    // comment\n' +
+            '    //comment 2\n' +
+            '    .bat\n    {}\n' +
+            '}');
+        t(
+            '#bla, #foo{color:black}',
+            //  -- output --
+            '#bla,\n#foo\n{\n' +
+            '    color: black\n' +
+            '}');
+        t(
+            'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}\n' +
+            'a:first-child,a:first-child{color:red;div:first-child,div:hover{color:black;}}',
+            //  -- output --
+            'a:first-child,\na:first-child\n{\n' +
+            '    color: red;\n' +
+            '    div:first-child,\n    div:hover\n    {\n' +
+            '        color: black;\n' +
+            '    }\n' +
+            '}\n' +
+            'a:first-child,\na:first-child\n{\n' +
+            '    color: red;\n' +
+            '    div:first-child,\n    div:hover\n    {\n' +
             '        color: black;\n' +
             '    }\n' +
             '}');
@@ -20266,6 +20391,135 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
 
 
         //============================================================
+        // brace_style = expand - (brace_style = ""expand"", selector_separator_newline = "false", newline_between_rules = "true")
+        reset_options();
+        set_name('brace_style = expand - (brace_style = ""expand"", selector_separator_newline = "false", newline_between_rules = "true")');
+        opts.brace_style = 'expand';
+        opts.selector_separator_newline = false;
+        opts.newline_between_rules = true;
+        t(
+            'a, b, .c {\n' +
+            '    width: auto;\n' +
+            '  \n' +
+            '    height: auto;\n' +
+            '}',
+            //  -- output --
+            'a, b, .c\n' +
+            '{\n' +
+            '    width: auto;\n' +
+            '    height: auto;\n' +
+            '}');
+
+        // edge case - empty line after { should not be indented without indent_empty_lines
+        t(
+            'a, b, .c {\n' +
+            '\n' +
+            '    width: auto;\n' +
+            '}',
+            //  -- output --
+            'a, b, .c\n' +
+            '{\n' +
+            '    width: auto;\n' +
+            '}');
+
+        // integration test of newline_between_rules, imports, and brace_style="expand"
+        t(
+            '.a{} @import "custom.css";.rule{}',
+            //  -- output --
+            '.a\n' +
+            '{}\n' +
+            '\n' +
+            '@import "custom.css";\n' +
+            '\n' +
+            '.rule\n' +
+            '{}');
+
+        // brace_style = expand - (brace_style = ""expand"", indent_empty_lines = "true", selector_separator_newline = "false", preserve_newlines = "true")
+        reset_options();
+        set_name('brace_style = expand - (brace_style = ""expand"", indent_empty_lines = "true", selector_separator_newline = "false", preserve_newlines = "true")');
+        opts.brace_style = 'expand';
+        opts.indent_empty_lines = true;
+        opts.selector_separator_newline = false;
+        opts.preserve_newlines = true;
+        t(
+            'a, b, .c {\n' +
+            '    width: auto;\n' +
+            '  \n' +
+            '    height: auto;\n' +
+            '}',
+            //  -- output --
+            'a, b, .c\n' +
+            '{\n' +
+            '    width: auto;\n' +
+            '    \n    height: auto;\n' +
+            '}');
+
+        // edge case - empty line after { should not be indented without indent_empty_lines
+        t(
+            'a, b, .c {\n' +
+            '\n' +
+            '    width: auto;\n' +
+            '}',
+            //  -- output --
+            'a, b, .c\n' +
+            '{\n' +
+            '    \n    width: auto;\n' +
+            '}');
+
+        // integration test of newline_between_rules, imports, and brace_style="expand"
+        t(
+            '.a{} @import "custom.css";.rule{}',
+            //  -- output --
+            '.a\n' +
+            '{}\n' +
+            '@import "custom.css";\n' +
+            '.rule\n' +
+            '{}');
+
+        // brace_style = expand - (brace_style = ""expand"", indent_empty_lines = "false", selector_separator_newline = "false", preserve_newlines = "true")
+        reset_options();
+        set_name('brace_style = expand - (brace_style = ""expand"", indent_empty_lines = "false", selector_separator_newline = "false", preserve_newlines = "true")');
+        opts.brace_style = 'expand';
+        opts.indent_empty_lines = false;
+        opts.selector_separator_newline = false;
+        opts.preserve_newlines = true;
+        t(
+            'a, b, .c {\n' +
+            '    width: auto;\n' +
+            '  \n' +
+            '    height: auto;\n' +
+            '}',
+            //  -- output --
+            'a, b, .c\n' +
+            '{\n' +
+            '    width: auto;\n' +
+            '\n    height: auto;\n' +
+            '}');
+
+        // edge case - empty line after { should not be indented without indent_empty_lines
+        t(
+            'a, b, .c {\n' +
+            '\n' +
+            '    width: auto;\n' +
+            '}',
+            //  -- output --
+            'a, b, .c\n' +
+            '{\n' +
+            '\n    width: auto;\n' +
+            '}');
+
+        // integration test of newline_between_rules, imports, and brace_style="expand"
+        t(
+            '.a{} @import "custom.css";.rule{}',
+            //  -- output --
+            '.a\n' +
+            '{}\n' +
+            '@import "custom.css";\n' +
+            '.rule\n' +
+            '{}');
+
+
+        //============================================================
         // LESS mixins
         reset_options();
         set_name('LESS mixins');
@@ -20320,6 +20574,35 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}\n' +
             '.mymixin(@color: #ccc; @border-width: 1px) {\n' +
             '    border: @border-width solid @color;\n' +
+            '}');
+
+
+        //============================================================
+        // Preserve Newlines and max number of new lines
+        reset_options();
+        set_name('Preserve Newlines and max number of new lines');
+        opts.preserve_newlines = true;
+        opts.max_preserve_newlines = 2;
+        t(
+            'p {\n' +
+            '\n' +
+            '\n' +
+            '\n' +
+            '    color: blue;\n' +
+            '}',
+            //  -- output --
+            'p {\n' +
+            '\n' +
+            '    color: blue;\n' +
+            '}');
+        t(
+            'p {\n' +
+            '\n' +
+            '    color: blue;\n' +
+            '}');
+        t(
+            'p {\n' +
+            '    color: blue;\n' +
             '}');
 
 
@@ -20648,6 +20931,37 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    <h1>Block</h1>\n' +
             '</body>');
         test_fragment('<body><i>Inline</i></body>');
+        bth(
+            '<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" x="0" y="0" viewBox="0 0 900 710" width="100%" height="100%">\n' +
+            '<circle id="mycircle" \n' +
+            'cx="182.901" cy="91.4841" \n' +
+            'style="fill:rosybrown;stroke:black;stroke-width:1px;" r="48" /></svg>',
+            //  -- output --
+            '<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" x="0" y="0" viewBox="0 0 900 710" width="100%" height="100%">\n' +
+            '    <circle id="mycircle" cx="182.901" cy="91.4841" style="fill:rosybrown;stroke:black;stroke-width:1px;" r="48" />\n' +
+            '</svg>');
+        bth(
+            '<div class="col-xs-2">\n' +
+            '<input type="radio" class="control-label" ng-disabled="!col" ng-model="col" value="2" class="form-control" id="coli" name="coli" />\n' +
+            '<label for="coli" class="control-label">Collision</label></div>',
+            //  -- output --
+            '<div class="col-xs-2">\n' +
+            '    <input type="radio" class="control-label" ng-disabled="!col" ng-model="col" value="2" class="form-control" id="coli" name="coli" />\n' +
+            '    <label for="coli" class="control-label">Collision</label>\n' +
+            '</div>');
+        bth(
+            '<label class="col-xs-2">Collision\n' +
+            '<input type="radio" class="control-label" ng-disabled="!col" ng-model="col" value="2" class="form-control" id="coli" name="coli" /></label>',
+            //  -- output --
+            '<label class="col-xs-2">Collision\n' +
+            '    <input type="radio" class="control-label" ng-disabled="!col" ng-model="col" value="2" class="form-control" id="coli" name="coli" /></label>');
+        bth(
+            '<div class="col-xs-2">Collision\n' +
+            '<input type="radio" class="control-label" ng-disabled="!col" ng-model="col" value="2" class="form-control" id="coli" name="coli" /></div>',
+            //  -- output --
+            '<div class="col-xs-2">Collision\n' +
+            '    <input type="radio" class="control-label" ng-disabled="!col" ng-model="col" value="2" class="form-control" id="coli" name="coli" />\n' +
+            '</div>');
 
 
         //============================================================
@@ -27572,6 +27886,40 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // minimal template handling - ()
         reset_options();
         set_name('minimal template handling - ()');
+        bth('<h1  class="content-page-header"><? $view["name"]; ?></h1>', '<h1 class="content-page-header"><? $view["name"]; ?></h1>');
+        bth(
+            '<? \n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '?>');
+        test_fragment(
+            '<?  ?>\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '<?  "A" ?>abc<?  "D" ?>\n' +
+            '<?  "B" ?>\n' +
+            '<?  "C" ?>');
+        bth(
+            '<? \n' +
+            'echo "A";\n' +
+            '?>\n' +
+            '<span>Test</span>');
+        bth('<<?  html_element(); ?> <? language_attributes();?>>abc</<?  html_element(); ?>>');
+        bth('<input type="text" value="<? $x["test"] . $x[\'test\']?>">');
+
+        // minimal template handling - ()
+        reset_options();
+        set_name('minimal template handling - ()');
         bth('<h1  class="content-page-header"><%$view["name"]; %></h1>', '<h1 class="content-page-header"><%$view["name"]; %></h1>');
         bth(
             '<%\n' +
@@ -27704,6 +28052,111 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>Test</span>');
         bth('<{% html_element(); %} {%language_attributes();%}>abc</{% html_element(); %}>');
         bth('<input type="text" value="{%$x["test"] . $x[\'test\']%}">');
+
+        // minimal template handling - (templating = ""smarty"")
+        reset_options();
+        set_name('minimal template handling - (templating = ""smarty"")');
+        opts.templating = 'smarty';
+        bth('<h1  class="content-page-header">{a$view["name"]; a}</h1>', '<h1 class="content-page-header">{a$view["name"]; a}</h1>');
+        bth(
+            '{a\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            'a}');
+        test_fragment(
+            '{a a}\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '{a "A" a}abc{a "D" a}\n' +
+            '{a "B" a}\n' +
+            '{a "C" a}');
+        bth(
+            '{a\n' +
+            'echo "A";\n' +
+            'a}\n' +
+            '<span>Test</span>');
+        bth('<{a html_element(); a} {alanguage_attributes();a}>abc</{a html_element(); a}>');
+        bth('<input type="text" value="{a$x["test"] . $x[\'test\']a}">');
+
+        // minimal template handling - (templating = ""smarty"")
+        reset_options();
+        set_name('minimal template handling - (templating = ""smarty"")');
+        opts.templating = 'smarty';
+        bth('<h1  class="content-page-header">{*$view["name"]; *}</h1>', '<h1 class="content-page-header">{*$view["name"]; *}</h1>');
+        bth(
+            '{*\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '*}');
+        test_fragment(
+            '{* *}\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '{* "A" *}abc{* "D" *}\n' +
+            '{* "B" *}\n' +
+            '{* "C" *}');
+        bth(
+            '{*\n' +
+            'echo "A";\n' +
+            '*}\n' +
+            '<span>Test</span>');
+        bth('<{* html_element(); *} {*language_attributes();*}>abc</{* html_element(); *}>');
+        bth('<input type="text" value="{*$x["test"] . $x[\'test\']*}">');
+
+        // minimal template handling - (templating = ""smarty"")
+        reset_options();
+        set_name('minimal template handling - (templating = ""smarty"")');
+        opts.templating = 'smarty';
+        bth('<h1  class="content-page-header">{literal}$view["name"]; {/literal}</h1>', '<h1 class="content-page-header">{literal}$view["name"]; {/literal}</h1>');
+        bth(
+            '{literal}\n' +
+            'for($i = 1; $i <= 100; $i++;) {\n' +
+            '    #count to 100!\n' +
+            '    echo($i . "</br>");\n' +
+            '}\n' +
+            '{/literal}');
+        test_fragment(
+            '{literal} {/literal}\n' +
+            '<!DOCTYPE html>\n' +
+            '\n' +
+            '<html>\n' +
+            '\n' +
+            '<head></head>\n' +
+            '\n' +
+            '<body></body>\n' +
+            '\n' +
+            '</html>');
+        bth(
+            '{literal} "A" {/literal}abc{literal} "D" {/literal}\n' +
+            '{literal} "B" {/literal}\n' +
+            '{literal} "C" {/literal}');
+        bth(
+            '{literal}\n' +
+            'echo "A";\n' +
+            '{/literal}\n' +
+            '<span>Test</span>');
+        bth('<{literal} html_element(); {/literal} {literal}language_attributes();{/literal}>abc</{literal} html_element(); {/literal}>');
+        bth('<input type="text" value="{literal}$x["test"] . $x[\'test\']{/literal}">');
 
         // minimal template handling - (indent_handlebars = "false")
         reset_options();
@@ -28403,7 +28856,8 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<div>----1---------2---------3---------4---------5---------6---------7-----<hr />-</div>',
             //  -- output --
             '<div>----1---------2---------3---------4---------5---------6---------7-----\n' +
-            '    <hr />-</div>');
+            '    <hr />-\n' +
+            '</div>');
         bth(
             '<div>----1---------2---------3---------4---------5---------6---------7 --------81 ----2---------3---------4---------5---------6---------7-----</div>',
             //  -- output --
@@ -28876,9 +29330,63 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // unformatted to prevent formatting changes
         reset_options();
         set_name('unformatted to prevent formatting changes');
-        opts.unformatted = ['u', 'span', 'textarea'];
+        opts.unformatted = ['h1', 'br', 'u', 'span', 'textarea'];
         bth('<u><div><div>Ignore block tags in unformatted regions</div></div></u>');
-        bth('<div><u>Don\'t wrap unformatted regions with extra newlines</u></div>');
+        bth('<div><u>Do not wrap unformatted regions with extra newlines</u></div>');
+        bth(
+            '<div>\n' +
+            '<u>Do not wrap unformatted regions with extra newlines</u></div>',
+            //  -- output --
+            '<div>\n' +
+            '    <u>Do not wrap unformatted regions with extra newlines</u>\n' +
+            '</div>');
+        bth('<div><br /></div>');
+        bth(
+            '<div>\n' +
+            '<br /></div>',
+            //  -- output --
+            '<div>\n' +
+            '    <br />\n' +
+            '</div>');
+        bth('<div><h1 /></div>');
+        bth(
+            '<div>\n' +
+            '<h1 /></div>',
+            //  -- output --
+            '<div>\n' +
+            '    <h1 />\n' +
+            '</div>');
+        bth('<label><br /></label>');
+
+        // Inline parent should not add newline unlike block
+        bth(
+            '<label>\n' +
+            '<br /></label>',
+            //  -- output --
+            '<label>\n' +
+            '    <br /></label>');
+
+        // Inline parent with unformatted non-inline child
+        bth('<label><h1>Unformatted non-inline</h1></label>');
+
+        // Inline parent with unformatted non-inline child
+        bth(
+            '<label>\n' +
+            '<h1>Unformatted non-inline</h1></label>',
+            //  -- output --
+            '<label>\n' +
+            '    <h1>Unformatted non-inline</h1></label>');
+
+        // Inline parent with unformatted non-inline empty child
+        bth('<label><h1 /></label>');
+
+        // Inline parent with unformatted non-inline empty child
+        bth(
+            '<label>\n' +
+            '<h1 /></label>',
+            //  -- output --
+            '<label>\n' +
+            '    <h1 /></label>');
         bth(
             '<u>  \n' +
             '\n' +
@@ -28972,7 +29480,8 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<div>\n' +
             '    <br>\n' +
             '    <br />\n' +
-            '    <br></div>');
+            '    <br>\n' +
+            '</div>');
 
         // Regression test #1534 - interaction between unformatted, content_unformatted, and inline
         bth(
@@ -29206,6 +29715,26 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    </div>\n' +
             '\n' +
             '</div>');
+
+
+        //============================================================
+        // Smarty tests for extra whitespace in nested quotes
+        reset_options();
+        set_name('Smarty tests for extra whitespace in nested quotes');
+        opts.templating = 'smarty';
+        bth('<div class="foo{if $bar=="1"} bar{/if}">foo</div>');
+        bth('<input type="radio" name="foo" {if $bar==""}checked{/if}>');
+
+
+        //============================================================
+        // Smarty tests for script
+        reset_options();
+        set_name('Smarty tests for script');
+        opts.templating = 'smarty';
+        bth(
+            '<script>\n' +
+            '    var foo = {$bar|json_encode};\n' +
+            '</script>');
 
 
         //============================================================
