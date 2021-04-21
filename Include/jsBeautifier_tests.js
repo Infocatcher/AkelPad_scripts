@@ -30023,12 +30023,12 @@ function SanityTest(func, name_of_test) {
     if ((result === expected_value) || (expected_value instanceof Array && result.join(', ') === expected_value.join(', '))) {
       n_succeeded += 1;
       if((n_succeeded + n_failed) % 10 == 0)
-        tl.log("Test: " + n_succeeded + (n_failed ? "/" + n_failed : ""));
+        tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "/" + tl._(n_failed) : ""));
       return true;
     } else {
       n_failed += 1;
       if((n_succeeded + n_failed) % 10 == 0)
-        tl.log("Test: " + n_succeeded + (n_failed ? "/" + n_failed : ""));
+        tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "/" + tl._(n_failed) : ""));
       failures.push([test_name, parameters, expected_value, result]);
       return false;
     }

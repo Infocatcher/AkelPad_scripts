@@ -9844,7 +9844,7 @@ function convertSource(file, text) {
 			)
 			.replace(
 				/([ \t]+)(n_succeeded|n_failed) \+= 1;\r\n/g,
-				'$&$1if((n_succeeded + n_failed) % 10 == 0)\r\n$1  tl.log("Test: " + n_succeeded + (n_failed ? "/" + n_failed : ""));\r\n'
+				'$&$1if((n_succeeded + n_failed) % 10 == 0)\r\n$1  tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "/" + tl._(n_failed) : ""));\r\n'
 			)
 			.replace(
 				/\sresults \+= n_failed \+ [^\r\n]+\r\n\s*\}\r\n/,
@@ -10067,6 +10067,9 @@ function TitleLogger(prefix) {
 	this.restore = function() {
 		windowText(hMainWnd, origTitle);
 		origFrameTitle && windowText(hWndFrame, origFrameTitle);
+	};
+	this._ = function(n) {
+		return n.toLocaleString().replace(/\D0+$/, "");
 	};
 }
 
