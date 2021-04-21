@@ -1598,7 +1598,7 @@ Beautifier.prototype.handle_semicolon = function(current_token) {
 };
 
 Beautifier.prototype.handle_string = function(current_token) {
-  if (current_token.text.startsWith("`") && current_token.newlines === 0 && current_token.whitespace_before === '' && (current_token.previous.text === ')' || this._flags.last_token.type === TOKEN.WORD)) {
+  if (current_token.text.charAt(0) === "`" && current_token.newlines === 0 && current_token.whitespace_before === '' && (current_token.previous.text === ')' || this._flags.last_token.type === TOKEN.WORD)) {
     //Conditional for detectign backtick strings
   } else if (this.start_of_statement(current_token)) {
     // The conditional starts the statement if appropriate.
@@ -1612,7 +1612,7 @@ Beautifier.prototype.handle_string = function(current_token) {
       if (!this.start_of_object_property()) {
         this.allow_wrap_or_preserved_newline(current_token);
       }
-    } else if ((current_token.text.startsWith("`") && this._flags.last_token.type === TOKEN.END_EXPR && (current_token.previous.text === ']' || current_token.previous.text === ')') && current_token.newlines === 0)) {
+    } else if ((current_token.text.charAt(0) === "`" && this._flags.last_token.type === TOKEN.END_EXPR && (current_token.previous.text === ']' || current_token.previous.text === ')') && current_token.newlines === 0)) {
       this._output.space_before_token = true;
     } else {
       this.print_newline();
@@ -9861,7 +9861,8 @@ function convertSource(file, text) {
 			.replace(
 				/(token(\.opened)?\.text)\[([^\[\]]+)\]/g,
 				"$1.charAt($3)"
-			);
+			)
+			.replace(/\.startsWith\("([^"])"\)/g, '.charAt(0) === "$1"');
 	}
 	else if(file == "js/lib/beautify-html.js") {
 		text = text
