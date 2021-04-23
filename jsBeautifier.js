@@ -9846,10 +9846,7 @@ function convertSource(file, text) {
 				/([ \t]+)(n_succeeded|n_failed) \+= 1;\r\n/g,
 				'$&$1if((n_succeeded + n_failed) % 10 == 0)\r\n$1  tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "/" + tl._(n_failed) : ""));\r\n'
 			)
-			.replace(
-				/\sresults \+= n_failed \+ [^\r\n]+\r\n\s*\}\r\n/,
-				"$&    tl.restore();\r\n"
-			);
+			.replace(/([ \t]+)return results;/, "$1tl.restore();\r\n$&");
 	}
 	else if(file == "js/lib/beautify.js") {
 		text = text
