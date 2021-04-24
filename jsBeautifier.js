@@ -9835,7 +9835,7 @@ function convertSource(file, text) {
 		text = text
 			.replace(
 				"results = 'All ' + n_succeeded + ' tests passed.';",
-				'results = _localize("All %S tests passed.").replace("%S", n_succeeded);'
+				'results = _localize("All %S tests passed.").replace("%S", tl._(n_succeeded));'
 			)
 			// Patch to provide simple progress
 			.replace(

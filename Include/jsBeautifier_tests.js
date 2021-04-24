@@ -30041,7 +30041,7 @@ function SanityTest(func, name_of_test) {
       if (n_succeeded === 0) {
         results = 'No tests run.';
       } else {
-        results = _localize("All %S tests passed.").replace("%S", n_succeeded);
+        results = _localize("All %S tests passed.").replace("%S", tl._(n_succeeded));
       }
     } else {
       for (var i = 0; i < failures.length; i++) {
