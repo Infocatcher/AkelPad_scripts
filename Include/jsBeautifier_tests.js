@@ -29993,7 +29993,7 @@ if (typeof exports !== "undefined") {
 // alert(t.results_raw());        // html unescaped
 
 function SanityTest(func, name_of_test) {
-  var tl = new TitleLogger(WScript.ScriptName + ": ");
+  var tl = new TitleLogger(WScript.ScriptName + ": "); tl.total = tl._(51899);
   'use strict';
 
   var test_func = func || function(x) {
@@ -30023,12 +30023,12 @@ function SanityTest(func, name_of_test) {
     if ((result === expected_value) || (expected_value instanceof Array && result.join(', ') === expected_value.join(', '))) {
       n_succeeded += 1;
       if((n_succeeded + n_failed) % 10 == 0)
-        tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "/" + tl._(n_failed) : ""));
+        tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "+" + tl._(n_failed) : "") + "/" + tl.total);
       return true;
     } else {
       n_failed += 1;
       if((n_succeeded + n_failed) % 10 == 0)
-        tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "/" + tl._(n_failed) : ""));
+        tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "+" + tl._(n_failed) : "") + "/" + tl.total);
       failures.push([test_name, parameters, expected_value, result]);
       return false;
     }

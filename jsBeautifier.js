@@ -9828,6 +9828,7 @@ function beautifyAkelEdit() {
 }
 
 function convertSource(file, text) {
+	var TESTS_COUNT = 51899; // Inserted manually, to show better progress...
 	text = text
 		.replace(/\r\n?|\n\r?/g, "\r\n")
 		.replace(/[ \t]+([\n\r]|$)/g, "$1");
@@ -9840,11 +9841,11 @@ function convertSource(file, text) {
 			// Patch to provide simple progress
 			.replace(
 				/\sfunction SanityTest *\([^()]*\) *\{\r\n/,
-				'$&  var tl = new TitleLogger(WScript.ScriptName + ": ");\r\n'
+				'$&  var tl = new TitleLogger(WScript.ScriptName + ": "); tl.total = tl._(' + TESTS_COUNT + ');\r\n'
 			)
 			.replace(
 				/([ \t]+)(n_succeeded|n_failed) \+= 1;\r\n/g,
-				'$&$1if((n_succeeded + n_failed) % 10 == 0)\r\n$1  tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "/" + tl._(n_failed) : ""));\r\n'
+				'$&$1if((n_succeeded + n_failed) % 10 == 0)\r\n$1  tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "+" + tl._(n_failed) : "") + "/" + tl.total);\r\n'
 			)
 			.replace("results += n_failed +", "results += tl._(n_failed) + '/' + tl._(n_succeeded + n_failed) +")
 			.replace(/([ \t]+)return results;/, "$1tl.restore();\r\n$&");
