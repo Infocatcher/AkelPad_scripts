@@ -9700,7 +9700,7 @@ function beautifyAkelEdit() {
 		res = runTests();
 		if(!res)
 			return;
-		var failed = /\d+ tests failed/.test(res) && RegExp.lastMatch;
+		var failed = /[^\n\r]+ tests failed/.test(res) && RegExp.lastMatch;
 		var icon = failed ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/;
 		AkelPad.MessageBox(hMainWnd, failed || res, WScript.ScriptName, icon);
 		if(failed) {
@@ -9846,6 +9846,7 @@ function convertSource(file, text) {
 				/([ \t]+)(n_succeeded|n_failed) \+= 1;\r\n/g,
 				'$&$1if((n_succeeded + n_failed) % 10 == 0)\r\n$1  tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "/" + tl._(n_failed) : ""));\r\n'
 			)
+			.replace("results += n_failed +", "results += tl._(n_failed) + '/' + tl._(n_succeeded + n_failed) +")
 			.replace(/([ \t]+)return results;/, "$1tl.restore();\r\n$&");
 	}
 	else if(file == "js/lib/beautify.js") {

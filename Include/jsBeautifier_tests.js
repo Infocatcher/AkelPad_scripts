@@ -30057,7 +30057,7 @@ function SanityTest(func, name_of_test) {
         results += '---- output-ws ------\n' + this.prettyprint_whitespace(f[3]) + '\n';
         results += '================================================================\n\n';
       }
-      results += n_failed + ' tests failed.\n';
+      results += tl._(n_failed) + '/' + tl._(n_succeeded + n_failed) + ' tests failed.\n';
     }
     tl.restore();
     return results;
