@@ -9840,8 +9840,8 @@ function convertSource(file, text) {
 			)
 			// Patch to provide simple progress
 			.replace(
-				/\sfunction SanityTest *\([^()]*\) *\{\r\n/,
-				'$&  var tl = new TitleLogger(WScript.ScriptName + ": "); tl.total = tl._(' + TESTS_COUNT + ');\r\n'
+				/\sfunction SanityTest *\([^()]*\) *\{(\s*'use strict';)?\r\n/,
+				'$&  var tl = new TitleLogger(WScript.ScriptName + ": ");\r\n  tl.total = tl._(' + TESTS_COUNT + ');\r\n'
 			)
 			.replace(
 				/([ \t]+)(n_succeeded|n_failed) \+= 1;\r\n/g,

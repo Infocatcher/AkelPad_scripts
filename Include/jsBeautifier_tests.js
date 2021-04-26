@@ -29993,8 +29993,9 @@ if (typeof exports !== "undefined") {
 // alert(t.results_raw());        // html unescaped
 
 function SanityTest(func, name_of_test) {
-  var tl = new TitleLogger(WScript.ScriptName + ": "); tl.total = tl._(51899);
   'use strict';
+  var tl = new TitleLogger(WScript.ScriptName + ": ");
+  tl.total = tl._(51899);
 
   var test_func = func || function(x) {
     return x;
