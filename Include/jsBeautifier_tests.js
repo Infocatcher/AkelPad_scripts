@@ -30023,13 +30023,12 @@ function SanityTest(func, name_of_test) {
     // proper array checking is a pain. i'll maybe do it later, compare strings representations instead
     if ((result === expected_value) || (expected_value instanceof Array && result.join(', ') === expected_value.join(', '))) {
       n_succeeded += 1;
-      if((n_succeeded + n_failed) % 10 == 0)
+      if(n_succeeded % 10 == 0)
         tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "+" + tl._(n_failed) : "") + "/" + tl.total);
       return true;
     } else {
       n_failed += 1;
-      if((n_succeeded + n_failed) % 10 == 0)
-        tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "+" + tl._(n_failed) : "") + "/" + tl.total);
+      tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "+" + tl._(n_failed) : "") + "/" + tl.total);
       failures.push([test_name, parameters, expected_value, result]);
       return false;
     }

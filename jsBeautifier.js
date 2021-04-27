@@ -9833,6 +9833,7 @@ function convertSource(file, text) {
 		.replace(/\r\n?|\n\r?/g, "\r\n")
 		.replace(/[ \t]+([\n\r]|$)/g, "$1");
 	if(file == "js/test/sanitytest.js") {
+		var logProgress = 'tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "+" + tl._(n_failed) : "") + "/" + tl.total);';
 		text = text
 			.replace(
 				"results = 'All ' + n_succeeded + ' tests passed.';",
@@ -9844,8 +9845,12 @@ function convertSource(file, text) {
 				'$&  var tl = new TitleLogger(WScript.ScriptName + ": ");\r\n  tl.total = tl._(' + TESTS_COUNT + ');\r\n'
 			)
 			.replace(
-				/([ \t]+)(n_succeeded|n_failed) \+= 1;\r\n/g,
-				'$&$1if((n_succeeded + n_failed) % 10 == 0)\r\n$1  tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "+" + tl._(n_failed) : "") + "/" + tl.total);\r\n'
+				/^([ \t]+)n_succeeded \+= 1;\r\n/m,
+				'$&$1if(n_succeeded % 10 == 0)\r\n$1  ' + logProgress + '\r\n'
+			)
+			.replace(
+				/^([ \t]+)n_failed \+= 1;\r\n/m,
+				'$&$1' + logProgress + '\r\n'
 			)
 			.replace("results += n_failed +", "results += tl._(n_failed) + '/' + tl._(n_succeeded + n_failed) +")
 			.replace(/([ \t]+)return results;/, "$1tl.restore();\r\n$&");
