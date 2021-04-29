@@ -247,6 +247,24 @@ if(!Object.assign) {
 		return to;
 	};
 }
+/* Not needed now
+if(!"-".split(/-/).length) {
+	var _stringSplit = String.prototype.split;
+	String.prototype.split = function(re) {
+		if(!re || typeof re != "object")
+			return _stringSplit.apply(this, arguments);
+		var flags = "g";
+		if(re.ignoreCase)
+			flags += "i";
+		if(re.multiline)
+			flags += "m";
+		var gre = new RegExp(re.source, flags);
+		var x = "\0\0JScriptHack\0\0";
+		return this.replace(gre, x).split(x);
+		return _stringSplit.call(this.replace(gre, x), x);
+	};
+}
+*/
 
 //== index.html
 // https://github.com/beautify-web/js-beautify/blob/master/index.html
