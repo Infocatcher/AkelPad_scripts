@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/runScript.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/runScript.js
 
-// (c) Infocatcher 2011-2020
-// Version: 0.2.9pre - 2020-07-25
+// (c) Infocatcher 2011-2021
+// Version: 0.2.9pre2 - 2021-05-03
 // Author: Infocatcher
 
 //===================
