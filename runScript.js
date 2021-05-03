@@ -266,7 +266,7 @@ function selectScriptDialog(modal) {
 	var gbH = 27 + argsH;
 	var gbW = lbW + 12 + btnW;
 
-	var incDecX = gbW - 14;
+	var incDecX = gbW - 12;
 	var incDecW = 16;
 	var incDecH = 16;
 
