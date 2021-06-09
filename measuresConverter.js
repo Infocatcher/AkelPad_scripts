@@ -2052,10 +2052,11 @@ function validateRatio(n) {
 		return n;
 	return NaN;
 }
-function loadOfflineCurrencyData(readMode) {
+function loadOfflineCurrencyData(readMode, forceDefault) {
 	if(readMode && !oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/))
 		return;
-	var db = oSet.Read("currencies", 3 /*PO_STRING*/) || getDefaultCurrencyData();
+	loadOfflineCurrencyData.__loaded = true;
+	var db = !forceDefault && oSet.Read("currencies", 3 /*PO_STRING*/) || getDefaultCurrencyData();
 	readMode && oSet.End();
 	db = db.split("|");
 	for(var i = 0, l = db.length; i < l; ++i) {
@@ -2349,6 +2350,8 @@ function converterDialog(modal) {
 		}
 		oSet.End();
 	}
+	saveOffline && !loadOfflineCurrencyData.__loaded && loadOfflineCurrencyData(false, true);
+
 	function saveSettings() {
 		if(!saveOptions && !savePosition && !saveOffline)
 			return;
