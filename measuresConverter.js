@@ -2001,7 +2001,11 @@ function getRequestURL(code) {
 		// See https://www.fxexchangerate.com/currency-converter-widget.html
 		return "https://w.fxexchangerate.com/converter.php?" + new Date().getTime(); // BASE_CURRENCY == "USD" !
 	}
-	return "https://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
+	//return "https://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
+	// Will use https://translate.google.com/ as proxy
+	return "https://www-exchange--rates-org.translate.goog/converter/"
+		+ code + "/" + BASE_CURRENCY
+		+ "/1/N?_x_tr_sl=en&_x_tr_tl=en&_x_tr_hl=en&_x_tr_pto=ajax";
 }
 function shouldCacheURL(url) {
 	if(url.replace(/\d+$/, "") == "https://w.fxexchangerate.com/converter.php?")
