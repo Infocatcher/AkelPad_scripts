@@ -3106,12 +3106,15 @@ function converterDialog(modal) {
 		windowText(hWnd || hWndDialog, caption);
 	}
 	function getLastUpdate() {
+		var currencies = measures[CURRENCY];
 		var selected = curType == CURRENCY && curItem && curItem2
 			? [curItem, curItem2]
-			: selectedItems[CURRENCY];
+			: selectedItems[CURRENCY] || curType != CURRENCY && (function() {
+				for(var p in currencies) // Default to first item
+					return [p, p];
+			})();
 		if(!selected)
 			return undefined;
-		var currencies = measures[CURRENCY];
 		return Math.min(
 			getLastUpdateForCurrency(currencies[selected[0]]),
 			getLastUpdateForCurrency(currencies[selected[1]])
