@@ -3032,7 +3032,8 @@ function converterDialog(modal) {
 						}
 					break msgLoop;
 					case IDC_UPDATE_STARTUP:
-						update(false, updateOnStartupReport);
+						var force = !!updateSelf;
+						update(force, updateOnStartupReport);
 					break msgLoop;
 					case IDC_COPY_RES: // Used message to override Ctrl+C
 						AkelPad.SetClipboardText(windowText(hWndResult));
@@ -3712,8 +3713,8 @@ function converterDialog(modal) {
 		}
 		if(!db.length)
 			return;
-		WScript.Echo(db.join("|"));
 		//~ todo
+		WScript.Echo(new Date(ts) + "\n" + db.join("|"));
 	}
 	function cancelUpdate() {
 		if(!asyncUpdater.activeRequests || asyncUpdater.aborted)
