@@ -33,6 +33,7 @@
 //   -offlineExpire=22*60*60*1000  - currency ratio expires after this time (in milliseconds)
 //   -updateOnStartup=true         - asynchronous update currency data on startup
 //   -updateOnStartupReport=1      - 0 - don't show, 1 - only errors, 2 - always
+//   -updateSelf=false             - (use at your own risk!) update default currencies data
 //   -updateMaxErrors=4            - abort update, if reached many errors (use -1 to ignore errors)
 //   -convertNumbers=true          - convert numbers (1234.5 -> 1 234,5)
 //   -displayCalcErrors=true       - always display calculation errors (e.g. for "1++2")
@@ -1845,6 +1846,7 @@ var preferFXExchangeRate  = getArg("preferFXExchangeRate", true);
 var offlineExpire         = getArg("offlineExpire", 22*60*60*1000);
 var updateOnStartup       = getArg("updateOnStartup", true);
 var updateOnStartupReport = getArg("updateOnStartupReport", 1);
+var updateSelf            = getArg("updateSelf", false);
 var updateMaxErrors       = getArg("updateMaxErrors", 4);
 var convertNumbers        = getArg("convertNumbers", true);
 var displayCalcErrors     = getArg("displayCalcErrors");
@@ -1863,6 +1865,11 @@ var showLastUpdate        = getArg("showLastUpdate", 2);
 var from   = getArg("from");
 var to     = getArg("to");
 var dialog = getArg("dialog", true);
+
+if(updateSelf) {
+	updateOnStartup = true;
+	updateOnStartupReport = 2;
+}
 
 if(updateMaxErrors < 0)
 	updateMaxErrors = Infinity;
@@ -3685,11 +3692,28 @@ function converterDialog(modal) {
 					icon |= 64 /*MB_ICONINFORMATION*/;
 				}
 				AkelPad.MessageBox(hWndDialog, msg, title, icon);
+				updateSelf && selfUpdate();
 				doPendingUpdate();
 			},
 			maskInclude
 		);
 		setDialogTitle();
+	}
+	function selfUpdate() {
+		var db = [];
+		var ts = Infinity;
+		for(var code in currencyRatios) {
+			var data = currencyRatios[code];
+			if(data && data.ratio && data.timestamp) {
+				db.push(code + "=" + data.ratio);
+				if(data.timestamp < ts)
+					ts = data.timestamp;
+			}
+		}
+		if(!db.length)
+			return;
+		WScript.Echo(db.join("|"));
+		//~ todo
 	}
 	function cancelUpdate() {
 		if(!asyncUpdater.activeRequests || asyncUpdater.aborted)
