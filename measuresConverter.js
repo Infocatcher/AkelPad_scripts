@@ -3715,6 +3715,45 @@ function converterDialog(modal) {
 			return;
 		//~ todo
 		WScript.Echo(new Date(ts) + "\n" + db.join("|"));
+
+		var selfFile = WScript.ScriptFullName;
+		// Create backup
+		var fso = new ActiveXObject("Scripting.FileSystemObject");
+		var bakExt = gts() + ".js.bak";
+		var selfFileBak = selfFile.slice(0, -3) + bakExt;
+		try {
+			fso.CopyFile(selfFile, selfFileBak, true);
+		}
+		catch(e) {
+			AkelPad.MessageBox(
+				hMainWnd,
+				_localize("Can't create backup file:\n") + [e.message, selfFileBak].join("\n"),
+				WScript.ScriptBaseName,
+				16 /*MB_ICONERROR*/
+			);
+			return;
+		}
+
+		var selfCode = AkelPad.ReadFile(selfFile, 0, 65001, 1)
+			.replace(/\r\n?|\n\r?/g, "\r\n");
+		saveFile(selfFile, selfCode);
+
+		function gts() {
+			var d = new Date();
+			return "_" + d.getFullYear()   + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
+			     + "_" + pad(d.getHours()) + "-" + pad(d.getMinutes())   + "-" + pad(d.getSeconds());
+		}
+		function pad(n) {
+			return n > 9 ? n : "0" + n;
+		}
+		function saveFile(file, code) {
+			AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+			AkelPad.SetSel(0, -1);
+			AkelPad.ReplaceSel(code);
+			AkelPad.Command(4184); // IDM_EDIT_NEWLINE_WIN
+			AkelPad.SetSel(0, 0);
+			AkelPad.SaveFile(AkelPad.GetEditWnd(), file, 65001, 1);
+		}
 	}
 	function cancelUpdate() {
 		if(!asyncUpdater.activeRequests || asyncUpdater.aborted)
