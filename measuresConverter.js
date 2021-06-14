@@ -3735,7 +3735,20 @@ function converterDialog(modal) {
 		}
 
 		var selfCode = AkelPad.ReadFile(selfFile, 0, 65001, 1)
-			.replace(/\r\n?|\n\r?/g, "\r\n");
+			.replace(/\r\n?|\n\r?/g, "\r\n")
+			.replace(/\sfunction getDefaultCurrencyData\(\) \{[\s\S]+\}/, function(code) {
+				var d = new Date(ts);
+				return code
+					.replace(
+						/var ts = [^\r\n]+/,
+						"var ts = " + ts + "; // " + d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
+	 				)
+	 				.replace(
+	 					/return "[^"]+"/,
+	 					'return "' + db.join("|") + '"'
+	 				);
+			});
+
 		saveFile(selfFile, selfCode);
 
 		function gts() {
