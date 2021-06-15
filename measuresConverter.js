@@ -3745,7 +3745,9 @@ function converterDialog(modal) {
 	 				)
 	 				.replace(
 	 					/return "[^"]+"/,
-	 					'return "' + db.join("|") + '"'
+	 					'return "'
+	 					+ db.join("|").replace(/([^|]+\|){4}/g, "$&\\\r\n")
+	 					+ '"'
 	 				);
 			});
 
