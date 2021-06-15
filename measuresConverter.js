@@ -3713,8 +3713,6 @@ function converterDialog(modal) {
 		}
 		if(!db.length)
 			return;
-		//~ todo
-		WScript.Echo(new Date(ts) + "\n" + db.join("|"));
 
 		var selfFile = WScript.ScriptFullName;
 		// Create backup
@@ -3734,6 +3732,8 @@ function converterDialog(modal) {
 			return;
 		}
 
+		var d = new Date(ts);
+		var updDate = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
 		var selfCode = AkelPad.ReadFile(selfFile, 0, 65001, 1)
 			.replace(/\r\n?|\n\r?/g, "\r\n")
 			.replace(/\sfunction getDefaultCurrencyData\(\) \{[\s\S]+\}/, function(code) {
@@ -3741,7 +3741,7 @@ function converterDialog(modal) {
 				return code
 					.replace(
 						/var ts = [^\r\n]+/,
-						"var ts = " + ts + "; // " + d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
+						"var ts = " + ts + "; // " + updDate
 	 				)
 	 				.replace(
 	 					/return "[^"]+"/,
@@ -3752,6 +3752,14 @@ function converterDialog(modal) {
 			});
 
 		saveFile(selfFile, selfCode);
+
+		AkelPad.MessageBox(
+			hWndDialog,
+			_localize("Default currency data was successfully updated to %d")
+				.replace("%d", updDate),
+			WScript.ScriptBaseName,
+			64 /*MB_ICONINFORMATION*/
+		);
 
 		function gts() {
 			var d = new Date();
