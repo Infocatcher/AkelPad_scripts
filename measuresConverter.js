@@ -1774,6 +1774,12 @@ function _localize(s) {
 		},
 		"never": {
 			ru: "никогда"
+		},
+		"Can't create backup file:\n": {
+			ru: "Не удалось создать резервную копию:\n"
+		},
+		"Default currency data was successfully updated to %d": {
+			ru: "Значения по умолчанию для конвертирования валют успешно обновлены до %d"
 		}
 	};
 	var lng = "en";
