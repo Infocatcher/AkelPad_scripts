@@ -122,12 +122,19 @@ var ACT_COPY           = 2;
 var ACT_SHOW           = 3;
 var ACT_LOG            = 4;
 
+var SYNTAX = {
+	NONE:          0,
+	IF_MISSING:    1,
+	PRESERVE_TYPE: 2,
+	ALWAYS:        3
+};
+
 // Read arguments:
 // getArg(argName, defaultValue)
 var onlySelected           = getArg("onlySelected", false);
 var action                 = getArg("action", ACT_INSERT);
 var restoreCaretPos        = getArg("restoreCaretPos", true);
-var setSyntaxMode          = getArg("setSyntax", 2);
+var setSyntaxMode          = getArg("setSyntax", SYNTAX.PRESERVE_TYPE);
 var indentSize             = getArg("indentSize", 1);
 var eol                    = getArg("eol");
 var preserveNewlines       = getArg("preserveNewlines", true);
@@ -10099,11 +10106,11 @@ function setSyntax(ext) {
 	if(!setSyntaxMode)
 		return;
 	var alias = getCoderAlias().toLowerCase();
-	if(setSyntaxMode == 1) {
+	if(setSyntaxMode == SYNTAX.IF_MISSING) {
 		if(alias)
 			return;
 	}
-	else if(setSyntaxMode == 2) {
+	else if(setSyntaxMode == SYNTAX.PRESERVE_TYPE) {
 		var curType = getSyntaxType(alias);
 		var newType = getSyntaxType("." + ext);
 		if(curType == newType)
