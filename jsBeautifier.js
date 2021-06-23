@@ -128,6 +128,11 @@ var SYNTAX = {
 	PRESERVE_TYPE: 2,
 	ALWAYS:        3
 };
+var TEST = {
+	FORCE:            1,
+	IF_EMPTY_SOURCE: -1,
+	NONE:             0
+};
 
 // Read arguments:
 // getArg(argName, defaultValue)
@@ -165,7 +170,7 @@ var extraLines             = getArg("extraLines");
 var detectPackers          = getArg("detectPackers", true);
 var beautifyCSS            = getArg("css", false);
 var keepCSSIndentation     = getArg("keepCSSIndentation", true);
-var test                   = getArg("test", -1);
+var test                   = getArg("test", TEST.IF_EMPTY_SOURCE);
 var update                 = getArg("update", 0);
 var forceNoCache           = getArg("forceNoCache", true);
 
@@ -175,7 +180,7 @@ if(getArg("bracesOnOwnLine") !== undefined && getArg("braceStyle") === undefined
 if(getArg("spaceAfterAnonFunc") !== undefined && getArg("jsLintHappy") === undefined)
 	jsLintHappy = getArg("spaceAfterAnonFunc");
 if(typeof test == "boolean")
-	test = test ? 1 : -1;
+	test = test ? TEST.FORCE : TEST.IF_EMPTY_SOURCE;
 
 var indentChar = indentSize == 1
 	? "\t"
@@ -9711,7 +9716,7 @@ function handleArgs() {
 }
 function beautifyAkelEdit() {
 	var res;
-	if(test <= 0) {
+	if(test != TEST.FORCE) {
 		var newLine = 2; //"\n"
 		var src = AkelPad.GetSelText(newLine);
 		if(!src && !onlySelected) {
@@ -9721,7 +9726,10 @@ function beautifyAkelEdit() {
 		if(!AkelPad.IsAkelEdit())
 			src = src.replace(/\r/g, "\n");
 	}
-	if(test > 0 || test == -1 && !src) {
+	if(
+		test == TEST.FORCE
+		|| test == TEST.IF_EMPTY_SOURCE && !src
+	) {
 		res = runTests();
 		if(!res)
 			return;
