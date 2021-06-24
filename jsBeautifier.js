@@ -116,12 +116,13 @@ function _localize(s) {
 	return _localize(s);
 }
 
-var ACT_INSERT         = 0;
-var ACT_INSERT_NEW_DOC = 1;
-var ACT_COPY           = 2;
-var ACT_SHOW           = 3;
-var ACT_LOG            = 4;
-
+var ACT = {
+	INSERT:         0,
+	INSERT_NEW_DOC: 1,
+	COPY:           2,
+	SHOW:           3,
+	LOG:            4
+};
 var SYNTAX = {
 	NONE:          0,
 	IF_MISSING:    1,
@@ -133,11 +134,17 @@ var TEST = {
 	IF_EMPTY_SOURCE: -1,
 	NONE:             0
 };
+// For backward compatibility, may be used in arguments
+var ACT_INSERT         = ACT.INSERT;
+var ACT_INSERT_NEW_DOC = ACT.INSERT_NEW_DOC;
+var ACT_COPY           = ACT.COPY;
+var ACT_SHOW           = ACT.SHOW;
+var ACT_LOG            = ACT.LOG;
 
 // Read arguments:
 // getArg(argName, defaultValue)
 var onlySelected           = getArg("onlySelected", false);
-var action                 = getArg("action", ACT_INSERT);
+var action                 = getArg("action", ACT.INSERT);
 var restoreCaretPos        = getArg("restoreCaretPos", true);
 var setSyntaxMode          = getArg("setSyntax", SYNTAX.PRESERVE_TYPE);
 var indentSize             = getArg("indentSize", 1);
@@ -9754,10 +9761,10 @@ function beautifyAkelEdit() {
 	}
 
 	var isMDI = AkelPad.IsMDI() != 0 /*WMD_SDI*/;
-	if(action == ACT_INSERT && AkelPad.GetEditReadOnly(hWndEdit))
-		action = isMDI ? ACT_INSERT_NEW_DOC : ACT_LOG;
+	if(action == ACT.INSERT && AkelPad.GetEditReadOnly(hWndEdit))
+		action = isMDI ? ACT.INSERT_NEW_DOC : ACT.LOG;
 
-	if(action == ACT_INSERT) {
+	if(action == ACT.INSERT) {
 		var lpFrameTarget = isMDI && AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
 		AkelPad.Command(4216 /*IDM_VIEW_READONLY*/); // Prevent modifications
 		var ss = AkelPad.GetSelStart();
@@ -9766,7 +9773,7 @@ function beautifyAkelEdit() {
 
 	if(
 		selectAll
-		&& (action == ACT_INSERT || action == ACT_INSERT_NEW_DOC)
+		&& (action == ACT.INSERT || action == ACT.INSERT_NEW_DOC)
 		&& restoreCaretPos
 	) {
 		var selStart = AkelPad.GetTextRange(0, AkelPad.GetSelStart())
@@ -9790,11 +9797,11 @@ function beautifyAkelEdit() {
 		res = beautify(src, syntax);
 	}
 
-	restoreState: if(action == ACT_INSERT) {
+	restoreState: if(action == ACT.INSERT) {
 		if(lpFrameTarget && lpFrameTarget != AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0)) {
 			AkelPad.SendMessage(hMainWnd, 1285 /*AKD_FRAMEACTIVATE*/, 0, lpFrameTarget);
 			if(lpFrameTarget != AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0)) { // Was closed?
-				action = ACT_INSERT_NEW_DOC;
+				action = ACT.INSERT_NEW_DOC;
 				break restoreState;
 			}
 		}
@@ -9809,21 +9816,21 @@ function beautifyAkelEdit() {
 		return;
 	}
 
-	if(action == ACT_INSERT) {
+	if(action == ACT.INSERT) {
 		insertNoScroll(res, selectAll, getCaretPos(res, selStart));
 		setSyntax(syntax.value);
 	}
-	else if(action == ACT_INSERT_NEW_DOC) {
+	else if(action == ACT.INSERT_NEW_DOC) {
 		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
 		AkelPad.SetSel(0, 0);
 		insertNoScroll(res, true, getCaretPos(res, selStart));
 		setSyntax(syntax.value);
 	}
-	else if(action == ACT_COPY && res != AkelPad.GetClipboardText())
+	else if(action == ACT.COPY && res != AkelPad.GetClipboardText())
 		AkelPad.SetClipboardText(res);
-	else if(action == ACT_SHOW)
+	else if(action == ACT.SHOW)
 		AkelPad.MessageBox(hMainWnd, res.substr(0, 3000), WScript.ScriptName, 64 /*MB_ICONINFORMATION*/);
-	else if(action == ACT_LOG) {
+	else if(action == ACT.LOG) {
 		var selStart = 0;
 		var alias = setSyntaxMode ? "." + syntax.value : "";
 
