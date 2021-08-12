@@ -126,6 +126,17 @@ var appsData = {
 		args: "%f",
 		isBrowser: true
 	},
+	"Vivaldi": {
+		paths: [
+			"<HKCU\\Software\\Vivaldi\\DestinationFolder>\\Application\\vivaldi.exe",
+			"%ProgramFiles%\\Vivaldi\\Application\\vivaldi.exe",
+			"%LocalAppData%\\Vivaldi\\Application\\vivaldi.exe",
+			"%COMMANDER_PATH%\\..\\Vivaldi\\Application\\vivaldi.exe",
+			"%AkelDir%\\..\\Vivaldi\\Application\\vivaldi.exe"
+		],
+		args: "%f",
+		isBrowser: true
+	},
 	"Google Chrome": {
 		paths: [
 			"<HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe\\>",
