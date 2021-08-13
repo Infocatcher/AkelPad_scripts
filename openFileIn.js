@@ -9,7 +9,7 @@
 //===================
 //// Open file in other application
 
-// Usage:
+// Usage (see "var appsData = { ... }" for appID):
 //   Call("Scripts::Main", 1, "openFileIn.js", '"appID" "%f"')
 // In "URL menu":
 //   Call("Scripts::Main", 1, "openFileIn.js", '"appID" "%u"')
@@ -20,7 +20,7 @@
 //===================
 
 //== Settings begin
-// You can use openFileIn-options.js file for override or tweak settings
+// You can use openFileIn-options.js file to override or tweak settings
 // Override:
 //   var appsData = { ... };
 // Tweak:
@@ -215,7 +215,7 @@ if(WScript.Arguments.length >= 2) {
 		}
 	}
 	else {
-		warn("Application with id \"" + app + "\" not found in database!");
+		warn("Application with \"" + app + "\" id not found in the database!");
 	}
 }
 else {
