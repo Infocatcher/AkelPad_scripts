@@ -240,7 +240,12 @@ function expandVariables(s) {
 	return expandEnvironmentVariables(expandRegistryVariables(s));
 }
 function expandEnvironmentVariables(s) {
-	return wsh.ExpandEnvironmentStrings(s.replace(/^%AkelDir%/, akelDir));
+	if(s.substr(0, 5) == "%Akel") {
+		s = s
+			.replace(/^%AkelDir%/, akelDir)
+			.replace(/^%AkelDrive%/, fso.GetDriveName(akelDir));
+	}
+	return wsh.ExpandEnvironmentStrings(s);
 }
 function expandRegistryVariables(s) { // <HKCU\Software\Foo\installPath>\foo.exe
 	return s.replace(/<(.+?)>/g, function(s, path) {
