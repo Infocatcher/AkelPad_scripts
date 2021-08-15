@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/openFileIn.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/openFileIn.js
 
-// (c) Infocatcher 2010-2013
-// Version: 0.2.0 - 2013-02-25
+// (c) Infocatcher 2010-2021
+// Version: 0.2.0.1 - 2021-08-15
 // Author: Infocatcher
 
 //===================
