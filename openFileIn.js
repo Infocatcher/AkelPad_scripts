@@ -38,6 +38,8 @@ var appsData = {
 	//		paths: [
 	//			"c:\\path\\to\\app.exe",
 	//			"%EnvVar%\\another\\path\\to\\app.exe",
+	//			// Special: %AkelDir% - path to AkelPad directory (e.g. C:\Soft\AkelPad),
+	//			//          %AkelDrive% - path to AkelPad drive (e.g. C:)
 	//			"<HKCU\\path\\from\\registry>app.exe",
 	//			"?x64?...\\app64.exe", // Check only on x64 system
 	//			"?x86?...\\app32.exe"  // Check only on x86 system
