@@ -10,11 +10,9 @@
 //// Open file in other application
 
 // Usage (see "var appsData = { ... }" for appID):
-//   Call("Scripts::Main", 1, "openFileIn.js", '"appID" "%f"')
-// In "URL menu":
-//   Call("Scripts::Main", 1, "openFileIn.js", '"appID" "%u"')
+//   Call("Scripts::Main", 1, "openFileIn.js", '"appID" "%f" "%u"')
 // Disable mappings:
-//   Call("Scripts::Main", 1, "openFileIn.js", '"appID" "%f" -mappings=false')
+//   Call("Scripts::Main", 1, "openFileIn.js", '"appID" "%f" "%u" -mappings=false')
 // Trick to not open archive-like files in Total Commander:
 //   Call("Scripts::Main", 1, "openFileIn.js", '"Total Commander" "%f\:"')
 //===================
@@ -174,9 +172,13 @@ var allowMappings = AkelPad.GetArgValue("mappings", true);
 var wsh = new ActiveXObject("WScript.Shell");
 var akelDir = AkelPad.GetAkelDir();
 
-if(WScript.Arguments.length >= 2) {
+var argsl = WScript.Arguments.length;
+if(argsl >= 2) {
 	var app = WScript.Arguments(0);
 	var file = WScript.Arguments(1);
+	var url = argsl >= 3 && WScript.Arguments(2);
+	if(url && url.substr(0, 10) != "-mappings=")
+		file = url;
 	if(app in appsData) {
 		var appData = appsData[app];
 		var path = getPath(appData.paths);
