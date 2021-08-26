@@ -18,7 +18,7 @@
 //===================
 
 //== Settings begin
-// You can use openFileIn-options.js file to override or tweak settings
+// You can use openFileIn-options.jsm file to override or tweak settings
 // Override:
 //   var appsData = { ... };
 // Tweak:
@@ -163,9 +163,15 @@ var appsData = {
 //== Settings end
 
 var fso = new ActiveXObject("Scripting.FileSystemObject");
-var optionsPath = WScript.ScriptFullName.replace(/(\.[^.]+)?$/, "-options$&");
-if(fso.FileExists(optionsPath))
-	AkelPad.Include(".." + optionsPath.replace(/^.*(\\|\/)/, "$1"));
+var optionsPath = WScript.ScriptFullName.replace(/\.[^.]+$/, "") + "-options.jsm";
+(function loadOptions(legacy) {
+	if(fso.FileExists(optionsPath))
+		AkelPad.Include(".." + optionsPath.replace(/^.*(\\|\/)/, "$1"));
+	else if(!legacy) {
+		optionsPath = optionsPath.slice(0, -1); // Try legacy ...-options.js
+		loadOptions(true);
+	}
+})();
 
 var allowMappings = AkelPad.GetArgValue("mappings", true);
 
