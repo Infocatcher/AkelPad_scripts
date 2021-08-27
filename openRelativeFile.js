@@ -19,7 +19,7 @@
 //===================
 
 //== Settings begin
-// You can use openRelativeFile-options.js file to override settings
+// You can use openRelativeFile-options.jsm file to override settings
 
 //var paths = ["%ProgramFiles%\\Something"];
 var paths = [];
@@ -72,9 +72,15 @@ var hMainWnd = AkelPad.GetMainWnd();
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var wsh = new ActiveXObject("WScript.Shell");
 
-var optionsPath = WScript.ScriptFullName.replace(/(\.[^.]+)?$/, "-options$&");
-if(fso.FileExists(optionsPath))
-	AkelPad.Include(".." + optionsPath.replace(/^.*(\\|\/)/, "$1"));
+var optionsPath = WScript.ScriptFullName.replace(/\.[^.]+$/, "") + "-options.jsm";
+(function loadOptions(legacy) {
+	if(fso.FileExists(optionsPath))
+		AkelPad.Include(".." + optionsPath.replace(/^.*(\\|\/)/, "$1"));
+	else if(!legacy) {
+		optionsPath = optionsPath.slice(0, -1); // Try legacy ...-options.js
+		loadOptions(true);
+	}
+})();
 
 var showPath = AkelPad.GetArgValue("showPath", false);
 if(hMainWnd)
