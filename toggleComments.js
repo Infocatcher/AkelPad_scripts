@@ -46,8 +46,8 @@
 //===================
 
 //== Settings begin
-// You can use toggleComments-options.js file for override or tweak commentsRegions and commentsSets
-// Example of toggleComments-options.js file:
+// You can use toggleComments-options.jsm file to override or tweak commentsRegions and commentsSets
+// Example of toggleComments-options.jsm file:
 //   commentsSets.tpl = [ ["{*"], ["*}"], ["//"] ]; // Add new extension
 //   // Change arguments defaults
 //   addSpaces = getArg("addSpaces", false);
@@ -287,9 +287,15 @@ if(getArg("multipleEnabled") !== undefined && getArg("searchRegions") === undefi
 if(searchRegions)
 	commentsSets.php = commentsSets.html;
 
-var optionsPath = WScript.ScriptFullName.replace(/(\.[^.]+)?$/, "-options$&");
-if(oSys.Call("kernel32::GetFileAttributes" + _TCHAR, optionsPath) != -1)
-	AkelPad.Include(".." + optionsPath.replace(/^.*(\\|\/)/, "$1"));
+var optionsPath = WScript.ScriptFullName.replace(/\.[^.]+$/, "") + "-options.jsm";
+(function loadOptions(legacy) {
+	if(oSys.Call("kernel32::GetFileAttributes" + _TCHAR, optionsPath) != -1)
+		AkelPad.Include(".." + optionsPath.replace(/^.*(\\|\/)/, "$1"));
+	else if(!legacy) {
+		optionsPath = optionsPath.slice(0, -1); // Try legacy ...-options.js
+		loadOptions(true);
+	}
+})();
 
 function Comments(opts) {
 	for(var p in opts)
