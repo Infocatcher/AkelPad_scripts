@@ -185,6 +185,10 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 		h -= oSys.Call("user32::GetSystemMetrics", 3 /*SM_CYHSCROLL*/) || 16;
 	if(nStyle & 0x000200000 /*WS_VSCROLL*/)
 		w -= oSys.Call("user32::GetSystemMetrics", 2 /*SM_CXVSCROLL*/) || 16;
+	if(h < 2)
+		h = 2;
+	if(w < 2)
+		w = 2;
 
 	if(tileHorizontal) {
 		var h1 = Math.floor(h/2);
