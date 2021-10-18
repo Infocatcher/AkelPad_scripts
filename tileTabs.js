@@ -180,11 +180,10 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi2, 0);
 	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi, 0);
 
-	var nStyle = oSys.Call("User32::GetWindowLong" + _TCHAR, hMdiClient, -16 /*GWL_STYLE*/);
-	if(nStyle & 0x000100000 /*WS_HSCROLL*/)
-		h -= oSys.Call("user32::GetSystemMetrics", 3 /*SM_CYHSCROLL*/) || 16;
-	if(nStyle & 0x000200000 /*WS_VSCROLL*/)
-		w -= oSys.Call("user32::GetSystemMetrics", 2 /*SM_CXVSCROLL*/) || 16;
+	var scroll = getScrollSizes(hMdiClient);
+	w -= scroll.w;
+	h -= scroll.h;
+
 	if(h < 2)
 		h = 2;
 	if(w < 2)
@@ -212,6 +211,13 @@ function parseRect(lpRect) {
 		top:    AkelPad.MemRead(_PtrAdd(lpRect,  4), 3 /*DT_DWORD*/),
 		right:  AkelPad.MemRead(_PtrAdd(lpRect,  8), 3 /*DT_DWORD*/),
 		bottom: AkelPad.MemRead(_PtrAdd(lpRect, 12), 3 /*DT_DWORD*/)
+	};
+}
+function getScrollSizes(hWnd) {
+	var nStyle = oSys.Call("User32::GetWindowLong" + _TCHAR, hWnd, -16 /*GWL_STYLE*/);
+	return {
+		w: nStyle & 0x000200000 /*WS_VSCROLL*/ ? oSys.Call("user32::GetSystemMetrics", 2 /*SM_CXVSCROLL*/) || 16 : 0,
+		h: nStyle & 0x000100000 /*WS_HSCROLL*/ ? oSys.Call("user32::GetSystemMetrics", 3 /*SM_CYHSCROLL*/) || 16 : 0
 	};
 }
 
