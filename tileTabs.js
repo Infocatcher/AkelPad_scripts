@@ -184,23 +184,25 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 	w -= scroll.w;
 	h -= scroll.h;
 
-	if(h < 2)
-		h = 2;
-	if(w < 2)
-		w = 2;
+	(function tile() {
+		if(h < 2)
+			h = 2;
+		if(w < 2)
+			w = 2;
 
-	if(tileHorizontal) {
-		var h1 = Math.floor(h/2);
-		var h2 = h - h1;
-		moveMdiWindow(hWndMdi,  rcClient.left, rcClient.top,      w, h1);
-		moveMdiWindow(hWndMdi2, rcClient.left, rcClient.top + h1, w, h2);
-	}
-	else {
-		var w1 = Math.floor(w/2);
-		var w2 = w - w1;
-		moveMdiWindow(hWndMdi,  rcClient.left,      rcClient.top, w1, h);
-		moveMdiWindow(hWndMdi2, rcClient.left + w1, rcClient.top, w2, h);
-	}
+		if(tileHorizontal) {
+			var h1 = Math.floor(h/2);
+			var h2 = h - h1;
+			moveMdiWindow(hWndMdi,  rcClient.left, rcClient.top,      w, h1);
+			moveMdiWindow(hWndMdi2, rcClient.left, rcClient.top + h1, w, h2);
+		}
+		else {
+			var w1 = Math.floor(w/2);
+			var w2 = w - w1;
+			moveMdiWindow(hWndMdi,  rcClient.left,      rcClient.top, w1, h);
+			moveMdiWindow(hWndMdi2, rcClient.left + w1, rcClient.top, w2, h);
+		}
+	})();
 }
 function moveMdiWindow(hWndMdi, x, y, w, h) {
 	oSys.Call("user32::MoveWindow", hWndMdi, x, y, w, h, true /*bRepaint*/);
