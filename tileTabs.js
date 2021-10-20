@@ -203,6 +203,17 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 			moveMdiWindow(hWndMdi2, rcClient.left + w1, rcClient.top, w2, h);
 		}
 	})();
+
+	if(scroll.w || scroll.h) {
+		WScript.Sleep(50); // Wait for changes...
+		var scroll2 = getScrollSizes(hMdiClient);
+		var changed;
+		if(scroll.w && !scroll2.w)
+			w += scroll.w, changed = true;
+		if(scroll.h && !scroll2.h)
+			h += scroll.h, changed = true;
+		changed && tile();
+	}
 }
 function moveMdiWindow(hWndMdi, x, y, w, h) {
 	oSys.Call("user32::MoveWindow", hWndMdi, x, y, w, h, true /*bRepaint*/);
