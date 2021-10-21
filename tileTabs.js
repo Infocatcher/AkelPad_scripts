@@ -212,7 +212,7 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 			w += scroll.w, changed = true;
 		if(scroll.h && !scroll2.h)
 			h += scroll.h, changed = true;
-		changed && tile();
+		changed && tileTabs.apply(this, arguments);
 	}
 }
 function moveMdiWindow(hWndMdi, x, y, w, h) {
