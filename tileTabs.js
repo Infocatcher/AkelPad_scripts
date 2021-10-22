@@ -205,12 +205,8 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 	if(scroll.w || scroll.h) {
 		WScript.Sleep(50); // Wait for changes...
 		var scroll2 = getScrollSizes(hMdiClient);
-		var changed;
-		if(scroll.w && !scroll2.w)
-			w += scroll.w, changed = true;
-		if(scroll.h && !scroll2.h)
-			h += scroll.h, changed = true;
-		changed && tileTabs.apply(this, arguments);
+		if(scroll.w && !scroll2.w || scroll.h && !scroll2.h)
+			tileTabs.apply(this, arguments);
 	}
 }
 function moveMdiWindow(hWndMdi, x, y, w, h) {
