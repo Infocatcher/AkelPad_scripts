@@ -203,7 +203,7 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 	}
 
 	if(scroll.w || scroll.h) {
-		WScript.Sleep(50); // Wait for changes...
+		WScript.Sleep(70); // Wait for changes...
 		var scroll2 = getScrollSizes(hMdiClient);
 		if(scroll.w && !scroll2.w || scroll.h && !scroll2.h)
 			tileTabs.apply(this, arguments);
