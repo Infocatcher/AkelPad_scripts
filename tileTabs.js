@@ -151,7 +151,7 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 	}
 }
 
-function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
+function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _again) {
 	var lpRect = AkelPad.MemAlloc(16 /*sizeof(RECT)*/);
 	if(!lpRect)
 		return;
@@ -202,11 +202,11 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder) {
 		moveMdiWindow(hWndMdi2, rcClient.left + w1, rcClient.top, w2, h);
 	}
 
-	if(scroll.w || scroll.h) {
+	if((scroll.w || scroll.h) && !_again) {
 		WScript.Sleep(70); // Wait for changes...
 		var scroll2 = getScrollSizes(hMdiClient);
 		if(scroll.w && !scroll2.w || scroll.h && !scroll2.h)
-			tileTabs.apply(this, arguments);
+			tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, true);
 	}
 }
 function moveMdiWindow(hWndMdi, x, y, w, h) {
