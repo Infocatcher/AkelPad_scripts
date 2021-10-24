@@ -202,11 +202,14 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _again) {
 		moveMdiWindow(hWndMdi2, rcClient.left + w1, rcClient.top, w2, h);
 	}
 
-	if((scroll.w || scroll.h) && !_again) {
-		WScript.Sleep(70); // Wait for changes...
+	var maxWait = 250, maxN = 5;
+	if((scroll.w || scroll.h) && !_again) for(var i = 1; i <= maxN; ++i) {
+		WScript.Sleep(maxWait/maxN); // Wait for changes...
 		var scroll2 = getScrollSizes(hMdiClient);
-		if(scroll.w && !scroll2.w || scroll.h && !scroll2.h)
+		if(scroll.w && !scroll2.w || scroll.h && !scroll2.h) {
 			tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, true);
+			break;
+		}
 	}
 }
 function moveMdiWindow(hWndMdi, x, y, w, h) {
