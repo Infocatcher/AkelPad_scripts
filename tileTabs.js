@@ -201,6 +201,7 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _again) {
 		moveMdiWindow(hWndMdi,  rcClient.left,      rcClient.top, w1, h);
 		moveMdiWindow(hWndMdi2, rcClient.left + w1, rcClient.top, w2, h);
 	}
+	oSys.Call("user32::InvalidateRect", AkelPad.GetEditWnd(), 0, true);
 
 	var maxWait = 250, maxN = 5;
 	if((scroll.w || scroll.h) && !_again) for(var i = 1; i <= maxN; ++i) {
