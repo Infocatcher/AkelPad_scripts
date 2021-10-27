@@ -16,13 +16,15 @@
 //   h                      - tile horizontal
 //   o                      - preserve tabs order
 //   -noBlink=true          - disable blink in status bar (and just show "Select tab!" text)
-//   -item="%m:%i"          - check toolbar button or menu item
+//   -item="%m:%i"          - set checked state of toolbar button or menu item
 
 // Usage:
 //   Call("Scripts::Main", 1, "tileTabs.js")         - tile vertical
 //   Call("Scripts::Main", 1, "tileTabs.js", "o")    - tile vertical and preserve tabs order
 //   Call("Scripts::Main", 1, "tileTabs.js", "h")    - tile horizontal
 //   Call("Scripts::Main", 1, "tileTabs.js", "h o")  - tile horizontal and preserve tabs order
+// Example for Toolbar or ContextMenu plugins:
+//   Call("Scripts::Main", 1, "tileTabs.js", 'h o -item="%m:%i"')
 
 function _localize(s) {
 	var strings = {
