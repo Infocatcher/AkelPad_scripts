@@ -154,18 +154,6 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 }
 
 function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _again) {
-	var lpRect = AkelPad.MemAlloc(16 /*sizeof(RECT)*/);
-	if(!lpRect)
-		return;
-	var rcClient = oSys.Call("user32::GetClientRect", hMdiClient, lpRect)
-		&& parseRect(lpRect);
-	AkelPad.MemFree(lpRect);
-	if(!rcClient)
-		return;
-
-	var w = rcClient.right - rcClient.left;
-	var h = rcClient.bottom - rcClient.top;
-
 	var hWndMdi  = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame);
 	var hWndMdi2 = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame2);
 
@@ -181,6 +169,19 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _again) {
 
 	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi2, 0);
 	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi, 0);
+
+	var lpRect = AkelPad.MemAlloc(16 /*sizeof(RECT)*/);
+	if(!lpRect)
+		return;
+	var rcClient = oSys.Call("user32::GetClientRect", hMdiClient, lpRect)
+		&& parseRect(lpRect);
+	if(!rcClient) {
+		AkelPad.MemFree(lpRect);
+		return;
+	}
+
+	var w = rcClient.right - rcClient.left;
+	var h = rcClient.bottom - rcClient.top;
 
 	var scroll = getScrollSizes(hMdiClient);
 	w -= scroll.w;
