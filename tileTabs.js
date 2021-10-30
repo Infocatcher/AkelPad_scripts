@@ -202,9 +202,9 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _again) {
 	}
 	oSys.Call("user32::InvalidateRect", AkelPad.GetEditWnd(), 0, true);
 
-	var maxWait = 250, maxN = 5;
+	var maxWait = 250, step = 10, maxN = (maxWait/step)|0;
 	if(!_again) for(var i = 1; i <= maxN; ++i) {
-		WScript.Sleep(maxWait/maxN); // Wait for changes...
+		WScript.Sleep(step); // Wait for changes...
 
 		var rcClient2 = oSys.Call("user32::GetClientRect", hMdiClient, lpRect)
 			&& parseRect(lpRect);
