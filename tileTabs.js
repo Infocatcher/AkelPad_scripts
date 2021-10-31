@@ -153,7 +153,7 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 	}
 }
 
-function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _again) {
+function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _lpRect) {
 	var hWndMdi  = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame);
 	var hWndMdi2 = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame2);
 
@@ -170,7 +170,7 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _again) {
 	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi2, 0);
 	AkelPad.SendMessage(hMdiClient, 0x0223 /*WM_MDIRESTORE*/, hWndMdi, 0);
 
-	var lpRect = AkelPad.MemAlloc(16 /*sizeof(RECT)*/);
+	var lpRect = _lpRect || AkelPad.MemAlloc(16 /*sizeof(RECT)*/);
 	if(!lpRect)
 		return;
 	var rcClient = oSys.Call("user32::GetClientRect", hMdiClient, lpRect)
@@ -203,7 +203,7 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _again) {
 	oSys.Call("user32::InvalidateRect", AkelPad.GetEditWnd(), 0, true);
 
 	var maxWait = 250, step = 10, maxN = (maxWait/step)|0;
-	if(!_again) for(var i = 1; i <= maxN; ++i) {
+	if(!_lpRect) for(var i = 1; i <= maxN; ++i) {
 		WScript.Sleep(step); // Wait for changes...
 
 		var rcClient2 = oSys.Call("user32::GetClientRect", hMdiClient, lpRect)
@@ -212,7 +212,7 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _again) {
 		var h2 = rcClient2.bottom - rcClient2.top;
 
 		if(w2 != w || h2 != h) {
-			tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, true);
+			tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, lpRect);
 			break;
 		}
 	}
