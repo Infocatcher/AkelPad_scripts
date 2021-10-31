@@ -253,7 +253,7 @@ function Item() {
 	};
 }
 function Statusbar() {
-	this.get = this.set = this.save = this.restore = function() {};
+	this.get = this.set = this.save = this.restore = this.destroy = function() {};
 
 	// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=13656#13656
 	var hWndStatus = oSys.Call("user32::GetDlgItem", hMainWnd, 10002 /*ID_STATUS*/);
@@ -262,29 +262,18 @@ function Statusbar() {
 	var nParts = AkelPad.SendMessage(hWndStatus, 1030 /*SB_GETPARTS*/, 0, 0);
 	if(nParts <= 5)
 		return;
+	var lpTextBuffer = AkelPad.MemAlloc(1024 * _TSIZE);
+	if(!lpTextBuffer)
+		return;
 	var _origStatus, _customStatus;
-	var _this = this;
-	function buffer(callback) {
-		var lpTextBuffer = AkelPad.MemAlloc(1024 * _TSIZE);
-		if(lpTextBuffer) {
-			var ret = callback.call(_this, lpTextBuffer);
-			AkelPad.MemFree(lpTextBuffer);
-			return ret;
-		}
-		return undefined;
-	}
 	this.get = function() {
-		return buffer(function(lpTextBuffer) {
-			AkelPad.SendMessage(hWndStatus, _TSTR ? 1037 /*SB_GETTEXTW*/ : 1026 /*SB_GETTEXTA*/, nParts - 1, lpTextBuffer);
-			return AkelPad.MemRead(lpTextBuffer, _TSTR);
-		});
+		AkelPad.SendMessage(hWndStatus, _TSTR ? 1037 /*SB_GETTEXTW*/ : 1026 /*SB_GETTEXTA*/, nParts - 1, lpTextBuffer);
+		return AkelPad.MemRead(lpTextBuffer, _TSTR);
 	};
 	this.set = function(pStatusText) {
-		buffer(function(lpTextBuffer) {
-			_customStatus = pStatusText;
-			AkelPad.MemCopy(lpTextBuffer, pStatusText, _TSTR);
-			AkelPad.SendMessage(hWndStatus, _TSTR ? 1035 /*SB_SETTEXTW*/ : 1025 /*SB_SETTEXTA*/, nParts - 1, lpTextBuffer);
-		});
+		_customStatus = pStatusText;
+		AkelPad.MemCopy(lpTextBuffer, pStatusText, _TSTR);
+		AkelPad.SendMessage(hWndStatus, _TSTR ? 1035 /*SB_SETTEXTW*/ : 1025 /*SB_SETTEXTA*/, nParts - 1, lpTextBuffer);
 	};
 	this.save = function() {
 		_origStatus = this.get();
@@ -292,5 +281,9 @@ function Statusbar() {
 	this.restore = function() {
 		if(_origStatus != undefined && this.get() == _customStatus)
 			this.set(_origStatus);
+		this.destroy();
+	};
+	this.destroy = function() {
+		AkelPad.MemFree(lpTextBuffer);
 	};
 }
