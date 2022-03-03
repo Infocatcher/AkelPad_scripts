@@ -25,6 +25,7 @@
 //                =false  - show results in new document (as in old versions)
 //   -useSpaces=true      - 2+2= => "2+2 = 4"
 //             =false     - 2+2= => "2+2=4"
+//   -formatted=true      - try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
 
 // Usage:
 //   Call("Scripts::Main", 1, "insertEval.js")
@@ -34,6 +35,7 @@
 (function(evalWrapper) {
 var useLogPlugin = AkelPad.GetArgValue("useLogPlugin", true);
 var useSpaces = AkelPad.GetArgValue("useSpaces", true);
+var formattedNumbers = AkelPad.GetArgValue("formatted", true);
 
 function _localize(s) {
 	var strings = {
@@ -124,6 +126,12 @@ var utils = {
 		return ("" + n).replace(/(\d)(?=(?:\d{3})+(?:\D|$))/g, "$1 ");
 	},
 
+	unformat: function(s) {
+		return s
+			.replace(/(\d+)[ \xa0](?=\d)/g, "$1") // 12 345 -> 12345
+			.replace(/(\d+),(?=\d)/g, "$1."); // 1,23 -> 1.23
+	},
+
 	append: function(s) {
 		var sep = "\n";
 		s += "";
@@ -182,6 +190,8 @@ function calc(expr, forceAsk) {
 	}
 	if(!resType && /^\s*0x[\da-f]/i.test(expr))
 		resType = "x";
+	if(formattedNumbers)
+		expr = utils.unformat(expr);
 	var res;
 	try {
 		res = evalWrapper(expr, utils);
