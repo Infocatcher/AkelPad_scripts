@@ -190,8 +190,10 @@ function calc(expr, forceAsk) {
 	}
 	if(!resType && /^\s*0x[\da-f]/i.test(expr))
 		resType = "x";
-	if(formattedNumbers)
+	if(formattedNumbers) {
+		var exprRaw = expr;
 		expr = utils.unformat(expr);
+	}
 	var res;
 	try {
 		res = evalWrapper(expr, utils);
@@ -219,7 +221,7 @@ function calc(expr, forceAsk) {
 	}
 	if(extOutput) {
 		var sp = useSpaces ? " " : "";
-		res = expr + (/[\r\n]$/.test(expr) ? "=" : sp + "=") + sp + res;
+		res = (exprRaw || expr) + (/[\r\n]$/.test(expr) ? "=" : sp + "=") + sp + res;
 	}
 	if(res == AkelPad.GetSelText())
 		return;
