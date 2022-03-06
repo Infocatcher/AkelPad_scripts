@@ -203,10 +203,7 @@ function calc(expr, forceAsk) {
 		calc(expr, true);
 		return;
 	}
-	if(resType && typeof utils[resType] == "function" && typeof res == "number" && isFinite(res))
-		res = utils[resType](res);
-	else
-		res += "";
+	res = convType(res, resType);
 	utils._openLog();
 	var newExpr = utils.prompt(_localize("Result:"), res);
 	if(!newExpr)
@@ -231,6 +228,12 @@ function calc(expr, forceAsk) {
 		utils._log(res);
 		utils._openLog();
 	}
+}
+
+function convType(res, resType) {
+	if(resType && typeof utils[resType] == "function" && typeof res == "number" && isFinite(res))
+		return utils[resType](res);
+	return res + "";
 }
 
 hMainWnd && calc(AkelPad.GetSelText());
