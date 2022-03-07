@@ -209,8 +209,13 @@ function calc(expr, forceAsk) {
 	if(!newExpr)
 		return; // Cancel
 	if(newExpr != res) {
-		if(newExpr == "=")
+		if(/^[ \t]*=\s*(0?[xob]|h|p)?$/i.test(newExpr)) { // "=", "=p", "=x" & Co
+			resType = RegExp.$1.replace(/^0/, "").toLowerCase();
+			var resN = +res;
+			if(resN == res)
+				res = convType(resN, resType);
 			extOutput = true;
+		}
 		else {
 			calc(newExpr);
 			return;
