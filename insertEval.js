@@ -211,9 +211,7 @@ function calc(expr, forceAsk) {
 	if(newExpr != res) {
 		if(/^[ \t]*=\s*(0?[xob]|h|p)?$/i.test(newExpr)) { // "=", "=p", "=x" & Co
 			resType = RegExp.$1.replace(/^0/, "").toLowerCase();
-			var resN = +res;
-			if(resN == res)
-				res = convType(resN, resType);
+			res = convType(res, resType);
 			extOutput = true;
 		}
 		else {
@@ -238,7 +236,7 @@ function calc(expr, forceAsk) {
 function convType(res, resType) {
 	if(resType && typeof utils[resType] == "function" && typeof res == "number" && isFinite(res))
 		return utils[resType](res);
-	return res + "";
+	return res;
 }
 
 hMainWnd && calc(AkelPad.GetSelText());
