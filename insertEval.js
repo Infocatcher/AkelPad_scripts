@@ -9,11 +9,10 @@
 //// Script like built-in Calculator.js
 
 //===================
-// Special expressions:
-//   =someExpression()  =>  "someExpression() = result"
+// Special expression:
 //   someExpression()=  =>  "someExpression() = result"
 // Example:
-//   2+2=  =>  "2+2 = 4"
+//   2+2=    =>  "2+2 = 4"
 // Converters:
 //   2*8=b   =>  "2*8 = 0b10000" (or =0b)
 //   2*8=o   =>  "2*8 = 0o20"    (or =0o)
