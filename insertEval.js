@@ -194,6 +194,8 @@ function calc(expr, forceAsk) {
 	if(formattedNumbers) {
 		var exprRaw = expr;
 		expr = utils.unformat(expr);
+		if(expr != exprRaw)
+			resType = "p";
 	}
 	var res;
 	try {
@@ -204,6 +206,7 @@ function calc(expr, forceAsk) {
 		calc(expr, true);
 		return;
 	}
+	var resRaw = res;
 	res = convType(res, resType);
 	utils._openLog();
 	var newExpr = utils.prompt(_localize("Result:"), res);
@@ -211,8 +214,9 @@ function calc(expr, forceAsk) {
 		return; // Cancel
 	if(newExpr != res) {
 		if(/^[ \t]*=\s*(0?[xob]|h|p)?$/i.test(newExpr)) { // "=", "=p", "=x" & Co
-			resType = RegExp.$1.replace(/^0/, "").toLowerCase();
-			res = convType(res, resType);
+			var rt = RegExp.$1.replace(/^0/, "").toLowerCase();
+			if(rt)
+				res = convType(resRaw, rt);
 			extOutput = true;
 		}
 		else {
