@@ -19,6 +19,8 @@
 //   2*8=o   =>  "2*8 = 0o20"    (or =0o)
 //   2*8=x   =>  "2*8 = 0x10"    (or =0x or =h)
 //   1234=p  =>  "1234 = 1 234"
+// Or type "=", "=b", "=o", "=x" or "=p" in result prompt to force print "expression = result"
+// (and optionally apply converter)
 
 // Arguments:
 //   -useLogPlugin=true   - use Log plugin to show results of _log() calls and for read-only documents
