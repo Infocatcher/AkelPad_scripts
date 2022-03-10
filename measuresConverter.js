@@ -2006,7 +2006,7 @@ function available(server, code) {
 }
 function getRequestURL(code) {
 	if(code == "BTC")
-		return "http://api.bitcoincharts.com/v1/weighted_prices.json?" + new Date().getTime();
+		return "https://currency.world/convert/USD/BTC?" +  + new Date().getTime();
 	if(
 		available("fxexchangerate.com", code)
 		&& (preferFXExchangeRate || !available("exchange-rates.org", code))
@@ -2031,24 +2031,12 @@ function getRatioFromResponse(response, code) {
 	if(/<span id="ctl00_M_lblToAmount">([^<>]+)<\/span>/.test(response))
 		return validateRatio(stringToNumber(RegExp.$1));
 
-	if(response.charAt(0) == "{") { // Looks like JSON
-		// http://api.bitcoincharts.com/v1/weighted_prices.json
-		var btcPattern = getRatioFromResponse.btcPattern || (
-			getRatioFromResponse.btcPattern = new RegExp(
-				// "USD": {"7d": "860.00", "30d": "732.82", "24h": "898.98"}
-				'"' + BASE_CURRENCY + '":\\s*\\{\\s*("[^"]+":\\s*"[^"]+"(,\\s*"[^"]+":\\s*"[^"]+")*)\\s*\\}'
-			)
-		);
-		if(btcPattern.test(response)) {
-			var data = RegExp.$1;
-			if(
-				/"24h":\s*"([^"]+)"/.test(data)
-				|| /"7d":\s*"([^"]+)"/.test(data)
-				|| /"30d":\s*"([^"]+)"/.test(data)
-				|| /"\d+d":\s*"([^"]+)"/.test(data)
-			)
-				return validateRatio(stringToNumber(RegExp.$1));
-		}
+	if(code == "BTC") {
+		// https://currency.world/convert/USD/BTC
+		// Example:
+		// converted_amounts=[1,2.563371E-5]
+		if(/converted_amounts=\[[-+.\dE]+,([-+.\dE]+)\]/.test(response))
+			return 1/validateRatio(+RegExp.$1);
 	}
 
 	// https://w.fxexchangerate.com/converter.php
