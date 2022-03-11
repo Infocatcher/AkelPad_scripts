@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //===================
-//// Convert measures (internal) and currency (used cached data from exchange-rates.org, fxexchangerate.com and bitcoincharts.com)
+//// Convert measures (internal) and currency (used cached data from exchange-rates.org, fxexchangerate.com and currency.world)
 // Can convert numbers and expressions, pick up selected text
 
 // Required timer.js library (only for -updateOnStartup=true):
@@ -584,8 +584,7 @@ var measures = {
 		"Zimbabwe dollar":               "ZWD",
 		*/
 
-		// https://bitcoincharts.com/about/markets-api/
-		// + https://bitcoincharts.com/markets/currencies/
+		// https://currency.world/convert/USD/BTC
 		"Bitcoin": "BTC"
 	}
 };
