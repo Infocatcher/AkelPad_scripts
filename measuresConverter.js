@@ -2030,8 +2030,8 @@ function getRatioFromResponse(response, code) {
 	if(/<span id="ctl00_M_lblToAmount">([^<>]+)<\/span>/.test(response))
 		return validateRatio(stringToNumber(RegExp.$1));
 
-	if(code == "BTC") {
-		// https://currency.world/convert/USD/BTC
+	// https://currency.world/convert/USD/BTC
+	if(response.indexOf('<meta name="author" content="Currency World"') != -1) {
 		// Example:
 		// converted_amounts=[1,2.563371E-5]
 		if(/converted_amounts=\[[-+.\dE]+,([-+.\dE]+)\]/.test(response))
