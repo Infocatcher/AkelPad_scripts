@@ -584,7 +584,7 @@ var measures = {
 		"Zimbabwe dollar":               "ZWD",
 		*/
 
-		// https://currency.world/convert/USD/BTC
+		// https://currency.world/convert/BTC/USD
 		"Bitcoin": "BTC"
 	}
 };
@@ -2005,7 +2005,7 @@ function available(server, code) {
 }
 function getRequestURL(code) {
 	if(code == "BTC")
-		return "https://currency.world/convert/USD/BTC?" +  + new Date().getTime();
+		return "https://currency.world/convert/BTC/" + BASE_CURRENCY + "?" +  + new Date().getTime();
 	if(
 		available("fxexchangerate.com", code)
 		&& (preferFXExchangeRate || !available("exchange-rates.org", code))
@@ -2030,12 +2030,12 @@ function getRatioFromResponse(response, code) {
 	if(/<span id="ctl00_M_lblToAmount">([^<>]+)<\/span>/.test(response))
 		return validateRatio(stringToNumber(RegExp.$1));
 
-	// https://currency.world/convert/USD/BTC
+	// https://currency.world/convert/BTC/USD
 	if(response.indexOf('<meta name="author" content="Currency World"') != -1) {
 		// Example:
 		// converted_amounts=[1,2.563371E-5]
 		if(/converted_amounts=\[[-+.\dE]+,([-+.\dE]+)\]/.test(response))
-			return 1/validateRatio(+RegExp.$1);
+			return validateRatio(+RegExp.$1);
 	}
 
 	// https://w.fxexchangerate.com/converter.php
