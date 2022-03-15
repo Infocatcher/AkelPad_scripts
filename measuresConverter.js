@@ -334,7 +334,7 @@ var measures = {
 		"Brazilian Real":                "BRL",
 		"Bahamian Dollar":               "BSD",
 		"Botswana Pula":                 "BWP",
-		"Belarusian Ruble":              "BYR",
+		"Belarusian Ruble":              "BYN",
 		"Belize Dollar":                 "BZD",
 		"Canadian Dollar":               "CAD",
 		"Swiss Franc":                   "CHF",
@@ -1995,7 +1995,7 @@ function getCurrencyRatio(code) {
 }
 var missingCurrencies = {
 	"exchange-rates.org": [
-		"AWG", "BTN", "BYR", "EEK", "FKP", "GYD", "KMF", "KPW", "LRD", "LTL", "LVL", "MNT", "MRO",
+		"AWG", "BTN", "EEK", "FKP", "GYD", "KMF", "KPW", "LRD", "LTL", "LVL", "MNT", "MRO",
 		"MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC", "TOP", "VUV", "WST", "ZMK", "ZWD"
 	],
 	"fxexchangerate.com": []
