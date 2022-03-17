@@ -58,6 +58,7 @@
 //   -saveOptions=true             - allow store options
 //   -savePosition=true            - allow store last window position
 //   -saveOffline=true             - allow store currencies data
+//   -currencies="USD,EUR"         - white list for currencies
 
 // Usage:
 //   Call("Scripts::Main", 1, "measuresConverter.js")
@@ -1754,6 +1755,7 @@ var selectContext         = getArg("selectContext", 7);
 var disableRadios         = getArg("disableRadios", false);
 var useSelected           = getArg("useSelected", true);
 var showLastUpdate        = getArg("showLastUpdate", 2);
+var currenciesWL          = getArg("currencies", "");
 
 var from   = getArg("from");
 var to     = getArg("to");
@@ -3037,7 +3039,19 @@ function converterDialog(modal) {
 		hWndListBox2 && destroyWindow(hWndListBox2);
 		hWndListBox = hWndListBox2 = undefined;
 
+		var isCurrency = type == CURRENCY;
 		var mo = measures[type];
+		if(isCurrency && currenciesWL) {
+			var moWL = {};
+			for(var measure in mo) {
+				var currencyCode = mo[measure];
+				if(currencyCode == 1)
+					currencyCode = "USD";
+				if(currenciesWL.indexOf(currencyCode) != -1)
+					moWL[measure] = currencyCode;
+			}
+			mo = moWL;
+		}
 
 		if(selectedItems[type] && (arguments.callee._called || !curItem || !curItem2)) {
 			curItem  = selectedItems[type][0];
@@ -3052,7 +3066,6 @@ function converterDialog(modal) {
 		var dlgH = Math.max(dlgMinH, y + dh);
 		var useListboxes = dlgH > (dlgMaxH == -1 ? dlgMinH : dlgMaxH);
 
-		var isCurrency = type == CURRENCY;
 		if(!useListboxes && (isCurrency || sortMeasures)) {
 			var sortArr = [];
 			for(var measure in mo) {
