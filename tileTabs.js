@@ -208,6 +208,8 @@ function tileTabs(lpFrame, lpFrame2, tileHorizontal, useTabsOrder, _lpRect) {
 
 		var rcClient2 = oSys.Call("user32::GetClientRect", hMdiClient, lpRect)
 			&& parseRect(lpRect);
+		if(!rcClient2)
+			break;
 		var w2 = rcClient2.right - rcClient2.left;
 		var h2 = rcClient2.bottom - rcClient2.top;
 
