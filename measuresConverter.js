@@ -24,6 +24,7 @@
 //   F4, Ctrl+U                        - Switch values (left-click on "<=>" button)
 //   Ctrl+F4 (Shift+F4), Ctrl+Shift+U  - Switch measures (right-click on "<=>" button)
 //   Ctrl+Shift+C                      - Copy result
+//   Ctrl+Shift+F                      - Toggle currencies white list (see -currencies argument)
 //   F5                                - Update currencies data
 //   Ctrl+F5                           - Force update currencies data (right-click or Ctrl+click on "Update" button)
 //   Shift+F5                          - Force update data only for current currencies (double click on row)
