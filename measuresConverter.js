@@ -1612,6 +1612,9 @@ function _localize(s) {
 		"Currency": {
 			ru: "Валюта"
 		},
+		"Show all": {
+			ru: "Показывать все"
+		},
 		"By name": {
 			ru: "По имени"
 		},
