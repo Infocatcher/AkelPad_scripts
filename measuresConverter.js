@@ -2309,13 +2309,14 @@ function converterDialog(modal) {
 	var IDC_CANCEL         = 1008;
 	var IDC_ROUND          = 1009;
 	var IDC_ROUND_VALUE    = 1010;
-	var IDC_SORT           = 1011;
-	var IDC_SORT_BY_NAME   = 1012;
-	var IDC_SORT_BY_CODE   = 1013;
-	var IDC_UPDATE         = 1014;
-	var IDC_UPDATE_STARTUP = 1015;
-	var IDC_COPY_RES       = 1016;
-	var idcCntr            = 1017;
+	var IDC_CURRENCIES_ALL = 1011;
+	var IDC_SORT           = 1012;
+	var IDC_SORT_BY_NAME   = 1013;
+	var IDC_SORT_BY_CODE   = 1014;
+	var IDC_UPDATE         = 1015;
+	var IDC_UPDATE_STARTUP = 1016;
+	var IDC_COPY_RES       = 1017;
+	var idcCntr            = 1018;
 
 	// internal name => control ID
 	var IDCTypes  = {};
@@ -2335,7 +2336,7 @@ function converterDialog(modal) {
 	var hWndOK, hWndConvert, hWndCancel;
 	var hWndGroupRound, hWndRound, hWndRoundValue, hWndUpDown;
 	var hWndGroupSortMeasures, hWndSortMeasures;
-	var hWndGroupCurrency, hWndGroupSortCurrency, hWndSortByName, hWndSortByCode, hWndUpdate;
+	var hWndGroupCurrency, hWndCurrenciesAll, hWndGroupSortCurrency, hWndSortByName, hWndSortByCode, hWndUpdate;
 
 	var windowsVersion;
 	var dwVersion = oSys.Call("kernel32::GetVersion");
@@ -2682,13 +2683,30 @@ function converterDialog(modal) {
 					msr2X + msrW + 12,          //x
 					12 + btnH*3 + roundH + 22,  //y
 					btnW,                       //nWidth
-					69 + btnH + dy,             //nHeight
+					89 + btnH + dy,             //nHeight
 					hWnd,                       //hWndParent
 					IDC_STATIC,                 //ID
 					hInstanceDLL,               //hInstance
 					0                           //lpParam
 				);
 				setWindowFontAndText(hWndGroupCurrency, hGuiFont, _localize("Currency"));
+
+				// Checkbox show all
+				hWndCurrenciesAll = createWindowEx(
+					0,                         //dwExStyle
+					"BUTTON",                  //lpClassName
+					0,                         //lpWindowName
+					0x50010003,                //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
+					msr2X + msrW + 20,         //x
+					12 + btnH*3 + roundH + 40, //y
+					btnW - 16,                 //nWidth
+					16,                        //nHeight
+					hWnd,                      //hWndParent
+					IDC_CURRENCIES_ALL,        //ID
+					hInstanceDLL,              //hInstance
+					0                          //lpParam
+				);
+				setWindowFontAndText(hWndCurrenciesAll, hGuiFont, _localize("Show all"));
 
 				// GroupBox sort currency
 				hWndGroupSortCurrency = createWindowEx(
@@ -2697,7 +2715,7 @@ function converterDialog(modal) {
 					0,                         //lpWindowName
 					0x50000007,                //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					msr2X + msrW + 20,         //x
-					12 + btnH*3 + roundH + 38, //y
+					12 + btnH*3 + roundH + 58, //y
 					btnW - 16,                 //nWidth
 					38 + dy,                   //nHeight
 					hWnd,                      //hWndParent
@@ -2714,7 +2732,7 @@ function converterDialog(modal) {
 					0,                         //lpWindowName
 					0x50000004,                //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					msr2X + msrW + 28,         //x
-					12 + btnH*3 + roundH + 54, //y
+					12 + btnH*3 + roundH + 74, //y
 					btnW - 32,                 //nWidth
 					16,                        //nHeight
 					hWnd,                      //hWndParent
@@ -2732,7 +2750,7 @@ function converterDialog(modal) {
 					0,                              //lpWindowName
 					0x50000004,                     //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					msr2X + msrW + 28,              //x
-					12 + btnH*3 + roundH + 54 + dy, //y
+					12 + btnH*3 + roundH + 74 + dy, //y
 					btnW - 32,                      //nWidth
 					16,                             //nHeight
 					hWnd,                           //hWndParent
@@ -2750,7 +2768,7 @@ function converterDialog(modal) {
 					0,                              //lpWindowName
 					0x50010000,                     //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					msr2X + msrW + 20,              //x
-					12 + btnH*3 + roundH + 82 + dy, //y
+					12 + btnH*3 + roundH + 102 + dy, //y
 					btnW - 16,                      //nWidth
 					btnH,                           //nHeight
 					hWnd,                           //hWndParent
@@ -3279,6 +3297,7 @@ function converterDialog(modal) {
 		showWindow(hWndSortByName,         isCurrency);
 		showWindow(hWndSortByCode,         isCurrency);
 		showWindow(hWndUpdate,             isCurrency);
+		showWindow(hWndCurrenciesAll,      isCurrency);
 
 		// We should call it here in Windows XP
 		//setRedraw(hWndDialog, true);
