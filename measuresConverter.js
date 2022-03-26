@@ -2710,6 +2710,7 @@ function converterDialog(modal) {
 					0                          //lpParam
 				);
 				setWindowFontAndText(hWndCurrenciesAll, hGuiFont, _localize("Show all"));
+				checked(hWndCurrenciesAll, !currenciesWL);
 
 				// GroupBox sort currency
 				hWndGroupSortCurrency = createWindowEx(
@@ -2844,6 +2845,7 @@ function converterDialog(modal) {
 						currenciesWL = "";
 					else
 						currenciesWL = draw._currenciesWL;
+					checked(hWndCurrenciesAll, !currenciesWL);
 					draw(curType, hWnd);
 				}
 			break;
