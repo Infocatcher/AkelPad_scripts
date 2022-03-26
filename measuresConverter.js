@@ -2834,20 +2834,8 @@ function converterDialog(modal) {
 					updateCommand(ctrl || shift, shift);
 				else if(ctrl && shift && wParam == 67 /*C*/) // Ctrl+Shift+C
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_COPY_RES, 0);
-				else if(ctrl && shift && wParam == 70 /*F*/) { // Ctrl+Shift+F
-					if(curType != CURRENCY)
-						break;
-					if(typeof draw._currenciesWL == "undefined")
-						draw._currenciesWL = currenciesWL;
-					if(!draw._currenciesWL)
-						break;
-					if(currenciesWL)
-						currenciesWL = "";
-					else
-						currenciesWL = draw._currenciesWL;
-					checked(hWndCurrenciesAll, !currenciesWL);
-					draw(curType, hWnd);
-				}
+				else if(ctrl && shift && wParam == 70 /*F*/) // Ctrl+Shift+F
+					toggleCurrenciesWL();
 			break;
 			case 273: //WM_COMMAND
 				var idc = wParam & 0xffff;
@@ -3542,6 +3530,20 @@ function converterDialog(modal) {
 			maskInclude[curItem] = maskInclude[curItem2] = true;
 		}
 		update(force, onlyCurrent ? 1 : 2, maskInclude);
+	}
+	function toggleCurrenciesWL() {
+		if(curType != CURRENCY)
+			return;
+		if(typeof draw._currenciesWL == "undefined")
+			draw._currenciesWL = currenciesWL;
+		if(!draw._currenciesWL)
+			return;
+		if(currenciesWL)
+			currenciesWL = "";
+		else
+			currenciesWL = draw._currenciesWL;
+		checked(hWndCurrenciesAll, !currenciesWL);
+		draw(curType, hWndDialog);
 	}
 	function doPendingUpdate() {
 		var pu = update.pendingUpdates && update.pendingUpdates.shift();
