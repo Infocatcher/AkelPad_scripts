@@ -2918,6 +2918,9 @@ function converterDialog(modal) {
 						readRoundValue();
 						convertGUI();
 					break msgLoop;
+					case IDC_CURRENCIES_ALL:
+						toggleCurrenciesWL();
+					break msgLoop;
 					case IDC_SORT:
 						sortMeasures = checked(hWndSortMeasures);
 						selectedItems[curType] = [curItem, curItem2];
