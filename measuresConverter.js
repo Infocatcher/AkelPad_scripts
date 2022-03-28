@@ -2699,7 +2699,7 @@ function converterDialog(modal) {
 					0,                         //dwExStyle
 					"BUTTON",                  //lpClassName
 					0,                         //lpWindowName
-					0x50010003,                //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
+					0x50010002,                //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_CHECKBOX
 					msr2X + msrW + 20,         //x
 					12 + btnH*3 + roundH + 40, //y
 					btnW - 16,                 //nWidth
