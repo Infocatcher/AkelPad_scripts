@@ -1761,6 +1761,8 @@ var useSelected           = getArg("useSelected", true);
 var showLastUpdate        = getArg("showLastUpdate", 2);
 var currenciesWL          = getArg("currencies", "");
 
+var currenciesDefaultWL = currenciesWL || "BYN,CNY,EUR,GBP,RUB,UAH,USD";
+
 var from   = getArg("from");
 var to     = getArg("to");
 var dialog = getArg("dialog", true);
@@ -3537,14 +3539,10 @@ function converterDialog(modal) {
 	function toggleCurrenciesWL() {
 		if(curType != CURRENCY)
 			return;
-		if(typeof draw._currenciesWL == "undefined")
-			draw._currenciesWL = currenciesWL;
-		if(!draw._currenciesWL)
-			return;
 		if(currenciesWL)
 			currenciesWL = "";
 		else
-			currenciesWL = draw._currenciesWL;
+			currenciesWL = currenciesDefaultWL;
 		checked(hWndCurrenciesAll, !currenciesWL);
 		draw(curType, hWndDialog);
 	}
