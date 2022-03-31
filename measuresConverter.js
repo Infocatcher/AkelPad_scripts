@@ -1762,6 +1762,8 @@ var showLastUpdate        = getArg("showLastUpdate", 2);
 var currenciesWL          = getArg("currencies", "");
 
 var currenciesDefaultWL = currenciesWL || "BYN,CNY,EUR,GBP,RUB,UAH,USD";
+if(currenciesWL.charAt(0) == "-")
+	currenciesWL = "";
 
 var from   = getArg("from");
 var to     = getArg("to");
