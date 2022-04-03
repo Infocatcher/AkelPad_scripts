@@ -3017,9 +3017,7 @@ function converterDialog(modal) {
 					&& sdt._lastUpdate || "";
 				lastUpdateStr = sdt._lastUpdate = new Date(lastUpdate).toLocaleString();
 				sdt._lastUpdateKey = key;
-				if(lastUpdateStr == prevLastUpdate) // Not changed
-					return;
-				if(prevLastUpdate && ensureTimers()) {
+				if(prevLastUpdate && lastUpdateStr != prevLastUpdate && ensureTimers()) {
 					lastUpdateStr = prevLastUpdate + " -> " + lastUpdateStr;
 					setTimeout(function() {
 						sdt._lastUpdate = sdt._lastUpdateKey = "";
