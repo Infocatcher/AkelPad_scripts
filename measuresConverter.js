@@ -3077,9 +3077,7 @@ function converterDialog(modal) {
 			var moWL = {};
 			for(var measure in mo) {
 				var currencyCode = mo[measure];
-				if(currencyCode == 1)
-					currencyCode = "USD";
-				if(currenciesWL.indexOf(currencyCode) != -1)
+				if(currenciesWL.indexOf(currencyCode == 1 ? BASE_CURRENCY : currencyCode) != -1)
 					moWL[measure] = currencyCode;
 			}
 			mo = moWL;
