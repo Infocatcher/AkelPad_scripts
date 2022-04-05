@@ -3544,6 +3544,7 @@ function converterDialog(modal) {
 		else
 			currenciesWL = currenciesDefaultWL;
 		checked(hWndCurrenciesAll, !currenciesWL);
+		selectedItems[curType] = [curItem, curItem2];
 		draw(curType, hWndDialog);
 	}
 	function doPendingUpdate() {
