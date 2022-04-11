@@ -488,12 +488,9 @@ function selectScriptDialog(modal) {
 				oSys.Call("user32::SetFocus", curName ? hWndArgs : hWndListBox);
 			break;
 			case 256: //WM_KEYDOWN
-				var ctrl = oSys.Call("user32::GetAsyncKeyState", 162 /*VK_LCONTROL*/)
-					|| oSys.Call("user32::GetAsyncKeyState", 163 /*VK_RCONTROL*/);
-				var shift = oSys.Call("user32::GetAsyncKeyState", 160 /*VK_LSHIFT*/)
-					|| oSys.Call("user32::GetAsyncKeyState", 161 /*VK_RSHIFT*/);
-				//var alt = oSys.Call("user32::GetAsyncKeyState", 164 /*VK_LMENU*/)
-				//	|| oSys.Call("user32::GetAsyncKeyState", 165 /*VK_RMENU*/);
+				var ctrl = oSys.Call("user32::GetAsyncKeyState", 17 /*VK_CONTROL*/) & 0x8000;
+				var shift = oSys.Call("user32::GetAsyncKeyState", 16 /*VK_SHIFT*/) & 0x8000;
+				//var alt = oSys.Call("user32::GetAsyncKeyState", 18 /*VK_MENU*/) & 0x8000;
 				if(wParam == 27) //VK_ESCAPE
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
 				else if(wParam == 13) { //VK_RETURN
