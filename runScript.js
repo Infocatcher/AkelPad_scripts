@@ -139,6 +139,7 @@ function expandArgs(args) {
 function selectScriptDialog(modal) {
 	var hInstanceDLL = AkelPad.GetInstanceDll();
 	var dialogClass = "AkelPad::Scripts::" + WScript.ScriptName + "::" + oSys.Call("kernel32::GetCurrentProcessId");
+	var hListBoxSubClass;
 
 	var IDC_STATIC     = -1;
 	var IDC_LISTBOX    = 1000;
@@ -334,6 +335,7 @@ function selectScriptDialog(modal) {
 					0             //lpParam
 				);
 				setWindowFont(hWndListBox, hGuiFont);
+				hListBoxSubClass = AkelPad.WindowSubClass(hWndListBox, listBoxCallback, 258 /*WM_CHAR*/);
 
 				// GroupBox action
 				hWndGroupArgs = createWindowEx(
@@ -665,6 +667,11 @@ function selectScriptDialog(modal) {
 				oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
 		}
 		return 0;
+	}
+
+	function listBoxCallback(hWnd, uMsg, wParam, lParam) {
+		if(oSys.Call("user32::GetAsyncKeyState", 17 /*VK_CONTROL*/) & 0x8000)
+			AkelPad.WindowNoNextProc(hListBoxSubClass);
 	}
 
 	function fillListBox(hWndDialog) {
