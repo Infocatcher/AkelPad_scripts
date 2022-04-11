@@ -490,9 +490,9 @@ function selectScriptDialog(modal) {
 				oSys.Call("user32::SetFocus", curName ? hWndArgs : hWndListBox);
 			break;
 			case 256: //WM_KEYDOWN
-				var ctrl = oSys.Call("user32::GetAsyncKeyState", 17 /*VK_CONTROL*/) & 0x8000;
-				var shift = oSys.Call("user32::GetAsyncKeyState", 16 /*VK_SHIFT*/) & 0x8000;
-				//var alt = oSys.Call("user32::GetAsyncKeyState", 18 /*VK_MENU*/) & 0x8000;
+				var ctrl = getKeyState(17 /*VK_CONTROL*/);
+				var shift = getKeyState(16 /*VK_SHIFT*/);
+				//var alt = getKeyState(18 /*VK_MENU*/);
 				if(wParam == 27) //VK_ESCAPE
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
 				else if(wParam == 13) { //VK_RETURN
@@ -670,7 +670,7 @@ function selectScriptDialog(modal) {
 	}
 
 	function listBoxCallback(hWnd, uMsg, wParam, lParam) {
-		if(oSys.Call("user32::GetAsyncKeyState", 17 /*VK_CONTROL*/) & 0x8000)
+		if (getKeyState(17 /*VK_CONTROL*/))
 			AkelPad.WindowNoNextProc(hListBoxSubClass);
 	}
 
@@ -1104,6 +1104,9 @@ function selectScriptDialog(modal) {
 	}
 	function enabled(hWnd, val) {
 		oSys.Call("user32::EnableWindow", hWnd, val);
+	}
+	function getKeyState(key) {
+		return oSys.Call("user32::GetAsyncKeyState", key) & 0x8000; // Fix possible 4-byte result
 	}
 	function destroyWindow(hWnd) {
 		oSys.Call("user32::DestroyWindow", hWnd);
