@@ -3888,13 +3888,13 @@ function converterDialog(modal) {
 		postMessage(hWndDialog, 16 /*WM_CLOSE*/, 0, 0);
 	}
 	function ctrlPressed() {
-		return keyPressed(162 /*VK_LCONTROL*/) || keyPressed(163 /*VK_RCONTROL*/);
+		return keyPressed(17 /*VK_CONTROL*/);
 	}
 	function shiftPressed() {
-		return keyPressed(160 /*VK_LSHIFT*/) || keyPressed(161 /*VK_RSHIFT*/);
+		return keyPressed(16 /*VK_SHIFT*/);
 	}
 	function keyPressed(key) {
-		return !!oSys.Call("user32::GetAsyncKeyState", key);
+		return !!(oSys.Call("user32::GetAsyncKeyState", key) & 0x8000); // Fix possible 4-byte result
 	}
 	function postMessage(hWnd, msg, wParam, lParam) {
 		oSys.Call("user32::PostMessage" + _TCHAR, hWnd, msg, wParam, lParam);
