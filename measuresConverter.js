@@ -1985,6 +1985,7 @@ function saveOfflineCurrencyData(saveMode) {
 	}
 	if(!db.length)
 		return;
+	db.sort();
 	if(saveMode && !oSet.Begin(WScript.ScriptBaseName, 0x2 /*POB_SAVE*/))
 		return;
 	oSet.Write("currencies", 3 /*PO_STRING*/, db.join("|"));
@@ -3650,6 +3651,7 @@ function converterDialog(modal) {
 		if(!db.length)
 			return;
 
+		db.sort();
 		var selfFile = WScript.ScriptFullName;
 		// Create backup
 		var fso = new ActiveXObject("Scripting.FileSystemObject");
