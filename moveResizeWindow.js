@@ -72,8 +72,15 @@ function resizeWindow(hWnd, resize, hWndParent) {
 	if(!rcWnd || !rcWork)
 		return;
 
-	var ww = rcWork.right - rcWork.left;
-	var wh = rcWork.bottom - rcWork.top;
+	var shadow = rcWnd.shadow || {
+		left:   0,
+		top:    0,
+		right:  0,
+		bottom: 0
+	};
+
+	var ww = rcWork.right - rcWork.left - (shadow.right - shadow.left);
+	var wh = rcWork.bottom - rcWork.top - (shadow.bottom - shadow.top);
 
 	var w = rcWnd.right - rcWnd.left;
 	var h = rcWnd.bottom - rcWnd.top;
@@ -111,25 +118,32 @@ function moveWindow(hWnd, move, hWndParent) {
 	if(!rcWnd || !rcWork)
 		return;
 
+	var shadow = rcWnd.shadow || {
+		left:   0,
+		top:    0,
+		right:  0,
+		bottom: 0
+	};
+
 	var w = rcWnd.right - rcWnd.left;
 	var h = rcWnd.bottom - rcWnd.top;
 
-	if     (mvX == "left")   mvX = rcWork.left;
+	if     (mvX == "left")   mvX = rcWork.left - shadow.left;
 	else if(mvX == "center") mvX = centerX(rcWnd, rcWork);
-	else if(mvX == "right")  mvX = rcWork.right - w;
+	else if(mvX == "right")  mvX = rcWork.right - w - shadow.right;
 	else if(!mvX)            mvX = rcWnd.left;
 	else if(isPersent(mvX))  mvX = parseFloat(mvX)/100*(rcWork.right - rcWork.left);
 	else                     mvX = parseInt(mvX);
 
-	if     (mvY == "top")    mvY = rcWork.top;
+	if     (mvY == "top")    mvY = rcWork.top - shadow.top;
 	else if(mvY == "center") mvY = centerY(rcWnd, rcWork);
-	else if(mvY == "bottom") mvY = rcWork.bottom - h;
+	else if(mvY == "bottom") mvY = rcWork.bottom - h - shadow.bottom;
 	else if(!mvY)            mvY = rcWnd.top;
 	else if(isPersent(mvY))  mvY = parseFloat(mvY)/100*(rcWork.bottom - rcWork.top);
 	else                     mvY = parseInt(mvY);
 
-	mvX = Math.round(Math.max(rcWork.left, Math.min(rcWork.right - w,  mvX)));
-	mvY = Math.round(Math.max(rcWork.top,  Math.min(rcWork.bottom - h, mvY)));
+	mvX = Math.round(Math.max(rcWork.left - shadow.left, Math.min(rcWork.right - w - shadow.right,  mvX)));
+	mvY = Math.round(Math.max(rcWork.top - shadow.top,  Math.min(rcWork.bottom - h - shadow.bottom, mvY)));
 
 	if(mvX == rcWnd.left && mvY == rcWnd.top)
 		return false;
@@ -238,6 +252,17 @@ function getWindowRect(hWnd, hWndParent) {
 		if(hWndParent && !oSys.Call("user32::ScreenToClient", hWndParent, lpRect))
 			break getRect;
 		var rcWnd = parseRect(lpRect);
+		if(!oSys.Call("dwmapi::DwmGetWindowAttribute", hWnd, 9 /*DWMWA_EXTENDED_FRAME_BOUNDS*/, lpRect, 16 /*sizeof(RECT)*/)) {
+			var rcWndNS = parseRect(lpRect);
+			if(rcWndNS.left || rcWndNS.right) {
+				rcWnd.shadow = {
+					left:   rcWndNS.left   - rcWnd.left,
+					top:    rcWndNS.top    - rcWnd.top,
+					right:  rcWndNS.right  - rcWnd.right,
+					bottom: rcWndNS.bottom - rcWnd.bottom
+				};
+			}
+		}
 	}
 	lpRect && AkelPad.MemFree(lpRect);
 	return rcWnd;
