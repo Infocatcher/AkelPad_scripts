@@ -72,12 +72,7 @@ function resizeWindow(hWnd, resize, hWndParent) {
 	if(!rcWnd || !rcWork)
 		return;
 
-	var shadow = rcWnd.shadow || {
-		left:   0,
-		top:    0,
-		right:  0,
-		bottom: 0
-	};
+	var shadow = getShadow(rcWnd);
 
 	var ww = rcWork.right - rcWork.left - (shadow.right - shadow.left);
 	var wh = rcWork.bottom - rcWork.top - (shadow.bottom - shadow.top);
@@ -118,12 +113,7 @@ function moveWindow(hWnd, move, hWndParent) {
 	if(!rcWnd || !rcWork)
 		return;
 
-	var shadow = rcWnd.shadow || {
-		left:   0,
-		top:    0,
-		right:  0,
-		bottom: 0
-	};
+	var shadow = getShadow(rcWnd);
 
 	var w = rcWnd.right - rcWnd.left;
 	var h = rcWnd.bottom - rcWnd.top;
@@ -266,6 +256,14 @@ function getWindowRect(hWnd, hWndParent) {
 	}
 	lpRect && AkelPad.MemFree(lpRect);
 	return rcWnd;
+}
+function getShadow(rcWnd) {
+	return rcWnd.shadow || {
+		left:   0,
+		top:    0,
+		right:  0,
+		bottom: 0
+	};
 }
 function parseRect(lpRect) {
 	return {
