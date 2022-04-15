@@ -191,7 +191,7 @@ function restoreWindowPos(windowId, hWnd) {
 
 	if(pos == "maximized")
 		return oSys.Call("user32::ShowWindow", hWnd, 3 /*SW_MAXIMIZE*/);
-	if(!/^(\d+)x(\d+)\|(\d+)x(\d+)$/.test(pos))
+	if(!/^(-?\d+)x(-?\d+)\|(\d+)x(\d+)$/.test(pos))
 		return false;
 
 	var x = +RegExp.$1;
