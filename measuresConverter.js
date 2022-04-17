@@ -1909,7 +1909,8 @@ function getRequestURL(code) {
 		&& (preferFXExchangeRate || !available("exchange-rates.org", code))
 	) {
 		// See https://www.fxexchangerate.com/currency-converter-widget.html
-		return "https://w.fxexchangerate.com/converter.php?" + new Date().getTime(); // BASE_CURRENCY == "USD" !
+		// -> https://w.fxexchangerate.com/converter.php (not updated?)
+		return "https://www.fxexchangerate.com/currency-converter-widget.html?" + new Date().getTime(); // BASE_CURRENCY == "USD" !
 	}
 	//return "https://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
 	// Will use https://translate.google.com/ as proxy
@@ -1918,7 +1919,7 @@ function getRequestURL(code) {
 		+ "/1/N?_x_tr_sl=en&_x_tr_tl=en&_x_tr_hl=en&_x_tr_pto=ajax";
 }
 function shouldCacheURL(url) {
-	if(url.replace(/\d+$/, "") == "https://w.fxexchangerate.com/converter.php?")
+	if(/^https?:\/\/(\w+\.)*fxexchangerate\.com\//.test(url))
 		return "fxexchangerate.com";
 	return "";
 }
@@ -1937,9 +1938,10 @@ function getRatioFromResponse(response, code) {
 	}
 
 	// https://w.fxexchangerate.com/converter.php
+	// https://www.fxexchangerate.com/currency-converter-widget.html
 	if(
-		response.substr(0, 12) == "var fxrates="
-		&& new RegExp('\\["' + code + '"\\]=([^;]+);').test(response)
+		response.indexOf("var fxrates=") != -1
+		&& new RegExp(';fxrates\\["' + code + '"\\]=([^;]+);').test(response)
 	)
 		return 1/validateRatio(+RegExp.$1);
 
