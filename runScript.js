@@ -1106,7 +1106,7 @@ function selectScriptDialog(modal) {
 		oSys.Call("user32::EnableWindow", hWnd, val);
 	}
 	function getKeyState(key) {
-		return oSys.Call("user32::GetAsyncKeyState", key) & 0x8000; // Fix possible 4-byte result
+		return oSys.Call("user32::GetAsyncKeyState", key) & 0x8000; // Fix 4-byte result in AkelPad x64
 	}
 	function destroyWindow(hWnd) {
 		oSys.Call("user32::DestroyWindow", hWnd);
