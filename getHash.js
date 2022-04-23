@@ -1737,10 +1737,8 @@ function getHashDialog(modal) {
 				oSys.Call("user32::SetFocus", hWndChecked);
 			break;
 			case 256: //WM_KEYDOWN
-				var ctrl = oSys.Call("user32::GetAsyncKeyState", 162 /*VK_LCONTROL*/)
-					|| oSys.Call("user32::GetAsyncKeyState", 163 /*VK_RCONTROL*/);
-				var shift = oSys.Call("user32::GetAsyncKeyState", 160 /*VK_LSHIFT*/)
-					|| oSys.Call("user32::GetAsyncKeyState", 161 /*VK_RSHIFT*/);
+				var ctrl = getKeyState(17 /*VK_CONTROL*/);
+				var shift = getKeyState(16 /*VK_SHIFT*/);
 				if(wParam == 27 /*VK_ESCAPE*/)
 					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
 				else if(wParam == 13 /*VK_RETURN*/) {
@@ -2024,6 +2022,9 @@ function getHashDialog(modal) {
 	}
 	function closeDialog() {
 		oSys.Call("user32::PostMessage" + _TCHAR, hWndDialog, 16 /*WM_CLOSE*/, 0, 0);
+	}
+	function getKeyState(key) {
+		return oSys.Call("user32::GetAsyncKeyState", key) & 0x8000; // Fix 4-byte result in AkelPad x64
 	}
 
 	function Scale(hDC, hWnd) {
