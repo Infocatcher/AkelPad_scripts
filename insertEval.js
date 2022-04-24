@@ -128,6 +128,8 @@ var utils = {
 	},
 
 	unformat: function(s) {
+		if(/\(\d+,\s*\d+\)/.test(s)) // Looks like js-expression like Math.pow(2,10)
+			return s;
 		return s
 			.replace(/(\d+)[ \xa0](?=\d)/g, "$1") // 12 345 -> 12345
 			.replace(/(\d+),(?=\d)/g, "$1."); // 1,23 -> 1.23
