@@ -204,7 +204,10 @@ function calc(expr, forceAsk) {
 		res = evalWrapper(expr, utils);
 	}
 	catch(e) {
-		AkelPad.MessageBox(hMainWnd, e.name + "\n" + e.message, dialogTitle, 16 /*MB_ICONERROR*/);
+		var err = e.name + "\n" + e.message;
+		if(exprRaw && expr != exprRaw)
+			err += "\n\nUnformatted expression:\n" + expr;
+		AkelPad.MessageBox(hMainWnd, err, dialogTitle, 16 /*MB_ICONERROR*/);
 		calc(expr, true);
 		return;
 	}
