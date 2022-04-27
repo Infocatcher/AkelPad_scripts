@@ -129,7 +129,7 @@ var utils = {
 
 	unformat: function(s) {
 		if(
-			/\(\d+,\s*\d+\)/.test(s) // Expression like Math.pow(2,10)
+			/\(\d+(,\d+)+\)/.test(s) // Expression like Math.pow(2,10)
 			|| /\d+,\d+,\d+/.test(s) // Expression like [1,2,3]
 		)
 			return s;
