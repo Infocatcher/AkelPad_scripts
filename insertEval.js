@@ -135,7 +135,7 @@ var utils = {
 			return s;
 		return s
 			.replace(/(\d+)[ \xa0](?=\d)/g, "$1") // 12 345 -> 12345
-			.replace(/(\d+),(?=\d)/g, "$1."); // 1,23 -> 1.23
+			.replace(/(\d+),(\d+)(?!,)/g, "$1.$2"); // 1,23 -> 1.23
 	},
 
 	append: function(s) {
