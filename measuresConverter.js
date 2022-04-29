@@ -3003,6 +3003,8 @@ function converterDialog(modal) {
 	}
 
 	function setDialogTitle(hWnd) {
+		if(setDialogTitle._ignore || false)
+			return;
 		var caption = dialogTitle;
 		if(showLastUpdate > 1 || showLastUpdate == 1 && curType == CURRENCY) {
 			var lastUpdate = getLastUpdate();
@@ -3022,7 +3024,9 @@ function converterDialog(modal) {
 				sdt._lastUpdateKey = key;
 				if(prevLastUpdate && lastUpdateStr != prevLastUpdate && ensureTimers()) {
 					lastUpdateStr = prevLastUpdate + " -> " + lastUpdateStr;
+					setDialogTitle._ignore = true;
 					setTimeout(function() {
+						setDialogTitle._ignore = false;
 						sdt._lastUpdate = sdt._lastUpdateKey = "";
 						setDialogTitle(hWnd);
 					}, 3e3);
