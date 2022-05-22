@@ -1,10 +1,12 @@
-﻿var oSet = AkelPad.ScriptSettings();
-if(oSet.Begin("..\\ToolBar", 0x1 /*POB_READ*/)) {
+﻿var tbPlugName = "ToolBar";
+
+var oSet = AkelPad.ScriptSettings();
+if(oSet.Begin("..\\" + tbPlugName, 0x1 /*POB_READ*/)) {
 	var tbData = oSet.Read("ToolBarText", 3 /*PO_STRING*/);
 	oSet.End();
 }
 
-if(tbData && oSet.Begin("..\\ToolBar", 0x2 /*POB_SAVE*/)) {
+if(tbData && oSet.Begin("..\\" + tbPlugName, 0x2 /*POB_SAVE*/)) {
 	var tbText = hexToStr(tbData);
 	tbText = tbText.replace(/(#?)BREAK/g, function(s, commented) {
 		return (commented ? "" : "#") + "BREAK";
@@ -13,9 +15,9 @@ if(tbData && oSet.Begin("..\\ToolBar", 0x2 /*POB_SAVE*/)) {
 	oSet.Write("ToolBarText", 3 /*PO_STRING*/, tbData);
 	oSet.End();
 
-	if(AkelPad.IsPluginRunning("ToolBar::Main")) {
-		AkelPad.Call("ToolBar::Main");
-		AkelPad.Call("ToolBar::Main");
+	if(AkelPad.IsPluginRunning(tbPlugName + "::Main")) {
+		AkelPad.Call(tbPlugName + "::Main");
+		AkelPad.Call(tbPlugName + "::Main");
 	}
 }
 
