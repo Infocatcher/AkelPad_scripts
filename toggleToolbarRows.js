@@ -22,7 +22,7 @@ if(tbData && oSet.Begin("..\\" + tbPlugName, 0x2 /*POB_SAVE*/)) {
 }
 
 function hexToStr(h) {
-	return h.replace(/[\dA-F]{4}/g, function(h) {
+	return h.replace(/[\dA-F]{4}/ig, function(h) {
 		var b1 = h.substr(0, 2);
 		var b2 = h.substr(2);
 		var n = parseInt(b2 + b1, 16);
