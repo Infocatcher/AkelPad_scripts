@@ -23,9 +23,7 @@ if(tbData && oSet.Begin("..\\" + tbPlugName, 0x2 /*POB_SAVE*/)) {
 
 function hexToStr(h) {
 	return h.replace(/[\dA-F]{4}/ig, function(h) {
-		var b1 = h.substr(0, 2);
-		var b2 = h.substr(2);
-		var n = parseInt(b2 + b1, 16);
+		var n = parseInt(reorder(h), 16);
 		return String.fromCharCode(n);
 	});
 }
@@ -34,8 +32,11 @@ function strToHex(s) {
 		var n = c.charCodeAt(0);
 		var h = n.toString(16).toUpperCase();
 		h = "0000".substr(h.length) + h;
-		var b1 = h.substr(0, 2);
-		var b2 = h.substr(2);
-		return b2 + b1;
+		return reorder(h);
 	});
+}
+function reorder(h) { // LE <-> BE
+	var b1 = h.substr(0, 2);
+	var b2 = h.substr(2);
+	return b2 + b1;
 }
