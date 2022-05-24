@@ -29,8 +29,7 @@ function hexToStr(h) {
 }
 function strToHex(s) {
 	return s.replace(/[\s\S]/g, function(c) {
-		var n = c.charCodeAt(0);
-		var h = n.toString(16).toUpperCase();
+		var h = c.charCodeAt(0).toString(16).toUpperCase();
 		h = "0000".substr(h.length) + h;
 		return reorder(h);
 	});
