@@ -1,4 +1,4 @@
-﻿var tbPlugName = "ToolBar";
+﻿var tbPlugName = AkelPad.GetArgValue("toolBarName", "ToolBar");
 
 var oSet = AkelPad.ScriptSettings();
 if(oSet.Begin("..\\" + tbPlugName, 0x1 /*POB_READ*/)) {
