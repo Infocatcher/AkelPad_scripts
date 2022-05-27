@@ -4,6 +4,15 @@ var oSet = AkelPad.ScriptSettings();
 if(oSet.Begin("..\\" + tbPlugName, 0x1 /*POB_READ*/)) {
 	var tbData = oSet.Read("ToolBarText", 3 /*PO_STRING*/);
 	oSet.End();
+	if(tbData.length % 4 || /[^\dA-F]/i.test(tbData)) {
+		AkelPad.MessageBox(
+			AkelPad.GetMainWnd(),
+			"Unable to parse ToolBarText data",
+			WScript.ScriptName,
+			16 /*MB_ICONERROR*/
+		);
+		WScript.Quit();
+	}
 }
 
 if(tbData && oSet.Begin("..\\" + tbPlugName, 0x2 /*POB_SAVE*/)) {
