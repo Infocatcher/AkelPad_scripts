@@ -17,8 +17,8 @@ if(oSet.Begin("..\\" + tbPlugName, 0x1 /*POB_READ*/)) {
 
 if(tbData && oSet.Begin("..\\" + tbPlugName, 0x2 /*POB_SAVE*/)) {
 	var tbText = hexToStr(tbData);
-	tbText = tbText.replace(/(#?)BREAK/g, function(s, commented) {
-		return (commented ? "" : "#") + "BREAK";
+	tbText = tbText.replace(/\r(#?)BREAK\r/g, function(s, commented) {
+		return "\r" + (commented ? "" : "#") + "BREAK\r";
 	});
 	tbData = strToHex(tbText);
 	oSet.Write("ToolBarText", 3 /*PO_STRING*/, tbData);
