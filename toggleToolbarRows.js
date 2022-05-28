@@ -1,7 +1,7 @@
 ﻿var tbPlugName = AkelPad.GetArgValue("toolBarName", "ToolBar");
 
 var oSet = AkelPad.ScriptSettings();
-if(oSet.Begin("..\\" + tbPlugName, 0x1 /*POB_READ*/)) {
+if(oSet.Begin(tbPlugName, 0x21 /*POB_READ|POB_PLUGS*/)) {
 	var tbData = oSet.Read("ToolBarText", 3 /*PO_STRING*/);
 	oSet.End();
 	if(tbData.length % 4 || /[^\dA-F]/i.test(tbData)) {
@@ -15,7 +15,7 @@ if(oSet.Begin("..\\" + tbPlugName, 0x1 /*POB_READ*/)) {
 	}
 }
 
-if(tbData && oSet.Begin("..\\" + tbPlugName, 0x2 /*POB_SAVE*/)) {
+if(tbData && oSet.Begin(tbPlugName, 0x22 /*POB_SAVE|POB_PLUGS*/)) {
 	var tbText = hexToStr(tbData);
 	tbText = tbText.replace(/\r(#?)BREAK\r/g, function(s, commented) {
 		return "\r" + (commented ? "" : "#") + "BREAK\r";
