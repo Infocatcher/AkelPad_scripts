@@ -4,10 +4,10 @@ var oSet = AkelPad.ScriptSettings();
 if(oSet.Begin(tbPlugName, 0x21 /*POB_READ|POB_PLUGS*/)) {
 	var tbData = oSet.Read("ToolBarText", 3 /*PO_STRING*/);
 	oSet.End();
-	if(tbData.length % 4 || /[^\dA-F]/i.test(tbData)) {
+	if(!tbData) {
 		AkelPad.MessageBox(
 			AkelPad.GetMainWnd(),
-			"Unable to parse ToolBarText data",
+			"ToolBarText data is empty.\nToolBar plugin not installed or not configured?",
 			WScript.ScriptName,
 			16 /*MB_ICONERROR*/
 		);
@@ -16,11 +16,12 @@ if(oSet.Begin(tbPlugName, 0x21 /*POB_READ|POB_PLUGS*/)) {
 }
 
 if(tbData && oSet.Begin(tbPlugName, 0x22 /*POB_SAVE|POB_PLUGS*/)) {
-	var tbText = hexToStr(tbData);
+	var isPlain = tbData.length % 4 || /[^\dA-F]/i.test(tbData); // Hex-coded, if stored in INI
+	var tbText = isPlain ? tbData : hexToStr(tbData);
 	tbText = tbText.replace(/\r(#?)BREAK\r/g, function(s, commented) {
 		return "\r" + (commented ? "" : "#") + "BREAK\r";
 	});
-	tbData = strToHex(tbText);
+	tbData = isPlain ? tbText : strToHex(tbText);
 	oSet.Write("ToolBarText", 3 /*PO_STRING*/, tbData);
 	oSet.End();
 
