@@ -1,5 +1,21 @@
 ﻿var tbPlugName = AkelPad.GetArgValue("toolBarName", "ToolBar");
 
+function _localize(s) {
+	var strings = {
+		"ToolBarText data is empty or looks invalid!": {
+			ru: "Содержимое ToolBarText пустое или выглядит некорректным!"
+		}
+	};
+	var lng = "en";
+	switch(AkelPad.GetLangId(1 /*LANGID_PRIMARY*/)) {
+		case 0x19: lng = "ru";
+	}
+	_localize = function(s) {
+		return strings[s] && strings[s][lng] || s;
+	};
+	return _localize(s);
+}
+
 var oSet = AkelPad.ScriptSettings();
 var hMainWnd = AkelPad.GetMainWnd();
 var isHex = AkelPad.SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 5 /*MI_SAVESETTINGS*/, 0) == 2 /*SS_INI*/;
@@ -13,7 +29,7 @@ if(oSet.Begin(tbPlugName, 0x21 /*POB_READ|POB_PLUGS*/)) {
 	) {
 		AkelPad.MessageBox(
 			hMainWnd,
-			"ToolBarText data is empty or looks invalid!",
+			_localize("ToolBarText data is empty or looks invalid!"),
 			WScript.ScriptName,
 			16 /*MB_ICONERROR*/
 		);
