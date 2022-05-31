@@ -1,13 +1,19 @@
 ﻿var tbPlugName = AkelPad.GetArgValue("toolBarName", "ToolBar");
 
 var oSet = AkelPad.ScriptSettings();
+var hMainWnd = AkelPad.GetMainWnd();
+var isHex = AkelPad.SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 5 /*MI_SAVESETTINGS*/, 0) == 2 /*SS_INI*/;
+
 if(oSet.Begin(tbPlugName, 0x21 /*POB_READ|POB_PLUGS*/)) {
 	var tbData = oSet.Read("ToolBarText", 3 /*PO_STRING*/);
 	oSet.End();
-	if(!tbData) {
+	if(
+		!tbData
+		|| isHex && (tbData.length % 4 || /[^\dA-F]/i.test(tbData))
+	) {
 		AkelPad.MessageBox(
-			AkelPad.GetMainWnd(),
-			"ToolBarText data is empty.\nToolBar plugin not installed or not configured?",
+			hMainWnd,
+			"ToolBarText data is empty or looks invalid!",
 			WScript.ScriptName,
 			16 /*MB_ICONERROR*/
 		);
@@ -16,12 +22,11 @@ if(oSet.Begin(tbPlugName, 0x21 /*POB_READ|POB_PLUGS*/)) {
 }
 
 if(tbData && oSet.Begin(tbPlugName, 0x22 /*POB_SAVE|POB_PLUGS*/)) {
-	var isPlain = tbData.length % 4 || /[^\dA-F]/i.test(tbData); // Hex-coded, if stored in INI
-	var tbText = isPlain ? tbData : hexToStr(tbData);
+	var tbText = isHex ? hexToStr(tbData) : tbData;
 	tbText = tbText.replace(/\r(#?)BREAK\r/g, function(s, commented) {
 		return "\r" + (commented ? "" : "#") + "BREAK\r";
 	});
-	tbData = isPlain ? tbText : strToHex(tbText);
+	tbData = isHex ? strToHex(tbText) : tbText;
 	oSet.Write("ToolBarText", 3 /*PO_STRING*/, tbData);
 	oSet.End();
 
