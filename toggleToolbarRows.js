@@ -29,7 +29,8 @@ if(oSet.Begin(tbPlugName, 0x21 /*POB_READ|POB_PLUGS*/)) {
 	) {
 		AkelPad.MessageBox(
 			hMainWnd,
-			_localize("ToolBarText data is empty or looks invalid!"),
+			_localize("ToolBarText data is empty or looks invalid!")
+				+ (tbData ? "\n\n" + tbData.substr(0, 80) : ""),
 			WScript.ScriptName,
 			16 /*MB_ICONERROR*/
 		);
