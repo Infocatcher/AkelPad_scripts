@@ -27,12 +27,9 @@ if(oSet.Begin(tbPlugName, 0x21 /*POB_READ|POB_PLUGS*/)) {
 		!tbData
 		|| isHex && (tbData.length % 4 || /[^\dA-F]/i.test(tbData))
 	) {
-		AkelPad.MessageBox(
-			hMainWnd,
+		error(
 			_localize("ToolBarText data is empty or looks invalid!")
-				+ (tbData ? "\n\n" + tbData.substr(0, 80) : ""),
-			WScript.ScriptName,
-			16 /*MB_ICONERROR*/
+			+ (tbData ? "\n\n" + tbData.substr(0, 80) : "")
 		);
 		WScript.Quit();
 	}
@@ -70,4 +67,8 @@ function reorder(h) { // LE <-> BE
 	var b1 = h.substr(0, 2);
 	var b2 = h.substr(2);
 	return b2 + b1;
+}
+
+function error(msg) {
+	AkelPad.MessageBox(hMainWnd, msg, WScript.ScriptName, 16 /*MB_ICONERROR*/);
 }
