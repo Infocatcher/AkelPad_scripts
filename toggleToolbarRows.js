@@ -4,6 +4,12 @@ function _localize(s) {
 	var strings = {
 		"ToolBarText data is empty or looks invalid!": {
 			ru: "Содержимое ToolBarText пустое или выглядит некорректным!"
+		},
+		"Failed to read settings of %S plugin": {
+			ru: "Не удалось прочитать настройки плагина %S"
+		},
+		"Failed to write settings of %S plugin": {
+			ru: "Не удалось записать настройки плагина %S"
 		}
 	};
 	var lng = "en";
@@ -34,6 +40,9 @@ if(oSet.Begin(tbPlugName, 0x21 /*POB_READ|POB_PLUGS*/)) {
 		WScript.Quit();
 	}
 }
+else {
+	error(_localize("Failed to read settings of %S plugin").replace("%S", tbPlugName));
+}
 
 if(tbData && oSet.Begin(tbPlugName, 0x22 /*POB_SAVE|POB_PLUGS*/)) {
 	var tbText = isHex ? hexToStr(tbData) : tbData;
@@ -48,6 +57,9 @@ if(tbData && oSet.Begin(tbPlugName, 0x22 /*POB_SAVE|POB_PLUGS*/)) {
 		AkelPad.Call(tbPlugName + "::Main");
 		AkelPad.Call(tbPlugName + "::Main");
 	}
+}
+else {
+	tbData && error(_localize("Failed to write settings of %S plugin").replace("%S", tbPlugName));
 }
 
 function hexToStr(h) {
