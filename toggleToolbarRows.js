@@ -1,4 +1,13 @@
-﻿var tbPlugName = AkelPad.GetArgValue("toolBarName", "ToolBar");
+﻿// http://infocatcher.ucoz.net/js/akelpad_scripts/toggleToolbarRows.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/toggleToolbarRows.js
+
+// (c) Infocatcher 2022
+// Version: 0.1.0pre - 2022-06-06
+// Author: Infocatcher
+
+//// Toggle multiline toolbar (convert BREAK <-> #BREAK)
+
+var tbPlugName = AkelPad.GetArgValue("toolBarName", "ToolBar");
 
 function _localize(s) {
 	var strings = {
