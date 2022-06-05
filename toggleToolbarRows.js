@@ -2,8 +2,11 @@
 
 function _localize(s) {
 	var strings = {
-		"ToolBarText data is empty or looks invalid!": {
-			ru: "Содержимое ToolBarText пустое или выглядит некорректным!"
+		"ToolBarText data is empty!": {
+			ru: "Содержимое ToolBarText пустое!"
+		},
+		"ToolBarText data not recognized:\n%S": {
+			ru: "Содержимое ToolBarText не распознано:\n%S"
 		},
 		"Failed to read settings of %S plugin": {
 			ru: "Не удалось прочитать настройки плагина %S"
@@ -34,8 +37,9 @@ if(oSet.Begin(tbPlugName, 0x21 /*POB_READ|POB_PLUGS*/)) {
 		|| isHex && (tbData.length % 4 || /[^\dA-F]/i.test(tbData))
 	) {
 		error(
-			_localize("ToolBarText data is empty or looks invalid!")
-			+ (tbData ? "\n\n" + tbData.substr(0, 80) : "")
+			tbData
+				? _localize("ToolBarText data not recognized:\n%S").replace("%S", tbData.substr(0, 100))
+				: _localize("ToolBarText data is empty!")
 		);
 		WScript.Quit();
 	}
