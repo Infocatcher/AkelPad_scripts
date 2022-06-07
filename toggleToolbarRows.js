@@ -7,6 +7,13 @@
 
 //// Toggle multiline toolbar from ToolBar plugin (convert BREAK <-> #BREAK)
 
+// Arguments:
+//   -toolBarName="ToolBar2"  - specify file name of ToolBar plugin
+
+// Usage:
+//   Call("Scripts::Main", 1, "toggleToolbarRows.js")
+//   Call("Scripts::Main", 1, "toggleToolbarRows.js", '-toolBarName="ToolBar2"')
+
 var tbPlugName = AkelPad.GetArgValue("toolBarName", "ToolBar");
 
 function _localize(s) {
