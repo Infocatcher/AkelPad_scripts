@@ -5,7 +5,7 @@
 // Version: 0.1.0pre - 2022-06-06
 // Author: Infocatcher
 
-//// Toggle multiline toolbar (convert BREAK <-> #BREAK)
+//// Toggle multiline toolbar from ToolBar plugin (convert BREAK <-> #BREAK)
 
 var tbPlugName = AkelPad.GetArgValue("toolBarName", "ToolBar");
 

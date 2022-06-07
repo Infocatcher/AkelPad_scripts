@@ -187,6 +187,9 @@ Tile current tab with next selected: select first tab, call script and then sele
 ##### [toggleComments.js](toggleComments.js)
 Adds/removes comments
 
+##### [toggleToolbarRows.js](toggleToolbarRows.js)
+Toggle multiline toolbar from ToolBar plugin (convert `BREAK` <-> `#BREAK`)
+
 ##### [undoableReopen.js](undoableReopen.js)
 Reopen file and preserve undo/redo buffer (just replace all text, if it was changed)
 
