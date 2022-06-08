@@ -29,6 +29,9 @@ function _localize(s) {
 		},
 		"Failed to write settings of %S plugin": {
 			ru: "Не удалось записать настройки плагина %S"
+		},
+		"Failed to toggle multiline toolbar: BREAK item not found": {
+			ru: "Не удалось переключить многострочность панели инструментов: элемент BREAK не найден"
 		}
 	};
 	var lng = "en";
@@ -66,14 +69,21 @@ else {
 
 if(tbData && oSet.Begin(tbPlugName, 0x22 /*POB_SAVE|POB_PLUGS*/)) {
 	var tbText = isHex ? hexToStr(tbData) : tbData;
+	var changed;
 	tbText = tbText.replace(/\r(#?)BREAK\r/g, function(s, commented) {
+		changed = true;
 		return "\r" + (commented ? "" : "#") + "BREAK\r";
 	});
-	tbData = isHex ? strToHex(tbText) : tbText;
-	oSet.Write("ToolBarText", 3 /*PO_STRING*/, tbData);
+	if(changed) {
+		tbData = isHex ? strToHex(tbText) : tbText;
+		oSet.Write("ToolBarText", 3 /*PO_STRING*/, tbData);
+	}
+	else {
+		error(_localize("Failed to toggle multiline toolbar: BREAK item not found"));
+	}
 	oSet.End();
 
-	if(AkelPad.IsPluginRunning(tbPlugName + "::Main")) {
+	if(changed && AkelPad.IsPluginRunning(tbPlugName + "::Main")) {
 		AkelPad.Call(tbPlugName + "::Main");
 		AkelPad.Call(tbPlugName + "::Main");
 	}
