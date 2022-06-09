@@ -79,7 +79,7 @@ if(tbData && oSet.Begin(tbPlugName, 0x22 /*POB_SAVE|POB_PLUGS*/)) {
 		oSet.Write("ToolBarText", 3 /*PO_STRING*/, tbData);
 	}
 	else {
-		error(_localize("Failed to toggle multiline toolbar: BREAK item not found"));
+		error(_localize("Failed to toggle multiline toolbar: BREAK item not found"), 48 /*MB_ICONEXCLAMATION*/);
 	}
 	oSet.End();
 
@@ -111,6 +111,6 @@ function reorder(h) { // LE <-> BE
 	return b2 + b1;
 }
 
-function error(msg) {
-	AkelPad.MessageBox(hMainWnd, msg, WScript.ScriptName, 16 /*MB_ICONERROR*/);
+function error(msg, icon) {
+	AkelPad.MessageBox(hMainWnd, msg, WScript.ScriptName, icon || 16 /*MB_ICONERROR*/);
 }
