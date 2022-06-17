@@ -8,7 +8,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // Scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2021-06-14 07:59:25 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2022-04-09 05:33:10 UTC]
 
 
 //== js/test/generated/beautify-javascript-tests.js
@@ -1372,6 +1372,15 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a=()(    )[  ];', 'a = ()()[];');
         bt('a=[b,c,d];', 'a = [b, c, d];');
         bt('a= f[b];', 'a = f[b];');
+
+        // Issue #1151 - inside class methods
+        bt(
+            'export default class Test extends Component {\n' +
+            '    render() {\n' +
+            '        someOther();\n' +
+            '        return null;\n' +
+            '    }\n' +
+            '}');
         bt(
             '{\n' +
             '    files: a[][ {\n' +
@@ -1423,6 +1432,15 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a=()(    )[  ];', 'a = ()()[];');
         bt('a=[b,c,d];', 'a = [b, c, d];');
         bt('a= f[b];', 'a = f[b];');
+
+        // Issue #1151 - inside class methods
+        bt(
+            'export default class Test extends Component {\n' +
+            '    render() {\n' +
+            '        someOther();\n' +
+            '        return null;\n' +
+            '    }\n' +
+            '}');
         bt(
             '{\n' +
             '    files: a[][ {\n' +
@@ -1474,6 +1492,15 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a=()(    )[  ];', 'a = ()()[];');
         bt('a=[b,c,d];', 'a = [ b, c, d ];');
         bt('a= f[b];', 'a = f[ b ];');
+
+        // Issue #1151 - inside class methods
+        bt(
+            'export default class Test extends Component {\n' +
+            '    render() {\n' +
+            '        someOther();\n' +
+            '        return null;\n' +
+            '    }\n' +
+            '}');
         bt(
             '{\n' +
             '    files: a[][ {\n' +
@@ -1525,6 +1552,22 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('a=()(    )[  ];', 'a = ( )( )[ ];');
         bt('a=[b,c,d];', 'a = [ b, c, d ];');
         bt('a= f[b];', 'a = f[ b ];');
+
+        // Issue #1151 - inside class methods
+        bt(
+            'export default class Test extends Component {\n' +
+            '    render() {\n' +
+            '        someOther();\n' +
+            '        return null;\n' +
+            '    }\n' +
+            '}',
+            //  -- output --
+            'export default class Test extends Component {\n' +
+            '    render( ) {\n' +
+            '        someOther( );\n' +
+            '        return null;\n' +
+            '    }\n' +
+            '}');
         bt(
             '{\n' +
             '    files: a[][ {\n' +
@@ -3252,6 +3295,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac + -ad');
         bt(
             'var res = a + b\n' +
@@ -3283,6 +3329,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '== x >=\n' +
             'y <= z > aa <\n' +
             'ab;\n' +
+            'res??=a;res||=b;res&&=c;\n' +
             'ac +\n' +
             '-ad',
             //  -- output --
@@ -3291,6 +3338,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac + -ad');
 
         // operator_position option - ensure no newlines if preserve_newlines is false - (operator_position = ""before-newline"", preserve_newlines = "false")
@@ -3304,6 +3354,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac + -ad');
         bt(
             'var res = a + b\n' +
@@ -3335,6 +3388,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '== x >=\n' +
             'y <= z > aa <\n' +
             'ab;\n' +
+            'res??=a;res||=b;res&&=c;\n' +
             'ac +\n' +
             '-ad',
             //  -- output --
@@ -3343,6 +3397,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac + -ad');
 
         // operator_position option - ensure no newlines if preserve_newlines is false - (operator_position = ""after-newline"", preserve_newlines = "false")
@@ -3356,6 +3413,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac + -ad');
         bt(
             'var res = a + b\n' +
@@ -3387,6 +3447,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '== x >=\n' +
             'y <= z > aa <\n' +
             'ab;\n' +
+            'res??=a;res||=b;res&&=c;\n' +
             'ac +\n' +
             '-ad',
             //  -- output --
@@ -3395,6 +3456,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac + -ad');
 
         // operator_position option - ensure no newlines if preserve_newlines is false - (operator_position = ""preserve-newline"", preserve_newlines = "false")
@@ -3408,6 +3472,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac + -ad');
         bt(
             'var res = a + b\n' +
@@ -3439,6 +3506,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '== x >=\n' +
             'y <= z > aa <\n' +
             'ab;\n' +
+            'res??=a;res||=b;res&&=c;\n' +
             'ac +\n' +
             '-ad',
             //  -- output --
@@ -3447,6 +3515,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var res = (k && l || m) ? n ?? nn : o;\n' +
             'var res = p >> q << r >>> s;\n' +
             'var res = t === u !== v != w == x >= y <= z > aa < ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac + -ad');
 
 
@@ -3486,6 +3557,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '== x >=\n' +
             'y <= z > aa <\n' +
             'ab;\n' +
+            'res??=a;res||=b;res&&=c;\n' +
             'ac +\n' +
             '-ad',
             //  -- output --
@@ -3515,6 +3587,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    x >=\n' +
             '    y <= z > aa <\n' +
             '    ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac +\n' +
             '    -ad');
 
@@ -3612,6 +3687,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '== x >=\n' +
             'y <= z > aa <\n' +
             'ab;\n' +
+            'res??=a;res||=b;res&&=c;\n' +
             'ac +\n' +
             '-ad',
             //  -- output --
@@ -3641,6 +3717,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    x >=\n' +
             '    y <= z > aa <\n' +
             '    ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac +\n' +
             '    -ad');
 
@@ -3740,6 +3819,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '== x >=\n' +
             'y <= z > aa <\n' +
             'ab;\n' +
+            'res??=a;res||=b;res&&=c;\n' +
             'ac +\n' +
             '-ad',
             //  -- output --
@@ -3768,6 +3848,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    == x\n' +
             '    >= y <= z > aa\n' +
             '    < ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac\n' +
             '    + -ad');
 
@@ -3867,6 +3950,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '== x >=\n' +
             'y <= z > aa <\n' +
             'ab;\n' +
+            'res??=a;res||=b;res&&=c;\n' +
             'ac +\n' +
             '-ad',
             //  -- output --
@@ -3897,6 +3981,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    == x >=\n' +
             '    y <= z > aa <\n' +
             '    ab;\n' +
+            'res ??= a;\n' +
+            'res ||= b;\n' +
+            'res &&= c;\n' +
             'ac +\n' +
             '    -ad');
 
@@ -6615,6 +6702,61 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    \n' +
             '    */\n' +
             '}');
+
+        // #1838 - handle class and interface word as an object property
+        bt(
+            '{\n' +
+            '    class: {\n' +
+            '        a: 1,\n' +
+            '        b: 2,\n' +
+            '        c: 3,\n' +
+            '    }\n' +
+            '    interface: {\n' +
+            '        a: 1,\n' +
+            '        b: 2,\n' +
+            '        c: 3,\n' +
+            '    }\n' +
+            '}');
+
+        // #1838 - handle class word as an object property but with space after colon
+        bt(
+            '{\n' +
+            '    class : { a: 1,\n' +
+            'b: 2,c : 3\n' +
+            '    }\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    class: {\n' +
+            '        a: 1,\n' +
+            '        b: 2,\n' +
+            '        c: 3\n' +
+            '    }\n' +
+            '}');
+
+        // #1838 - handle class word as an object property but without spaces
+        bt(
+            '{class:{a:1,b:2,c:3,}}',
+            //  -- output --
+            '{\n' +
+            '    class: {\n' +
+            '        a: 1,\n' +
+            '        b: 2,\n' +
+            '        c: 3,\n' +
+            '    }\n' +
+            '}');
+
+        // #1838 - handle class word as a nested object property
+        bt(
+            '{x:{a:1,class:2,c:3,}}',
+            //  -- output --
+            '{\n' +
+            '    x: {\n' +
+            '        a: 1,\n' +
+            '        class: 2,\n' +
+            '        c: 3,\n' +
+            '    }\n' +
+            '}');
         bt(
             'obj\n' +
             '    .last(a, function() {\n' +
@@ -6742,6 +6884,21 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}\n' +
             'if (y) {\n' +
             '    c();\n' +
+            '}');
+
+        // Issue #1683 - switch-case wrong indentation
+        bt(
+            'switch (x) { case 0: if (y == z) { a(); } else { b(); } case 1: c(); }',
+            //  -- output --
+            'switch (x) {\n' +
+            '    case 0:\n' +
+            '        if (y == z) {\n' +
+            '            a();\n' +
+            '        } else {\n' +
+            '            b();\n' +
+            '        }\n' +
+            '    case 1:\n' +
+            '        c();\n' +
             '}');
 
         // Issue 485 - ensure function declarations behave the same in arrays as elsewhere
@@ -7650,6 +7807,9 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
         // Issue #1197 - dynamic import() arrow syntax
         bt('frontend = Async(() => import("../frontend").then(m => m.default      ))', 'frontend = Async(() => import("../frontend").then(m => m.default))');
+
+        // Issue #1978 - import.meta syntax support
+        bt('let       x =      import.meta', 'let x = import.meta');
 
         // Issue 858 - from is a keyword only after import
         bt(
@@ -9528,6 +9688,18 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    },\n' +
             '    b = 2,\n' +
             '    c = 3;');
+
+        // Issue #1896: Handle newlines with bitwise ~ operator
+        bt(
+            'if (foo) {\n' +
+            'var bar = 1;\n' +
+            '~bar ? 0 : 1\n' +
+            ' }',
+            //  -- output --
+            'if (foo) {\n' +
+            '    var bar = 1;\n' +
+            '    ~bar ? 0 : 1\n' +
+            '}');
 
 
     }
@@ -20223,9 +20395,8 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '}\n' +
             '.set {\n' +
             '    each(@set, {\n' +
-            '            @{key}-@{index}: @value;\n' +
-            '        }\n' +
-            '    );\n' +
+            '        @{key}-@{index}: @value;\n' +
+            '    });\n' +
             '}');
         t('@light-blue: @nice-blue + #111;');
 
@@ -20251,6 +20422,34 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
 
         // Multiple filed issues in LESS due to not(:blah)
         t('&:first-of-type:not(:last-child) {}');
+
+        // #1236 - maps standard
+        t(
+            '$theme-colors: (\n' +
+            '    primary: $blue,\n' +
+            '    secondary: "gray-600"\n' +
+            ');');
+
+        // #1236 - maps single line
+        t(
+            '$theme-colors:(primary: $blue,     secondary: "$gray-600");',
+            //  -- output --
+            '$theme-colors: (\n' +
+            '    primary: $blue,\n' +
+            '    secondary: "$gray-600"\n' +
+            ');');
+
+        // #1236 - maps with functions
+        t(
+            '$maps:(x: 80px,     y: "something",    \n' +
+            'z: calc(10 + 10)\n' +
+            ');',
+            //  -- output --
+            '$maps: (\n' +
+            '    x: 80px,\n' +
+            '    y: "something",\n' +
+            '    z: calc(10 + 10)\n' +
+            ');');
         t(
             'div {\n' +
             '    &:not(:first-of-type) {\n' +
@@ -20317,9 +20516,53 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '        /* property: value */\n' +
             '    }\n' +
             '}');
+
+        // #1236 - SCSS/SASS Maps with selector_separator_newline = false
+        t('$font-weights: ("regular": 400, "medium": 500, "bold": 700);');
         t(
             '.fa-rotate-270 {\n' +
             '    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);\n' +
+            '}');
+
+
+        //============================================================
+        // Issue #1798 - space after strings in preserved
+        reset_options();
+        set_name('Issue #1798 - space after strings in preserved');
+        t('@use "variables" as *;');
+
+
+        //============================================================
+        // Issue #1817
+        reset_options();
+        set_name('Issue #1817');
+
+        // ensure that properties that are expected to have multiline values persist new lines
+        t(
+            '.grid {\n' +
+            '    grid-template:\n' +
+            '        "top-bar top-bar" 100px\n' +
+            '        "left-bar center" 100px;\n' +
+            '}');
+
+        // property values that have string followed by other identifiers should persist spacing
+        t(
+            '.grid {grid-template: "top-bar" 100px;}',
+            //  -- output --
+            '.grid {\n' +
+            '    grid-template: "top-bar" 100px;\n' +
+            '}');
+        t(
+            'div {\n' +
+            'grid-template: "a a a" 20%\n' +
+            ' [main-top] "b b b" 1fr\n' +
+            '                    "b b b" auto;\n' +
+            '}',
+            //  -- output --
+            'div {\n' +
+            '    grid-template: "a a a" 20%\n' +
+            '        [main-top] "b b b" 1fr\n' +
+            '        "b b b" auto;\n' +
             '}');
 
 
@@ -20549,6 +20792,18 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '    width: auto;\n' +
             '}');
 
+        // mixins call with object notation, and brace_style="expand"
+        t(
+            '.example({\n' +
+            '    color:red;\n' +
+            '});',
+            //  -- output --
+            '.example(\n' +
+            '    {\n' +
+            '        color:red;\n' +
+            '    }\n' +
+            ');');
+
         // integration test of newline_between_rules, imports, and brace_style="expand"
         t(
             '.a{} @import "custom.css";.rule{}',
@@ -20593,6 +20848,18 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '    \n    width: auto;\n' +
             '}');
 
+        // mixins call with object notation, and brace_style="expand"
+        t(
+            '.example({\n' +
+            '    color:red;\n' +
+            '});',
+            //  -- output --
+            '.example(\n' +
+            '    {\n' +
+            '        color:red;\n' +
+            '    }\n' +
+            ');');
+
         // integration test of newline_between_rules, imports, and brace_style="expand"
         t(
             '.a{} @import "custom.css";.rule{}',
@@ -20635,6 +20902,18 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '\n    width: auto;\n' +
             '}');
 
+        // mixins call with object notation, and brace_style="expand"
+        t(
+            '.example({\n' +
+            '    color:red;\n' +
+            '});',
+            //  -- output --
+            '.example(\n' +
+            '    {\n' +
+            '        color:red;\n' +
+            '    }\n' +
+            ');');
+
         // integration test of newline_between_rules, imports, and brace_style="expand"
         t(
             '.a{} @import "custom.css";.rule{}',
@@ -20660,6 +20939,29 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             'strong {\n' +
             '    &:extend(a:hover);\n' +
             '}');
+        t(
+            '.test {\n' +
+            '    .example({\n' +
+            '        color:red;\n' +
+            '    });\n' +
+            '}');
+        t(
+            '.example2({\n' +
+            '    display:none;\n' +
+            '});');
+        t(
+            '.aa {\n' +
+            '    .mq-medium(a, {\n' +
+            '        background: red;\n' +
+            '    });\n' +
+            '}');
+        t(
+            '@selectors: blue, green, red;\n' +
+            'each(@selectors, {\n' +
+            '    .sel-@{value} {\n' +
+            '        a: b;\n' +
+            '    }\n' +
+            '});');
 
         // Ensure simple closing parens do not break behavior
         t(
@@ -27478,6 +27780,24 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '{{#> myPartial}}\n' +
             '    <p>Unfortunately this condition is false.</p>\n' +
             '{{/myPartial}}');
+
+        // Issue #1946 - Indentation of partial blocks with whitespace following partial name
+        bth(
+            '{{#> myPartial }}\n' +
+            '    <p>Unfortunately this condition is false.</p>\n' +
+            '{{/myPartial}}');
+
+        // Issue #1946 - Indentation of partial blocks with parameters
+        bth(
+            '{{#> myPartial param="test"}}\n' +
+            '    <p>Unfortunately this condition is false.</p>\n' +
+            '{{/myPartial}}');
+
+        // Issue #1946 - Indentation of inline partials with parameters
+        bth(
+            '{{#*inline "myPartial" param="test"}}\n' +
+            '    <p>Unfortunately this condition is false.</p>\n' +
+            '{{/inline}}');
 
 
         //============================================================

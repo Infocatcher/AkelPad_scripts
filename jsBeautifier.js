@@ -8,7 +8,7 @@
 // Version: 0.3.0 - 2019-09-21
 // Author: Infocatcher
 // Based on scripts from https://beautifier.io/ (http://jsbeautifier.org/)
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2021-06-14 07:59:25 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2022-04-09 05:33:10 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -558,8 +558,8 @@ var legacy_beautify_js;
 
 
 
-var Beautifier = __webpack_require__(1).Beautifier,
-  Options = __webpack_require__(5).Options;
+var Beautifier = (__webpack_require__(1).Beautifier),
+  Options = (__webpack_require__(5).Options);
 
 function js_beautify(js_source_text, options) {
   var beautifier = new Beautifier(js_source_text, options);
@@ -606,14 +606,14 @@ module.exports.defaultOptions = function() {
 
 
 
-var Output = __webpack_require__(2).Output;
-var Token = __webpack_require__(3).Token;
+var Output = (__webpack_require__(2).Output);
+var Token = (__webpack_require__(3).Token);
 var acorn = __webpack_require__(4);
-var Options = __webpack_require__(5).Options;
-var Tokenizer = __webpack_require__(7).Tokenizer;
-var line_starters = __webpack_require__(7).line_starters;
-var positionable_operators = __webpack_require__(7).positionable_operators;
-var TOKEN = __webpack_require__(7).TOKEN;
+var Options = (__webpack_require__(5).Options);
+var Tokenizer = (__webpack_require__(7).Tokenizer);
+var line_starters = (__webpack_require__(7).line_starters);
+var positionable_operators = (__webpack_require__(7).positionable_operators);
+var TOKEN = (__webpack_require__(7).TOKEN);
 
 
 function in_array(what, arr) {
@@ -769,6 +769,7 @@ Beautifier.prototype.create_flags = function(flags_base, mode) {
     in_case_statement: false, // switch(..){ INSIDE HERE }
     in_case: false, // we're on the exact line with "case 0:"
     case_body: false, // the indented case-action block
+    case_block: false, // the indented case-action block is wrapped with {}
     indentation_level: next_indent_level,
     alignment: 0,
     line_indent_level: flags_base ? flags_base.line_indent_level : next_indent_level,
@@ -1268,10 +1269,10 @@ Beautifier.prototype.handle_start_block = function(current_token) {
     )) {
     // We don't support TypeScript,but we didn't break it for a very long time.
     // We'll try to keep not breaking it.
-    if (!in_array(this._last_last_text, ['class', 'interface'])) {
-      this.set_mode(MODE.ObjectLiteral);
-    } else {
+    if (in_array(this._last_last_text, ['class', 'interface']) && !in_array(second_token.text, [':', ','])) {
       this.set_mode(MODE.BlockStatement);
+    } else {
+      this.set_mode(MODE.ObjectLiteral);
     }
   } else if (this._flags.last_token.type === TOKEN.OPERATOR && this._flags.last_token.text === '=>') {
     // arrow function: (param1, paramN) => { statements }
@@ -1387,7 +1388,7 @@ Beautifier.prototype.handle_word = function(current_token) {
   if (current_token.type === TOKEN.RESERVED) {
     if (in_array(current_token.text, ['set', 'get']) && this._flags.mode !== MODE.ObjectLiteral) {
       current_token.type = TOKEN.WORD;
-    } else if (current_token.text === 'import' && this._tokens.peek().text === '(') {
+    } else if (current_token.text === 'import' && in_array(this._tokens.peek().text, ['(', '.'])) {
       current_token.type = TOKEN.WORD;
     } else if (in_array(current_token.text, ['as', 'from']) && !this._flags.import_block) {
       current_token.type = TOKEN.WORD;
@@ -1447,7 +1448,7 @@ Beautifier.prototype.handle_word = function(current_token) {
 
   if (this._flags.in_case_statement && reserved_array(current_token, ['case', 'default'])) {
     this.print_newline();
-    if (this._flags.last_token.type !== TOKEN.END_BLOCK && (this._flags.case_body || this._options.jslint_happy)) {
+    if (!this._flags.case_block && (this._flags.case_body || this._options.jslint_happy)) {
       // switch cases following one another
       this.deindent();
     }
@@ -1761,7 +1762,9 @@ Beautifier.prototype.handle_operator = function(current_token) {
     if (this._tokens.peek().type !== TOKEN.START_BLOCK) {
       this.indent();
       this.print_newline();
+      this._flags.case_block = false;
     } else {
+      this._flags.case_block = true;
       this._output.space_before_token = true;
     }
     return;
@@ -1859,7 +1862,7 @@ Beautifier.prototype.handle_operator = function(current_token) {
 
     // http://www.ecma-international.org/ecma-262/5.1/#sec-7.9.1
     // if there is a newline between -- or ++ and anything else we should preserve it.
-    if (current_token.newlines && (current_token.text === '--' || current_token.text === '++')) {
+    if (current_token.newlines && (current_token.text === '--' || current_token.text === '++' || current_token.text === '~')) {
       this.print_newline(false, true);
     }
 
@@ -2619,7 +2622,7 @@ exports.allLineBreaks = new RegExp(exports.lineBreak.source, 'g');
 
 
 
-var BaseOptions = __webpack_require__(6).Options;
+var BaseOptions = (__webpack_require__(6).Options);
 
 var validPositionValues = ['before-newline', 'after-newline', 'preserve-newline'];
 
@@ -2917,13 +2920,13 @@ module.exports.mergeOpts = _mergeOpts;
 
 
 
-var InputScanner = __webpack_require__(8).InputScanner;
-var BaseTokenizer = __webpack_require__(9).Tokenizer;
-var BASETOKEN = __webpack_require__(9).TOKEN;
-var Directives = __webpack_require__(13).Directives;
+var InputScanner = (__webpack_require__(8).InputScanner);
+var BaseTokenizer = (__webpack_require__(9).Tokenizer);
+var BASETOKEN = (__webpack_require__(9).TOKEN);
+var Directives = (__webpack_require__(13).Directives);
 var acorn = __webpack_require__(4);
-var Pattern = __webpack_require__(12).Pattern;
-var TemplatablePattern = __webpack_require__(14).TemplatablePattern;
+var Pattern = (__webpack_require__(12).Pattern);
+var TemplatablePattern = (__webpack_require__(14).TemplatablePattern);
 
 
 function in_array(what, arr) {
@@ -2963,7 +2966,7 @@ var digit = /[0-9]/;
 var dot_pattern = /[^\d\.]/;
 
 var positionable_operators = (
-  ">>> === !== " +
+  ">>> === !== &&= ??= ||= " +
   "<< && >= ** != == <= >> || ?? |> " +
   "< / - + > : & % ? ^ | *").split(' ');
 
@@ -2971,7 +2974,7 @@ var positionable_operators = (
 // Also, you must update possitionable operators separately from punct
 var punct =
   ">>>= " +
-  "... >>= <<= === >>> !== **= " +
+  "... >>= <<= === >>> !== **= &&= ??= ||= " +
   "=> ^= :: /= << <= == && -= >= >> != -- += ** || ?? ++ %= &= *= |= |> " +
   "= ! ? > < : / ^ - + * & % ~ |";
 
@@ -3015,7 +3018,7 @@ var Tokenizer = function(input_string, options) {
     html_comment_end: pattern_reader.matching(/-->/),
     include: pattern_reader.starting_with(/#include/).until_after(acorn.lineBreak),
     shebang: pattern_reader.starting_with(/#!/).until_after(acorn.lineBreak),
-    xml: pattern_reader.matching(/[\s\S]*?<(\/?)([-a-zA-Z:0-9_.]+|{[\s\S]+?}|!\[CDATA\[[\s\S]*?\]\]|)(\s+{[\s\S]+?}|\s+[-a-zA-Z:0-9_.]+|\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{[\s\S]+?}))*\s*(\/?)\s*>/),
+    xml: pattern_reader.matching(/[\s\S]*?<(\/?)([-a-zA-Z:0-9_.]+|{[^}]+?}|!\[CDATA\[[^\]]*?\]\]|)(\s*{[^}]+?}|\s+[-a-zA-Z:0-9_.]+|\s+[-a-zA-Z:0-9_.]+\s*=\s*('[^']*'|"[^"]*"|{([^{}]|{[^}]+?})+?}))*\s*(\/?)\s*>/),
     single_quote: templatable.until(/['\\\n\r\u2028\u2029]/),
     double_quote: templatable.until(/["\\\n\r\u2028\u2029]/),
     template_text: templatable.until(/[`\\$]/),
@@ -3687,10 +3690,10 @@ module.exports.InputScanner = InputScanner;
 
 
 
-var InputScanner = __webpack_require__(8).InputScanner;
-var Token = __webpack_require__(3).Token;
-var TokenStream = __webpack_require__(10).TokenStream;
-var WhitespacePattern = __webpack_require__(11).WhitespacePattern;
+var InputScanner = (__webpack_require__(8).InputScanner);
+var Token = (__webpack_require__(3).Token);
+var TokenStream = (__webpack_require__(10).TokenStream);
+var WhitespacePattern = (__webpack_require__(11).WhitespacePattern);
 
 var TOKEN = {
   START: 'TK_START',
@@ -3917,7 +3920,7 @@ module.exports.TokenStream = TokenStream;
 
 
 
-var Pattern = __webpack_require__(12).Pattern;
+var Pattern = (__webpack_require__(12).Pattern);
 
 function WhitespacePattern(input_scanner, parent) {
   Pattern.call(this, input_scanner, parent);
@@ -4196,7 +4199,7 @@ module.exports.Directives = Directives;
 
 
 
-var Pattern = __webpack_require__(12).Pattern;
+var Pattern = (__webpack_require__(12).Pattern);
 
 
 var template_names = {
@@ -5445,8 +5448,8 @@ module.exports.Directives = Directives;
 
 
 
-var Beautifier = __webpack_require__(16).Beautifier,
-  Options = __webpack_require__(17).Options;
+var Beautifier = (__webpack_require__(16).Beautifier),
+  Options = (__webpack_require__(17).Options);
 
 function css_beautify(source_text, options) {
   var beautifier = new Beautifier(source_text, options);
@@ -5493,10 +5496,10 @@ module.exports.defaultOptions = function() {
 
 
 
-var Options = __webpack_require__(17).Options;
-var Output = __webpack_require__(2).Output;
-var InputScanner = __webpack_require__(8).InputScanner;
-var Directives = __webpack_require__(13).Directives;
+var Options = (__webpack_require__(17).Options);
+var Output = (__webpack_require__(2).Output);
+var InputScanner = (__webpack_require__(8).InputScanner);
+var Directives = (__webpack_require__(13).Directives);
 
 var directives_core = new Directives(/\/\*/, /\*\//);
 
@@ -5532,6 +5535,9 @@ function Beautifier(source_text, options) {
     "@supports": true,
     "@document": true
   };
+  this.NON_SEMICOLON_NEWLINE_PROPERTY = [
+    "grid-template"
+  ];
 
 }
 
@@ -5656,7 +5662,9 @@ Beautifier.prototype.beautify = function() {
   var enteringConditionalGroup = false;
   var insideAtExtend = false;
   var insideAtImport = false;
+  var insideScssMap = false;
   var topCharacter = this._ch;
+  var insideNonSemiColonValues = false;
   var whitespace;
   var isAfterSpace;
   var previous_ch;
@@ -5708,7 +5716,7 @@ Beautifier.prototype.beautify = function() {
 
       // Ensures any new lines following the comment are preserved
       this.eatWhitespace(true);
-    } else if (this._ch === '@') {
+    } else if (this._ch === '@' || this._ch === '$') {
       this.preserveSingleSpace(isAfterSpace);
 
       // deal with less propery mixins @{...}
@@ -5779,7 +5787,12 @@ Beautifier.prototype.beautify = function() {
         this.indent();
         this._output.set_indent(this._indentLevel);
       } else {
-        this.indent();
+        // inside mixin and first param is object
+        if (previous_ch === '(') {
+          this._output.space_before_token = false;
+        } else if (previous_ch !== ',') {
+          this.indent();
+        }
         this.print_string(this._ch);
       }
 
@@ -5811,7 +5824,21 @@ Beautifier.prototype.beautify = function() {
           this._output.add_new_line(true);
         }
       }
+      if (this._input.peek() === ')') {
+        this._output.trim(true);
+        if (this._options.brace_style === "expand") {
+          this._output.add_new_line(true);
+        }
+      }
     } else if (this._ch === ":") {
+
+      for (var i = 0; i < this.NON_SEMICOLON_NEWLINE_PROPERTY.length; i++) {
+        if (this._input.lookBack(this.NON_SEMICOLON_NEWLINE_PROPERTY[i])) {
+          insideNonSemiColonValues = true;
+          break;
+        }
+      }
+
       if ((insideRule || enteringConditionalGroup) && !(this._input.lookBack("&") || this.foundNestedPseudoClass()) && !this._input.lookBack("(") && !insideAtExtend && parenLevel === 0) {
         // 'property: value' delimiter
         // which could be in a conditional group query
@@ -5844,6 +5871,7 @@ Beautifier.prototype.beautify = function() {
       this.print_string(this._ch + this.eatString(this._ch));
       this.eatWhitespace(true);
     } else if (this._ch === ';') {
+      insideNonSemiColonValues = false;
       if (parenLevel === 0) {
         if (insidePropertyValue) {
           this.outdent();
@@ -5885,20 +5913,32 @@ Beautifier.prototype.beautify = function() {
       } else {
         this.preserveSingleSpace(isAfterSpace);
         this.print_string(this._ch);
-        this.eatWhitespace();
-        parenLevel++;
-        this.indent();
+
+        // handle scss/sass map
+        if (insidePropertyValue && previous_ch === "$" && this._options.selector_separator_newline) {
+          this._output.add_new_line();
+          insideScssMap = true;
+        } else {
+          this.eatWhitespace();
+          parenLevel++;
+          this.indent();
+        }
       }
     } else if (this._ch === ')') {
       if (parenLevel) {
         parenLevel--;
         this.outdent();
       }
+      if (insideScssMap && this._input.peek() === ";" && this._options.selector_separator_newline) {
+        insideScssMap = false;
+        this.outdent();
+        this._output.add_new_line();
+      }
       this.print_string(this._ch);
     } else if (this._ch === ',') {
       this.print_string(this._ch);
       this.eatWhitespace(true);
-      if (this._options.selector_separator_newline && !insidePropertyValue && parenLevel === 0 && !insideAtImport && !insideAtExtend) {
+      if (this._options.selector_separator_newline && (!insidePropertyValue || insideScssMap) && parenLevel === 0 && !insideAtImport && !insideAtExtend) {
         this._output.add_new_line();
       } else {
         this._output.space_before_token = true;
@@ -5932,8 +5972,13 @@ Beautifier.prototype.beautify = function() {
       this.print_string(' ');
       this.print_string(this._ch);
     } else {
-      this.preserveSingleSpace(isAfterSpace);
+      var preserveAfterSpace = previous_ch === '"' || previous_ch === '\'';
+      this.preserveSingleSpace(preserveAfterSpace || isAfterSpace);
       this.print_string(this._ch);
+
+      if (!this._output.just_added_newline() && this._input.peek() === '\n' && insideNonSemiColonValues) {
+        this._output.add_new_line();
+      }
     }
   }
 
@@ -5979,7 +6024,7 @@ module.exports.Beautifier = Beautifier;
 
 
 
-var BaseOptions = __webpack_require__(6).Options;
+var BaseOptions = (__webpack_require__(6).Options);
 
 function Options(options) {
   BaseOptions.call(this, options, 'css');
@@ -7071,10 +7116,10 @@ module.exports.InputScanner = InputScanner;
 
 
 
-var InputScanner = __webpack_require__(8).InputScanner;
-var Token = __webpack_require__(3).Token;
-var TokenStream = __webpack_require__(10).TokenStream;
-var WhitespacePattern = __webpack_require__(11).WhitespacePattern;
+var InputScanner = (__webpack_require__(8).InputScanner);
+var Token = (__webpack_require__(3).Token);
+var TokenStream = (__webpack_require__(10).TokenStream);
+var WhitespacePattern = (__webpack_require__(11).WhitespacePattern);
 
 var TOKEN = {
   START: 'TK_START',
@@ -7301,7 +7346,7 @@ module.exports.TokenStream = TokenStream;
 
 
 
-var Pattern = __webpack_require__(12).Pattern;
+var Pattern = (__webpack_require__(12).Pattern);
 
 function WhitespacePattern(input_scanner, parent) {
   Pattern.call(this, input_scanner, parent);
@@ -7580,7 +7625,7 @@ module.exports.Directives = Directives;
 
 
 
-var Pattern = __webpack_require__(12).Pattern;
+var Pattern = (__webpack_require__(12).Pattern);
 
 
 var template_names = {
@@ -7800,8 +7845,8 @@ module.exports.TemplatablePattern = TemplatablePattern;
 
 
 
-var Beautifier = __webpack_require__(19).Beautifier,
-  Options = __webpack_require__(20).Options;
+var Beautifier = (__webpack_require__(19).Beautifier),
+  Options = (__webpack_require__(20).Options);
 
 function style_html(html_source, options, js_beautify, css_beautify) {
   var beautifier = new Beautifier(html_source, options, js_beautify, css_beautify);
@@ -7848,10 +7893,10 @@ module.exports.defaultOptions = function() {
 
 
 
-var Options = __webpack_require__(20).Options;
-var Output = __webpack_require__(2).Output;
-var Tokenizer = __webpack_require__(21).Tokenizer;
-var TOKEN = __webpack_require__(21).TOKEN;
+var Options = (__webpack_require__(20).Options);
+var Output = (__webpack_require__(2).Output);
+var Tokenizer = (__webpack_require__(21).Tokenizer);
+var TOKEN = (__webpack_require__(21).TOKEN);
 
 var lineBreak = /\r\n|[\r\n]/;
 var allLineBreaks = /\r\n|[\r\n]/g;
@@ -8432,7 +8477,7 @@ var TagOpenParserToken = function(parent, raw_token) {
 
       // handle "{{#> myPartial}}
       if (raw_token.text === '{{#>' && this.tag_check === '>' && raw_token.next !== null) {
-        this.tag_check = raw_token.next.text;
+        this.tag_check = raw_token.next.text.split(' ')[0];
       }
     }
     this.tag_check = this.tag_check.toLowerCase();
@@ -8719,7 +8764,7 @@ module.exports.Beautifier = Beautifier;
 
 
 
-var BaseOptions = __webpack_require__(6).Options;
+var BaseOptions = (__webpack_require__(6).Options);
 
 function Options(options) {
   BaseOptions.call(this, options, 'html');
@@ -8816,11 +8861,11 @@ module.exports.Options = Options;
 
 
 
-var BaseTokenizer = __webpack_require__(9).Tokenizer;
-var BASETOKEN = __webpack_require__(9).TOKEN;
-var Directives = __webpack_require__(13).Directives;
-var TemplatablePattern = __webpack_require__(14).TemplatablePattern;
-var Pattern = __webpack_require__(12).Pattern;
+var BaseTokenizer = (__webpack_require__(9).Tokenizer);
+var BASETOKEN = (__webpack_require__(9).TOKEN);
+var Directives = (__webpack_require__(13).Directives);
+var TemplatablePattern = (__webpack_require__(14).TemplatablePattern);
+var Pattern = (__webpack_require__(12).Pattern);
 
 var TOKEN = {
   TAG_OPEN: 'TK_TAG_OPEN',
