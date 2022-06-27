@@ -8,7 +8,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // Scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2022-04-09 05:33:10 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2022-06-20 23:53:03 UTC]
 
 
 //== js/test/generated/beautify-javascript-tests.js
@@ -5698,6 +5698,53 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}\n' +
             '}');
 
+        // Issue #1622 - basic class with function definitions
+        bt(
+            'class blah {\n' +
+            '    constructor() {\n' +
+            '        this.doStuff()\n' +
+            '    }\n' +
+            '    doStuff() {\n' +
+            '        console.log("stuff")\n' +
+            '    }\n' +
+            '}');
+
+        // Issue #1622 - class with extends and function definitions
+        bt(
+            'class blah extends something {\n' +
+            '    constructor() {\n' +
+            '        this.zz = 2 + 2;\n' +
+            '    }\n' +
+            '    someOtherFunction() {\n' +
+            'this.y = 1;\n' +
+            '    }\n' +
+            '}',
+            //  -- output --
+            'class blah extends something {\n' +
+            '    constructor() {\n' +
+            '        this.zz = 2 + 2;\n' +
+            '    }\n' +
+            '    someOtherFunction() {\n' +
+            '        this.y = 1;\n' +
+            '    }\n' +
+            '}');
+
+        // Issue #1622 - class/extends as a property
+        bt(
+            'var a.class = {\n' +
+            ' ...abc(),\n' +
+            '}\n' +
+            'b.extends({\n' +
+            ' bb.s(),\n' +
+            '})',
+            //  -- output --
+            'var a.class = {\n' +
+            '    ...abc(),\n' +
+            '}\n' +
+            'b.extends({\n' +
+            '    bb.s(),\n' +
+            '})');
+
         // typical greasemonkey start
         test_fragment(
             '// comment 2\n' +
@@ -5912,6 +5959,53 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '}\n' +
             '}');
 
+        // Issue #1622 - basic class with function definitions
+        bt(
+            'class blah {\n' +
+            '    constructor() {\n' +
+            '        this.doStuff()\n' +
+            '    }\n' +
+            '    doStuff() {\n' +
+            '        console.log("stuff")\n' +
+            '    }\n' +
+            '}');
+
+        // Issue #1622 - class with extends and function definitions
+        bt(
+            'class blah extends something {\n' +
+            '    constructor() {\n' +
+            '        this.zz = 2 + 2;\n' +
+            '    }\n' +
+            '    someOtherFunction() {\n' +
+            'this.y = 1;\n' +
+            '    }\n' +
+            '}',
+            //  -- output --
+            'class blah extends something {\n' +
+            '    constructor() {\n' +
+            '        this.zz = 2 + 2;\n' +
+            '    }\n' +
+            '    someOtherFunction() {\n' +
+            '        this.y = 1;\n' +
+            '    }\n' +
+            '}');
+
+        // Issue #1622 - class/extends as a property
+        bt(
+            'var a.class = {\n' +
+            ' ...abc(),\n' +
+            '}\n' +
+            'b.extends({\n' +
+            ' bb.s(),\n' +
+            '})',
+            //  -- output --
+            'var a.class = {\n' +
+            '    ...abc(),\n' +
+            '}\n' +
+            'b.extends({\n' +
+            '    bb.s(),\n' +
+            '})');
+
         // typical greasemonkey start
         test_fragment(
             '// comment 2\n' +
@@ -6125,6 +6219,53 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        break;\n' +
             '    }\n' +
             '}');
+
+        // Issue #1622 - basic class with function definitions
+        bt(
+            'class blah {\n' +
+            '    constructor() {\n' +
+            '        this.doStuff()\n' +
+            '    }\n' +
+            '    doStuff() {\n' +
+            '        console.log("stuff")\n' +
+            '    }\n' +
+            '}');
+
+        // Issue #1622 - class with extends and function definitions
+        bt(
+            'class blah extends something {\n' +
+            '    constructor() {\n' +
+            '        this.zz = 2 + 2;\n' +
+            '    }\n' +
+            '    someOtherFunction() {\n' +
+            'this.y = 1;\n' +
+            '    }\n' +
+            '}',
+            //  -- output --
+            'class blah extends something {\n' +
+            '    constructor() {\n' +
+            '        this.zz = 2 + 2;\n' +
+            '    }\n' +
+            '    someOtherFunction() {\n' +
+            '        this.y = 1;\n' +
+            '    }\n' +
+            '}');
+
+        // Issue #1622 - class/extends as a property
+        bt(
+            'var a.class = {\n' +
+            ' ...abc(),\n' +
+            '}\n' +
+            'b.extends({\n' +
+            ' bb.s(),\n' +
+            '})',
+            //  -- output --
+            'var a.class = {\n' +
+            '    ...abc(),\n' +
+            '}\n' +
+            'b.extends({\n' +
+            '    bb.s(),\n' +
+            '})');
 
         // typical greasemonkey start
         test_fragment(
@@ -6345,6 +6486,53 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    }\n' +
             '}');
 
+        // Issue #1622 - basic class with function definitions
+        bt(
+            'class blah {\n' +
+            '    constructor() {\n' +
+            '        this.doStuff()\n' +
+            '    }\n' +
+            '    doStuff() {\n' +
+            '        console.log("stuff")\n' +
+            '    }\n' +
+            '}');
+
+        // Issue #1622 - class with extends and function definitions
+        bt(
+            'class blah extends something {\n' +
+            '    constructor() {\n' +
+            '        this.zz = 2 + 2;\n' +
+            '    }\n' +
+            '    someOtherFunction() {\n' +
+            'this.y = 1;\n' +
+            '    }\n' +
+            '}',
+            //  -- output --
+            'class blah extends something {\n' +
+            '    constructor() {\n' +
+            '        this.zz = 2 + 2;\n' +
+            '    }\n' +
+            '    someOtherFunction() {\n' +
+            '        this.y = 1;\n' +
+            '    }\n' +
+            '}');
+
+        // Issue #1622 - class/extends as a property
+        bt(
+            'var a.class = {\n' +
+            ' ...abc(),\n' +
+            '}\n' +
+            'b.extends({\n' +
+            ' bb.s(),\n' +
+            '})',
+            //  -- output --
+            'var a.class = {\n' +
+            '    ...abc(),\n' +
+            '}\n' +
+            'b.extends({\n' +
+            '    bb.s(),\n' +
+            '})');
+
         // typical greasemonkey start
         test_fragment(
             '// comment 2\n' +
@@ -6559,6 +6747,62 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    }\n' +
             '}');
 
+        // Issue #1622 - basic class with function definitions
+        bt(
+            'class blah {\n' +
+            '    constructor() {\n' +
+            '        this.doStuff()\n' +
+            '    }\n' +
+            '    doStuff() {\n' +
+            '        console.log("stuff")\n' +
+            '    }\n' +
+            '}',
+            //  -- output --
+            'class blah {\n' +
+            '    constructor () {\n' +
+            '        this.doStuff()\n' +
+            '    }\n' +
+            '    doStuff () {\n' +
+            '        console.log("stuff")\n' +
+            '    }\n' +
+            '}');
+
+        // Issue #1622 - class with extends and function definitions
+        bt(
+            'class blah extends something {\n' +
+            '    constructor() {\n' +
+            '        this.zz = 2 + 2;\n' +
+            '    }\n' +
+            '    someOtherFunction() {\n' +
+            'this.y = 1;\n' +
+            '    }\n' +
+            '}',
+            //  -- output --
+            'class blah extends something {\n' +
+            '    constructor () {\n' +
+            '        this.zz = 2 + 2;\n' +
+            '    }\n' +
+            '    someOtherFunction () {\n' +
+            '        this.y = 1;\n' +
+            '    }\n' +
+            '}');
+
+        // Issue #1622 - class/extends as a property
+        bt(
+            'var a.class = {\n' +
+            ' ...abc(),\n' +
+            '}\n' +
+            'b.extends({\n' +
+            ' bb.s(),\n' +
+            '})',
+            //  -- output --
+            'var a.class = {\n' +
+            '    ...abc(),\n' +
+            '}\n' +
+            'b.extends({\n' +
+            '    bb.s(),\n' +
+            '})');
+
         // typical greasemonkey start
         test_fragment(
             '// comment 2\n' +
@@ -6695,12 +6939,94 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    });\n' +
             'var test = 1;');
 
+        // Issue #772
+        bt(
+            'this.initAttributes([\n' +
+            '"name",\n' +
+            '["parent", null, "parentName"],\n' +
+            '"length",\n' +
+            '["id", this.name],\n' +
+            ']);',
+            //  -- output --
+            'this.initAttributes([\n' +
+            '    "name",\n' +
+            '    ["parent", null, "parentName"],\n' +
+            '    "length",\n' +
+            '    ["id", this.name],\n' +
+            ']);');
+
         // Issue #1663
         bt(
             '{\n' +
             '    /* howdy\n' +
             '    \n' +
             '    */\n' +
+            '}');
+
+        // #1095 - Return without semicolon followed by prefix on a new line
+        bt(
+            'function x(){\n' +
+            'return\n' +
+            '++a\n' +
+            '}\n' +
+            '\n' +
+            'while(true) {\n' +
+            'return\n' +
+            '--b\n' +
+            '}',
+            //  -- output --
+            'function x() {\n' +
+            '    return\n' +
+            '    ++a\n' +
+            '}\n' +
+            '\n' +
+            'while (true) {\n' +
+            '    return\n' +
+            '    --b\n' +
+            '}');
+
+        // #1095
+        bt(
+            'function test(){\n' +
+            'if(x) return\n' +
+            '++x\n' +
+            'var y= 1;\n' +
+            '}\n' +
+            'function t1(){\n' +
+            'if(cc) return;\n' +
+            'else return\n' +
+            '--cc\n' +
+            '}',
+            //  -- output --
+            'function test() {\n' +
+            '    if (x) return\n' +
+            '    ++x\n' +
+            '    var y = 1;\n' +
+            '}\n' +
+            '\n' +
+            'function t1() {\n' +
+            '    if (cc) return;\n' +
+            '    else return\n' +
+            '    --cc\n' +
+            '}');
+
+        // #1095 - Return with semicolon followed by a prefix on a new line
+        bt(
+            'function x(){\n' +
+            'return; ++a\n' +
+            '}\n' +
+            '\n' +
+            'while(true){return; --b\n' +
+            '}',
+            //  -- output --
+            'function x() {\n' +
+            '    return;\n' +
+            '    ++a\n' +
+            '}\n' +
+            '\n' +
+            'while (true) {\n' +
+            '    return;\n' +
+            '    --b\n' +
             '}');
 
         // #1838 - handle class and interface word as an object property
@@ -7914,6 +8240,106 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        let extraParams = {}\n' +
             '    }\n' +
             ')');
+
+        // Issue ##1846 - in keyword in class method causes indentation problem
+        bt(
+            'class {\n' +
+            '  get a() {\n' +
+            '\n' +
+            '\n' +
+            '  }\n' +
+            '\n' +
+            '\n' +
+            '  in() {\n' +
+            '\n' +
+            '\n' +
+            '  }\n' +
+            '\n' +
+            '\n' +
+            '  b() {\n' +
+            '\n' +
+            '\n' +
+            '  }\n' +
+            '}',
+            //  -- output --
+            'class {\n' +
+            '    get a() {\n' +
+            '\n' +
+            '\n' +
+            '    }\n' +
+            '\n' +
+            '\n' +
+            '    in() {\n' +
+            '\n' +
+            '\n' +
+            '    }\n' +
+            '\n' +
+            '\n' +
+            '    b() {\n' +
+            '\n' +
+            '\n' +
+            '    }\n' +
+            '}');
+
+        // Related to Issue ##1846 - Do not indent 'in' keyword if not a class method
+        bt(
+            'function test() {\n' +
+            'for x in nums {}\n' +
+            '"make" in car\n' +
+            '3 in number;\n' +
+            '}',
+            //  -- output --
+            'function test() {\n' +
+            '    for x in nums {}\n' +
+            '    "make" in car\n' +
+            '    3 in number;\n' +
+            '}');
+
+        // Related to Issue ##1846 - of keyword in class method causes indentation problem
+        bt(
+            'class {\n' +
+            '  get a() {\n' +
+            '\n' +
+            '\n' +
+            '  }\n' +
+            '\n' +
+            '\n' +
+            '  of() {\n' +
+            '\n' +
+            '\n' +
+            '  }\n' +
+            '\n' +
+            '\n' +
+            '  b() {\n' +
+            '\n' +
+            '\n' +
+            '  }\n' +
+            '}',
+            //  -- output --
+            'class {\n' +
+            '    get a() {\n' +
+            '\n' +
+            '\n' +
+            '    }\n' +
+            '\n' +
+            '\n' +
+            '    of() {\n' +
+            '\n' +
+            '\n' +
+            '    }\n' +
+            '\n' +
+            '\n' +
+            '    b() {\n' +
+            '\n' +
+            '\n' +
+            '    }\n' +
+            '}');
+
+        // Issue #1950: Do not remove whitespace after number - test scenario: number before a dot
+        bt('1000000000000001000 .toFixed(0)!==1000000000000001024', '1000000000000001000 .toFixed(0) !== 1000000000000001024');
+
+        // Issue #1950: Do not remove whitespace after number - test scenario: variable ends with a number before a dot
+        bt('a.b21 . performAction()', 'a.b21.performAction()');
 
 
         //============================================================
@@ -20524,12 +20950,43 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             '    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);\n' +
             '}');
 
+        // #2056 - Extra space before !important added
+        t(
+            '.x {\n' +
+            '    $d: a !default;\n' +
+            '}');
+        t(
+            '.x {\n' +
+            '    $d: a !default;\n' +
+            '    @if $x !=0 {\n' +
+            '        color: $var !important;\n' +
+            '    }\n' +
+            '}');
+
+        // #2051 - css format removes space after quoted value
+        t(
+            'q {\n' +
+            '    quotes: \'"\' \'"\' "\'" "\'";\n' +
+            '    quotes: "some" \'thing\' "different";\n' +
+            '    quotes: \'some\' "thing" \'different\';\n' +
+            '}');
+
 
         //============================================================
-        // Issue #1798 - space after strings in preserved
+        // Regression tests - with default options
         reset_options();
-        set_name('Issue #1798 - space after strings in preserved');
+        set_name('Regression tests - with default options');
+
+        // Issue #1798 - space after strings in preserved
         t('@use "variables" as *;');
+
+        // Issue #1976 - support the new @forwards syntax
+        t(
+            '@forwards "a" with (\n' +
+            '   $a: 2\n' +
+            ');',
+            //  -- output --
+            '@forwards "a" with ($a: 2);');
 
 
         //============================================================
@@ -20551,6 +21008,18 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
             //  -- output --
             '.grid {\n' +
             '    grid-template: "top-bar" 100px;\n' +
+            '}');
+        t(
+            'div {\n' +
+            'grid-template-areas: "a"\n' +
+            ' "b" \n' +
+            '                    "c";\n' +
+            '}',
+            //  -- output --
+            'div {\n' +
+            '    grid-template-areas: "a"\n' +
+            '        "b"\n' +
+            '        "c";\n' +
             '}');
         t(
             'div {\n' +
@@ -30185,6 +30654,97 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
 
 
         //============================================================
+        // Recognize handlebars with whitespace control
+        reset_options();
+        set_name('Recognize handlebars with whitespace control');
+        opts.indent_handlebars = true;
+        bth(
+            '{{#if true}}<div><div>\n' +
+            '{{~#if true ~}}<p>true</p>{{/if}}\n' +
+            '</div></div>{{/if}}',
+            //  -- output --
+            '{{#if true}}\n' +
+            '    <div>\n' +
+            '        <div>\n' +
+            '            {{~#if true ~}}\n' +
+            '                <p>true</p>\n' +
+            '            {{/if}}\n' +
+            '        </div>\n' +
+            '    </div>\n' +
+            '{{/if}}');
+        bth(
+            '{{~#*inline "MyInlinePartial"}}\n' +
+            '{{MyIdentifier}}\n' +
+            '{{/inline}}',
+            //  -- output --
+            '{{~#*inline "MyInlinePartial"}}\n' +
+            '    {{MyIdentifier}}\n' +
+            '{{/inline}}');
+        bth(
+            '{{~#> myPartial }}\n' +
+            '<span>format correctly</span>\n' +
+            '{{/myPartial}}',
+            //  -- output --
+            '{{~#> myPartial }}\n' +
+            '    <span>format correctly</span>\n' +
+            '{{/myPartial}}');
+        bth(
+            '{{#if callOn}}\n' +
+            '    {{translate "onText"}}\n' +
+            '{{~else if (eq callOn false)}}\n' +
+            '    {{translate "offText"}}\n' +
+            '{{/if}}');
+        bth(
+            '{{~#if callOn}}\n' +
+            '    {{translate "onText"}}\n' +
+            '{{~else if (eq callOn false)}}\n' +
+            '    {{translate "offText"}}\n' +
+            '{{/if}}');
+
+
+        //============================================================
+        // Corrects Partial Behavior Involving Whitespace
+        reset_options();
+        set_name('Corrects Partial Behavior Involving Whitespace');
+        bth(
+            '{{#>row}}\n' +
+            '    {{#>column}}\n' +
+            '        <span>content</span>\n' +
+            '        {{/column}}\n' +
+            '        {{/row}}',
+            //  -- output --
+            '{{#>row}}\n' +
+            '    {{#>column}}\n' +
+            '        <span>content</span>\n' +
+            '    {{/column}}\n' +
+            '{{/row}}');
+        bth(
+            '{{~#>row}}\n' +
+            '{{#>column}}\n' +
+            '<p>content</p>\n' +
+            '{{/column}}\n' +
+            '{{/row}}',
+            //  -- output --
+            '{{~#>row}}\n' +
+            '    {{#>column}}\n' +
+            '        <p>content</p>\n' +
+            '    {{/column}}\n' +
+            '{{/row}}');
+        bth(
+            '{{#>row}}\n' +
+            '    {{#>column}}\n' +
+            '        <span>content</span>\n' +
+            '    {{/column}}\n' +
+            '{{/row}}');
+        bth(
+            '{{#> row}}\n' +
+            '    {{#> column}}\n' +
+            '        <span>content</span>\n' +
+            '    {{/column}}\n' +
+            '{{/row}}');
+
+
+        //============================================================
         // New Test Suite
         reset_options();
         set_name('New Test Suite');
@@ -30442,7 +31002,7 @@ if (typeof exports !== "undefined") {
 function SanityTest(func, name_of_test) {
   'use strict';
   var tl = new TitleLogger(WScript.ScriptName + ": ");
-  tl.total = tl._(51899);
+  tl.total = tl._(54330);
 
   var test_func = func || function(x) {
     return x;

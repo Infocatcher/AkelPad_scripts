@@ -8,7 +8,7 @@
 // Version: 0.3.0 - 2019-09-21
 // Author: Infocatcher
 // Based on scripts from https://beautifier.io/ (http://jsbeautifier.org/)
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2022-04-09 05:33:10 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2022-06-20 23:53:03 UTC]
 
 //===================
 //// JavaScript unpacker and beautifier, also can unpack HTML with scripts and styles inside
@@ -763,6 +763,7 @@ Beautifier.prototype.create_flags = function(flags_base, mode) {
     inline_frame: false,
     if_block: false,
     else_block: false,
+    class_start_block: false, // class A { INSIDE HERE } or class B extends C { INSIDE HERE }
     do_block: false,
     do_while: false,
     import_block: false,
@@ -1175,6 +1176,8 @@ Beautifier.prototype.handle_start_expr = function(current_token) {
             (peek_back_two.text === '*' && (peek_back_three.text === '{' || peek_back_three.text === ','))) {
             this._output.space_before_token = true;
           }
+        } else if (this._flags.parent && this._flags.parent.class_start_block) {
+          this._output.space_before_token = true;
         }
       }
     } else {
@@ -1287,6 +1290,12 @@ Beautifier.prototype.handle_start_block = function(current_token) {
     this.set_mode(MODE.ObjectLiteral);
   } else {
     this.set_mode(MODE.BlockStatement);
+  }
+
+  if (this._flags.last_token) {
+    if (reserved_array(this._flags.last_token.previous, ['class', 'extends'])) {
+      this._flags.class_start_block = true;
+    }
   }
 
   var empty_braces = !next_token.comments_before && next_token.text === '}';
@@ -1729,13 +1738,6 @@ Beautifier.prototype.handle_operator = function(current_token) {
     this.handle_whitespace_and_comments(current_token, preserve_statement_flags);
   }
 
-  if (reserved_array(this._flags.last_token, special_words)) {
-    // "return" had a special handling in TK_WORD. Now we need to return the favor
-    this._output.space_before_token = true;
-    this.print_token(current_token);
-    return;
-  }
-
   // hack for actionscript's import .*;
   if (current_token.text === '*' && this._flags.last_token.type === TOKEN.DOT) {
     this.print_token(current_token);
@@ -1863,7 +1865,11 @@ Beautifier.prototype.handle_operator = function(current_token) {
     // http://www.ecma-international.org/ecma-262/5.1/#sec-7.9.1
     // if there is a newline between -- or ++ and anything else we should preserve it.
     if (current_token.newlines && (current_token.text === '--' || current_token.text === '++' || current_token.text === '~')) {
-      this.print_newline(false, true);
+      var new_line_needed = reserved_array(this._flags.last_token, special_words) && current_token.newlines;
+      if (new_line_needed && (this._previous_flags.if_block || this._previous_flags.else_block)) {
+        this.restore_mode();
+      }
+      this.print_newline(new_line_needed, true);
     }
 
     if (this._flags.last_token.text === ';' && is_expression(this._flags.mode)) {
@@ -2001,6 +2007,10 @@ Beautifier.prototype.handle_dot = function(current_token) {
     // The conditional starts the statement if appropriate.
   } else {
     this.handle_whitespace_and_comments(current_token, true);
+  }
+
+  if (this._flags.last_token.text.match('^[0-9]+$')) {
+    this._output.space_before_token = true;
   }
 
   if (reserved_array(this._flags.last_token, special_words)) {
@@ -2987,7 +2997,7 @@ var punct_pattern = new RegExp(punct);
 
 // words which should always start on new line.
 var line_starters = 'continue,try,throw,return,var,let,const,if,switch,case,default,for,while,break,function,import,export'.split(',');
-var reserved_words = line_starters.concat(['do', 'in', 'of', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof', 'yield', 'async', 'await', 'from', 'as']);
+var reserved_words = line_starters.concat(['do', 'in', 'of', 'else', 'get', 'set', 'new', 'catch', 'finally', 'typeof', 'yield', 'async', 'await', 'from', 'as', 'class', 'extends']);
 var reserved_word_pattern = new RegExp('^(?:' + reserved_words.join('|') + ')$');
 
 // var template_pattern = /(?:(?:<\?php|<\?=)[\s\S]*?\?>)|(?:<%[\s\S]*?%>)/g;
@@ -3078,7 +3088,8 @@ Tokenizer.prototype._read_word = function(previous_token) {
     if (!(previous_token.type === TOKEN.DOT ||
         (previous_token.type === TOKEN.RESERVED && (previous_token.text === 'set' || previous_token.text === 'get'))) &&
       reserved_word_pattern.test(resulting_string)) {
-      if (resulting_string === 'in' || resulting_string === 'of') { // hack for 'in' and 'of' operators
+      if ((resulting_string === 'in' || resulting_string === 'of') &&
+        (previous_token.type === TOKEN.WORD || previous_token.type === TOKEN.STRING)) { // hack for 'in' and 'of' operators
         return this._create_token(TOKEN.OPERATOR, resulting_string);
       }
       return this._create_token(TOKEN.RESERVED, resulting_string);
@@ -5536,6 +5547,7 @@ function Beautifier(source_text, options) {
     "@document": true
   };
   this.NON_SEMICOLON_NEWLINE_PROPERTY = [
+    "grid-template-areas",
     "grid-template"
   ];
 
@@ -5867,7 +5879,8 @@ Beautifier.prototype.beautify = function() {
         }
       }
     } else if (this._ch === '"' || this._ch === '\'') {
-      this.preserveSingleSpace(isAfterSpace);
+      var preserveQuoteSpace = previous_ch === '"' || previous_ch === '\'';
+      this.preserveSingleSpace(preserveQuoteSpace || isAfterSpace);
       this.print_string(this._ch + this.eatString(this._ch));
       this.eatWhitespace(true);
     } else if (this._ch === ';') {
@@ -5911,7 +5924,12 @@ Beautifier.prototype.beautify = function() {
           }
         }
       } else {
-        this.preserveSingleSpace(isAfterSpace);
+        var space_needed = false;
+        if (this._input.lookBack("with")) {
+          // look back is not an accurate solution, we need tokens to confirm without whitespaces
+          space_needed = true;
+        }
+        this.preserveSingleSpace(isAfterSpace || space_needed);
         this.print_string(this._ch);
 
         // handle scss/sass map
@@ -5969,7 +5987,7 @@ Beautifier.prototype.beautify = function() {
         this._ch = '';
       }
     } else if (this._ch === '!' && !this._input.lookBack("\\")) { // !important
-      this.print_string(' ');
+      this._output.space_before_token = true;
       this.print_string(this._ch);
     } else {
       var preserveAfterSpace = previous_ch === '"' || previous_ch === '\'';
@@ -8472,14 +8490,19 @@ var TagOpenParserToken = function(parent, raw_token) {
       tag_check_match = raw_token.text.match(/^<([^\s>]*)/);
       this.tag_check = tag_check_match ? tag_check_match[1] : '';
     } else {
-      tag_check_match = raw_token.text.match(/^{{(?:[\^]|#\*?)?([^\s}]+)/);
+      tag_check_match = raw_token.text.match(/^{{~?(?:[\^]|#\*?)?([^\s}]+)/);
       this.tag_check = tag_check_match ? tag_check_match[1] : '';
 
-      // handle "{{#> myPartial}}
-      if (raw_token.text === '{{#>' && this.tag_check === '>' && raw_token.next !== null) {
-        this.tag_check = raw_token.next.text.split(' ')[0];
+      // handle "{{#> myPartial}}" or "{{~#> myPartial}}"
+      if ((raw_token.text.startsWith('{{#>') || raw_token.text.startsWith('{{~#>')) && this.tag_check[0] === '>') {
+        if (this.tag_check === '>' && raw_token.next !== null) {
+          this.tag_check = raw_token.next.text.split(' ')[0];
+        } else {
+          this.tag_check = raw_token.text.split('>')[1];
+        }
       }
     }
+
     this.tag_check = this.tag_check.toLowerCase();
 
     if (raw_token.type === TOKEN.COMMENT) {
@@ -8491,9 +8514,17 @@ var TagOpenParserToken = function(parent, raw_token) {
     this.is_end_tag = !this.is_start_tag ||
       (raw_token.closed && raw_token.closed.text === '/>');
 
+    // if whitespace handler ~ included (i.e. {{~#if true}}), handlebars tags start at pos 3 not pos 2
+    var handlebar_starts = 2;
+    if (this.tag_start_char === '{' && this.text.length >= 3) {
+      if (this.text.charAt(2) === '~') {
+        handlebar_starts = 3;
+      }
+    }
+
     // handlebars tags that don't start with # or ^ are single_tags, and so also start and end.
     this.is_end_tag = this.is_end_tag ||
-      (this.tag_start_char === '{' && (this.text.length < 3 || (/[^#\^]/.test(this.text.charAt(2)))));
+      (this.tag_start_char === '{' && (this.text.length < 3 || (/[^#\^]/.test(this.text.charAt(handlebar_starts)))));
   }
 };
 
