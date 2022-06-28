@@ -246,6 +246,14 @@ if(!String.prototype.trim) {
 		return this.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, "");
 	};
 }
+if(!String.prototype.startsWith) {
+	// Based on code from
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/startsWith#polyfill
+	String.prototype.startsWith = function(search, rawPos) {
+		var pos = rawPos > 0 ? rawPos|0 : 0;
+		return this.substring(pos, pos + search.length) === search;
+	};
+}
 if(!Object.assign) {
 	// Based on code from
 	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign#Polyfill
