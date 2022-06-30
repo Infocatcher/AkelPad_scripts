@@ -8502,7 +8502,7 @@ var TagOpenParserToken = function(parent, raw_token) {
       this.tag_check = tag_check_match ? tag_check_match[1] : '';
 
       // handle "{{#> myPartial}}" or "{{~#> myPartial}}"
-      if ((raw_token.text.startsWith('{{#>') || raw_token.text.startsWith('{{~#>')) && this.tag_check[0] === '>') {
+      if ((raw_token.text.startsWith('{{#>') || raw_token.text.startsWith('{{~#>')) && this.tag_check.charAt(0) === '>') {
         if (this.tag_check === '>' && raw_token.next !== null) {
           this.tag_check = raw_token.next.text.split(' ')[0];
         } else {
@@ -9997,7 +9997,8 @@ function convertSource(file, text) {
 			.replace(
 				/(token(\.opened)?\.text)\[([^\[\]]+)\]/g,
 				"$1.charAt($3)"
-			);
+			)
+			.replace(/(this\.tag_check)\[(\d+)\]/g, "$1.charAt($2)");
 	}
 	else if(file == "js/lib/unpackers/javascriptobfuscator_unpacker.js") {
 		text = text
