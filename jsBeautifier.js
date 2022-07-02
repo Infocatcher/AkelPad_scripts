@@ -9952,7 +9952,7 @@ function beautifyAkelEdit() {
 }
 
 function convertSource(file, text) {
-	var TESTS_COUNT = 54994; // Inserted manually, to show better progress...
+	var TESTS_COUNT = 55088; // Inserted manually, to show better progress...
 	text = text
 		.replace(/\r\n?|\n\r?/g, "\r\n")
 		.replace(/[ \t]+([\n\r]|$)/g, "$1");
@@ -9966,7 +9966,7 @@ function convertSource(file, text) {
 			// Patch to provide simple progress
 			.replace(
 				/\sfunction SanityTest *\([^()]*\) *\{(\s*'use strict';)?\r\n/,
-				'$&  var tl = new TitleLogger(WScript.ScriptName + ": ");\r\n  tl.total = tl._(' + TESTS_COUNT + ');\r\n'
+				'$&  var tl = new TitleLogger(WScript.ScriptName + ": ");\r\n  tl.total = tl._(' + TESTS_COUNT + ' /*TESTS_COUNT*/);\r\n'
 			)
 			.replace(
 				/^([ \t]+)n_succeeded \+= 1;\r\n/m,
