@@ -8364,7 +8364,7 @@ Beautifier.prototype._print_custom_beatifier_text = function(printer, raw_token,
 
     // Handle the case where content is wrapped in a comment or cdata.
     if (last_tag_token.custom_beautifier_name !== 'html' &&
-      text[0] === '<' && text.match(/^(<!--|<!\[CDATA\[)/)) {
+      text.charAt(0) === '<' && text.match(/^(<!--|<!\[CDATA\[)/)) {
       var matched = /^(<!--[^\n]*|<!\[CDATA\[)(\n?)([ \t\n]*)([\s\S]*)(-->|]]>)$/.exec(text);
 
       // if we start to wrap but don't finish, print raw
@@ -9998,7 +9998,8 @@ function convertSource(file, text) {
 				/(token(\.opened)?\.text)\[([^\[\]]+)\]/g,
 				"$1.charAt($3)"
 			)
-			.replace(/(this\.tag_check)\[(\d+)\]/g, "$1.charAt($2)");
+			.replace(/(this\.tag_check)\[(\d+)\]/g, "$1.charAt($2)")
+			.replace("text[0] === '<'", "text.charAt(0) === '<'");
 	}
 	else if(file == "js/lib/unpackers/javascriptobfuscator_unpacker.js") {
 		text = text
