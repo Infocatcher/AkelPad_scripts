@@ -190,6 +190,10 @@ Adds/removes comments
 ##### [toggleToolbarRows.js](toggleToolbarRows.js)
 Toggle multiline toolbar from ToolBar plugin (convert `BREAK` <-> `#BREAK`)
 
+<br><img alt="Screenshot: toggleToolbarRows.js (before)" src="https://github.com/Infocatcher/AkelPad_scripts/raw/master/toggleToolbarRows-en-1.png">
+<br>
+<br><img alt="Screenshot: toggleToolbarRows.js (after)" src="https://github.com/Infocatcher/AkelPad_scripts/raw/master/toggleToolbarRows-en-2.png">
+
 ##### [undoableReopen.js](undoableReopen.js)
 Reopen file and preserve undo/redo buffer (just replace all text, if it was changed)
 
