@@ -2362,7 +2362,7 @@ Output.prototype.get_code = function(eol) {
   // has text that ends with newline(s)
   var last_item = this.current_line.pop();
   if (last_item) {
-    if (last_item[last_item.length - 1] === '\n') {
+    if (last_item.slice(-1) === '\n') {
       last_item = last_item.replace(/\n+$/g, '');
     }
     this.current_line.push(last_item);
@@ -4838,7 +4838,7 @@ Output.prototype.get_code = function(eol) {
   // has text that ends with newline(s)
   var last_item = this.current_line.pop();
   if (last_item) {
-    if (last_item[last_item.length - 1] === '\n') {
+    if (last_item.slice(-1) === '\n') {
       last_item = last_item.replace(/\n+$/g, '');
     }
     this.current_line.push(last_item);
@@ -6527,7 +6527,7 @@ Output.prototype.get_code = function(eol) {
   // has text that ends with newline(s)
   var last_item = this.current_line.pop();
   if (last_item) {
-    if (last_item[last_item.length - 1] === '\n') {
+    if (last_item.slice(-1) === '\n') {
       last_item = last_item.replace(/\n+$/g, '');
     }
     this.current_line.push(last_item);
@@ -9990,7 +9990,8 @@ function convertSource(file, text) {
 				/(token(\.opened)?\.text)\[([^\[\]]+)\]/g,
 				"$1.charAt($3)"
 			)
-			.replace(/\.startsWith\("([^"])"\)/g, '.charAt(0) === "$1"');
+			.replace(/\.startsWith\("([^"])"\)/g, '.charAt(0) === "$1"')
+			.replace(/last_item\[last_item\.length - 1\]/g, "last_item.slice(-1)");
 	}
 	else if(file == "js/lib/beautify-html.js") {
 		text = text
@@ -9999,7 +10000,12 @@ function convertSource(file, text) {
 				"$1.charAt($3)"
 			)
 			.replace(/(this\.tag_check)\[(\d+)\]/g, "$1.charAt($2)")
-			.replace("text[0] === '<'", "text.charAt(0) === '<'");
+			.replace("text[0] === '<'", "text.charAt(0) === '<'")
+			.replace(/last_item\[last_item\.length - 1\]/g, "last_item.slice(-1)");
+	}
+	else if(file == "js/lib/beautify-css.js") {
+		text = text
+			.replace(/last_item\[last_item\.length - 1\]/g, "last_item.slice(-1)");
 	}
 	else if(file == "js/lib/unpackers/javascriptobfuscator_unpacker.js") {
 		text = text
