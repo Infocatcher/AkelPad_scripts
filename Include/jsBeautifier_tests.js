@@ -31002,7 +31002,7 @@ if (typeof exports !== "undefined") {
 function SanityTest(func, name_of_test) {
   'use strict';
   var tl = new TitleLogger(WScript.ScriptName + ": ");
-  tl.total = tl._(55235 /*TESTS_COUNT*/);
+  tl.total = tl._(55244 /*TESTS_COUNT*/);
 
   var test_func = func || function(x) {
     return x;
