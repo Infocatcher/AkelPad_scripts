@@ -9187,7 +9187,7 @@ Tokenizer.prototype._read_raw_content = function(c, previous_token, open_token) 
 Tokenizer.prototype._read_content_word = function(c) {
   var resulting_string = '';
   if (this._options.unformatted_content_delimiter) {
-    if (c === this._options.unformatted_content_delimiter[0]) {
+    if (c === this._options.unformatted_content_delimiter.charAt(0)) {
       resulting_string = this.__patterns.unformatted_content_delimiter.read();
     }
   }
@@ -10001,7 +10001,11 @@ function convertSource(file, text) {
 			)
 			.replace(/(this\.tag_check)\[(\d+)\]/g, "$1.charAt($2)")
 			.replace("text[0] === '<'", "text.charAt(0) === '<'")
-			.replace(/last_item\[last_item\.length - 1\]/g, "last_item.slice(-1)");
+			.replace(/last_item\[last_item\.length - 1\]/g, "last_item.slice(-1)")
+			.replace(
+				"this._options.unformatted_content_delimiter[0]",
+				"this._options.unformatted_content_delimiter.charAt(0)"
+			);
 	}
 	else if(file == "js/lib/beautify-css.js") {
 		text = text
