@@ -169,6 +169,7 @@ var spaceAroundSelectorSep = getArg("spaceAroundSelectorSep", true);
 var commaFirst             = getArg("commaFirst", false);
 var maxChar                = getArg("maxChar");
 var unformattedTags        = getArg("unformattedTags");
+var unformattedDelimiter   = getArg("unformattedDelimiter");
 var voidElements           = getArg("voidElements");
 var indentInnerHTML        = getArg("indentInnerHTML");
 var indentHeadInnerHTML    = getArg("indentHeadInnerHTML");
@@ -325,6 +326,7 @@ function beautify(source, syntax) { // Based on beautify function
 		// for HTML:
 		max_char:                        maxChar,
 		unformatted:                     unformattedTags,
+		unformatted_content_delimiter:   unformattedDelimiter,
 		void_elements:                   voidElements,
 		indent_inner_html:               indentInnerHTML,
 		indent_head_inner_html:          indentHeadInnerHTML,
