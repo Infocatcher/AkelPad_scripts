@@ -9875,13 +9875,14 @@ function beautifyAkelEdit() {
 		res = (beautify(srcCSS) || "")
 			.replace(/^\s*<style>\n?/, "")
 			.replace(/\n?<\/style>\s*$/, "");
-		if(keepCSSIndentation) {
-			var indent = src.match(/^[ \t]*/)[0];
-			res = res.replace(/^/mg, indent);
-		}
 	}
 	else {
 		res = beautify(src, syntax);
+	}
+
+	if(keepCSSIndentation && res) {
+		var indent = src.match(/^[ \t]*/)[0];
+		res = res.replace(/^/mg, indent);
 	}
 
 	restoreState: if(action == ACT.INSERT) {
