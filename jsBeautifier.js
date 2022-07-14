@@ -9882,7 +9882,8 @@ function beautifyAkelEdit() {
 
 	if(keepCSSIndentation && res) {
 		var indent = src.match(/^[ \t]*/)[0];
-		res = res.replace(/^/mg, indent);
+		if(indent)
+			res = res.replace(/^/mg, indent);
 	}
 
 	restoreState: if(action == ACT.INSERT) {
