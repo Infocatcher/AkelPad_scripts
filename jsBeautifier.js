@@ -45,6 +45,7 @@
 //   -commaFirst=false             - put commas at the beginning of new line instead of end
 //   -e4x=true                     - handle E4X XML literals
 //   -detectPackers=true           - detect packers and obfuscators
+//   -keepIndentation=true         - keep initial indentation
 
 //   -unformattedTags=["a"]        - list of tags, that shouldn't be reformatted (only for HTML)
 //   -unformattedDelimiter=""      - keep text content together between this string
@@ -59,7 +60,6 @@
 //   -spaceAroundSelectorSep=true  - ensure space around selector separators: '>', '+', '~' (e.g. "a>b" -> "a > b", only for CSS)
 
 //   -css=true                     - force beautify CSS (just automatically wrap code into <style>...</style>)
-//   -keepCSSIndentation=true      - keep initial CSS indentation (only for -css=true)
 
 //   -update=true                  - update source from https://github.com/beautify-web/js-beautify/tree/release
 //          ="some-branch"         - update source from https://github.com/beautify-web/js-beautify/tree/some-branch
@@ -178,7 +178,7 @@ var indentBodyInnerHTML    = getArg("indentBodyInnerHTML");
 var extraLines             = getArg("extraLines");
 var detectPackers          = getArg("detectPackers", true);
 var beautifyCSS            = getArg("css", false);
-var keepCSSIndentation     = getArg("keepCSSIndentation", true);
+var keepIndentation        = getArg("keepIndentation", true);
 var test                   = getArg("test", TEST.IF_EMPTY_SOURCE);
 var update                 = getArg("update", 0);
 var forceNoCache           = getArg("forceNoCache", true);
@@ -190,6 +190,9 @@ if(getArg("spaceAfterAnonFunc") !== undefined && getArg("jsLintHappy") === undef
 	jsLintHappy = getArg("spaceAfterAnonFunc");
 if(typeof test == "boolean")
 	test = test ? TEST.FORCE : TEST.IF_EMPTY_SOURCE;
+if(getArg("keepCSSIndentation"))
+	keepIndentation = !!beautifyCSS;
+
 
 var indentChar = indentSize == 1
 	? "\t"
@@ -9880,7 +9883,7 @@ function beautifyAkelEdit() {
 		res = beautify(src, syntax);
 	}
 
-	if(keepCSSIndentation && res) {
+	if(keepIndentation && res) {
 		var indent = src.match(/^[ \t]*/)[0];
 		if(indent)
 			res = res.replace(/^/mg, indent);
