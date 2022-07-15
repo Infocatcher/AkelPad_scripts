@@ -48,7 +48,7 @@
 //   -keepIndentation=true         - keep initial indentation
 
 //   -unformattedTags=["a"]        - list of tags, that shouldn't be reformatted (only for HTML)
-//   -unformattedDelimiter=""      - keep text content together between this string
+//   -unformattedDelimiter=""      - keep text content together between this string (only for HTML)
 //   -voidElements=["br"]          - list of HTML void elements - aka self-closing tags - aka singletons
 //   -indentInnerHTML=true         - indent content inside <html> (only for HTML)
 //   -indentHeadInnerHTML=true     - indent content inside <head> (only for HTML)
