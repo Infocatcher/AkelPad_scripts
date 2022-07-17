@@ -1925,8 +1925,7 @@ function shouldCacheURL(url) {
 }
 function getRatioFromResponse(response, code) {
 	// https://exchange-rates.org/converter/EUR/USD/1/N
-	// <span id="ctl00_M_lblToAmount">0.0003295</span>
-	if(/<span id="ctl00_M_lblToAmount">([^<>]+)<\/span>/.test(response))
+	if(/<div class="col-xs-6 result-cur2">\s*<dl>\s*<dt>\s*<strong>\s*<span>([^<>]+)<\/span>/.test(response))
 		return validateRatio(stringToNumber(RegExp.$1));
 
 	// https://currency.world/convert/BTC/USD
