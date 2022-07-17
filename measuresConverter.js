@@ -428,7 +428,7 @@ var measures = {
 		"Uganda Shilling":               "UGX",
 		"US Dollar":                  1/*"USD"*/,
 		"Uruguay Peso":                  "UYU",
-		"Venezuelan Bolivar":            "VEF",
+		"Venezuelan Bolivar":            "VES",
 		"Vietnamese Dong":               "VND",
 		"CFA BEAC Franc":                "XAF",
 		"East Caribbean Dollar":         "XCD",
@@ -1892,7 +1892,9 @@ var missingCurrencies = {
 		"AWG", "BTN", "EEK", "FKP", "GYD", "KMF", "KPW", "LRD", "LTL", "LVL", "MNT", "MRO",
 		"MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC", "TOP", "VUV", "WST", "ZMK", "ZWD"
 	],
-	"fxexchangerate.com": []
+	"fxexchangerate.com": [
+		"VES"
+	]
 };
 function available(server, code) {
 	var missing = missingCurrencies[server];
