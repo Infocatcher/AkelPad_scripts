@@ -1916,7 +1916,7 @@ function getRequestURL(code) {
 	// Will use https://translate.google.com/ as proxy
 	return "https://www-exchange--rates-org.translate.goog/converter/"
 		+ code + "/" + BASE_CURRENCY
-		+ "/1/N?_x_tr_sl=en&_x_tr_tl=en&_x_tr_hl=en&_x_tr_pto=ajax";
+		+ "/1/N?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en";
 }
 function shouldCacheURL(url) {
 	if(/^https?:\/\/(\w+\.)*fxexchangerate\.com\//.test(url))
