@@ -1967,7 +1967,10 @@ function loadOfflineCurrencyData(readMode, forceDefault) {
 	for(var i = 0, l = db.length; i < l; ++i) {
 		var parts = db[i].split("="); // code=ratio=timestamp
 		var code = parts[0];
-		if(code == "BYR") // Obsolete and removed since 2022-03-16
+		if( // Obsolete codes
+			code == "BYR" // Removed since 2022-03-16
+			|| code == "VEF" // Removed since 2022-07-17
+		)
 			continue;
 		var ratio = +parts[1];
 		var time = +parts[2];
