@@ -36,9 +36,6 @@
 //   -spaceInEmptyParen=true       - add a single space inside empty paren, i.e. f( )
 //   -jsLintHappy=true             - use "function ()" instead of "function()"
 //   -spaceBeforeConditional=true  - space before conditional: "if(x)" / "if (x)"
-//   -indentScripts="keep"         - HTML <style>, <script> formatting: keep indent level of the tag
-//                 ="normal"       - add one indent level
-//                 ="separate"     - separate indentation
 //   -unescapeStrings=true         - unescape printable \xNN characters in strings ("example" vs "\x65\x78\x61\x6d\x70\x6c\x65")
 //   -wrapLineLength=70            - lines should wrap at next opportunity after this number of characters
 //   -endWithNewline=false         - end output with a newline
@@ -47,6 +44,10 @@
 //   -detectPackers=true           - detect packers and obfuscators
 //   -keepIndentation=true         - keep initial indentation
 
+// Arguments for HTML:
+//   -indentScripts="keep"         - HTML <style>, <script> formatting: keep indent level of the tag
+//                 ="normal"       - add one indent level
+//                 ="separate"     - separate indentation
 //   -unformattedTags=["a"]        - list of tags, that shouldn't be reformatted (only for HTML)
 //   -unformattedDelimiter=""      - keep text content together between this string (only for HTML)
 //   -voidElements=["br"]          - list of HTML void elements - aka self-closing tags - aka singletons
@@ -55,12 +56,14 @@
 //   -indentBodyInnerHTML=true     - indent content inside <body> (only for HTML)
 //   -extraLines="head,body,/html" - list of tags that should have an extra newline before them (only for HTML)
 //   -maxChar=70                   - maximum amount of characters per line (only for HTML), deprecated, use -wrapLineLength instead
+
+// Arguments for CSS:
+//   -css=true                     - force beautify CSS (just automatically wrap code into <style>...</style>)
 //   -newlineBetweenRules=true     - add extra newline between CSS rules (only for CSS)
 //   -selectorSepNewline=true      - separate selectors with newline or not (e.g. "a,\nbr" or "a, br", only for CSS)
 //   -spaceAroundSelectorSep=true  - ensure space around selector separators: '>', '+', '~' (e.g. "a>b" -> "a > b", only for CSS)
 
-//   -css=true                     - force beautify CSS (just automatically wrap code into <style>...</style>)
-
+// Arguments for jsBeautifier.js:
 //   -update=true                  - update source from https://github.com/beautify-web/js-beautify/tree/release
 //          ="some-branch"         - update source from https://github.com/beautify-web/js-beautify/tree/some-branch
 //   -forceNoCache                 - prevent caching during update
