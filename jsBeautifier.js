@@ -15,14 +15,21 @@
 
 // Arguments:
 //   -onlySelected=true            - use only selected text
-//   -action=1                     - 0 - insert (default), 1 - insert to new document, 2 - copy, 3 - show, 4 - use Log plugin
+//                =false           - (default) use all text, if selection is empty
+//   -action=0                     - (default) insert                         | alias: =ACT.INSERT
+//          =1                     - insert to new document                   |        =ACT.INSERT_NEW_DOC
+//          =2                     - copy                                     |        =ACT.COPY
+//          =3                     - show                                     |        =ACT.SHOW
+//          =4                     - use Log plugin                           |        =ACT.LOG
 //   -restoreCaretPos=true         - restore caret position (works only without selection)
-//   -setSyntax=0                  - don't change syntax theme (Coder plugin)
-//             =1                  - set syntax theme only in documents without theme
-//             =2                  - (default) don't change syntax "type" (e.g. don't change "xml" to "html")
-//             =3                  - always set
+//   -setSyntax=0                  - don't change syntax theme (Coder plugin) | alias: =SYNTAX.NONE
+//             =1                  - set only in documents without theme      |        =SYNTAX.IF_MISSING
+//             =2                  - (default) don't change syntax "type"     |        =SYNTAX.PRESERVE_TYPE
+//                                   (e.g. don't change "xml" to "html")      |
+//             =3                  - always set                               |        =SYNTAX.ALWAYS
 //   -indentSize=1                 - indent with a tab character
 //              =4                 - indent with 4 spaces
+//   -keepIndentation=true         - keep initial indentation
 //   -eol="\\n"                    - character(s) to use as line terminators (default newline - "\\n")
 //   -preserveNewlines=true        - whether existing line breaks should be preserved
 //   -maxPreserveNewlines=2        - maximum number of line breaks to be preserved in one chunk
@@ -32,8 +39,8 @@
 //              ="none"            - attempt to keep braces where they are
 //   -keepArrayIndentation=true    - keep array indentation
 //   -breakChainedMethods=false    - break lines on chained methods
-//   -spaceInParen=true            - add padding spaces within paren, i.e. f( a, b )
-//   -spaceInEmptyParen=true       - add a single space inside empty paren, i.e. f( )
+//   -spaceInParen=true            - add padding spaces within paren: f( a, b )
+//   -spaceInEmptyParen=true       - add a single space inside empty paren: f( )
 //   -jsLintHappy=true             - use "function ()" instead of "function()"
 //   -spaceBeforeConditional=true  - space before conditional: "if(x)" / "if (x)"
 //   -unescapeStrings=true         - unescape printable \xNN characters in strings ("example" vs "\x65\x78\x61\x6d\x70\x6c\x65")
@@ -42,7 +49,6 @@
 //   -commaFirst=false             - put commas at the beginning of new line instead of end
 //   -e4x=true                     - handle E4X XML literals
 //   -detectPackers=true           - detect packers and obfuscators
-//   -keepIndentation=true         - keep initial indentation
 
 // Arguments for HTML:
 //   -indentScripts="keep"         - HTML <style>, <script> formatting: keep indent level of the tag
