@@ -54,20 +54,19 @@
 //   -indentScripts="keep"         - HTML <style>, <script> formatting: keep indent level of the tag
 //                 ="normal"       - add one indent level
 //                 ="separate"     - separate indentation
-//   -unformattedTags=["a"]        - list of tags, that shouldn't be reformatted (only for HTML)
-//   -unformattedDelimiter=""      - keep text content together between this string (only for HTML)
+//   -unformattedTags=["a"]        - list of tags, that shouldn't be reformatted
+//   -unformattedDelimiter=""      - keep text content together between this string
 //   -voidElements=["br"]          - list of HTML void elements - aka self-closing tags - aka singletons
-//   -indentInnerHTML=true         - indent content inside <html> (only for HTML)
-//   -indentHeadInnerHTML=true     - indent content inside <head> (only for HTML)
-//   -indentBodyInnerHTML=true     - indent content inside <body> (only for HTML)
-//   -extraLines="head,body,/html" - list of tags that should have an extra newline before them (only for HTML)
-//   -maxChar=70                   - maximum amount of characters per line (only for HTML), deprecated, use -wrapLineLength instead
+//   -indentInnerHTML=true         - indent content inside <html>
+//   -indentHeadInnerHTML=true     - indent content inside <head>
+//   -indentBodyInnerHTML=true     - indent content inside <body>
+//   -extraLines="head,body,/html" - list of tags that should have an extra newline before them
 
 // Arguments for CSS:
 //   -css=true                     - force beautify CSS (just automatically wrap code into <style>...</style>)
-//   -newlineBetweenRules=true     - add extra newline between CSS rules (only for CSS)
-//   -selectorSepNewline=true      - separate selectors with newline or not (e.g. "a,\nbr" or "a, br", only for CSS)
-//   -spaceAroundSelectorSep=true  - ensure space around selector separators: '>', '+', '~' (e.g. "a>b" -> "a > b", only for CSS)
+//   -newlineBetweenRules=true     - add extra newline between CSS rules
+//   -selectorSepNewline=true      - separate selectors with newline or not: "a,\nbr" or "a, br"
+//   -spaceAroundSelectorSep=true  - ensure space around selector separators: '>', '+', '~', "a>b" -> "a > b"
 
 // Arguments for jsBeautifier.js:
 //   -update=true                  - update source from https://github.com/beautify-web/js-beautify/tree/release
