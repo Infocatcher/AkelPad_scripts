@@ -69,12 +69,14 @@
 //   -spaceAroundSelectorSep=true  - ensure space around selector separators: '>', '+', '~', "a>b" -> "a > b"
 
 // Arguments for jsBeautifier.js:
+// WARNING! Use self-update at your own risk!
 //   -update=true                  - update source from https://github.com/beautify-web/js-beautify/tree/release
 //          ="some-branch"         - update source from https://github.com/beautify-web/js-beautify/tree/some-branch
-//   -forceNoCache                 - prevent caching during update
-//   -test=1                       - force run the tests
-//        =-1                      - run the tests, if called for empty source (+ see -onlySelected argument)
-//        =0                       - don't run tests
+//   -forceNoCache=true            - force prevent caching during update
+//   -test=1                       - force run the tests                       | alias: =TEST.FORCE
+//        =-1                      - (default) run, if called for empty source |        =TEST.IF_EMPTY_SOURCE
+//                                   (+ see -onlySelected argument)            |
+//        =0                       - don't run tests                           |        =TEST.NONE
 
 // You also can pass any arguments to js_beautify()/html_beautify() using "_raw_" prefix, example:
 //   -_raw_indent_handlebars=true - add "indent_handlebars: true" to options object
