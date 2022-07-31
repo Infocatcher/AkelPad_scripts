@@ -10105,7 +10105,8 @@ function selfUpdate() {
 		code.self = code.selfOld = AkelPad.ReadFile(selfFile, 0, 65001, 1)
 			.replace(/\r\n?|\n\r?/g, "\r\n");
 		code.test = code.testOld = AkelPad.ReadFile(testFile, 0, 65001, 1)
-			.replace(/\r\n?|\n\r?/g, "\r\n");
+			.replace(/\r\n?|\n\r?/g, "\r\n")
+			+ "\r\n"; // For our end pattern
 
 		for(var file in data) {
 			var key = file.indexOf("/test/") == -1 ? "self" : "test";
@@ -10162,7 +10163,7 @@ function selfUpdate() {
 			AkelPad.SetSel(0, 0);
 			AkelPad.SaveFile(AkelPad.GetEditWnd(), file, 65001, 1);
 		}
-		saveFile(testFile, code.test);
+		saveFile(testFile, code.test.replace(/\r\n$/, ""));
 		saveFile(selfFile, code.self);
 	}
 
