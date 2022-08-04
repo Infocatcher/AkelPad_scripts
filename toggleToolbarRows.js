@@ -18,20 +18,20 @@ var tbPlugName = AkelPad.GetArgValue("toolBarName", "ToolBar");
 
 function _localize(s) {
 	var strings = {
-		"ToolBarText data is empty!": {
-			ru: "Содержимое ToolBarText пустое!"
+		"ToolBarText data in %P plugin is empty!": {
+			ru: "Содержимое ToolBarText плагина %P пустое!"
 		},
-		"ToolBarText data not recognized:\n%S": {
-			ru: "Содержимое ToolBarText не распознано:\n%S"
+		"ToolBarText data in %P plugin not recognized:\n%S": {
+			ru: "Содержимое ToolBarText плагина %P не распознано:\n%S"
 		},
-		"Failed to read settings of %S plugin": {
-			ru: "Не удалось прочитать настройки плагина %S"
+		"Failed to read settings of %P plugin": {
+			ru: "Не удалось прочитать настройки плагина %P"
 		},
-		"Failed to write settings of %S plugin": {
-			ru: "Не удалось записать настройки плагина %S"
+		"Failed to write settings of %P plugin": {
+			ru: "Не удалось записать настройки плагина %P"
 		},
-		"Failed to toggle multiline toolbar: BREAK item not found": {
-			ru: "Не удалось переключить многострочность панели инструментов: элемент BREAK не найден"
+		"Failed to toggle multiline toolbar from %P plugin: BREAK item not found": {
+			ru: "Не удалось переключить многострочность панели инструментов плагина %P: элемент BREAK не найден"
 		}
 	};
 	var lng = "en";
@@ -42,6 +42,9 @@ function _localize(s) {
 		return strings[s] && strings[s][lng] || s;
 	};
 	return _localize(s);
+}
+function _str(s) {
+	return _localize(s).replace("%P", tbPlugName);
 }
 
 var oSet = AkelPad.ScriptSettings();
@@ -57,14 +60,15 @@ if(oSet.Begin(tbPlugName, 0x21 /*POB_READ|POB_PLUGS*/)) {
 	) {
 		error(
 			tbData
-				? _localize("ToolBarText data not recognized:\n%S").replace("%S", tbData.substr(0, 100))
-				: _localize("ToolBarText data is empty!")
+				? _str("ToolBarText data in %P plugin not recognized:\n%S")
+					.replace("%S", tbData.substr(0, 100))
+				: _str("ToolBarText data in %P plugin is empty!")
 		);
 		WScript.Quit();
 	}
 }
 else {
-	error(_localize("Failed to read settings of %S plugin").replace("%S", tbPlugName));
+	error(_str("Failed to read settings of %P plugin"));
 }
 
 if(tbData && oSet.Begin(tbPlugName, 0x22 /*POB_SAVE|POB_PLUGS*/)) {
@@ -79,7 +83,7 @@ if(tbData && oSet.Begin(tbPlugName, 0x22 /*POB_SAVE|POB_PLUGS*/)) {
 		oSet.Write("ToolBarText", 3 /*PO_STRING*/, tbData);
 	}
 	else {
-		error(_localize("Failed to toggle multiline toolbar: BREAK item not found"), 48 /*MB_ICONEXCLAMATION*/);
+		error(_str("Failed to toggle multiline toolbar from %P plugin: BREAK item not found"), 48 /*MB_ICONEXCLAMATION*/);
 	}
 	oSet.End();
 
@@ -89,7 +93,7 @@ if(tbData && oSet.Begin(tbPlugName, 0x22 /*POB_SAVE|POB_PLUGS*/)) {
 	}
 }
 else {
-	tbData && error(_localize("Failed to write settings of %S plugin").replace("%S", tbPlugName));
+	tbData && error(_str("Failed to write settings of %P plugin"));
 }
 
 function hexToStr(h) {
