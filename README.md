@@ -4,6 +4,9 @@
 
 #### Scripts in alphabetical order
 
+##### [Include/jsBeautifier_tests.js](Include/jsBeautifier_tests.js)
+Tests part of <a href="#jsbeautifierjs">jsBeautifier.js</a> (not required for regular usage)
+
 ##### [Include/timer.js](Include/timer.js)
 Helper functions for <a href="http://msdn.microsoft.com/en-us/library/windows/desktop/ms644906">user32::SetTimer()</a>
 
