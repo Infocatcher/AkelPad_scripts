@@ -130,6 +130,7 @@ Simplify tags insertion
 
 ##### [jsBeautifier.js](jsBeautifier.js)
 JavaScript unpacker and beautifier
+<br>Also see <a href="#includejsbeautifier_testsjs">Include/jsBeautifier_tests.js</a> to run internal tests using `-test` argument
 
 ##### [measuresConverter.js](measuresConverter.js)
 Convert measures (internal) and currency (used cached data from <a href="http://exchange-rates.org/">exchange-rates.org</a>, <a href="http://fxexchangerate.com/">fxexchangerate.com</a> and <a href="http://bitcoincharts.com/">bitcoincharts.com</a>)
