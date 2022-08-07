@@ -1,4 +1,5 @@
-﻿// http://infocatcher.ucoz.net/js/akelpad_scripts/toggleToolbarRows.js
+﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=36081#36081
+// http://infocatcher.ucoz.net/js/akelpad_scripts/toggleToolbarRows.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/toggleToolbarRows.js
 
 // (c) Infocatcher 2022
