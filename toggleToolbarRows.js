@@ -2,7 +2,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/toggleToolbarRows.js
 
 // (c) Infocatcher 2022
-// Version: 0.1.0pre - 2022-06-06
+// Version: 0.1.0 - 2022-08-07
 // Author: Infocatcher
 
 //// Toggle multiline toolbar from ToolBar plugin (convert BREAK <-> #BREAK)
