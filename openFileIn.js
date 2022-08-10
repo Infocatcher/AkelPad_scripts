@@ -104,6 +104,15 @@ var appsData = {
 		args: "%f",
 		isBrowser: true
 	},
+	"Edge": {
+		paths: [
+			"<HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\msedge.exe\\>",
+			"%ProgramFiles%\\Microsoft\\Edge\\Application\\msedge.exe",
+			"%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe"
+		],
+		args: "%f",
+		isBrowser: true
+	},
 	"Firefox": {
 		paths: [
 			"<HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\firefox.exe\\>",
