@@ -32,6 +32,7 @@
 // Arguments:
 //   -preferFXExchangeRate=true    - prefer data from fxexchangerate.com (faster updates)
 //   -offlineExpire=22*60*60*1000  - currency ratio expires after this time (in milliseconds)
+//                 =Infinity       - prevent auto-updates
 //   -updateOnStartup=true         - asynchronous update currency data on startup
 //   -updateOnStartupReport=1      - 0 - don't show, 1 - only errors, 2 - always
 //   -updateSelf=false             - (use at your own risk!) update default currencies data
