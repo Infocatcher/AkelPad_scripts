@@ -34,17 +34,19 @@
 //   -offlineExpire=22*60*60*1000  - currency ratio expires after this time (in milliseconds)
 //                 =Infinity       - prevent auto-updates
 //   -updateOnStartup=true         - asynchronous update currency data on startup
-//   -updateOnStartupReport=1      - 0 - don't show, 1 - only errors, 2 - always
+//   -updateOnStartupReport=0      - don't show report for startup update (-updateOnStartup=true)
+//                         =1      - (default) show only errors
+//                         =2      - always show
 //   -updateSelf=false             - (use at your own risk!) update default currencies data
-//   -updateMaxErrors=4            - abort update, if reached many errors (use -1 to ignore errors)
+//   -updateMaxErrors=4            - abort update, if reached too many errors (use -1 to ignore errors)
 //   -convertNumbers=true          - convert numbers (1234.5 -> 1 234,5)
 //   -displayCalcErrors=true       - always display calculation errors (e.g. for "1++2")
 //   -roundMeasures=3              - round measures (e.g. for 3: 0.1234 -> 0.123)
-//   -roundMeasuresState=1         - 0 - don't round
-//                                   1 - round (0.1234 -> 0.12, 0.00019 -> 0.00)
-//                                   2 - round and show too small rounded values (e.g. 0.00 -> 0.00019)
+//   -roundMeasuresState=0         - don't round measures (and override saved value)
+//                      =1         - round measures (0.1234 -> 0.12, 0.00019 -> 0.00)
+//                      =2         - round and show too small rounded values (e.g. 0.00 -> 0.00019)
 //   -roundCurrencies=2            - round currencies (e.g. for 3: 0.1234 -> 0.123)
-//   -roundCurrenciesState=1       - see -roundMeasuresState
+//   -roundCurrenciesState=0       - see -roundMeasuresState
 //   -sortMeasures=true            - sort measures alphabetically
 //   -sortByName=true              - sort currencies by name (otherwise - by code)
 //   -maxHeight=0                  - maximum window height to create listboxes instead of radio buttons
@@ -52,7 +54,9 @@
 //                                    0 => always use listboxes
 //   -selectContext=7              - show N items before/after selected, 0 to disable (for listboxes)
 //   -disableRadios=true           - (see -maxHeight) forbid to select the same on left and right radio buttons
-//   -showLastUpdate=2             - 0 - don't show, 1 - show only if selected currencies, 2 - always show
+//   -showLastUpdate=0             - don't show last update date for currencies
+//                  =1             - show only if selected currencies
+//                  =2             - (default) always show
 //   -useSelected=true             - pick up selected number or expression
 //   -from="Pound"                 - set source measure (you should use English names!)
 //   -to="Kilogram"                - set target measure (you should use English names!)
