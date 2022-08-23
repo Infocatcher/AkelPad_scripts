@@ -126,13 +126,13 @@ function getTextStatistics() {
 	var lines = txtn.split("\n");
 	var curLine, curLen;
 	var tabStop = AkelPad.SendMessage(AkelPad.GetEditWnd(), 3239 /*AEM_GETTABSTOP*/, 0, 0) || 8;
-	for(var i = 0, l = lines.length; i < l; i++) {
+	for(var i = 0, l = lines.length; i < l; ++i) {
 		curLine = lines[i];
 		curLen = curLine.length;
 
 		if(curLine.indexOf("\t") != -1) {
 			var tabWidth, dw;
-			for(var j = 0, column = 0, ll = curLen; j < ll; j++, column++) {
+			for(var j = 0, column = 0, ll = curLen; j < ll; ++j, ++column) {
 				if(curLine.charAt(j) != "\t")
 					continue;
 				tabWidth = tabStop - column % tabStop;
