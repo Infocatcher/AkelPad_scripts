@@ -48,8 +48,8 @@ function _localize(s) {
 		"Latin: ": {
 			ru: "Латиница: "
 		},
-		"Mixed: ": {
-			ru: "Смешанные: "
+		"Mixed Cyrillic+Latin: ": {
+			ru: "Смешанная кириллица с латиницей: "
 		},
 		"Digits: ": {
 			ru: "Цифры: "
@@ -181,11 +181,14 @@ function getTextStatistics() {
 
 	var wordsCyr = countOf(txt, /[а-яё]+(-[а-яё]+)*/ig);
 	var wordsLat = countOf(txt, /[a-z]+(-[a-z]+)*('[st])?/ig);
-	var wordsMix = countOf(txt, /\S*([a-z]\S*[а-яё]|[а-яё]\S*[a-z])\S*/ig);
 	res +=          _localize("Words: ")    + formatNum(wordsCyr + wordsLat) + "\n";
 	res += "  – " + _localize("Cyrillic: ") + formatNum(wordsCyr) + "\n";
 	res += "  – " + _localize("Latin: ")    + formatNum(wordsLat) + "\n";
-	res += "  – " + _localize("Mixed: ")    + formatNum(wordsMix) + "\n";
+
+	res += "\n";
+
+	var wordsMix = countOf(txt, /\S*([a-z]\S*[а-яё]|[а-яё]\S*[a-z])\S*/ig);
+	res += _localize("Mixed Cyrillic+Latin: ") + formatNum(wordsMix) + "\n";
 
 	res += "\n";
 
