@@ -101,7 +101,6 @@ function _localize(s) {
 //var AkelPad = new ActiveXObject("AkelPad.document");
 var hMainWnd = AkelPad.GetMainWnd();
 var hWndEdit = AkelPad.GetEditWnd();
-var oSys = AkelPad.SystemFunction();
 
 if(hMainWnd)
 	showTextStatistics();
@@ -219,34 +218,7 @@ function formatLine(s) {
 
 function getText() {
 	// Get selection or all text
-	var txt = AkelPad.GetSelText(4 - AkelPad.GetEditNewLine(0));
-	if(txt)
-		return txt;
-	if(typeof AkelPad.GetTextRange != "undefined")
-		return AkelPad.GetTextRange(0, -1, 4 - AkelPad.GetEditNewLine(0));
-	var lpPoint = AkelPad.MemAlloc(8 /*sizeof(POINT)*/);
-	if(!lpPoint)
-		return "";
-	setRedraw(hWndEdit, false);
-	AkelPad.SendMessage(hWndEdit, 1245 /*EM_GETSCROLLPOS*/, 0, lpPoint);
-
-	var columnSel = AkelPad.SendMessage(hWndEdit, 3127 /*AEM_GETCOLUMNSEL*/, 0, 0);
-	var ss = AkelPad.GetSelStart();
-	var se = AkelPad.GetSelEnd();
-
-	AkelPad.SetSel(0, -1);
-	txt = AkelPad.GetSelText(4 - AkelPad.GetEditNewLine(0));
-
-	AkelPad.SetSel(ss, se);
-	columnSel && AkelPad.SendMessage(hWndEdit, 3128 /*AEM_UPDATESEL*/, 0x1 /*AESELT_COLUMNON*/, 0);
-
-	AkelPad.SendMessage(hWndEdit, 1246 /*EM_SETSCROLLPOS*/, 0, lpPoint);
-	AkelPad.MemFree(lpPoint);
-	setRedraw(hWndEdit, true);
-	return txt;
-}
-
-function setRedraw(hWnd, bRedraw) {
-	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
-	bRedraw && oSys.Call("user32::InvalidateRect", hWnd, 0, true);
+	var newLine = 4 - AkelPad.GetEditNewLine(0);
+	return AkelPad.GetSelText(newLine)
+		|| AkelPad.GetTextRange(0, -1, newLine);
 }
