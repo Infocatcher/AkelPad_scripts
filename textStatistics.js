@@ -179,8 +179,8 @@ function getTextStatistics() {
 
 	res += "\n";
 
-	var wordsCyr = countOf(txt, /[а-яё]+(-[а-яё]+)*/ig);
-	var wordsLat = countOf(txt, /[a-z]+(-[a-z]+)*('[st])?/ig);
+	var wordsCyr = countOf(txt, /(^|\s|[^-а-яёa-z\d])[а-яё]+(-[а-яё]+)*(?=$|\s|[^-а-яёa-z\d])/ig);
+	var wordsLat = countOf(txt, /(^|\s|[^-а-яёa-z\d])[a-z]+(-[a-z]+)*('[st])?(?=$|\s|[^-а-яёa-z\d])/ig);
 	res +=          _localize("Words: ")    + formatNum(wordsCyr + wordsLat) + "\n";
 	res += "  – " + _localize("Cyrillic: ") + formatNum(wordsCyr) + "\n";
 	res += "  – " + _localize("Latin: ")    + formatNum(wordsLat) + "\n";
