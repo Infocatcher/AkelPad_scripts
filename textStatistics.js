@@ -187,8 +187,8 @@ function getTextStatistics() {
 
 	res += "\n";
 
-	var wordsMix = countOf(txt, /\S*([a-z]\S*[а-яё]|[а-яё]\S*[a-z])\S*/ig);
-	res += _localize("Mixed Cyrillic+Latin: ") + formatNum(wordsMix) + "\n";
+	var cyrLatMix = countOf(txt, /\S*([a-z]\S*[а-яё]|[а-яё]\S*[a-z])\S*/ig);
+	res += _localize("Mixed Cyrillic+Latin: ") + formatNum(cyrLatMix) + "\n";
 
 	res += "\n";
 
