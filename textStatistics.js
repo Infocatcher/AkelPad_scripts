@@ -205,7 +205,8 @@ function countOf(txt, regexp) {
 	return m ? m.length : 0;
 }
 function formatNum(n) {
-	return String(n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1 ");
+	// 1234567 -> 1 234 567
+	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
 }
 function formatLine(s) {
 	var maxLength = 45;
