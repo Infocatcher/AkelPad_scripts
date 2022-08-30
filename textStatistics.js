@@ -15,6 +15,9 @@
 
 function _localize(s) {
 	var strings = {
+		"[selected text]": {
+			ru: "[выделенный текст]"
+		},
 		"Text missing!": {
 			ru: "Текст отсутствует!"
 		},
@@ -110,12 +113,19 @@ function showTextStatistics() {
 	AkelPad.MessageBox(hMainWnd, res, WScript.ScriptName, 64 /*MB_ICONINFORMATION*/);
 }
 function getTextStatistics() {
-	var txt = getText();
+	var newLine = 4 - AkelPad.GetEditNewLine(0);
+	var txt = AkelPad.GetSelText(newLine);
+	if(txt)
+		var selMark = _localize("[selected text]");
+	else
+		txt = AkelPad.GetTextRange(0, -1, newLine);
 	if(!txt)
 		return _localize("Text missing!");
 	var txtn = txt.replace(/\r\n|\n\r|\n|\r/g, "\n"); // Strange things happens with \r\n
 	var cFile = AkelPad.GetEditFile(0);
-	var res = cFile ? cFile + ":\n\n" : "";
+	var res = cFile
+		? cFile + ":\n" + (selMark ? selMark + "\n\n" : "\n")
+		: (selMark ? selMark + "\n\n" : "");
 
 	res +=          _localize("Lines: ")       + formatNum(countOf(txt, /\r\n|\n\r|\n|\r/g) + 1) + "\n";
 	res += "  – " + _localize("Only spaces: ") + formatNum(countOf(txt, /^[\t ]+$/mg)) + "\n";
@@ -218,11 +228,4 @@ function formatLine(s) {
 	return ret == s
 		? ret
 		: ret + "\u2026"; // "..."
-}
-
-function getText() {
-	// Get selection or all text
-	var newLine = 4 - AkelPad.GetEditNewLine(0);
-	return AkelPad.GetSelText(newLine)
-		|| AkelPad.GetTextRange(0, -1, newLine);
 }
