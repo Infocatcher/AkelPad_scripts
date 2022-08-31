@@ -127,7 +127,7 @@ function getTextStatistics() {
 		? cFile + ":\n" + (selMark ? selMark + "\n\n" : "\n")
 		: (selMark ? selMark + "\n\n" : "");
 
-	res +=          _localize("Lines: ")       + formatNum(countOf(txt, /\r\n|\n\r|\n|\r/g) + 1) + "\n";
+	res +=          _localize("Lines: ")       + formatNum(countOf(txtn, /^/mg)) + "\n";
 	res += "  – " + _localize("Only spaces: ") + formatNum(countOf(txt, /^[\t ]+$/mg)) + "\n";
 	res += "  – " + _localize("Empty: ")       + formatNum(countOf(txtn, /^$/mg)) + "\n";
 
