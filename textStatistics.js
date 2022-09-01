@@ -30,17 +30,14 @@ function _localize(s) {
 		"Empty: ": {
 			ru: "Пустые: "
 		},
-		"Shortest line: #": {
-			ru: "Самая короткая строка: №"
+		"Shortest line: %L": {
+			ru: "Самая короткая строка: %L"
 		},
-		"Longest line: #": {
-			ru: "Самая длинная строка: №"
+		"Longest line: %L": {
+			ru: "Самая длинная строка: %L"
 		},
-		"Length: ": {
-			ru: "Длина: "
-		},
-		"Line: “%S”": {
-			ru: "Строка: «%S»"
+		"%N: “%S”": {
+			ru: "%N: «%S»"
 		},
 		"Symbols: ": {
 			ru: "Символы: "
@@ -169,12 +166,10 @@ function getTextStatistics() {
 		}
 	}
 
-	res +=          _localize("Longest line: #") + formatNum(longestLineNum) + "\n";
-	res += "  – " + _localize("Length: ") + formatNum(longestLine) + "\n";
-	res += "  – " + _localize("Line: “%S”").replace("%S", formatLine(longestLineText)) + "\n";
-	res +=          _localize("Shortest line: #") + formatNum(shortestLineNum) + "\n";
-	res += "  – " + _localize("Length: ") + formatNum(shortestLine) + "\n";
-	res += "  – " + _localize("Line: “%S”").replace("%S", formatLine(shortestLineText)) + "\n";
+	res +=          _localize("Longest line: %L").replace("%L", formatNum(longestLine)) + "\n";
+	res += "  – " + _localize("%N: “%S”").replace("%N", longestLineNum).replace("%S", formatLine(longestLineText)) + "\n";
+	res +=          _localize("Shortest line: %L").replace("%L", formatNum(shortestLine)) + "\n";
+	res += "  – " + _localize("%N: “%S”").replace("%N", shortestLineNum).replace("%S", formatLine(shortestLineText)) + "\n";
 
 	res += "\n";
 
