@@ -142,9 +142,10 @@ function getTextStatistics() {
 		curLine = lines[i];
 		curLen = curLine.length;
 
-		if(curLine.indexOf("\t") != -1) {
+		var ti = curLine.indexOf("\t");
+		if(ti != -1) {
 			var tabWidth, dw;
-			for(var j = 0, column = 0, ll = curLen; j < ll; ++j, ++column) {
+			for(var j = ti, column = ti, ll = curLen; j < ll; ++j, ++column) {
 				if(curLine.charAt(j) != "\t")
 					continue;
 				tabWidth = tabStop - column % tabStop;
