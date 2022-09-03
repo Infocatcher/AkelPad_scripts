@@ -166,6 +166,12 @@ function getTextStatistics() {
 		}
 	}
 
+	var dl = ("" + longestLineNum).length - ("" + shortestLineNum).length;
+	if(dl > 0)
+		shortestLineNum = new Array(dl + 1).join("0") + shortestLineNum;
+	else if(dl < 0)
+		longestLineNum = new Array(-dl + 1).join("0") + longestLineNum;
+
 	res +=          _localize("Longest line: %L").replace("%L", formatNum(longestLine)) + "\n";
 	res += "  – " + _localize("%N: “%S”").replace("%N", longestLineNum).replace("%S", formatLine(longestLineText)) + "\n";
 	res +=          _localize("Shortest line: %L").replace("%L", formatNum(shortestLine)) + "\n";
