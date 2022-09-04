@@ -199,7 +199,7 @@ function getTextStatistics() {
 
 	res += "\n";
 
-	var cyrLatMix = countOf(txt, /\S*([a-z]\S*[а-яё]|[а-яё]\S*[a-z])\S*/ig);
+	var cyrLatMix = countOf(txt, /([a-z]\S*[а-яё]|[а-яё]\S*[a-z])/ig);
 	res += _localize("Mixed Cyrillic+Latin: ") + formatNum(cyrLatMix) + "\n";
 
 	res += "\n";
