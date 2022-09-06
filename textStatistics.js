@@ -101,6 +101,7 @@ function _localize(s) {
 //var AkelPad = new ActiveXObject("AkelPad.document");
 var hMainWnd = AkelPad.GetMainWnd();
 var hWndEdit = AkelPad.GetEditWnd();
+var oSys = AkelPad.SystemFunction();
 
 if(hMainWnd)
 	showTextStatistics();
@@ -118,6 +119,11 @@ function getTextStatistics() {
 		txt = AkelPad.GetTextRange(0, -1, newLine);
 	if(!txt)
 		return _localize("Text missing!");
+
+	var statusbar = new Statusbar();
+	statusbar.save();
+	statusbar.set("10%");
+
 	var txtn = txt.replace(/\r\n|\n\r|\n|\r/g, "\n"); // Strange things happens with \r\n
 	var cFile = AkelPad.GetEditFile(0);
 	var res = cFile
@@ -129,6 +135,7 @@ function getTextStatistics() {
 	res += "  – " + _localize("Empty: ")       + formatNum(countOf(txtn, /^$/mg)) + "\n";
 
 	res += "\n";
+	statusbar.set("20%");
 
 	var longestLine  = -1,       longestLineNum,  longestLineText;
 	var shortestLine = Infinity, shortestLineNum, shortestLineText;
@@ -178,6 +185,7 @@ function getTextStatistics() {
 	res += "  – " + _localize("%N: “%S”").replace("%N", shortestLineNum).replace("%S", formatLine(shortestLineText)) + "\n";
 
 	res += "\n";
+	statusbar.set("40%");
 
 	res +=             _localize("Symbols: ")                + formatNum(txt.length) + "\n";
 	res += "  – "    + _localize("Cyrillic: ")               + formatNum(countOf(txt, /[а-яё]/ig)) + "\n";
@@ -190,6 +198,7 @@ function getTextStatistics() {
 	res += "     = " + _localize("Line feeds (\\n): ")       + formatNum(countOf(txt, /\n/g)) + "\n";
 
 	res += "\n";
+	statusbar.set("50%");
 
 	var wordsCyr = countOf(txt, /(^|\s|[^-а-яёa-z\d])[а-яё]+(-[а-яё]+)*(?=$|\s|[^-а-яёa-z\d])/ig);
 	var wordsLat = countOf(txt, /(^|\s|[^-а-яёa-z\d])[a-z]+(-[a-z]+)*('[st])?(?=$|\s|[^-а-яёa-z\d])/ig);
@@ -198,17 +207,21 @@ function getTextStatistics() {
 	res += "  – " + _localize("Latin: ")    + formatNum(wordsLat) + "\n";
 
 	res += "\n";
+	statusbar.set("60%");
 
 	var cyrLatMix = countOf(txt, /([a-z][-\wа-яё]*[а-яё]|[а-яё][-\wа-яё]*[a-z])/ig);
 	res += _localize("Mixed Cyrillic+Latin: ") + formatNum(cyrLatMix) + "\n";
 
 	res += "\n";
+	statusbar.set("80%");
 
 	var numsDec = countOf(txt, /(^|\W)\d+([.,]\d+)?(?=(\W|$))/g); // Be careful with numbers like "0,2"
 	var numsHex = countOf(txt, /(^|\W)0x[\da-f]+(?=(\W|$))/ig);
 	res +=          _localize("Numbers: ")     + formatNum(numsDec + numsHex) + "\n";
 	res += "  – " + _localize("Decimal: ")     + formatNum(numsDec) + "\n";
 	res += "  – " + _localize("Hexadecimal: ") + formatNum(numsHex) + "\n";
+
+	statusbar.restore();
 
 	return res;
 }
@@ -230,4 +243,40 @@ function formatLine(s) {
 	return ret == s
 		? ret
 		: ret + "\u2026"; // "..."
+}
+
+function Statusbar() {
+	this.get = this.set = this.save = this.restore = this.destroy = function() {};
+
+	// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=13656#13656
+	var hWndStatus = oSys.Call("user32::GetDlgItem", hMainWnd, 10002 /*ID_STATUS*/);
+	if(!hWndStatus || !oSys.Call("user32::IsWindowVisible", hWndStatus))
+		return;
+	var nParts = AkelPad.SendMessage(hWndStatus, 1030 /*SB_GETPARTS*/, 0, 0);
+	if(nParts <= 5)
+		return;
+	var lpTextBuffer = AkelPad.MemAlloc(1024 * _TSIZE);
+	if(!lpTextBuffer)
+		return;
+	var _origStatus, _customStatus;
+	this.get = function() {
+		AkelPad.SendMessage(hWndStatus, _TSTR ? 1037 /*SB_GETTEXTW*/ : 1026 /*SB_GETTEXTA*/, nParts - 1, lpTextBuffer);
+		return AkelPad.MemRead(lpTextBuffer, _TSTR);
+	};
+	this.set = function(pStatusText) {
+		_customStatus = pStatusText;
+		AkelPad.MemCopy(lpTextBuffer, pStatusText, _TSTR);
+		AkelPad.SendMessage(hWndStatus, _TSTR ? 1035 /*SB_SETTEXTW*/ : 1025 /*SB_SETTEXTA*/, nParts - 1, lpTextBuffer);
+	};
+	this.save = function() {
+		_origStatus = this.get();
+	};
+	this.restore = function() {
+		if(_origStatus != undefined && this.get() == _customStatus)
+			this.set(_origStatus);
+		this.destroy();
+	};
+	this.destroy = function() {
+		AkelPad.MemFree(lpTextBuffer);
+	};
 }
