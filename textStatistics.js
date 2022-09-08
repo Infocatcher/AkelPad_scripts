@@ -122,7 +122,10 @@ function getTextStatistics() {
 
 	var statusbar = new Statusbar();
 	statusbar.save();
-	statusbar.set("10% " + _localize("Lines and spaces…"));
+	function progress(percent, msg) {
+		statusbar.set(percent + "% " + msg);
+	}
+	progress(10, _localize("Lines and spaces…"));
 
 	var txtn = txt.replace(/\r\n|\n\r|\n|\r/g, "\n"); // Strange things happens with \r\n
 	var cFile = AkelPad.GetEditFile(0);
@@ -135,7 +138,7 @@ function getTextStatistics() {
 	res += "  – " + _localize("Empty: ")       + formatNum(countOf(txtn, /^$/mg)) + "\n";
 
 	res += "\n";
-	statusbar.set("20% " + _localize("Lines length…"));
+	progress(20, _localize("Lines length…"));
 
 	var longestLine  = -1,       longestLineNum,  longestLineText;
 	var shortestLine = Infinity, shortestLineNum, shortestLineText;
@@ -185,7 +188,7 @@ function getTextStatistics() {
 	res += "  – " + _localize("%N: “%S”").replace("%N", shortestLineNum).replace("%S", formatLine(shortestLineText)) + "\n";
 
 	res += "\n";
-	statusbar.set("40% " + _localize("Symbols…"));
+	progress(40, _localize("Symbols…"));
 
 	res +=             _localize("Symbols: ")                + formatNum(txt.length) + "\n";
 	res += "  – "    + _localize("Cyrillic: ")               + formatNum(countOf(txt, /[а-яё]/ig)) + "\n";
@@ -198,7 +201,7 @@ function getTextStatistics() {
 	res += "     = " + _localize("Line feeds (\\n): ")       + formatNum(countOf(txt, /\n/g)) + "\n";
 
 	res += "\n";
-	statusbar.set("50% " + _localize("Words…"));
+	progress(50, _localize("Words…"));
 
 	var wordsCyr = countOf(txt, /(^|\s|[^-а-яёa-z\d])[а-яё]+(-[а-яё]+)*(?=$|\s|[^-а-яёa-z\d])/ig);
 	var wordsLat = countOf(txt, /(^|\s|[^-а-яёa-z\d])[a-z]+(-[a-z]+)*('[st])?(?=$|\s|[^-а-яёa-z\d])/ig);
@@ -207,13 +210,13 @@ function getTextStatistics() {
 	res += "  – " + _localize("Latin: ")    + formatNum(wordsLat) + "\n";
 
 	res += "\n";
-	statusbar.set("60% " + _localize("Mixed symbols…"));
+	progress(60, _localize("Mixed symbols…"));
 
 	var cyrLatMix = countOf(txt, /([a-z][-\wа-яё]*[а-яё]|[а-яё][-\wа-яё]*[a-z])/ig);
 	res += _localize("Mixed Cyrillic+Latin: ") + formatNum(cyrLatMix) + "\n";
 
 	res += "\n";
-	statusbar.set("80% " + _localize("Numbers…"));
+	progress(80, _localize("Numbers…"));
 
 	var numsDec = countOf(txt, /(^|\W)\d+([.,]\d+)?(?=(\W|$))/g); // Be careful with numbers like "0,2"
 	var numsHex = countOf(txt, /(^|\W)0x[\da-f]+(?=(\W|$))/ig);
