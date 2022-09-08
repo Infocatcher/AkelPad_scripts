@@ -21,6 +21,9 @@ function _localize(s) {
 		"Text missing!": {
 			ru: "Текст отсутствует!"
 		},
+		"Lines and spaces…": {
+			ru: "Строки и пробелы…"
+		},
 		"Lines: ": {
 			ru: "Строки: "
 		},
@@ -29,6 +32,9 @@ function _localize(s) {
 		},
 		"Empty: ": {
 			ru: "Пустые: "
+		},
+		"Lines length…": {
+			ru: "Длина строк…"
 		},
 		"Shortest line: %L": {
 			ru: "Самая короткая строка: %L"
@@ -39,6 +45,9 @@ function _localize(s) {
 		"%N: “%S”": {
 			ru: "%N: «%S»"
 		},
+		"Symbols…": {
+			ru: "Символы…"
+		},
 		"Symbols: ": {
 			ru: "Символы: "
 		},
@@ -47,9 +56,6 @@ function _localize(s) {
 		},
 		"Latin: ": {
 			ru: "Латиница: "
-		},
-		"Mixed Cyrillic+Latin: ": {
-			ru: "Смешанная кириллица с латиницей: "
 		},
 		"Digits: ": {
 			ru: "Цифры: "
@@ -69,6 +75,9 @@ function _localize(s) {
 		"Line feeds (\\n): ": {
 			ru: "Переводы строки (\\n): "
 		},
+		"Words…": {
+			ru: "Слова…"
+		},
 		"Words: ": {
 			ru: "Слова: "
 		},
@@ -77,6 +86,15 @@ function _localize(s) {
 		},
 		"Latin: ": {
 			ru: "Латиница: "
+		},
+		"Mixed symbols…": {
+			ru: "Смешанные символы…"
+		},
+		"Mixed Cyrillic+Latin: ": {
+			ru: "Смешанная кириллица с латиницей: "
+		},
+		"Numbers…": {
+			ru: "Числа…"
 		},
 		"Numbers: ": {
 			ru: "Числа: "
