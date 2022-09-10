@@ -230,8 +230,14 @@ function getTextStatistics() {
 	res += "\n";
 	progress(60, _localize("Mixed symbols…"));
 
-	var cyrLatMix = countOf(txt, /([a-z][-\wа-яё]*[а-яё]|[а-яё][-\wа-яё]*[a-z])/ig);
+	var cyrLatMixM = txt.match(/([a-z][-\wа-яё]*[а-яё]|[а-яё][-\wа-яё]*[a-z])/ig);
+	var cyrLatMix = cyrLatMixM ? cyrLatMixM.length : 0;
 	res += _localize("Mixed Cyrillic+Latin: ") + formatNum(cyrLatMix) + "\n";
+	var maxMixOut = 5;
+	for(var i = 0, max = Math.min(maxMixOut, cyrLatMix); i < max; ++i)
+		res += "  – " + formatWord(cyrLatMixM[i]) + "\n";
+	if(cyrLatMix > maxMixOut)
+		res += "  …\n";
 
 	res += "\n";
 	progress(80, _localize("Numbers…"));
@@ -253,6 +259,12 @@ function countOf(txt, regexp) {
 function formatNum(n) {
 	// 1234567 -> 1 234 567
 	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
+}
+function formatWord(s) {
+	var maxLength = 45;
+	if(s.length > maxLength)
+		return s.substr(0, maxLength) + "\u2026"; // "..."
+	return s;
 }
 function formatLine(s) {
 	var maxLength = 45;
