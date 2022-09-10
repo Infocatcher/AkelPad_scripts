@@ -232,6 +232,17 @@ function getTextStatistics() {
 
 	var cyrLatMixM = txt.match(/([a-z][-\wа-яё]*[а-яё]|[а-яё][-\wа-яё]*[a-z])/ig);
 	var cyrLatMix = cyrLatMixM ? cyrLatMixM.length : 0;
+
+	var filtered = [];
+	for(var i = 0; i < cyrLatMix; ++i) {
+		var s = cyrLatMixM[i];
+		if(/^[a-z]+-[а-яё]+$/i.test(s))
+			continue;
+		filtered.push(s);
+	}
+	cyrLatMixM = filtered;
+	cyrLatMix = filtered.length;
+
 	res += _localize("Mixed Cyrillic+Latin: ") + formatNum(cyrLatMix) + "\n";
 	var maxMixOut = 5;
 	for(var i = 0, max = Math.min(maxMixOut, cyrLatMix); i < max; ++i)
