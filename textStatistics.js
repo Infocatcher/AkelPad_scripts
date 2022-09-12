@@ -242,11 +242,13 @@ function getTextStatistics() {
 	}
 	cyrLatMixM = filtered;
 	cyrLatMix = filtered.length;
+	filtered = null;
 
 	res += _localize("Mixed Cyrillic+Latin: ") + formatNum(cyrLatMix) + "\n";
 	var maxMixOut = 5;
 	for(var i = 0, max = Math.min(maxMixOut, cyrLatMix); i < max; ++i)
 		res += "  – " + formatWord(cyrLatMixM[i]) + "\n";
+	cyrLatMixM = null;
 	if(cyrLatMix > maxMixOut)
 		res += "  …\n";
 
