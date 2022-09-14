@@ -230,20 +230,25 @@ function getTextStatistics() {
 	res += "\n";
 	progress(60, _localize("Mixed symbols…"));
 
-	var cyrLatMixM = txt.match(/([a-z][-\wа-яё]*[а-яё]|[а-яё][-\wа-яё]*[a-z])/ig);
-	var cyrLatMix = cyrLatMixM ? cyrLatMixM.length : 0;
+	try {
+		var cyrLatMixM = txt.match(/([a-z][-\wа-яё]*[а-яё]|[а-яё][-\wа-яё]*[a-z])/ig);
+		var cyrLatMix = cyrLatMixM ? cyrLatMixM.length : 0;
 
-	progress(70, _localize("Mixed symbols…"));
-	var filtered = [];
-	for(var i = 0; i < cyrLatMix; ++i) {
-		var s = cyrLatMixM[i];
-		if(/^[a-z]+-[а-яё]+$/i.test(s))
-			continue;
-		filtered.push(s);
+		progress(70, _localize("Mixed symbols…"));
+		var filtered = [];
+		for(var i = 0; i < cyrLatMix; ++i) {
+			var s = cyrLatMixM[i];
+			if(/^[a-z]+-[а-яё]+$/i.test(s))
+				continue;
+			filtered.push(s);
+		}
+		cyrLatMixM = filtered;
+		cyrLatMix = filtered.length;
+		filtered = null;
 	}
-	cyrLatMixM = filtered;
-	cyrLatMix = filtered.length;
-	filtered = null;
+	catch(e) {
+		cyrLatMix = NaN;
+	}
 
 	res += _localize("Mixed Cyrillic+Latin: ") + formatNum(cyrLatMix) + "\n";
 	var maxMixOut = 5;
@@ -267,8 +272,13 @@ function getTextStatistics() {
 	return res;
 }
 function countOf(txt, regexp) {
-	var m = txt.match(regexp);
-	return m ? m.length : 0;
+	try {
+		var m = txt.match(regexp);
+		return m ? m.length : 0;
+	}
+	catch(e) {
+		return NaN;
+	}
 }
 function formatNum(n) {
 	// 1234567 -> 1 234 567
