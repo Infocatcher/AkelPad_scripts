@@ -104,6 +104,9 @@ function _localize(s) {
 		},
 		"Hexadecimal: ": {
 			ru: "Шестнадцатеричные: "
+		},
+		"n/a": {
+			ru: "н/д"
 		}
 	};
 	var lng = "en";
@@ -281,6 +284,8 @@ function countOf(txt, regexp) {
 	}
 }
 function formatNum(n) {
+	if(isNaN(n))
+		return _localize("n/a");
 	// 1234567 -> 1 234 567
 	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
 }
