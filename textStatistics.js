@@ -196,6 +196,7 @@ function getTextStatistics() {
 			shortestLineText = curLine;
 		}
 	}
+	lines = null;
 
 	var dl = ("" + longestLineNum).length - ("" + shortestLineNum).length;
 	if(dl > 0)
@@ -250,6 +251,7 @@ function getTextStatistics() {
 		filtered = null;
 	}
 	catch(e) {
+		getTextStatistics.__OOM = true;
 		cyrLatMix = NaN;
 	}
 
@@ -280,6 +282,7 @@ function countOf(txt, regexp) {
 		return m ? m.length : 0;
 	}
 	catch(e) {
+		getTextStatistics.__OOM = true;
 		return NaN;
 	}
 }
