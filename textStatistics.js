@@ -132,12 +132,16 @@ function showTextStatistics() {
 	AkelPad.MessageBox(hMainWnd, res, WScript.ScriptName, 64 /*MB_ICONINFORMATION*/);
 }
 function getTextStatistics() {
+	var cFile = AkelPad.GetEditFile(0);
 	var newLine = 4 - AkelPad.GetEditNewLine(0);
 	var txt = AkelPad.GetSelText(newLine);
 	if(txt)
 		var selMark = _localize("[selected text]");
-	else
-		txt = AkelPad.GetTextRange(0, -1, newLine);
+	else {
+		txt = cFile // Prefer ReadFile() to preserve all newline characters as is
+			? AkelPad.ReadFile(cFile, 0, AkelPad.GetEditCodePage(0), AkelPad.GetEditBOM(0))
+			: AkelPad.GetTextRange(0, -1, newLine);
+	}
 	if(!txt)
 		return _localize("Text missing!");
 
@@ -149,7 +153,6 @@ function getTextStatistics() {
 	progress(10, _localize("Lines and spaces…"));
 
 	var txtn = txt.replace(/\r\n|\n\r|\n|\r/g, "\n"); // Strange things happens with \r\n
-	var cFile = AkelPad.GetEditFile(0);
 	var res = cFile
 		? cFile + ":\n" + (selMark ? selMark + "\n\n" : "\n")
 		: (selMark ? selMark + "\n\n" : "");
