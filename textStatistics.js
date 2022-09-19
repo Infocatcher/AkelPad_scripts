@@ -107,6 +107,9 @@ function _localize(s) {
 		},
 		"n/a": {
 			ru: "н/д"
+		},
+		"Warning! Executed with errors:\n%E": {
+			ru: "Внимание! Выполнено с ошибками:\n%E"
 		}
 	};
 	var lng = "en";
@@ -254,7 +257,7 @@ function getTextStatistics() {
 		filtered = null;
 	}
 	catch(e) {
-		getTextStatistics.__OOM = true;
+		getTextStatistics.__error = e && e.message || ("" + e);
 		cyrLatMix = NaN;
 	}
 
@@ -275,6 +278,11 @@ function getTextStatistics() {
 	res += "  – " + _localize("Decimal: ")     + formatNum(numsDec) + "\n";
 	res += "  – " + _localize("Hexadecimal: ") + formatNum(numsHex) + "\n";
 
+	if(getTextStatistics.__error) {
+		res += "\n" + _localize("Warning! Executed with errors:\n%E")
+			.replace("%E", getTextStatistics.__error);
+	}
+
 	statusbar.restore();
 
 	return res;
@@ -285,7 +293,7 @@ function countOf(txt, regexp) {
 		return m ? m.length : 0;
 	}
 	catch(e) {
-		getTextStatistics.__OOM = true;
+		getTextStatistics.__error = e && e.message || ("" + e);
 		return NaN;
 	}
 }
