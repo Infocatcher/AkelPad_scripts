@@ -152,7 +152,7 @@ function getTextStatistics() {
 	}
 	progress(10, _localize("Lines and spaces…"));
 
-	var txtn = txt.replace(/\r\n|\n\r|\n|\r/g, "\n"); // Strange things happens with \r\n
+	var txtn = txt.replace(/\r\n?/g, "\n"); // Strange things happens with \r\n
 	var res = cFile
 		? cFile + ":\n" + (selMark ? selMark + "\n\n" : "\n")
 		: (selMark ? selMark + "\n\n" : "");
