@@ -206,9 +206,9 @@ function getTextStatistics() {
 
 	var dl = ("" + longestLineNum).length - ("" + shortestLineNum).length;
 	if(dl > 0)
-		shortestLineNum = new Array(dl + 1).join("0") + shortestLineNum;
+		shortestLineNum = stringRepeat("0", dl) + shortestLineNum;
 	else if(dl < 0)
-		longestLineNum = new Array(-dl + 1).join("0") + longestLineNum;
+		longestLineNum = stringRepeat("0", -dl) + longestLineNum;
 
 	res +=          _localize("Longest line: %L").replace("%L", formatNum(longestLine)) + "\n";
 	res += "  – " + _localize("%N: “%S”").replace("%N", longestLineNum).replace("%S", formatLine(longestLineText)) + "\n";
@@ -312,13 +312,26 @@ function formatWord(s) {
 function formatLine(s) {
 	var maxLength = 45;
 	var tabWidth = 8;
-	var tab = new Array(tabWidth + 1).join(" ");
+	var tab = stringRepeat(" ", tabWidth);
 	var ret = s.substr(0, maxLength);
 	while(ret.replace(/\t/g, tab).length > maxLength)
 		ret = ret.substr(0, ret.length - 1);
 	return ret == s
 		? ret
 		: ret + "\u2026"; // "..."
+}
+function stringRepeat(pattern, count) {
+	// See https://stackoverflow.com/questions/202605/repeat-string-javascript
+	if(count < 1)
+		return "";
+	var result = "";
+	while(count > 1) {
+		if(count & 1)
+			result += pattern;
+		count >>= 1;
+		pattern += pattern;
+	}
+	return result + pattern;
 }
 
 function Statusbar() {
