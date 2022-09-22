@@ -82,7 +82,7 @@ var utils = {
 		AkelPad.MessageBox(hMainWnd, "" + msg, dialogTitle, 48 /*MB_ICONEXCLAMATION*/);
 	},
 	prompt: function(msg, defaultVal) {
-		var ret = AkelPad.InputBox(hMainWnd, dialogTitle, "" + msg, defaultVal);
+		var ret = AkelPad.InputBox(hMainWnd, dialogTitle, "" + msg, "" + defaultVal);
 		return ret == undefined ? null : ret;
 	},
 	confirm: function(msg) {
