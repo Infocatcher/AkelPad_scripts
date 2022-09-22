@@ -304,13 +304,13 @@ function formatNum(n) {
 	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
 }
 function formatWord(s) {
-	var maxLength = 45;
+	var maxLength = 40;
 	if(s.length > maxLength)
 		return s.substr(0, maxLength) + "\u2026"; // "..."
 	return s;
 }
 function formatLine(s) {
-	var maxLength = 45;
+	var maxLength = 40;
 	var tabWidth = 8;
 	var tab = stringRepeat(" ", tabWidth);
 	var ret = s.substr(0, maxLength);
