@@ -306,7 +306,7 @@ function formatNum(n) {
 function formatWord(s) {
 	var maxLength = 40;
 	if(s.length > maxLength)
-		return s.substr(0, maxLength) + "\u2026"; // "..."
+		return s.substr(0, maxLength) + "…";
 	return s;
 }
 function formatLine(s) {
@@ -318,7 +318,7 @@ function formatLine(s) {
 		ret = ret.substr(0, ret.length - 1);
 	return ret == s
 		? ret
-		: ret + "\u2026"; // "..."
+		: ret + "…";
 }
 function stringRepeat(pattern, count) {
 	// See https://stackoverflow.com/questions/202605/repeat-string-javascript
