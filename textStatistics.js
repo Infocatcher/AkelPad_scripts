@@ -311,7 +311,7 @@ function formatWord(s) {
 }
 function formatLine(s) {
 	var maxLength = 40;
-	var tabWidth = 8;
+	var tabWidth = AkelPad.SendMessage(AkelPad.GetEditWnd(), 3239 /*AEM_GETTABSTOP*/, 0, 0) || 8;
 	var tab = stringRepeat(" ", tabWidth);
 	var ret = s.substr(0, maxLength);
 	while(ret.replace(/\t/g, tab).length > maxLength)
