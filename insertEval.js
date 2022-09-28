@@ -124,7 +124,7 @@ var utils = {
 		return "0b" + (+n).toString(2);
 	},
 	p: function(n) {
-		return ("" + n).replace(/(\d)(?=(?:\d{3})+(?:\D|$))/g, "$1 ");
+		return toLocaleNum(formatNum(n));
 	},
 
 	unformat: function(s) {
@@ -179,6 +179,33 @@ utils.h = utils.x = utils.hex;
 utils.o = utils.oct;
 utils.b = utils.bin;
 utils.window = utils;
+
+function formatNum(n) {
+	// 1234567.1234567 -> 1 234 567.1 234 567
+	//return Number(n).toLocaleString().replace(/\s*[^\d\s\xa0\u2002\u2003\u2009].*$/, "");
+	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
+}
+function toLocaleNum(n) {
+	// Apply locale settings: 1 234 567,1 234 567 (Russian), 1,234,567.1,234,567 (English), etc.
+	if(!localeNumbers.delimiter)
+		localeNumbers();
+	return ("" + n)
+		// We may have \xa0 in localeNumbers.delimiter
+		.replace(/\./g,   "\0.\0")
+		.replace(/\xa0/g, "\0 \0")
+		.replace(/\0\.\0/g, localeNumbers.delimiter)
+		.replace(/\0 \0/g,  localeNumbers.separator);
+}
+function localeNumbers() {
+	// Detect locale delimiter (e.g. 0.1 -> 0,1)
+	if(/(\D+)\d+\D*$/.test((1.1).toLocaleString()))
+		var ld = RegExp.$1;
+	// Detect locale separator (e.g. 123456 -> 123 456 or 123,456)
+	if(/^\D*\d+(\D+)/.test((1234567890123).toLocaleString()))
+		var ls = RegExp.$1;
+	localeNumbers.delimiter = ld && ls ? ld : ".";
+	localeNumbers.separator = ld && ls ? ls : "\xa0";
+}
 
 function calc(expr, forceAsk) {
 	if(!expr || forceAsk)
