@@ -100,12 +100,15 @@ var commentsSets = {
 	htaccess: [ null, null, ["#"] ],
 	//ahk: [ ["\r/*"], ["\r*/"], [";"] ],
 	ahk: [ null, null, [";"] ],
+	awk: [ null, null, ["#"] ],
 	py: [ null, null, ["#"] ],
 	pyw: "py",
 	"1s": [ null, null, ["//"] ],
 	"1c": "1s",
 	nsi: [ null, null, [";", "#"] ],
-	au3: [ ["#comments-start", "#cs"], ["#comments-end", "#ce"], [";"] ]
+	au3: [ ["#comments-start", "#cs"], ["#comments-end", "#ce"], [";"] ],
+	lua: [ ["--[["], ["]]"], ["--"] ],
+	ps1: [ ["<#"], ["#>"], ["#"] ]
 };
 var commentsRegions = {
 	// Example:
