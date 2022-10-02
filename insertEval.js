@@ -213,10 +213,13 @@ function calc(expr, forceAsk) {
 	if(!expr)
 		return;
 	var resType = RegExp.$1 = ""; // Force reset
-	// =2+2 (legacy)
-	// 2+2= (since 2018-08-21)
-	// 2+2=b -> 0b100 (since 2018-09-03)
-	if(/^\s*=\s*/.test(expr) || /[ \t]*=\s*(0?[xob]|h|p)?$/i.test(expr)) {
+	if(
+		// =2+2 (legacy)
+		/^\s*=\s*/.test(expr)
+		// 2+2= (since 2018-08-21)
+		// 2+2=b -> 0b100 (since 2018-09-03)
+		|| /\s*=\s*(0?[xob]|h|p)?$/i.test(expr)
+	) {
 		expr = RegExp.rightContext || RegExp.leftContext;
 		resType = RegExp.$1.replace(/^0/, "").toLowerCase();
 		var extOutput = true;
