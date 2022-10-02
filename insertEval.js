@@ -251,7 +251,10 @@ function calc(expr, forceAsk) {
 	if(!newExpr)
 		return; // Cancel
 	if(newExpr != res) {
-		if(/^[ \t]*=\s*(0?[xob]|h|p)?$/i.test(newExpr)) { // "=", "=p", "=x" & Co
+		if(
+			/^\s*=\s*(0?[xob]|h|p)?$/i.test(newExpr) // "=", "=p", "=x" & Co
+			|| /^\s*(0?[xob]|h|p)$/i.test(newExpr) // "p", "x" & Co (without "=", looks like typo)
+		) {
 			var rt = RegExp.$1.replace(/^0/, "").toLowerCase();
 			if(rt)
 				res = convType(resRaw, rt);
