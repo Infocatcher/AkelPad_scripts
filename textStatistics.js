@@ -13,6 +13,9 @@
 
 // Windows XP+ (?)
 
+var maxLine = AkelPad.GetArgValue("maxLine", 40);
+var maxWord = AkelPad.GetArgValue("maxWord", 40);
+
 function _localize(s) {
 	var strings = {
 		"[selected text]": {
@@ -304,13 +307,13 @@ function formatNum(n) {
 	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
 }
 function formatWord(s) {
-	var maxLength = 40;
+	var maxLength = maxWord;
 	if(s.length > maxLength)
 		return s.substr(0, maxLength) + "…";
 	return s;
 }
 function formatLine(s) {
-	var maxLength = 40;
+	var maxLength = maxLine;
 	var tabWidth = AkelPad.SendMessage(AkelPad.GetEditWnd(), 3239 /*AEM_GETTABSTOP*/, 0, 0) || 8;
 	var tab = stringRepeat(" ", tabWidth);
 	var ret = s.substr(0, maxLength);
