@@ -15,6 +15,7 @@
 
 var maxLine = AkelPad.GetArgValue("maxLine", 40);
 var maxWord = AkelPad.GetArgValue("maxWord", 40);
+var maxMixed = AkelPad.GetArgValue("maxMixed", 5);
 
 function _localize(s) {
 	var strings = {
@@ -265,8 +266,7 @@ function getTextStatistics() {
 	}
 
 	res += _localize("Mixed Cyrillic+Latin: ") + formatNum(cyrLatMix) + "\n";
-	var maxMixOut = 5;
-	for(var i = 0, max = Math.min(maxMixOut, cyrLatMix); i < max; ++i)
+	for(var i = 0, max = Math.min(maxMixed, cyrLatMix); i < max; ++i)
 		res += "  – " + formatWord(cyrLatMixM[i]) + "\n";
 	cyrLatMixM = null;
 	if(cyrLatMix > maxMixOut)
