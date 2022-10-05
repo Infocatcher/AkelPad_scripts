@@ -269,7 +269,7 @@ function getTextStatistics() {
 	for(var i = 0, max = Math.min(maxMixed, cyrLatMix); i < max; ++i)
 		res += "  – " + formatWord(cyrLatMixM[i]) + "\n";
 	cyrLatMixM = null;
-	if(cyrLatMix > maxMixOut)
+	if(maxMixed && cyrLatMix > maxMixed)
 		res += "  …\n";
 
 	res += "\n";
