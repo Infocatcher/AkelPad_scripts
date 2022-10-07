@@ -15,6 +15,7 @@
 
 // Usage:
 //   Call("Scripts::Main", 1, "textStatistics.js")
+//   Call("Scripts::Main", 1, "textStatistics.js", "-maxLine=60 -maxWord=50 -maxMixed=10")
 
 // Windows XP+ (?)
 
