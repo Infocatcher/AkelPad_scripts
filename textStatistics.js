@@ -10,8 +10,8 @@
 
 // Arguments:
 //   -maxLine=40    - maximum displayed symbols for longest line
-//   -maxWord=40    - maximum displayed symbols for words with mixed Cyrillic/Latin symbols
 //   -maxMixed=5    - maximum displayed words with mixed Cyrillic/Latin symbols
+//   -maxWord=40    - maximum displayed symbols for words with mixed Cyrillic/Latin symbols
 
 // Usage:
 //   Call("Scripts::Main", 1, "textStatistics.js")
@@ -20,8 +20,8 @@
 // Windows XP+ (?)
 
 var maxLine = AkelPad.GetArgValue("maxLine", 40);
-var maxWord = AkelPad.GetArgValue("maxWord", 40);
 var maxMixed = AkelPad.GetArgValue("maxMixed", 5);
+var maxWord = AkelPad.GetArgValue("maxWord", 40);
 
 function _localize(s) {
 	var strings = {
