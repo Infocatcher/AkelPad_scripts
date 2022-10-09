@@ -251,16 +251,19 @@ function getTextStatistics() {
 	progress(60, _localize("Mixed symbols…"));
 
 	try {
-		var cyrLatMixM = txt.match(/([a-z][-\wа-яё]*[а-яё]|[а-яё][-\wа-яё]*[a-z])/ig);
+		var cyrLatMixM = txt.match(/((\\)?[a-z][-\wа-яё]*[а-яё]|[а-яё][-\wа-яё]*[a-z])/ig);
 		var cyrLatMix = cyrLatMixM ? cyrLatMixM.length : 0;
 
 		progress(70, _localize("Mixed symbols…"));
 		var filtered = [];
 		for(var i = 0; i < cyrLatMix; ++i) {
 			var s = cyrLatMixM[i];
-			if(/^[a-z]+-[а-яё]+$/i.test(s))
+			if(
+				/^[a-z]+-[а-яё]+$/i.test(s) // Something like "esc-последовательность"
+				|| /^\\[rn][а-яёА-ЯЁ]+$/.test(s) // Ignore \n and \r: "…\nНовая строка"
+			)
 				continue;
-			filtered.push(s);
+			filtered.push(s.replace(/^\\/, ""));
 		}
 		cyrLatMixM = filtered;
 		cyrLatMix = filtered.length;
