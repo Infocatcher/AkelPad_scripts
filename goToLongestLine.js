@@ -90,6 +90,7 @@ if(saveOptions || savePosition)
 
 var dialog       = getArg("dialog", true);
 var reverse      = getArg("reverse", false);
+var fromStart    = getArg("fromStart", false);
 var autoGo       = getArg("autoGo", false);
 var checkClose   = getArgOrPref("close",     prefs && prefs.DWORD);
 var checkFocus   = getArgOrPref("focus",     prefs && prefs.DWORD);
@@ -141,7 +142,11 @@ function goToLongestLine(reverse) {
 	var indx;
 	var linesCount = AkelPad.SendMessage(hWndEdit, 3129 /*AEM_GETLINENUMBER*/, 0 /*AEGL_LINECOUNT*/, 0);
 	var count;
-	var ss = AkelPad.GetSelStart();
+	var ss = fromStart
+		? reverse
+			? oSys.Call("user32::GetWindowTextLength" + _TCHAR, hWndEdit)
+			: 0
+		: AkelPad.GetSelStart();
 	line = AkelPad.SendMessage(hWndEdit, 1078 /*EM_EXLINEFROMCHAR*/, 0, ss);
 	if(reverse) {
 		lineStart  = AkelPad.SendMessage(hWndEdit, 187 /*EM_LINEINDEX*/,  line, 0);
