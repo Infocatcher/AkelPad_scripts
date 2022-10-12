@@ -258,11 +258,12 @@ function goToLongestLineDialog(modal) {
 	var IDC_LINE       = 1004;
 	var IDC_LENGTH     = 1005;
 	var IDC_PROCESSED  = 1006;
-	var IDC_UP         = 1007;
-	var IDC_DOWN       = 1008;
-	var IDC_CANCEL     = 1009;
+	var IDC_FROM_START = 1007;
+	var IDC_UP         = 1008;
+	var IDC_DOWN       = 1009;
+	var IDC_CANCEL     = 1010;
 
-	var hWndFocus, hWndClose;
+	var hWndFocus, hWndClose, hWndFromStart;
 	var hWndStatic, hWndTimeLimit, hWndLine, hWndLength, hWndProcessed;
 	var hWndDown, hWndUp, hWndCancel;
 
@@ -280,7 +281,7 @@ function goToLongestLineDialog(modal) {
 		scale.x(0),                    //x
 		scale.y(0),                    //y
 		scale.x(286) + sizeNonClientX, //nWidth
-		scale.y(193) + sizeNonClientY, //nHeight
+		scale.y(215) + sizeNonClientY, //nHeight
 		hMainWnd,                      //hWndParent
 		0,                             //ID
 		hInstanceDLL,                  //hInstance
@@ -509,6 +510,24 @@ function goToLongestLineDialog(modal) {
 				);
 				setWindowFontAndText(hWndProcessed, hGuiFont, "");
 
+				// Checkbox: from start
+				hWndFromStart = createWindowEx(
+					0,              //dwExStyle
+					"BUTTON",       //lpClassName
+					0,              //lpWindowName
+					0x50010003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
+					12,             //x
+					159,             //y
+					270,            //nWidth
+					16,             //nHeight
+					hWnd,           //hWndParent
+					IDC_FROM_START, //ID
+					hInstanceDLL,   //hInstance
+					0               //lpParam
+				);
+				setWindowFontAndText(hWndFromStart, hGuiFont, _localize("&From start"));
+				checked(hWndFromStart, fromStart);
+
 				// Down button window
 				hWndDown = createWindowEx(
 					0,            //dwExStyle
@@ -516,7 +535,7 @@ function goToLongestLineDialog(modal) {
 					0,            //lpWindowName
 					0x50010001,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_DEFPUSHBUTTON
 					12,           //x
-					159,          //y
+					181,          //y
 					80,           //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -533,7 +552,7 @@ function goToLongestLineDialog(modal) {
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					104,          //x
-					159,          //y
+					181,          //y
 					80,           //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -550,7 +569,7 @@ function goToLongestLineDialog(modal) {
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					196,          //x
-					159,          //y
+					181,          //y
 					80,           //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -614,6 +633,7 @@ function goToLongestLineDialog(modal) {
 						var up = idc == IDC_UP;
 						var hWndFocused = oSys.Call("user32::GetFocus");
 						controlsEnabled(false);
+						fromStart = checked(hWndFromStart);
 						var stats = goToLongestLine(up);
 
 						windowText(hWndLine, formatNum(stats.line) + " / " + formatNum(stats.linesCount));
