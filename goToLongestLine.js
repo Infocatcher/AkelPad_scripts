@@ -124,10 +124,10 @@ if(hMainWnd) {
 	if(dialog)
 		goToLongestLineDialog();
 	else
-		goToLongestLine(reverse);
+		goToLongestLine(reverse, fromStart);
 }
 
-function goToLongestLine(reverse) {
+function goToLongestLine(reverse, fromStart) {
 	var hWndEdit = AkelPad.GetEditWnd();
 
 	var ww = AkelPad.SendMessage(hWndEdit, 3241 /*AEM_GETWORDWRAP*/, 0, 0);
@@ -633,8 +633,7 @@ function goToLongestLineDialog(modal) {
 						var up = idc == IDC_UP;
 						var hWndFocused = oSys.Call("user32::GetFocus");
 						controlsEnabled(false);
-						fromStart = checked(hWndFromStart);
-						var stats = goToLongestLine(up);
+						var stats = goToLongestLine(up, checked(hWndFromStart));
 
 						windowText(hWndLine, formatNum(stats.line) + " / " + formatNum(stats.linesCount));
 						windowText(hWndLength, formatNum(stats.lineLength));
