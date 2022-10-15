@@ -59,6 +59,9 @@ function _localize(s) {
 		"&Processed:": {
 			ru: "&Обработано:"
 		},
+		"&From start": {
+			ru: "&С начала"
+		},
 		"&Down": {
 			ru: "В&низ"
 		},
