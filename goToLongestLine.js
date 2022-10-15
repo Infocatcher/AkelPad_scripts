@@ -90,10 +90,10 @@ if(saveOptions || savePosition)
 
 var dialog       = getArg("dialog", true);
 var reverse      = getArg("reverse", false);
-var fromStart    = getArg("fromStart", false);
 var autoGo       = getArg("autoGo", false);
 var checkClose   = getArgOrPref("close",     prefs && prefs.DWORD);
 var checkFocus   = getArgOrPref("focus",     prefs && prefs.DWORD);
+var fromStart    = getArgOrPref("fromStart", prefs && prefs.DWORD);
 var timeLimit    = getArgOrPref("timeLimit", prefs && prefs.DWORD, 400);
 
 prefs && prefs.end();
@@ -633,7 +633,8 @@ function goToLongestLineDialog(modal) {
 						var up = idc == IDC_UP;
 						var hWndFocused = oSys.Call("user32::GetFocus");
 						controlsEnabled(false);
-						var stats = goToLongestLine(up, checked(hWndFromStart));
+						var start = checked(hWndFromStart);
+						var stats = goToLongestLine(up, start);
 
 						windowText(hWndLine, formatNum(stats.line) + " / " + formatNum(stats.linesCount));
 						windowText(hWndLength, formatNum(stats.lineLength));
@@ -651,6 +652,7 @@ function goToLongestLineDialog(modal) {
 							prefs.set({
 								close:     closeDlg,
 								focus:     focusEditor,
+								fromStart: start,
 								timeLimit: timeLimit
 							});
 							prefs.end();
