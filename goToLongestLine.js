@@ -685,6 +685,7 @@ function goToLongestLineDialog(modal) {
 					prefs.set({
 						close:     checked(hWndClose),
 						focus:     checked(hWndFocus),
+						fromStart: checked(hWndFromStart),
 						timeLimit: parseInt(windowText(hWndTimeLimit), 10) || 0
 					});
 					prefs.end();
