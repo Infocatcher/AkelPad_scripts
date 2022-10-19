@@ -15,6 +15,7 @@
 // Arguments:
 //   -dialog=true        - show dialog
 //   -reverse=false      - inverse direction (only without dialog)
+//   -fromStart=false    - force check "from start" (or start search from start without dialog)
 //   -timeLimit=400      - time limit (in milliseconds) for very big files
 //   -close=true         - force check "close dialog"
 //   -focus=true         - force check "focus editor"
@@ -27,6 +28,7 @@
 // Usage:
 //   Call("Scripts::Main", 1, "goToLongestLine.js")
 //   Call("Scripts::Main", 1, "goToLongestLine.js", "-dialog=false -reverse=false")
+//   Call("Scripts::Main", 1, "goToLongestLine.js", "-dialog=false -reverse=false -fromStart=true")
 //   Call("Scripts::Main", 1, "goToLongestLine.js", "-dialog=true -close=true -saveOptions=0 -savePosition=false")
 //===================
 
