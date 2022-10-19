@@ -16,7 +16,7 @@
 //   -dialog=true        - show dialog
 //   -reverse=false      - inverse direction (only without dialog)
 //   -fromStart=false    - force check "from start" (or start search from start without dialog)
-//   -timeLimit=400      - time limit (in milliseconds) for very big files
+//   -timeLimit=2000     - time limit (in milliseconds) for very big files
 //   -close=true         - force check "close dialog"
 //   -focus=true         - force check "focus editor"
 //   -autoGo=true        - automatically go to longest line after run with -dialog=true
@@ -99,7 +99,7 @@ var autoGo       = getArg("autoGo", false);
 var checkClose   = getArgOrPref("close",     prefs && prefs.DWORD);
 var checkFocus   = getArgOrPref("focus",     prefs && prefs.DWORD);
 var fromStart    = getArgOrPref("fromStart", prefs && prefs.DWORD);
-var timeLimit    = getArgOrPref("timeLimit", prefs && prefs.DWORD, 400);
+var timeLimit    = getArgOrPref("timeLimit", prefs && prefs.DWORD, 2000);
 
 prefs && prefs.end();
 
