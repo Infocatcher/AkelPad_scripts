@@ -851,11 +851,14 @@ function goToLongestLineDialog(modal) {
 		tl = Math.max(timeLimitMin, Math.min(timeLimitMax, tl));
 
 		var confirm = function(ask) {
-			if(typeof readTimeLimit._ok != "undefined" && readTimeLimit._ok)
-				return true; // Only one confirmation
-			return readTimeLimit._ok = AkelPad.MessageBox(
+			if(tl == readTimeLimit._confirmedLimit || NaN)
+				return true; // Already confirmed
+			var confirmed = AkelPad.MessageBox(
 				hWndDialog, ask, dialogTitle, 33 /*MB_OKCANCEL|MB_ICONQUESTION*/
 			) == 1 /*IDOK*/;
+			if(confirmed)
+				readTimeLimit._confirmedLimit = tl;
+			return confirmed;
 		};
 		if(!tl && !confirm(_localize("Are you sure to disable time limit?"))) {
 			focusWindow(hWndTimeLimit);
