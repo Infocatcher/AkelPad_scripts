@@ -100,6 +100,7 @@ var checkClose   = getArgOrPref("close",     prefs && prefs.DWORD);
 var checkFocus   = getArgOrPref("focus",     prefs && prefs.DWORD);
 var fromStart    = getArgOrPref("fromStart", prefs && prefs.DWORD);
 var timeLimit    = getArgOrPref("timeLimit", prefs && prefs.DWORD, 2000);
+var tlConfirmed  = prefs && prefs.get("timeLimitConfirmed", prefs.DWORD);
 
 prefs && prefs.end();
 
@@ -851,13 +852,18 @@ function goToLongestLineDialog(modal) {
 		tl = Math.max(timeLimitMin, Math.min(timeLimitMax, tl));
 
 		var confirm = function(ask) {
-			if(tl == readTimeLimit._confirmedLimit || NaN)
+			if(tl == tlConfirmed)
 				return true; // Already confirmed
 			var confirmed = AkelPad.MessageBox(
 				hWndDialog, ask, dialogTitle, 33 /*MB_OKCANCEL|MB_ICONQUESTION*/
 			) == 1 /*IDOK*/;
-			if(confirmed)
-				readTimeLimit._confirmedLimit = tl;
+			if(confirmed) {
+				tlConfirmed = tl;
+				if(prefs) {
+					prefs.set("timeLimitConfirmed", tl);
+					prefs.end();
+				}
+			}
 			return confirmed;
 		};
 		if(!tl && !confirm(_localize("Are you sure to disable time limit?"))) {
