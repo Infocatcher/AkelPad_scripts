@@ -191,8 +191,9 @@ function goToLongestLine(reverse, fromStart) {
 		++lines;
 
 		var lineText = AkelPad.GetTextRange(lineStart, lineEnd);
-		if(lineText.indexOf("\t") != -1) {
-			for(var i = 0, column = 0, ll = lineLength; i < ll; ++i, ++column) {
+		var ti = lineText.indexOf("\t");
+		if(ti != -1) {
+			for(var i = ti, column = ti, ll = lineLength; i < ll; ++i, ++column) {
 				if(lineText.charAt(i) != "\t")
 					continue;
 				var tabWidth = tabStop - column % tabStop;
