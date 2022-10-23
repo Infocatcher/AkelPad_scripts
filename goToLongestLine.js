@@ -53,7 +53,7 @@ function _localize(s) {
 			ru: "Ограничение по времени слишком велико (%S мин)\nВсе равно продолжить?"
 		},
 		"&Line:": {
-			ru: "&Строка:"
+			ru: "С&трока:"
 		},
 		"L&ength:": {
 			ru: "&Длина:"
@@ -61,7 +61,7 @@ function _localize(s) {
 		"&Processed:": {
 			ru: "&Обработано:"
 		},
-		"&From start": {
+		"From &start": {
 			ru: "&С начала"
 		},
 		"&Down": {
@@ -532,7 +532,7 @@ function goToLongestLineDialog(modal) {
 					hInstanceDLL,   //hInstance
 					0               //lpParam
 				);
-				setWindowFontAndText(hWndFromStart, hGuiFont, _localize("&From start"));
+				setWindowFontAndText(hWndFromStart, hGuiFont, _localize("From &start"));
 				checked(hWndFromStart, fromStart);
 
 				// Down button window
