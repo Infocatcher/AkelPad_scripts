@@ -258,20 +258,21 @@ function goToLongestLineDialog(modal) {
 	var disabled = false;
 	var disabledTimeout = 150;
 
-	var IDC_STATIC     = -1;
-	var IDC_FOCUS      = 1001;
-	var IDC_CLOSE      = 1002;
-	var IDC_TIME_LIMIT = 1003;
-	var IDC_LINE       = 1004;
-	var IDC_LENGTH     = 1005;
-	var IDC_PROCESSED  = 1006;
-	var IDC_FROM_START = 1007;
-	var IDC_UP         = 1008;
-	var IDC_DOWN       = 1009;
-	var IDC_CANCEL     = 1010;
+	var IDC_STATIC        = -1;
+	var IDC_FOCUS         = 1001;
+	var IDC_CLOSE         = 1002;
+	var IDC_TIME_LIMIT_ON = 1003;
+	var IDC_TIME_LIMIT    = 1004;
+	var IDC_LINE          = 1005;
+	var IDC_LENGTH        = 1006;
+	var IDC_PROCESSED     = 1007;
+	var IDC_FROM_START    = 1008;
+	var IDC_UP            = 1009;
+	var IDC_DOWN          = 1010;
+	var IDC_CANCEL        = 1011;
 
 	var hWndFocus, hWndClose, hWndFromStart;
-	var hWndStatic, hWndTimeLimit, hWndLine, hWndLength, hWndProcessed;
+	var hWndStatic, hWndTimeLimitOn, hWndTimeLimit, hWndLine, hWndLength, hWndProcessed;
 	var hWndDown, hWndUp, hWndCancel;
 
 	var scale = new Scale(0, hMainWnd);
@@ -346,22 +347,23 @@ function goToLongestLineDialog(modal) {
 				setWindowFontAndText(hWndFocus, hGuiFont, _localize("&Focus editor"));
 				checked(hWndFocus, checkFocus);
 
-				// Static window: time limit label
-				hWndStatic = createWindowEx(
-					0,            //dwExStyle
-					"STATIC",     //lpClassName
-					0,            //lpWindowName
-					0x50000000,   //WS_VISIBLE|WS_CHILD
-					12,           //x
-					59,           //y
-					134,          //nWidth
-					13,           //nHeight
-					hWnd,         //hWndParent
-					IDC_STATIC,   //ID
-					hInstanceDLL, //hInstance
-					0             //lpParam
+				// Checkbox: time limit
+				hWndTimeLimitOn = createWindowEx(
+					0,                 //dwExStyle
+					"BUTTON",          //lpClassName
+					0,                 //lpWindowName
+					0x50010003,        //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
+					12,                //x
+					56,                //y
+					152,               //nWidth
+					16,                //nHeight
+					hWnd,              //hWndParent
+					IDC_TIME_LIMIT_ON, //ID
+					hInstanceDLL,      //hInstance
+					0                  //lpParam
 				);
-				setWindowFontAndText(hWndStatic, hGuiFont, _localize("&Time limit:"));
+				setWindowFontAndText(hWndTimeLimitOn, hGuiFont, _localize("&Time limit:"));
+				checked(hWndTimeLimitOn, timeLimit > 0);
 
 				// Edit: time limit
 				hWndTimeLimit = createWindowEx(
@@ -369,7 +371,7 @@ function goToLongestLineDialog(modal) {
 					"EDIT",         //lpClassName
 					0,              //lpWindowName
 					0x50012080,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_NUMBER|ES_AUTOHSCROLL
-					150,            //x
+					166,            //x
 					56,             //y
 					60,             //nWidth
 					19,             //nHeight
@@ -386,7 +388,7 @@ function goToLongestLineDialog(modal) {
 					"msctls_updown32", //lpClassName
 					0,                 //lpWindowName
 					0x500000A2,        //WS_VISIBLE|WS_CHILD|UDS_SETBUDDYINT|UDS_ARROWKEYS|UDS_NOTHOUSANDS
-					210,               //x
+					226,               //x
 					55,                //y
 					16,                //nWidth
 					21,                //nHeight
@@ -404,7 +406,7 @@ function goToLongestLineDialog(modal) {
 					"STATIC",     //lpClassName
 					0,            //lpWindowName
 					0x50000000,   //WS_VISIBLE|WS_CHILD
-					230,          //x
+					246,          //x
 					59,           //y
 					58,           //nWidth
 					13,           //nHeight
