@@ -372,7 +372,7 @@ function goToLongestLineDialog(modal) {
 					0,              //lpWindowName
 					0x50012080,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_NUMBER|ES_AUTOHSCROLL
 					166,            //x
-					56,             //y
+					54,             //y
 					60,             //nWidth
 					19,             //nHeight
 					hWnd,           //hWndParent
@@ -389,7 +389,7 @@ function goToLongestLineDialog(modal) {
 					0,                 //lpWindowName
 					0x500000A2,        //WS_VISIBLE|WS_CHILD|UDS_SETBUDDYINT|UDS_ARROWKEYS|UDS_NOTHOUSANDS
 					226,               //x
-					55,                //y
+					53,                //y
 					16,                //nWidth
 					21,                //nHeight
 					hWnd,              //hWndParent
@@ -407,7 +407,7 @@ function goToLongestLineDialog(modal) {
 					0,            //lpWindowName
 					0x50000000,   //WS_VISIBLE|WS_CHILD
 					246,          //x
-					59,           //y
+					57,           //y
 					58,           //nWidth
 					13,           //nHeight
 					hWnd,         //hWndParent
