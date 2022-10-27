@@ -352,7 +352,7 @@ function goToLongestLineDialog(modal) {
 					0,                 //dwExStyle
 					"BUTTON",          //lpClassName
 					0,                 //lpWindowName
-					0x50010003,        //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
+					0x50010002,        //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_CHECKBOX
 					12,                //x
 					56,                //y
 					152,               //nWidth
@@ -381,6 +381,7 @@ function goToLongestLineDialog(modal) {
 					0               //lpParam
 				);
 				setWindowFontAndText(hWndTimeLimit, hGuiFont, String(timeLimit));
+				enabled(hWndTimeLimit, timeLimit > 0);
 
 				// Up/down buttons
 				hWndStatic = createWindowEx(
@@ -631,6 +632,13 @@ function goToLongestLineDialog(modal) {
 			case 273: //WM_COMMAND
 				var idc = wParam & 0xffff;
 				switch(idc) {
+					case IDC_TIME_LIMIT_ON:
+						var off = checked(hWndTimeLimitOn);
+						var tl = off ? 0 : 2000;
+						windowText(hWndTimeLimit, "" + tl);
+						checked(hWndTimeLimitOn, tl > 0);
+						enabled(hWndTimeLimit, tl > 0);
+					break;
 					case IDC_DOWN:
 					case IDC_UP:
 						if(!readTimeLimit())
