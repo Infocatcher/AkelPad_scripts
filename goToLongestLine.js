@@ -700,7 +700,7 @@ function goToLongestLineDialog(modal) {
 						close:     checked(hWndClose),
 						focus:     checked(hWndFocus),
 						fromStart: checked(hWndFromStart),
-						timeLimit: parseInt(windowText(hWndTimeLimit), 10) || 0
+						timeLimit: +windowText(hWndTimeLimit)
 					});
 					prefs.end();
 				}
@@ -854,13 +854,8 @@ function goToLongestLineDialog(modal) {
 		var timeLimitMin  = 0;
 		var timeLimitWarn = 15000;
 		var timeLimitMax  = 24*60*60*1000;
-		var tlOrig = windowText(hWndTimeLimit);
-		var tl = Number(
-			tlOrig
-				.replace(/\D/g, "")
-				.replace(/^0+/, "")
-		);
-		tl = Math.max(timeLimitMin, Math.min(timeLimitMax, tl));
+		var tlOrig = +windowText(hWndTimeLimit);
+		var tl = Math.max(timeLimitMin, Math.min(timeLimitMax, tlOrig));
 
 		var confirm = function(ask) {
 			if(tl == tlConfirmed)
@@ -895,8 +890,8 @@ function goToLongestLineDialog(modal) {
 			}
 		}
 
-		if(String(tl) != tlOrig)
-			windowText(hWndTimeLimit, String(tl));
+		if(tl != tlOrig)
+			windowText(hWndTimeLimit, "" + tl);
 		timeLimit = tl;
 		return true;
 	}
