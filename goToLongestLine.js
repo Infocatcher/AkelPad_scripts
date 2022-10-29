@@ -109,6 +109,7 @@ var hMainWnd = AkelPad.GetMainWnd();
 var oSys = AkelPad.SystemFunction();
 var dialogTitle = WScript.ScriptName.replace(/^[!-\-_]+/, "");
 dialogTitle = dialogTitle.charAt(0).toUpperCase() + dialogTitle.substr(1);
+var tlLast;
 
 Number.prototype._origToFixed = Number.prototype.toFixed;
 Number.prototype.toFixed = function(r) {
@@ -634,7 +635,13 @@ function goToLongestLineDialog(modal) {
 				switch(idc) {
 					case IDC_TIME_LIMIT_ON:
 						var off = checked(hWndTimeLimitOn);
-						var tl = off ? 0 : 2000;
+						if(off) {
+							var tl = 0;
+							tlLast = +windowText(hWndTimeLimit);
+						}
+						else {
+							tl = tlLast || 2000;
+						}
 						windowText(hWndTimeLimit, "" + tl);
 						checked(hWndTimeLimitOn, tl > 0);
 						enabled(hWndTimeLimit, tl > 0);
