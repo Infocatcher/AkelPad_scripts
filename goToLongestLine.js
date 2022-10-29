@@ -897,6 +897,10 @@ function goToLongestLineDialog(modal) {
 			}
 		}
 
+		if(!tl) {
+			checked(hWndTimeLimitOn, false);
+			enabled(hWndTimeLimit, false);
+		}
 		if(tl != tlOrig)
 			windowText(hWndTimeLimit, "" + tl);
 		timeLimit = tl;
