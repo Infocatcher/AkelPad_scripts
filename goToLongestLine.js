@@ -898,8 +898,11 @@ function goToLongestLineDialog(modal) {
 		}
 
 		if(!tl) {
+			var hWndFocused = oSys.Call("user32::GetFocus");
 			checked(hWndTimeLimitOn, false);
 			enabled(hWndTimeLimit, false);
+			if(hWndFocused == hWndTimeLimit)
+				focusWindow(hWndTimeLimitOn);
 		}
 		if(tl != tlOrig)
 			windowText(hWndTimeLimit, "" + tl);
