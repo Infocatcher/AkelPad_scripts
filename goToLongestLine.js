@@ -93,13 +93,14 @@ var savePosition = getArg("savePosition", true);
 if(saveOptions || savePosition)
 	var prefs = new Prefs();
 
+var tlDefault = 2000;
 var dialog       = getArg("dialog", true);
 var reverse      = getArg("reverse", false);
 var autoGo       = getArg("autoGo", false);
 var checkClose   = getArgOrPref("close",     prefs && prefs.DWORD);
 var checkFocus   = getArgOrPref("focus",     prefs && prefs.DWORD);
 var fromStart    = getArgOrPref("fromStart", prefs && prefs.DWORD);
-var timeLimit    = getArgOrPref("timeLimit", prefs && prefs.DWORD, 2000);
+var timeLimit    = getArgOrPref("timeLimit", prefs && prefs.DWORD, tlDefault);
 var tlConfirmed  = prefs && prefs.get("timeLimitConfirmed", prefs.DWORD);
 
 prefs && prefs.end();
@@ -640,7 +641,7 @@ function goToLongestLineDialog(modal) {
 							tlLast = +windowText(hWndTimeLimit);
 						}
 						else {
-							tl = tlLast || 2000;
+							tl = tlLast || tlDefault;
 						}
 						windowText(hWndTimeLimit, "" + tl);
 						checked(hWndTimeLimitOn, tl > 0);
