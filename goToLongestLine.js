@@ -93,7 +93,11 @@ var savePosition = getArg("savePosition", true);
 if(saveOptions || savePosition)
 	var prefs = new Prefs();
 
+var tlMin     = 0;
 var tlDefault = 2000;
+var tlWarn    = 15000;
+var tlMax     = 24*60*60*1000;
+
 var dialog       = getArg("dialog", true);
 var reverse      = getArg("reverse", false);
 var autoGo       = getArg("autoGo", false);
@@ -863,11 +867,8 @@ function goToLongestLineDialog(modal) {
 		return oSys.Call("user32::GetAsyncKeyState", key) & 0x8000; // Fix 4-byte result in AkelPad x64
 	}
 	function readTimeLimit() {
-		var timeLimitMin  = 0;
-		var timeLimitWarn = 15000;
-		var timeLimitMax  = 24*60*60*1000;
 		var tlOrig = +windowText(hWndTimeLimit);
-		var tl = Math.max(timeLimitMin, Math.min(timeLimitMax, tlOrig));
+		var tl = Math.max(tlMin, Math.min(tlMax, tlOrig));
 
 		var confirm = function(ask) {
 			if(tl == tlConfirmed)
@@ -889,7 +890,7 @@ function goToLongestLineDialog(modal) {
 			AkelPad.SendMessage(hWndTimeLimit, 177 /*EM_SETSEL*/, 0, -1);
 			return false;
 		}
-		if(tl > timeLimitWarn) {
+		if(tl > tlWarn) {
 			var secs = Math.round(tl/1000);
 			var mins = Math.floor(secs/60);
 			secs = Math.floor(secs%60);
