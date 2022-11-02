@@ -102,6 +102,7 @@ var checkFocus   = getArgOrPref("focus",     prefs && prefs.DWORD);
 var fromStart    = getArgOrPref("fromStart", prefs && prefs.DWORD);
 var timeLimit    = getArgOrPref("timeLimit", prefs && prefs.DWORD, tlDefault);
 var tlConfirmed  = prefs && prefs.get("timeLimitConfirmed", prefs.DWORD);
+var tlLast       = prefs && prefs.get("timeLimitLast", prefs.DWORD);
 
 prefs && prefs.end();
 
@@ -110,7 +111,6 @@ var hMainWnd = AkelPad.GetMainWnd();
 var oSys = AkelPad.SystemFunction();
 var dialogTitle = WScript.ScriptName.replace(/^[!-\-_]+/, "");
 dialogTitle = dialogTitle.charAt(0).toUpperCase() + dialogTitle.substr(1);
-var tlLast;
 
 Number.prototype._origToFixed = Number.prototype.toFixed;
 Number.prototype.toFixed = function(r) {
@@ -639,6 +639,10 @@ function goToLongestLineDialog(modal) {
 						if(off) {
 							var tl = 0;
 							tlLast = +windowText(hWndTimeLimit);
+							if(prefs) {
+								prefs.set("timeLimitLast", tlLast);
+								prefs.end();
+							}
 						}
 						else {
 							tl = tlLast || tlDefault;
