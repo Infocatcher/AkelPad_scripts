@@ -93,7 +93,6 @@ var savePosition = getArg("savePosition", true);
 if(saveOptions || savePosition)
 	var prefs = new Prefs();
 
-var tlMin     = 0;
 var tlDefault = 2000;
 var tlWarn    = 15000;
 var tlMax     = 24*60*60*1000;
@@ -405,7 +404,8 @@ function goToLongestLineDialog(modal) {
 					0                  //lpParam
 				);
 				AkelPad.SendMessage(hWndStatic, 0x0400 + 105 /*UDM_SETBUDDY*/, hWndTimeLimit, 0);
-				AkelPad.SendMessage(hWndStatic, 0x0400 + 101 /*UDM_SETRANGE*/, 0, ((0 & 0xFFFF) << 16) + (30000 & 0xFFFF));
+				// Note: limited by UD_MAXVAL = 0x7fff // 32767
+				AkelPad.SendMessage(hWndStatic, 0x0400 + 101 /*UDM_SETRANGE*/, 0, ((0 & 0xffff) << 16) + (30000 & 0xffff));
 
 				// Static window: time limit ms label
 				hWndStatic = createWindowEx(
@@ -868,7 +868,7 @@ function goToLongestLineDialog(modal) {
 	}
 	function readTimeLimit() {
 		var tlOrig = +windowText(hWndTimeLimit);
-		var tl = Math.max(tlMin, Math.min(tlMax, tlOrig));
+		var tl = Math.max(0, Math.min(tlMax, tlOrig));
 
 		var confirm = function(ask) {
 			if(tl == tlConfirmed)
