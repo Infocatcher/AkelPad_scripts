@@ -406,6 +406,16 @@ function goToLongestLineDialog(modal) {
 				AkelPad.SendMessage(hWndStatic, 0x0400 + 105 /*UDM_SETBUDDY*/, hWndTimeLimit, 0);
 				// Note: limited by UD_MAXVAL = 0x7fff // 32767
 				AkelPad.SendMessage(hWndStatic, 0x0400 + 101 /*UDM_SETRANGE*/, 0, ((0 & 0xffff) << 16) + (30000 & 0xffff));
+				var lpAccel = AkelPad.MemAlloc(4 + 4);
+				//typedef struct _UDACCEL {
+				//	UINT nSec;
+				//	UINT nInc;
+				//} UDACCEL, *LPUDACCEL;
+				if(lpAccel) {
+					AkelPad.MemCopy(_PtrAdd(lpAccel, 4), 100, 3 /*DT_DWORD*/);
+					AkelPad.SendMessage(hWndStatic, 0x0400 + 107 /*UDM_SETACCEL*/, 1, lpAccel);
+					AkelPad.MemFree(lpAccel);
+				}
 
 				// Static window: time limit ms label
 				hWndStatic = createWindowEx(
