@@ -404,8 +404,9 @@ function goToLongestLineDialog(modal) {
 					0                  //lpParam
 				);
 				AkelPad.SendMessage(hWndStatic, 0x0400 + 105 /*UDM_SETBUDDY*/, hWndTimeLimit, 0);
-				// Note: limited by UD_MAXVAL = 0x7fff // 32767
+				// Note: UDM_SETRANGE is limited by UD_MAXVAL = 0x7fff // 32767
 				AkelPad.SendMessage(hWndStatic, 0x0400 + 101 /*UDM_SETRANGE*/, 0, ((0 & 0xffff) << 16) + (30000 & 0xffff));
+				AkelPad.SendMessage(hWndStatic, 0x0400 + 111 /*UDM_SETRANGE32*/, 0, tlMax);
 				var lpAccel = AkelPad.MemAlloc(4 + 4);
 				//typedef struct _UDACCEL {
 				//	UINT nSec;
