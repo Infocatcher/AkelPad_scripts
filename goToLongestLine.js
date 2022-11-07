@@ -897,7 +897,7 @@ function goToLongestLineDialog(modal) {
 			return confirmed;
 		};
 		if(!tl && !confirm(_localize("Are you sure to disable time limit?"))) {
-			focusWindow(hWndTimeLimit);
+			focusWindow(hWndTimeLimitOn);
 			AkelPad.SendMessage(hWndTimeLimit, 177 /*EM_SETSEL*/, 0, -1);
 			return false;
 		}
