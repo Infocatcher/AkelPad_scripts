@@ -385,7 +385,7 @@ function goToLongestLineDialog(modal) {
 					hInstanceDLL,   //hInstance
 					0               //lpParam
 				);
-				setWindowFontAndText(hWndTimeLimit, hGuiFont, String(timeLimit));
+				setWindowFontAndText(hWndTimeLimit, hGuiFont, "" + timeLimit);
 				enabled(hWndTimeLimit, timeLimit > 0);
 
 				// Up/down buttons
@@ -983,14 +983,14 @@ function goToLongestLineDialog(modal) {
 }
 
 function formatNum(n) {
-	//return Number(n).toLocaleString().replace(/\s*[^\d\s\xa0\u2002\u2003\u2009].*$/, "");
-	return String(n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
+	//return (+n).toLocaleString().replace(/\s*[^\d\s\xa0\u2002\u2003\u2009].*$/, "");
+	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
 }
 function toLocaleNum(n) { // 1.25 -> 1,25
 	var localeDelimiter = 1.1.toLocaleString().replace(/^\d+|\d+$/g, "");
 	if(!localeDelimiter || /\d/.test(localeDelimiter))
 		 localeDelimiter = ".";
-	return String(n).replace(/\./, localeDelimiter);
+	return ("" + n).replace(/\./, localeDelimiter);
 }
 function setRedraw(hWnd, bRedraw) {
 	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
