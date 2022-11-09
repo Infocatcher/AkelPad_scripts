@@ -914,7 +914,7 @@ function goToLongestLineDialog(modal) {
 			}
 		}
 
-		if(!tl) {
+		if(!tl && checked(hWndTimeLimitOn)) {
 			var hWndFocused = oSys.Call("user32::GetFocus");
 			checked(hWndTimeLimitOn, false);
 			enabled(hWndTimeLimit, false);
