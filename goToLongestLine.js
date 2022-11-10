@@ -21,7 +21,7 @@
 //   -focus=true         - force check "focus editor"
 //   -autoGo=true        - automatically go to longest line after run with -dialog=true
 //   -saveOptions=0      - don't store options
-//               =1      - save options after them usage
+//               =1      - (default) save options after them usage
 //               =2      - save options on exit
 //   -savePosition=true  - allow store last window position
 
