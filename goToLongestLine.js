@@ -15,11 +15,11 @@
 // Arguments:
 //   -dialog=true        - show dialog
 //   -reverse=false      - inverse direction (only without dialog)
-//   -fromStart=false    - force check "from start" (or start search from start without dialog)
-//   -timeLimit=2000     - time limit (in milliseconds) for very big files
-//             =0        - disable time limit
 //   -close=true         - force check "close dialog"
 //   -focus=true         - force check "focus editor"
+//   -timeLimit=2000     - time limit (in milliseconds) for very big files
+//             =0        - disable time limit
+//   -fromStart=false    - force check "from start" (or start search from start without dialog)
 //   -autoGo=true        - automatically go to longest line after run with -dialog=true
 //   -saveOptions=0      - don't store options
 //               =1      - (default) save options after them usage
