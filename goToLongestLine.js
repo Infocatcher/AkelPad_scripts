@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/goToLongestLine.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/goToLongestLine.js
 
-// (c) Infocatcher 2010-2011, 2014
-// Version: 0.3.9.1 - 2014-05-06
+// (c) Infocatcher 2010-2022
+// Version: 0.4.0pre - 2022-11-13
 // Author: Infocatcher
 
 //===================
