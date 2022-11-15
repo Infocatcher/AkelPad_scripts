@@ -3668,22 +3668,6 @@ function converterDialog(modal) {
 
 		db.sort();
 		var selfFile = WScript.ScriptFullName;
-		// Create backup
-		var fso = new ActiveXObject("Scripting.FileSystemObject");
-		var bakExt = gts() + ".js.bak";
-		var selfFileBak = selfFile.slice(0, -3) + bakExt;
-		try {
-			fso.CopyFile(selfFile, selfFileBak, true);
-		}
-		catch(e) {
-			AkelPad.MessageBox(
-				hMainWnd,
-				_localize("Can't create backup file:\n") + [e.message, selfFileBak].join("\n"),
-				WScript.ScriptBaseName,
-				16 /*MB_ICONERROR*/
-			);
-			return;
-		}
 
 		var d = new Date(ts);
 		var updDate = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
@@ -3714,6 +3698,23 @@ function converterDialog(modal) {
 				_localize("Default currency data not changed!"),
 				WScript.ScriptBaseName,
 				48 /*MB_ICONEXCLAMATION*/
+			);
+			return;
+		}
+
+		// Create backup
+		var fso = new ActiveXObject("Scripting.FileSystemObject");
+		var bakExt = gts() + ".js.bak";
+		var selfFileBak = selfFile.slice(0, -3) + bakExt;
+		try {
+			fso.CopyFile(selfFile, selfFileBak, true);
+		}
+		catch(e) {
+			AkelPad.MessageBox(
+				hMainWnd,
+				_localize("Can't create backup file:\n") + [e.message, selfFileBak].join("\n"),
+				WScript.ScriptBaseName,
+				16 /*MB_ICONERROR*/
 			);
 			return;
 		}
