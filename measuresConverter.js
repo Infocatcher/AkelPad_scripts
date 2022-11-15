@@ -3687,6 +3687,7 @@ function converterDialog(modal) {
 
 		var d = new Date(ts);
 		var updDate = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+		var updated;
 		var selfCode = AkelPad.ReadFile(selfFile, 0, 65001, 1)
 			.replace(/[\r\n]function getDefaultCurrencyData\(\) \{[^}]+[\r\n]\}[\r\n]/, function(code) {
 				var d = new Date(ts);
@@ -3697,11 +3698,25 @@ function converterDialog(modal) {
 	 				)
 	 				.replace(
 	 					/return "[A-Z]+=[^"]+"/,
-	 					'return "'
-	 					+ db.join("|").replace(/([^|]+\|){4}/g, "$&\\\r\n")
-	 					+ '"'
+						function(oldData) {
+		 					var newData = 'return "'
+			 					+ db.join("|").replace(/([^|]+\|){4}/g, "$&\\\r\n")
+			 					+ '"';
+			 				updated = newData != oldData;
+			 				return newData;
+						}
 	 				);
 			});
+
+		if(!updated) {
+			AkelPad.MessageBox(
+				hMainWnd,
+				_localize("Default currency data not changed!"),
+				WScript.ScriptBaseName,
+				48 /*MB_ICONEXCLAMATION*/
+			);
+			return;
+		}
 
 		saveFile(selfFile, selfCode);
 
