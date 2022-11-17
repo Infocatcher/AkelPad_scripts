@@ -1677,6 +1677,9 @@ function _localize(s) {
 		},
 		"Default currency data was successfully updated to %d": {
 			ru: "Значения по умолчанию для конвертирования валют успешно обновлены до %d"
+		},
+		"Default currency data not changed!": {
+			ru: "Значения по умолчанию для конвертирования валют не изменились!"
 		}
 	};
 	var lng = "en";
