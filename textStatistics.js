@@ -25,6 +25,9 @@ var maxWord = AkelPad.GetArgValue("maxWord", 40);
 
 function _localize(s) {
 	var strings = {
+		"Statistics…": {
+			ru: "Статистика…"
+		},
 		"[selected text]": {
 			ru: "[выделенный текст]"
 		},
@@ -145,6 +148,13 @@ function showTextStatistics() {
 	AkelPad.MessageBox(hMainWnd, res, WScript.ScriptName, 64 /*MB_ICONINFORMATION*/);
 }
 function getTextStatistics() {
+	var statusbar = new Statusbar();
+	statusbar.save();
+	function progress(percent, msg) {
+		statusbar.set(percent + "% " + msg);
+	}
+	progress(0, _localize("Statistics…"));
+
 	var cFile = AkelPad.GetEditFile(0);
 	var newLine = 4 - AkelPad.GetEditNewLine(0);
 	var txt = AkelPad.GetSelText(newLine);
@@ -158,11 +168,6 @@ function getTextStatistics() {
 	if(!txt)
 		return _localize("Text missing!");
 
-	var statusbar = new Statusbar();
-	statusbar.save();
-	function progress(percent, msg) {
-		statusbar.set(percent + "% " + msg);
-	}
 	progress(10, _localize("Lines and spaces…"));
 
 	var txtn = txt.replace(/\r\n?/g, "\n"); // Strange things happens with \r\n
