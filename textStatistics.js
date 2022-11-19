@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/textStatistics.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/textStatistics.js
 
-// (c) Infocatcher 2008-2011
-// Version: 0.3.4 - 2011-12-20
+// (c) Infocatcher 2008-2022
+// Version: 0.4.0pre - 2022-11-19
 // Author: Infocatcher
 
 //// Provide some statistic for English and Russian texts
