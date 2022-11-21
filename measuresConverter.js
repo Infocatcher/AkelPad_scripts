@@ -1672,14 +1672,14 @@ function _localize(s) {
 		"never": {
 			ru: "никогда"
 		},
+		"Default currency data not changed!": {
+			ru: "Значения по умолчанию для конвертирования валют не изменились!"
+		},
 		"Can't create backup file:\n": {
 			ru: "Не удалось создать резервную копию:\n"
 		},
 		"Default currency data was successfully updated to %d": {
 			ru: "Значения по умолчанию для конвертирования валют успешно обновлены до %d"
-		},
-		"Default currency data not changed!": {
-			ru: "Значения по умолчанию для конвертирования валют не изменились!"
 		}
 	};
 	var lng = "en";
