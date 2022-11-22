@@ -5,6 +5,7 @@
 // (c) Infocatcher 2011-2022
 // Version: 0.2.10 - 2022-08-03
 // Author: Infocatcher
+// [built-in currencies data: 2022-11-14]
 
 //===================
 //// Convert measures (internal) and currency (used cached data from exchange-rates.org, fxexchangerate.com and currency.world)
@@ -3676,6 +3677,10 @@ function converterDialog(modal) {
 		var updDate = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
 		var updated;
 		var selfCode = AkelPad.ReadFile(selfFile, 0, 65001, 1)
+			.replace(
+				/^\/\/ \[built-in currencies data: [\d-]+\]$/m,
+				"// [built-in currencies data: " + updDate + "]"
+			)
 			.replace(/[\r\n]function getDefaultCurrencyData\(\) \{[^}]+[\r\n]\}[\r\n]/, function(code) {
 				return code
 					.replace(
