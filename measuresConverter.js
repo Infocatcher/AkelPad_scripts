@@ -3677,7 +3677,6 @@ function converterDialog(modal) {
 		var updated;
 		var selfCode = AkelPad.ReadFile(selfFile, 0, 65001, 1)
 			.replace(/[\r\n]function getDefaultCurrencyData\(\) \{[^}]+[\r\n]\}[\r\n]/, function(code) {
-				var d = new Date(ts);
 				return code
 					.replace(
 						/var ts = [^\r\n]+/,
