@@ -3673,12 +3673,12 @@ function converterDialog(modal) {
 		db.sort();
 		var selfFile = WScript.ScriptFullName;
 
-		var d = new Date(ts);
+		var d = new Date(ts);//
 		var updDate = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
 		var updated;
 		var selfCode = AkelPad.ReadFile(selfFile, 0, 65001, 1)
 			.replace(
-				/^\/\/ \[built-in currencies data: [\d-]+\]$/m,
+				/^\/\/ \[built-in currencies data: [^\r\n]+\]$/m,
 				"// [built-in currencies data: " + updDate + "]"
 			)
 			.replace(/[\r\n]function getDefaultCurrencyData\(\) \{[^}]+[\r\n]\}[\r\n]/, function(code) {
