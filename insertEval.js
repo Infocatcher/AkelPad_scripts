@@ -37,6 +37,7 @@
 var useLogPlugin = AkelPad.GetArgValue("useLogPlugin", true);
 var useSpaces = AkelPad.GetArgValue("useSpaces", true);
 var formattedNumbers = AkelPad.GetArgValue("formatted", true);
+var fixFloatNumbers = AkelPad.GetArgValue("fixFloatNumbers", true);
 
 function _localize(s) {
 	var strings = {
@@ -251,7 +252,7 @@ function calc(expr, forceAsk) {
 		calc(expr, true);
 		return;
 	}
-	if(typeof res == "number" && isFinite(res))
+	if(fixFloatNumbers && typeof res == "number" && isFinite(res))
 		res = +fixPrecision(res);
 	var resRaw = res;
 	res = convType(res, resType);
