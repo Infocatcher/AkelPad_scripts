@@ -206,6 +206,13 @@ function localeNumbers() {
 	localeNumbers.delimiter = ld && ls ? ld : ".";
 	localeNumbers.separator = ld && ls ? ls : "\xa0";
 }
+function fixPrecision(n, prec) {
+	// Try fix "bugs" with floating point operations
+	// E.g. 0.3/0.1 = 2.9999999999999995
+	return n.toPrecision(prec || 13)
+		.replace(/\.0+(e|$)/, "$1") // 1.000 and 1.000e5 => 1
+		.replace(/(\.\d*[^0])0+(e|$)/, "$1$2"); // 1.200 and 1.200e5 => 1.2
+}
 
 function calc(expr, forceAsk) {
 	if(!expr || forceAsk)
@@ -244,6 +251,8 @@ function calc(expr, forceAsk) {
 		calc(expr, true);
 		return;
 	}
+	if(typeof res == "number" && isFinite(res))
+		res = +fixPrecision(res);
 	var resRaw = res;
 	res = convType(res, resType);
 	utils._openLog();
