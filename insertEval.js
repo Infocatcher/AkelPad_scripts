@@ -27,6 +27,7 @@
 //   -useSpaces=true      - 2+2= => "2+2 = 4"
 //             =false     - 2+2= => "2+2=4"
 //   -formatted=true      - try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
+//   -fixFloatNumbers=true - try fix "bugs" with floating point operations like 0.3/0.1 = 2.9999999999999995
 
 // Usage:
 //   Call("Scripts::Main", 1, "insertEval.js")
