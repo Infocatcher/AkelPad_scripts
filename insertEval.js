@@ -22,12 +22,12 @@
 // (and optionally apply converter)
 
 // Arguments:
-//   -useLogPlugin=true   - use Log plugin to show results of _log() calls and for read-only documents
-//                =false  - show results in new document (as in old versions)
-//   -useSpaces=true      - 2+2= => "2+2 = 4"
-//             =false     - 2+2= => "2+2=4"
-//   -formatted=true      - try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
-//   -fixFloatNumbers=true - try fix "bugs" with floating point operations like 0.3/0.1 = 2.9999999999999995
+//   -useLogPlugin=true     - use Log plugin to show results of _log() calls and for read-only documents
+//                =false    - show results in new document (as in old versions)
+//   -useSpaces=true        - 2+2= => "2+2 = 4"
+//             =false       - 2+2= => "2+2=4"
+//   -formatted=true        - try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
+//   -fixFloatNumbers=true  - try fix "bugs" with floating point operations like 0.3/0.1 = 2.9999999999999995
 
 // Usage:
 //   Call("Scripts::Main", 1, "insertEval.js")
@@ -35,10 +35,10 @@
 //===================
 
 (function(evalWrapper) {
-var useLogPlugin = AkelPad.GetArgValue("useLogPlugin", true);
-var useSpaces = AkelPad.GetArgValue("useSpaces", true);
+var useLogPlugin     = AkelPad.GetArgValue("useLogPlugin", true);
+var useSpaces        = AkelPad.GetArgValue("useSpaces", true);
 var formattedNumbers = AkelPad.GetArgValue("formatted", true);
-var fixFloatNumbers = AkelPad.GetArgValue("fixFloatNumbers", true);
+var fixFloatNumbers  = AkelPad.GetArgValue("fixFloatNumbers", true);
 
 function _localize(s) {
 	var strings = {
