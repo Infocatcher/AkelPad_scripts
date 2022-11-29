@@ -13,7 +13,7 @@
 //   someExpression()=  =>  "someExpression() = result"
 // Example:
 //   2+2=    =>  "2+2 = 4"
-// Converters:
+// Conversions:
 //   2*8=b   =>  "2*8 = 0b10000" (or =0b)
 //   2*8=o   =>  "2*8 = 0o20"    (or =0o)
 //   2*8=x   =>  "2*8 = 0x10"    (or =0x or =h)
@@ -22,10 +22,10 @@
 // (and optionally apply converter)
 
 // Arguments:
-//   -useLogPlugin=true     - use Log plugin to show results of _log() calls and for read-only documents
+//   -useLogPlugin=true     - (default) use Log plugin to show results of _log() calls and for read-only documents
 //                =false    - show results in new document (as in old versions)
-//   -useSpaces=true        - 2+2= => "2+2 = 4"
-//             =false       - 2+2= => "2+2=4"
+//   -useSpaces=true        - (default) 2+2= => "2+2 = 4"
+//             =false       -           2+2= => "2+2=4"
 //   -formatted=true        - try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
 //   -fixFloatNumbers=true  - try fix "bugs" with floating point operations like 0.3/0.1 = 2.9999999999999995
 
