@@ -3696,17 +3696,16 @@ function converterDialog(modal) {
 				"var defaultCurrencyDataTime = " + ts + "; // " + updDate
 			)
 			.replace(/[\r\n]function getDefaultCurrencyData\(\) \{[^}]+[\r\n]\}[\r\n]/, function(code) {
-				return code
-	 				.replace(
-	 					/return "[A-Z]+=[^"]+"/,
-						function(oldData) {
-		 					var newData = 'return "'
-			 					+ db.join("|").replace(/([^|]+\|){4}/g, "$&\\\r\n")
-			 					+ '"';
-			 				updated = newData != oldData;
-			 				return newData;
-						}
-	 				);
+				return code.replace(
+ 					/return "[A-Z]+=[^"]+"/,
+					function(oldData) {
+	 					var newData = 'return "'
+		 					+ db.join("|").replace(/([^|]+\|){4}/g, "$&\\\r\n")
+		 					+ '"';
+		 				updated = newData != oldData;
+		 				return newData;
+					}
+	 			);
 			});
 
 		if(!updated) {
