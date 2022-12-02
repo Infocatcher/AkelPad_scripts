@@ -1699,10 +1699,10 @@ var ROUND_DEFAULT = 2;
 var ROUND_MAX = 20; // Built-in Number.prototype.toFixed() throws on numbers > 20
 var CURRENCY = "&Currency";
 
+var defaultCurrencyDataTime = 1669312023407; // 2022-11-24
 function getDefaultCurrencyData() {
 	if(!saveOffline)
 		return "";
-	var ts = 1669312023407; // 2022-11-24
 	return "AED=0.27224982079155546|ALL=0.008897348171179889|AMD=0.002529788179924971|ANG=0.5546607029547885|\
 ARS=0.006052528795859019|AUD=0.6764641220341276|AWG=0.5547850208044383|BBD=0.4950970538754712|\
 BDT=0.009814866010246463|BGN=0.5325911143563663|BHD=2.6520485749216984|BIF=0.00048292513067690835|\
@@ -1740,7 +1740,7 @@ UGX=0.000267436299556409|UYU=0.0254396479966786|UZS=0.00008901503481660946|VES=0
 VND=0.000040260890570899426|VUV=0.00833184353027809|WST=0.36367511156643234|XAF=0.001585622227115382|\
 XCD=0.37002090618119926|XOF=0.001585667964207662|XPF=0.008648647077867341|YER=0.003996835449577101|\
 ZAR=0.05873014847568836|ZMK=0.00011109626220689706|ZWD=0.002763194252555955"
-		.replace(/\||$/g, "=" + ts + "$&");
+		.replace(/\||$/g, "=" + defaultCurrencyDataTime + "$&");
 }
 
 // Read arguments:
@@ -1970,8 +1970,13 @@ function loadOfflineCurrencyData(readMode, forceDefault) {
 	if(readMode && !oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/))
 		return;
 	loadOfflineCurrencyData.__loaded = true;
-	var db = !forceDefault && oSet.Read("currencies", 3 /*PO_STRING*/) || getDefaultCurrencyData();
-	readMode && oSet.End();
+	if(!forceDefault)
+		var db = oSet.Read("currencies", 3 /*PO_STRING*/);
+	if(!db) {
+		var isDefault = true;
+		db = getDefaultCurrencyData();
+	}
+	var ts = Infinity;
 	db = db.split("|");
 	for(var i = 0, l = db.length; i < l; ++i) {
 		var parts = db[i].split("="); // code=ratio=timestamp
@@ -1989,7 +1994,12 @@ function loadOfflineCurrencyData(readMode, forceDefault) {
 			ratio: ratio,
 			timestamp: time
 		};
+		if(time < ts)
+			ts = time;
 	}
+	if(!isDefault && ts < defaultCurrencyDataTime)
+		loadOfflineCurrencyData(false, true);
+	readMode && oSet.End();
 }
 function saveOfflineCurrencyData(saveMode) {
 	var db = [];
@@ -3673,7 +3683,7 @@ function converterDialog(modal) {
 		db.sort();
 		var selfFile = WScript.ScriptFullName;
 
-		var d = new Date(ts);//
+		var d = new Date(ts);
 		var updDate = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
 		var updated;
 		var selfCode = AkelPad.ReadFile(selfFile, 0, 65001, 1)
@@ -3681,12 +3691,12 @@ function converterDialog(modal) {
 				/^\/\/ \[built-in currencies data: [^\r\n]+\]$/m,
 				"// [built-in currencies data: " + updDate + "]"
 			)
+			.replace(
+				/var defaultCurrencyDataTime = [^\r\n]+/,
+				"var defaultCurrencyDataTime = " + ts + "; // " + updDate
+			)
 			.replace(/[\r\n]function getDefaultCurrencyData\(\) \{[^}]+[\r\n]\}[\r\n]/, function(code) {
 				return code
-					.replace(
-						/var ts = [^\r\n]+/,
-						"var ts = " + ts + "; // " + updDate
-	 				)
 	 				.replace(
 	 					/return "[A-Z]+=[^"]+"/,
 						function(oldData) {
