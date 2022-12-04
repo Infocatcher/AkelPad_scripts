@@ -1703,6 +1703,7 @@ var defaultCurrencyDataTime = 1670105487332; // 2022-12-04
 function getDefaultCurrencyData() {
 	if(!saveOffline)
 		return "";
+	// Built-in currencies data:
 	return "AED=0.27225389745066897|ALL=0.009030336793364067|AMD=0.0025284336331645174|ANG=0.5548681355875776|\
 ARS=0.005964780203724801|AUD=0.6796017533725237|AWG=0.5547850208044383|BBD=0.49527630226712726|\
 BDT=0.009760812652465113|BGN=0.5342696587192274|BHD=2.6516125781894257|BIF=0.00048294399911008487|\
@@ -3695,17 +3696,11 @@ function converterDialog(modal) {
 				/var defaultCurrencyDataTime = [^\r\n]+/,
 				"var defaultCurrencyDataTime = " + ts + "; // " + updDate
 			)
-			.replace(/[\r\n]function getDefaultCurrencyData\(\) \{[^}]+[\r\n]\}[\r\n]/, function(code) {
-				return code.replace(
- 					/return "[A-Z]+=[^"]+"/,
-					function(oldData) {
-	 					var newData = 'return "'
-		 					+ db.join("|").replace(/([^|]+\|){4}/g, "$&\\\r\n")
-		 					+ '"';
-		 				updated = newData != oldData;
-		 				return newData;
-					}
-	 			);
+			.replace(/[\r\n]([ \t]*\/\/ Built-in currencies data:[\r\n]+\s*return )"([A-Z]+=[^"]+)"/, function(code, start, oldData) {
+				var newData = db.join("|")
+					.replace(/([^|]+\|){4}/g, "$&\\\r\n");
+				updated = newData != oldData;
+				return start + '"' + newData + '"';
 			});
 
 		if(!updated) {
