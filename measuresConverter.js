@@ -3697,7 +3697,7 @@ function converterDialog(modal) {
 				"var defaultCurrencyDataTime = " + ts + "; // " + updDate
 			)
 			.replace(
-				/[\r\n]([ \t]*\/\/ Built-in currencies data:[\r\n]+\s*return )"([A-Z]+=[^"]+)"/,
+				/^([ \t]*\/\/ Built-in currencies data:[\r\n]+\s*return )"([A-Z]+=[^"]+)"/m,
 				function(code, start, oldData) {
 					var newData = db.join("|")
 						.replace(/([^|]+\|){4}/g, "$&\\\r\n");
