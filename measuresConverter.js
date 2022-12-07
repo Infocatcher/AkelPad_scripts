@@ -3693,15 +3693,18 @@ function converterDialog(modal) {
 				"// [built-in currencies data: " + updDate + "]"
 			)
 			.replace(
-				/var defaultCurrencyDataTime = [^\r\n]+/,
+				/^var defaultCurrencyDataTime = [^\r\n]+/m,
 				"var defaultCurrencyDataTime = " + ts + "; // " + updDate
 			)
-			.replace(/[\r\n]([ \t]*\/\/ Built-in currencies data:[\r\n]+\s*return )"([A-Z]+=[^"]+)"/, function(code, start, oldData) {
-				var newData = db.join("|")
-					.replace(/([^|]+\|){4}/g, "$&\\\r\n");
-				updated = newData != oldData;
-				return start + '"' + newData + '"';
-			});
+			.replace(
+				/[\r\n]([ \t]*\/\/ Built-in currencies data:[\r\n]+\s*return )"([A-Z]+=[^"]+)"/,
+				function(code, start, oldData) {
+					var newData = db.join("|")
+						.replace(/([^|]+\|){4}/g, "$&\\\r\n");
+					updated = newData != oldData;
+					return start + '"' + newData + '"';
+				}
+			);
 
 		if(!updated) {
 			AkelPad.MessageBox(
