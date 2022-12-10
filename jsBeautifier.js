@@ -10160,8 +10160,8 @@ function selfUpdate() {
 			AkelPad.SetSel(0, -1);
 			AkelPad.ReplaceSel(code);
 			AkelPad.Command(4184); // IDM_EDIT_NEWLINE_WIN
-			AkelPad.SetSel(0, 0);
 			AkelPad.SaveFile(AkelPad.GetEditWnd(), file, 65001, 1);
+			AkelPad.TextFind(0, "\\d{4,}-\\d+-\\d+[^\r\n]*? UTC(?=\\][\r\n])", 0x280001 /*FRF_DOWN|FRF_BEGINNING|FRF_REGEXP*/);
 		}
 		saveFile(testFile, code.test.replace(/\r\n$/, ""));
 		saveFile(selfFile, code.self);
