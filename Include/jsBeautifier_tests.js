@@ -8,7 +8,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // Scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2022-06-20 23:53:03 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2022-10-21 17:16:17 UTC]
 
 
 //== js/test/generated/beautify-javascript-tests.js
@@ -30742,6 +30742,42 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '        <span>content</span>\n' +
             '    {{/column}}\n' +
             '{{/row}}');
+
+
+        //============================================================
+        // Does not add whitespace around custom elements
+        reset_options();
+        set_name('Does not add whitespace around custom elements ');
+        bth(
+            '<span>\n' +
+            '    <span>\n' +
+            '        <span>The time for this result is 1:02</span\n' +
+            '        ><div>.</div\n' +
+            '        ><section>27</section>\n' +
+            '    </span>\n' +
+            '</span>',
+            //  -- output --
+            '<span>\n' +
+            '    <span>\n' +
+            '        <span>The time for this result is 1:02</span>\n' +
+            '        <div>.</div>\n' +
+            '        <section>27</section>\n' +
+            '    </span>\n' +
+            '</span>');
+        bth(
+            '<span>\n' +
+            '    <span>\n' +
+            '        <span>The time for this result is 1:02</span\n' +
+            '        ><time-dot>.</time-dot\n' +
+            '        ><time-decimals>27</time-decimals>\n' +
+            '    </span>\n' +
+            '</span>',
+            //  -- output --
+            '<span>\n' +
+            '    <span>\n' +
+            '        <span>The time for this result is 1:02</span><time-dot>.</time-dot><time-decimals>27</time-decimals>\n' +
+            '    </span>\n' +
+            '</span>');
 
 
         //============================================================
