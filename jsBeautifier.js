@@ -269,6 +269,11 @@ if(!String.prototype.startsWith) {
 		return this.substring(pos, pos + search.length) === search;
 	};
 }
+if(!String.prototype.includes) {
+	String.prototype.includes = function(searchString, position) {
+		return this.indexOf(searchString, position) !== -1;
+	};
+}
 if(!Object.assign) {
 	// Based on code from
 	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign#Polyfill
