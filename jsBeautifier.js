@@ -9980,7 +9980,7 @@ function convertSource(file, text) {
 		.replace(/\r\n?|\n\r?/g, "\r\n")
 		.replace(/[ \t]+([\n\r]|$)/g, "$1");
 	if(file == "js/test/sanitytest.js") {
-		var logProgress = 'tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "+" + tl._(n_failed) : "") + "/" + tl.total);';
+		var logProgress = 'tl.log("Test: " + tl._(n_succeeded) + (n_failed ? "+" + tl._(n_failed) : "") + "/" + tl._total, (n_succeeded + n_failed)/tl.total);';
 		text = text
 			.replace(
 				"results = 'All ' + n_succeeded + ' tests passed.';",
@@ -9989,7 +9989,7 @@ function convertSource(file, text) {
 			// Patch to provide simple progress
 			.replace(
 				/\sfunction SanityTest *\([^()]*\) *\{(\s*'use strict';)?\r\n/,
-				'$&  var tl = new TitleLogger(WScript.ScriptName + ": ");\r\n  tl.total = tl._(' + TESTS_COUNT + ' /*TESTS_COUNT*/);\r\n'
+				'$&  var tl = new TitleLogger(WScript.ScriptName + ": ");\r\n  tl._total = tl._((tl.total = ' + TESTS_COUNT + ' /*TESTS_COUNT*/));\r\n'
 			)
 			.replace(
 				/^([ \t]+)n_succeeded \+= 1;\r\n/m,
@@ -10198,10 +10198,11 @@ function selfUpdate() {
 	}
 }
 function TitleLogger(prefix) {
-	var origTitle;
+	var startTime, origTitle;
 	var hWndFrame, origFrameTitle;
 	function init() {
 		init = function() {};
+		startTime = new Date().getTime();
 		var isMDI = AkelPad.IsMDI() == 1 /*WMD_MDI*/;
 		if(isMDI) {
 			hWndFrame = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, 0 /*current frame*/);
@@ -10224,9 +10225,15 @@ function TitleLogger(prefix) {
 		AkelPad.MemFree(lpText);
 		return pText;
 	}
-	this.log = function(s) {
+	this.log = function(s, percent) {
 		init();
-		windowText(hMainWnd, prefix + s);
+		if(percent) {
+			var elapsed = new Date().getTime() - startTime;
+			var remain = elapsed/percent*(1 - percent);
+			var remainS = Math.round(remain/1000);
+			remainStr = " [≈" + remainS + " s left]";
+		}
+		windowText(hMainWnd, prefix + s + (remainStr ? remainStr : ""));
 	};
 	this.restore = function() {
 		windowText(hMainWnd, origTitle);
