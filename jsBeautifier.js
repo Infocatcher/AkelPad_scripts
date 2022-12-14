@@ -10231,7 +10231,10 @@ function TitleLogger(prefix) {
 			var elapsed = new Date().getTime() - startTime;
 			var remain = elapsed/percent*(1 - percent);
 			var remainS = Math.round(remain/1000);
-			remainStr = " [≈" + remainS + " s left]";
+			var remainM = remainS/60 >> 0;
+			remainS = remainS % 60;
+			var remainStr = remainM + ":" + (remainS > 9 ? remainS : "0" + remainS);
+			remainStr = " [≈" + remainStr + " left]";
 		}
 		windowText(hMainWnd, prefix + s + (remainStr ? remainStr : ""));
 	};
