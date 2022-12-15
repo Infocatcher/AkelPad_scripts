@@ -10225,17 +10225,18 @@ function TitleLogger(prefix) {
 		AkelPad.MemFree(lpText);
 		return pText;
 	}
+	function remainTime(percent) {
+		var elapsed = new Date().getTime() - startTime;
+		var remain = elapsed/percent*(1 - percent);
+		var remainS = Math.round(remain/1000);
+		var remainM = remainS/60 >> 0;
+		remainS = remainS % 60;
+		var remainStr = remainM + ":" + (remainS > 9 ? remainS : "0" + remainS);
+		return " [≈" + remainStr + " left]";
+	}
 	this.log = function(s, percent) {
 		init();
-		if(percent) {
-			var elapsed = new Date().getTime() - startTime;
-			var remain = elapsed/percent*(1 - percent);
-			var remainS = Math.round(remain/1000);
-			var remainM = remainS/60 >> 0;
-			remainS = remainS % 60;
-			var remainStr = remainM + ":" + (remainS > 9 ? remainS : "0" + remainS);
-			remainStr = " [≈" + remainStr + " left]";
-		}
+		var remainStr = percent && remainTime(percent);
 		windowText(hMainWnd, prefix + s + (remainStr ? remainStr : ""));
 	};
 	this.restore = function() {
