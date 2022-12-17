@@ -10198,7 +10198,7 @@ function selfUpdate() {
 	}
 }
 function TitleLogger(prefix) {
-	var startTime, origTitle;
+	var startTime, lastUpdate, origTitle;
 	var hWndFrame, origFrameTitle;
 	function init() {
 		init = function() {};
@@ -10226,7 +10226,11 @@ function TitleLogger(prefix) {
 		return pText;
 	}
 	function remainTime(percent) {
-		var elapsed = new Date().getTime() - startTime;
+		var now = new Date().getTime();
+		if(lastUpdate && (now - lastUpdate < 500))
+			return remainTime.__last;
+		lastUpdate = now;
+		var elapsed = now - startTime;
 		var remain = elapsed/percent*(1 - percent);
 		var remainS = Math.round(remain/1000);
 		if(percent < 0.09 && remainS > 50)
@@ -10234,7 +10238,7 @@ function TitleLogger(prefix) {
 		var remainM = remainS/60 >> 0;
 		remainS = remainS % 60;
 		var remainStr = remainM + ":" + (remainS > 9 ? remainS : "0" + remainS);
-		return " [≈" + remainStr + " left]";
+		return remainTime.__last = " [≈" + remainStr + " left]";
 	}
 	this.log = function(s, percent) {
 		init();
