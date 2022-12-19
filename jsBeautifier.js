@@ -10273,7 +10273,7 @@ function setSyntax(ext) {
 		AkelPad.Call("Coder::Settings", 1, ext);
 }
 function getSyntaxType(alias) {
-	if(/\.(css|less)$/.test(alias))
+	if(/\.(css|less|scss)$/.test(alias))
 		return "css";
 	if(/\.([xs]?html?|mht(ml)?|hta|asp|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|resx|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst)$/.test(alias))
 		return "html";
