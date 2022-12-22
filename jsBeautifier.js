@@ -10255,7 +10255,7 @@ function TitleLogger(prefix) {
 }
 
 function setSyntax(ext) {
-	if(!setSyntaxMode)
+	if(!ext || !setSyntaxMode || !isCoderRunning())
 		return;
 	var alias = getCoderAlias().toLowerCase();
 	if(setSyntaxMode == SYNTAX.IF_MISSING) {
@@ -10269,8 +10269,7 @@ function setSyntax(ext) {
 			return;
 	}
 
-	if(ext && isCoderRunning())
-		AkelPad.Call("Coder::Settings", 1, ext);
+	AkelPad.Call("Coder::Settings", 1, ext);
 }
 function getSyntaxType(alias) {
 	if(/\.(css|less|scss)$/.test(alias))
