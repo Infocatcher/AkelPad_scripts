@@ -10255,28 +10255,22 @@ function TitleLogger(prefix) {
 }
 
 function setSyntax(ext) {
-	if(!ext || !setSyntaxMode || !isCoderRunning())
+	if(
+		!ext
+		|| !setSyntaxMode
+		|| !isCoderRunning()
+		|| setSyntaxMode == SYNTAX.IF_MISSING && getCoderAlias()
+		|| setSyntaxMode == SYNTAX.PRESERVE_TYPE && getSyntaxType(getCoderAlias()) == getSyntaxType("." + ext)
+	)
 		return;
-	var alias = getCoderAlias().toLowerCase();
-	if(setSyntaxMode == SYNTAX.IF_MISSING) {
-		if(alias)
-			return;
-	}
-	else if(setSyntaxMode == SYNTAX.PRESERVE_TYPE) {
-		var curType = getSyntaxType(alias);
-		var newType = getSyntaxType("." + ext);
-		if(curType == newType)
-			return;
-	}
-
 	AkelPad.Call("Coder::Settings", 1, ext);
 }
 function getSyntaxType(alias) {
-	if(/\.(css|less|scss)$/.test(alias))
+	if(/\.(css|less|scss)$/i.test(alias))
 		return "css";
-	if(/\.([xs]?html?|mht(ml)?|hta|asp|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|resx|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst)$/.test(alias))
+	if(/\.([xs]?html?|mht(ml)?|hta|asp|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|resx|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst)$/i.test(alias))
 		return "html";
-	if(/\.(jsm?|json|php|c|cpp|h|java|as|cs)$/.test(alias))
+	if(/\.(jsm?|json|php|c|cpp|h|java|as|cs)$/i.test(alias))
 		return "js";
 	return "";
 }
