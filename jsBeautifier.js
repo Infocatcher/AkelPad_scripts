@@ -10119,7 +10119,7 @@ function selfUpdate() {
 			var start = "\r\n//== " + file + "\r\n";
 			var end = "\r\n//== " + file + " end\r\n";
 			var indexStart = str.indexOf(start);
-			var indexEnd = str.indexOf(end, indexStart);
+			var indexEnd = str.indexOf(end, indexStart + start.length);
 			if(indexStart == -1 || indexEnd == -1) {
 				AkelPad.MessageBox(hMainWnd, _localize("Not found:\n") + start + end, WScript.ScriptBaseName, 48 /*MB_ICONEXCLAMATION*/);
 				continue;
