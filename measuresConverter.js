@@ -1769,11 +1769,13 @@ var selectContext         = getArg("selectContext", 7);
 var disableRadios         = getArg("disableRadios", false);
 var useSelected           = getArg("useSelected", true);
 var showLastUpdate        = getArg("showLastUpdate", 2);
-var currenciesWL          = getArg("currencies", "");
+var currenciesWL          = getArg("currencies", "BYN,CNY,EUR,GBP,RUB,UAH,USD");
 
-var currenciesDefaultWL = currenciesWL || "BYN,CNY,EUR,GBP,RUB,UAH,USD";
-if(currenciesWL.charAt(0) == "-")
-	currenciesWL = "";
+var enableCurrenciesWL;
+switch(currenciesWL.charAt(0)) {
+	case "-": enableCurrenciesWL = false; break;
+	case "+": enableCurrenciesWL = true;
+}
 
 var from   = getArg("from");
 var to     = getArg("to");
@@ -2743,7 +2745,7 @@ function converterDialog(modal) {
 					0                          //lpParam
 				);
 				setWindowFontAndText(hWndCurrenciesAll, hGuiFont, _localize("Show all"));
-				checked(hWndCurrenciesAll, !currenciesWL);
+				checked(hWndCurrenciesAll, !enableCurrenciesWL);
 
 				// GroupBox sort currency
 				hWndGroupSortCurrency = createWindowEx(
@@ -3104,7 +3106,7 @@ function converterDialog(modal) {
 
 		var isCurrency = type == CURRENCY;
 		var mo = measures[type];
-		if(isCurrency && currenciesWL) {
+		if(isCurrency && enableCurrenciesWL) {
 			var moWL = {};
 			for(var measure in mo) {
 				var currencyCode = mo[measure];
@@ -3570,11 +3572,8 @@ function converterDialog(modal) {
 	function toggleCurrenciesWL() {
 		if(curType != CURRENCY)
 			return;
-		if(currenciesWL)
-			currenciesWL = "";
-		else
-			currenciesWL = currenciesDefaultWL;
-		checked(hWndCurrenciesAll, !currenciesWL);
+		enableCurrenciesWL = !enableCurrenciesWL;
+		checked(hWndCurrenciesAll, !enableCurrenciesWL);
 		selectedItems[curType] = [curItem, curItem2];
 		draw(curType, hWndDialog);
 	}
