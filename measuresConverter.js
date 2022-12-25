@@ -2259,6 +2259,8 @@ function converterDialog(modal) {
 				roundCurrencies = oSet.Read("roundCurrencies", 1 /*PO_DWORD*/);
 			if(roundCurrenciesState === undefined)
 				roundCurrenciesState = oSet.Read("roundCurrenciesState", 1 /*PO_DWORD*/);
+			if(enableCurrenciesWL === undefined)
+				enableCurrenciesWL = oSet.Read("enableCurrenciesWL", 1 /*PO_DWORD*/);
 			if(sortMeasures === undefined)
 				sortMeasures = oSet.Read("sortMeasures", 1 /*PO_DWORD*/);
 			if(sortByName === undefined)
@@ -2302,6 +2304,7 @@ function converterDialog(modal) {
 			oSet.Write("roundMeasuresState",   1 /*PO_DWORD*/, roundMeasuresState);
 			oSet.Write("roundCurrencies",      1 /*PO_DWORD*/, roundCurrencies);
 			oSet.Write("roundCurrenciesState", 1 /*PO_DWORD*/, roundCurrenciesState);
+			oSet.Write("enableCurrenciesWL",   1 /*PO_DWORD*/, enableCurrenciesWL);
 			oSet.Write("sortMeasures",         1 /*PO_DWORD*/, sortMeasures);
 			oSet.Write("sortByName",           1 /*PO_DWORD*/, sortByName);
 			var selected = [];
