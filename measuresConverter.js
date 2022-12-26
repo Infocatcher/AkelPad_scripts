@@ -65,7 +65,9 @@
 //   -saveOptions=true             - allow store options
 //   -savePosition=true            - allow store last window position
 //   -saveOffline=true             - allow store currencies data
-//   -currencies="USD,EUR"         - white list for currencies, use "-" prefix to show all on startup: "-USD,EUR"
+//   -currencies="USD,EUR"         - white list for currencies
+//              ="-USD,EUR"        - force show all currencies on startup
+//              ="+USD,EUR"        - force apply white list on startup
 
 // Usage:
 //   Call("Scripts::Main", 1, "measuresConverter.js")
