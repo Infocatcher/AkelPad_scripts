@@ -43,7 +43,7 @@
 //   -convertNumbers=true          - convert numbers (1234.5 -> 1 234,5)
 //   -displayCalcErrors=true       - always display calculation errors (e.g. for "1++2")
 //   -roundMeasures=3              - round measures (e.g. for 3: 0.1234 -> 0.123)
-//   -roundMeasuresState=0         - don't round measures (and override saved value)
+//   -roundMeasuresState=0         - don't round measures
 //                      =1         - round measures (0.1234 -> 0.12, 0.00019 -> 0.00)
 //                      =2         - round and show too small rounded values (e.g. 0.00 -> 0.00019)
 //   -roundCurrencies=2            - round currencies (e.g. for 3: 0.1234 -> 0.123)
@@ -63,6 +63,7 @@
 //   -to="Kilogram"                - set target measure (you should use English names!)
 //   -dialog=false                 - don't show dialog
 //   -saveOptions=true             - allow store options
+//                                   (also will be stored some options, that may be configured using arguments, e.g. -round*)
 //   -savePosition=true            - allow store last window position
 //   -saveOffline=true             - allow store currencies data
 //   -currencies="USD,EUR"         - white list for currencies
