@@ -2354,13 +2354,14 @@ function converterDialog(modal) {
 	var IDC_ROUND          = 1009;
 	var IDC_ROUND_VALUE    = 1010;
 	var IDC_CURRENCIES_ALL = 1011;
-	var IDC_SORT           = 1012;
-	var IDC_SORT_BY_NAME   = 1013;
-	var IDC_SORT_BY_CODE   = 1014;
-	var IDC_UPDATE         = 1015;
-	var IDC_UPDATE_STARTUP = 1016;
-	var IDC_COPY_RES       = 1017;
-	var idcCntr            = 1018;
+	var IDC_WL             = 1012;
+	var IDC_SORT           = 1013;
+	var IDC_SORT_BY_NAME   = 1014;
+	var IDC_SORT_BY_CODE   = 1015;
+	var IDC_UPDATE         = 1016;
+	var IDC_UPDATE_STARTUP = 1017;
+	var IDC_COPY_RES       = 1018;
+	var idcCntr            = 1019;
 
 	// internal name => control ID
 	var IDCTypes  = {};
@@ -2380,7 +2381,9 @@ function converterDialog(modal) {
 	var hWndOK, hWndConvert, hWndCancel;
 	var hWndGroupRound, hWndRound, hWndRoundValue, hWndUpDown;
 	var hWndGroupSortMeasures, hWndSortMeasures;
-	var hWndGroupCurrency, hWndCurrenciesAll, hWndGroupSortCurrency, hWndSortByName, hWndSortByCode, hWndUpdate;
+	var hWndGroupCurrency, hWndCurrenciesAll, hWndWL;
+	var hWndGroupSortCurrency, hWndSortByName, hWndSortByCode;
+	var hWndUpdate;
 
 	var windowsVersion;
 	var dwVersion = oSys.Call("kernel32::GetVersion");
@@ -2400,7 +2403,7 @@ function converterDialog(modal) {
 	var msrY = 36;
 	var msrW = 270;
 	var dy = 16;
-	var btnW = 130;
+	var btnW = 140;
 	var roundH = 40;
 	var btnH = 23;
 
@@ -2743,7 +2746,7 @@ function converterDialog(modal) {
 					0x50010002,                //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_CHECKBOX
 					msr2X + msrW + 20,         //x
 					12 + btnH*3 + roundH + 40, //y
-					btnW - 16,                 //nWidth
+					btnW - 16 - 20,            //nWidth
 					16,                        //nHeight
 					hWnd,                      //hWndParent
 					IDC_CURRENCIES_ALL,        //ID
@@ -2752,6 +2755,24 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndCurrenciesAll, hGuiFont, _localize("Show all"));
 				checked(hWndCurrenciesAll, !enableCurrenciesWL);
+
+				// Button white list
+				hWndWL = createWindowEx(
+					0,                                  //dwExStyle
+					"BUTTON",                           //lpClassName
+					0,                                  //lpWindowName
+					0x50010000,                         //WS_VISIBLE|WS_CHILD|WS_TABSTOP
+					msr2X + msrW + 20 + btnW - 16 - 20, //x
+					12 + btnH*3 + roundH + 39,          //y
+					20,                                 //nWidth
+					16,                                 //nHeight
+					hWnd,                               //hWndParent
+					IDC_WL,                             //ID
+					hInstanceDLL,                       //hInstance
+					0                                   //lpParam
+				);
+				setWindowFontAndText(hWndWL, hGuiFont, _localize("*"));
+
 
 				// GroupBox sort currency
 				hWndGroupSortCurrency = createWindowEx(
@@ -2961,6 +2982,9 @@ function converterDialog(modal) {
 					break msgLoop;
 					case IDC_CURRENCIES_ALL:
 						toggleCurrenciesWL();
+					break msgLoop;
+					case IDC_WL:
+						AkelPad.InputBox(hWnd, dialogTitle, _localize("White list:"), currenciesWL);
 					break msgLoop;
 					case IDC_SORT:
 						sortMeasures = checked(hWndSortMeasures);
