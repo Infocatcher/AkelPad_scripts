@@ -1772,8 +1772,9 @@ var selectContext         = getArg("selectContext", 7);
 var disableRadios         = getArg("disableRadios", false);
 var useSelected           = getArg("useSelected", true);
 var showLastUpdate        = getArg("showLastUpdate", 2);
-var currenciesWL          = getArg("currencies", "BYN,CNY,EUR,GBP,RUB,UAH,USD");
+var currenciesWL          = getArg("currencies", "");
 
+var defaultCurrenciesWL = "BYN,CNY,EUR,GBP,RUB,UAH,USD";
 var enableCurrenciesWL;
 switch(currenciesWL.charAt(0)) {
 	case "-": enableCurrenciesWL = false; break;
@@ -2264,6 +2265,8 @@ function converterDialog(modal) {
 				roundCurrenciesState = oSet.Read("roundCurrenciesState", 1 /*PO_DWORD*/);
 			if(enableCurrenciesWL === undefined)
 				enableCurrenciesWL = oSet.Read("enableCurrenciesWL", 1 /*PO_DWORD*/);
+			if(!currenciesWL)
+				currenciesWL = oSet.Read("currenciesWL", 3 /*PO_STRING*/, "");
 			if(sortMeasures === undefined)
 				sortMeasures = oSet.Read("sortMeasures", 1 /*PO_DWORD*/);
 			if(sortByName === undefined)
@@ -2290,6 +2293,9 @@ function converterDialog(modal) {
 	}
 	saveOffline && !loadOfflineCurrencyData.__loaded && loadOfflineCurrencyData(false, true);
 
+	if(!currenciesWL)
+		currenciesWL = defaultCurrenciesWL;
+
 	function saveSettings() {
 		if(!saveOptions && !savePosition && !saveOffline)
 			return;
@@ -2308,6 +2314,7 @@ function converterDialog(modal) {
 			oSet.Write("roundCurrencies",      1 /*PO_DWORD*/, roundCurrencies);
 			oSet.Write("roundCurrenciesState", 1 /*PO_DWORD*/, roundCurrenciesState);
 			oSet.Write("enableCurrenciesWL",   1 /*PO_DWORD*/, enableCurrenciesWL);
+			oSet.Write("currenciesWL",         3 /*PO_STRING*/, currenciesWL);
 			oSet.Write("sortMeasures",         1 /*PO_DWORD*/, sortMeasures);
 			oSet.Write("sortByName",           1 /*PO_DWORD*/, sortByName);
 			var selected = [];
@@ -2985,7 +2992,11 @@ function converterDialog(modal) {
 					break msgLoop;
 					case IDC_WL:
 						var wl = (currenciesWL || "").replace(/^[+-]/, "");
-						AkelPad.InputBox(hWnd, dialogTitle, _localize("White list:"), wl);
+						var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("White list:"), wl);
+						if(wl2) {
+							currenciesWL = wl2;
+							updateCurrenciesWL();
+						}
 					break msgLoop;
 					case IDC_SORT:
 						sortMeasures = checked(hWndSortMeasures);
@@ -3605,6 +3616,9 @@ function converterDialog(modal) {
 			return;
 		enableCurrenciesWL = !enableCurrenciesWL;
 		checked(hWndCurrenciesAll, !enableCurrenciesWL);
+		updateCurrenciesWL();
+	}
+	function updateCurrenciesWL() {
 		selectedItems[curType] = [curItem, curItem2];
 		draw(curType, hWndDialog);
 	}
