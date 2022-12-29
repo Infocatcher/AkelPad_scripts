@@ -2984,7 +2984,8 @@ function converterDialog(modal) {
 						toggleCurrenciesWL();
 					break msgLoop;
 					case IDC_WL:
-						AkelPad.InputBox(hWnd, dialogTitle, _localize("White list:"), currenciesWL);
+						var wl = (currenciesWL || "").replace(/^[+-]/, "");
+						AkelPad.InputBox(hWnd, dialogTitle, _localize("White list:"), wl);
 					break msgLoop;
 					case IDC_SORT:
 						sortMeasures = checked(hWndSortMeasures);
