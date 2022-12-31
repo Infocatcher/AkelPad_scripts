@@ -2995,7 +2995,10 @@ function converterDialog(modal) {
 						var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("White list:"), wl);
 						if(wl2) {
 							currenciesWL = wl2;
-							updateCurrenciesWL();
+							if(checked(hWndCurrenciesAll))
+								toggleCurrenciesWL();
+							else
+								updateCurrenciesWL();
 						}
 					break msgLoop;
 					case IDC_SORT:
