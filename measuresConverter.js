@@ -2993,9 +2993,10 @@ function converterDialog(modal) {
 					case IDC_WL:
 						var wl = (currenciesWL || "").replace(/^[+-]/, "");
 						var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("White list:"), wl);
-						if(wl2) {
+						var showAll = checked(hWndCurrenciesAll);
+						if(wl2 && (showAll || wl2 != wl)) {
 							currenciesWL = wl2;
-							if(checked(hWndCurrenciesAll))
+							if(showAll)
 								toggleCurrenciesWL();
 							else
 								updateCurrenciesWL();
