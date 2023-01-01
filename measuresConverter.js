@@ -3374,6 +3374,7 @@ function converterDialog(modal) {
 		showWindow(hWndSortByCode,         isCurrency);
 		showWindow(hWndUpdate,             isCurrency);
 		showWindow(hWndCurrenciesAll,      isCurrency);
+		showWindow(hWndWL,                 isCurrency);
 
 		// We should call it here in Windows XP
 		//setRedraw(hWndDialog, true);
