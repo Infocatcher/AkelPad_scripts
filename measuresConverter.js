@@ -2314,7 +2314,7 @@ function converterDialog(modal) {
 			oSet.Write("roundCurrencies",      1 /*PO_DWORD*/, roundCurrencies);
 			oSet.Write("roundCurrenciesState", 1 /*PO_DWORD*/, roundCurrenciesState);
 			oSet.Write("enableCurrenciesWL",   1 /*PO_DWORD*/, enableCurrenciesWL);
-			oSet.Write("currenciesWL",         3 /*PO_STRING*/, currenciesWL);
+			oSet.Write("currenciesWL",         3 /*PO_STRING*/, currenciesWL.replace(/^[+-]/, ""));
 			oSet.Write("sortMeasures",         1 /*PO_DWORD*/, sortMeasures);
 			oSet.Write("sortByName",           1 /*PO_DWORD*/, sortByName);
 			var selected = [];
@@ -2991,7 +2991,7 @@ function converterDialog(modal) {
 						toggleCurrenciesWL();
 					break msgLoop;
 					case IDC_WL:
-						var wl = (currenciesWL || "").replace(/^[+-]/, "");
+						var wl = currenciesWL.replace(/^[+-]/, "");
 						var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("White list:"), wl);
 						var showAll = checked(hWndCurrenciesAll);
 						if(wl2 && (showAll || wl2 != wl)) {
