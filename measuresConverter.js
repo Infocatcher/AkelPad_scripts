@@ -1624,6 +1624,9 @@ function _localize(s) {
 		"Show all": {
 			ru: "Показывать все"
 		},
+		"Preferred currencies:": {
+			ru: "Избранные валюты:"
+		},
 		"By name": {
 			ru: "По имени"
 		},
@@ -2992,7 +2995,7 @@ function converterDialog(modal) {
 					break msgLoop;
 					case IDC_WL:
 						var wl = currenciesWL.replace(/^[+-]/, "");
-						var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("White list:"), wl);
+						var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("Preferred currencies:"), wl);
 						var showAll = checked(hWndCurrenciesAll);
 						if(wl2 && (showAll || wl2 != wl)) {
 							currenciesWL = wl2;
