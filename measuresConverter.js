@@ -2995,7 +2995,11 @@ function converterDialog(modal) {
 					break msgLoop;
 					case IDC_WL:
 						var wl = currenciesWL.replace(/^[+-]/, "");
-						var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("Preferred currencies:"), wl);
+						for(;;) {
+							var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("Preferred currencies:"), wl);
+							if(!wl2 || /^[A-Z]{3}(,[A-Z]{3})*$/.test(wl2))
+								break;
+						}
 						var showAll = checked(hWndCurrenciesAll);
 						if(wl2 && (showAll || wl2 != wl)) {
 							currenciesWL = wl2;
