@@ -1627,6 +1627,9 @@ function _localize(s) {
 		"Preferred currencies:": {
 			ru: "Избранные валюты:"
 		},
+		"(comma-separated list, example: EUR,USD)": {
+			ru: "(разделенный запятыми список, например: EUR,USD)"
+		},
 		"By name": {
 			ru: "По имени"
 		},
@@ -2995,10 +2998,13 @@ function converterDialog(modal) {
 					break msgLoop;
 					case IDC_WL:
 						var wl = currenciesWL.replace(/^[+-]/, "");
+						var msg = "";
 						for(;;) {
-							var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("Preferred currencies:"), wl);
+							var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("Preferred currencies:") + msg, wl);
 							if(!wl2 || /^[A-Z]{3}(,[A-Z]{3})*$/.test(wl2))
 								break;
+							else
+								msg = "\n" + _localize("(comma-separated list, example: EUR,USD)");
 						}
 						var showAll = checked(hWndCurrenciesAll);
 						if(wl2 && (showAll || wl2 != wl)) {
