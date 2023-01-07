@@ -2998,13 +2998,15 @@ function converterDialog(modal) {
 					break msgLoop;
 					case IDC_WL:
 						var wl = currenciesWL.replace(/^[+-]/, "");
-						var msg = "";
+						var msg = "", wlTmp;
 						for(;;) {
-							var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("Preferred currencies:") + msg, wl);
+							var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("Preferred currencies:") + msg, wlTmp || wl);
 							if(!wl2 || /^[A-Z]{3}(,[A-Z]{3})*$/.test(wl2))
 								break;
-							else
+							else {
 								msg = "\n" + _localize("(comma-separated list, example: EUR,USD)");
+								wlTmp = wl2;
+							}
 						}
 						var showAll = checked(hWndCurrenciesAll);
 						if(wl2 && (showAll || wl2 != wl)) {
