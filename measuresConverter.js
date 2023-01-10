@@ -1786,6 +1786,8 @@ switch(currenciesWL.charAt(0)) {
 	case "-": enableCurrenciesWL = false; break;
 	case "+": enableCurrenciesWL = true;
 }
+if(enableCurrenciesWL !== undefined)
+	currenciesWL = currenciesWL.substr(1);
 
 var from   = getArg("from");
 var to     = getArg("to");
@@ -2320,7 +2322,7 @@ function converterDialog(modal) {
 			oSet.Write("roundCurrencies",      1 /*PO_DWORD*/, roundCurrencies);
 			oSet.Write("roundCurrenciesState", 1 /*PO_DWORD*/, roundCurrenciesState);
 			oSet.Write("enableCurrenciesWL",   1 /*PO_DWORD*/, enableCurrenciesWL);
-			oSet.Write("currenciesWL",         3 /*PO_STRING*/, currenciesWL.replace(/^[+-]/, ""));
+			oSet.Write("currenciesWL",         3 /*PO_STRING*/, currenciesWL);
 			oSet.Write("sortMeasures",         1 /*PO_DWORD*/, sortMeasures);
 			oSet.Write("sortByName",           1 /*PO_DWORD*/, sortByName);
 			var selected = [];
@@ -2997,7 +2999,7 @@ function converterDialog(modal) {
 						toggleCurrenciesWL();
 					break msgLoop;
 					case IDC_WL:
-						var wl = currenciesWL.replace(/^[+-]/, "");
+						var wl = currenciesWL;
 						var msg = "", wlTmp;
 						for(;;) {
 							var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("Preferred currencies:") + msg, wlTmp || wl);
