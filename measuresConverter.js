@@ -2416,7 +2416,7 @@ function converterDialog(modal) {
 	var typeW = 144;
 	var msrX = typeX + typeW + 12;
 	var msrY = 36;
-	var msrW = 270;
+	var msrW = 282;
 	var dy = 16;
 	var btnW = 140;
 	var roundH = 40;
