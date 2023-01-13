@@ -3056,21 +3056,20 @@ function converterDialog(modal) {
 						updateCommand(true, true);
 					break;
 				}
-				for(var type in hWndTypes) {
+				for(var type in hWndTypes) { // Command from types checkbox?
 					var id = IDCTypes[type];
-					if(id == idc) {
-						if(curType == type)
-							break msgLoop;
-						if(curType && curItem && curItem2)
-							selectedItems[curType] = [curItem, curItem2];
-						//curType = type;
-						draw(type, hWnd, true);
-						for(var type in hWndTypes)
-							checked(hWndTypes[type], IDCTypes[type] == idc);
-						convertGUI();
-						setDialogTitle(hWnd);
+					if(id != idc)
+						continue;
+					if(curType == type)
 						break msgLoop;
-					}
+					if(curType && curItem && curItem2)
+						selectedItems[curType] = [curItem, curItem2];
+					draw(type, hWnd, true); // -> curType = type;
+					for(var type in hWndTypes)
+						checked(hWndTypes[type], IDCTypes[type] == idc);
+					convertGUI();
+					setDialogTitle(hWnd);
+					break msgLoop;
 				}
 				checkItem(idc, true) || checkItem(idc, false);
 			break;
