@@ -3300,7 +3300,7 @@ function converterDialog(modal) {
 					0x50000004,   //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					msrX + 8,     //x
 					y + 12,       //y
-					msrW - 16,    //nWidth
+					msrW - 10,    //nWidth
 					16,           //nHeight
 					hWndDialog,   //hWndParent
 					id,           //ID
@@ -3329,7 +3329,7 @@ function converterDialog(modal) {
 					0x50000004,   //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					msr2X + 8,    //x
 					y + 12,       //y
-					msrW - 16,    //nWidth
+					msrW - 10,    //nWidth
 					16,           //nHeight
 					hWndDialog,   //hWndParent
 					id,           //ID
