@@ -3030,6 +3030,8 @@ function converterDialog(modal) {
 					case IDC_SORT_BY_NAME:
 					case IDC_SORT_BY_CODE:
 						sortByName = idc == IDC_SORT_BY_NAME;
+						if(checked(hWndSortByName) == sortByName)
+							return;
 						checked(hWndSortByName, sortByName);
 						checked(hWndSortByCode, !sortByName);
 						selectedItems[curType] = [curItem, curItem2];
