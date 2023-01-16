@@ -3261,11 +3261,7 @@ function converterDialog(modal) {
 			var lbInternal = {};
 			for(var measure in mo) {
 				var item = mo[measure];
-				var name = isCurrency
-					? sortByName
-						? _localize(measure) + " (" + (item == 1 ? BASE_CURRENCY : item) + ")"
-						: (item == 1 ? BASE_CURRENCY : item) + " (" + _localize(measure) + ")"
-					: _localize(measure);
+				var name = getMeasureLabel(isCurrency, measure, item);
 				lbText[measure] = name;
 				lbInternal[name] = measure;
 
@@ -3437,6 +3433,13 @@ function converterDialog(modal) {
 
 		//var dlgH = Math.max(dlgMinH, y + dh);
 		setWindowHeight(dlgH, hWndDialog);
+	}
+	function getMeasureLabel(isCurrency, measure, item) {
+		return isCurrency
+			? sortByName
+				? _localize(measure) + " (" + (item == 1 ? BASE_CURRENCY : item) + ")"
+				: (item == 1 ? BASE_CURRENCY : item) + " (" + _localize(measure) + ")"
+			: _localize(measure);
 	}
 	function setWindowHeight(dlgH, hWnd) {
 		oSys.Call(
