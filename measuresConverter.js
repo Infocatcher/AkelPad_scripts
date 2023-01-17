@@ -3305,7 +3305,8 @@ function converterDialog(modal) {
 					hInstanceDLL, //hInstance
 					0             //lpParam
 				);
-				setWindowFontAndText(hWndItems[measure], hGuiFont, _localize(measure));
+				var name = getMeasureLabel(isCurrency, measure, item);
+				setWindowFontAndText(hWndItems[measure], hGuiFont, name);
 
 				if(curItem && mo[curItem] ? curItem == measure : item == 1) {
 					curItem = measure;
@@ -3334,7 +3335,8 @@ function converterDialog(modal) {
 					hInstanceDLL, //hInstance
 					0             //lpParam
 				);
-				setWindowFontAndText(hWndItems2[measure], hGuiFont, _localize(measure));
+				var name = getMeasureLabel(isCurrency, measure, item);
+				setWindowFontAndText(hWndItems2[measure], hGuiFont, name);
 
 				if(curItem2 && mo[curItem2] ? curItem2 == measure && measure != curItem : measure != curItem) {
 					curItem2 = measure;
