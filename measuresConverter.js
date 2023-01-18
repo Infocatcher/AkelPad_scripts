@@ -3291,7 +3291,7 @@ function converterDialog(modal) {
 				var item = mo[measure];
 
 				var id = IDCItems[measure] || (IDCItems[measure] = idcCntr++);
-				hWndItems[measure] = createWindowEx(
+				var hWndRadio = hWndItems[measure] = createWindowEx(
 					0,            //dwExStyle
 					"BUTTON",     //lpClassName
 					0,            //lpWindowName
@@ -3306,11 +3306,11 @@ function converterDialog(modal) {
 					0             //lpParam
 				);
 				var name = getMeasureLabel(isCurrency, measure, item);
-				setWindowFontAndText(hWndItems[measure], hGuiFont, name);
+				setWindowFontAndText(hWndRadio, hGuiFont, name);
 
 				if(curItem && mo[curItem] ? curItem == measure : item == 1) {
 					curItem = measure;
-					checked(hWndItems[measure], true);
+					checked(hWndRadio, true);
 				}
 
 				y += dy;
@@ -3321,7 +3321,7 @@ function converterDialog(modal) {
 				var item = mo[measure];
 
 				var id = IDCItems2[measure] || (IDCItems2[measure] = idcCntr++);
-				hWndItems2[measure] = createWindowEx(
+				var hWndRadio = hWndItems2[measure] = createWindowEx(
 					0,            //dwExStyle
 					"BUTTON",     //lpClassName
 					0,            //lpWindowName
@@ -3336,11 +3336,11 @@ function converterDialog(modal) {
 					0             //lpParam
 				);
 				var name = getMeasureLabel(isCurrency, measure, item);
-				setWindowFontAndText(hWndItems2[measure], hGuiFont, name);
+				setWindowFontAndText(hWndRadio, hGuiFont, name);
 
 				if(curItem2 && mo[curItem2] ? curItem2 == measure && measure != curItem : measure != curItem) {
 					curItem2 = measure;
-					checked(hWndItems2[measure], true);
+					checked(hWndRadio, true);
 				}
 
 				y += dy;
