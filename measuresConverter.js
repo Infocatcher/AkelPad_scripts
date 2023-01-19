@@ -3472,13 +3472,15 @@ function converterDialog(modal) {
 					curItem2 = item;
 				for(var item1 in hWndIts)
 					checked(hWndIts[item1], IDCIts[item1] == idc);
-				var hWndFocused = oSys.Call("user32::GetFocus");
-				for(var item2 in hWndIts2) {
-					var hWndRadio = hWndIts2[item2];
-					var on = item2 != item;
-					enabled(hWndRadio, on);
-					if(!on && hWndRadio == hWndFocused)
-						oSys.Call("user32::SetFocus", hWndIts2[primary ? curItem2 : curItem]);
+				if(disableRadios) {
+					var hWndFocused = oSys.Call("user32::GetFocus");
+					for(var item2 in hWndIts2) {
+						var hWndRadio = hWndIts2[item2];
+						var on = item2 != item;
+						enabled(hWndRadio, on);
+						if(!on && hWndRadio == hWndFocused)
+							oSys.Call("user32::SetFocus", hWndIts2[primary ? curItem2 : curItem]);
+					}
 				}
 				convertGUI();
 				setDialogTitle();
@@ -3490,8 +3492,10 @@ function converterDialog(modal) {
 	function checkItems(check) {
 		checked(hWndItems[curItem], check);
 		checked(hWndItems2[curItem2], check);
-		enabled(hWndItems[curItem2], !check);
-		enabled(hWndItems2[curItem], !check);
+		if(disableRadios) {
+			enabled(hWndItems[curItem2], !check);
+			enabled(hWndItems2[curItem], !check);
+		}
 	}
 	function validateRoundValue(roundVal) {
 		return Math.max(-ROUND_MAX, Math.min(ROUND_MAX, roundVal));
