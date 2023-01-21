@@ -3338,7 +3338,7 @@ function converterDialog(modal) {
 				var name = getMeasureLabel(isCurrency, measure, item);
 				setWindowFontAndText(hWndRadio, hGuiFont, name);
 
-				if(curItem2 && mo[curItem2] ? curItem2 == measure && measure != curItem : measure != curItem) {
+				if(curItem2 && mo[curItem2] ? curItem2 == measure : measure != curItem) {
 					curItem2 = measure;
 					checked(hWndRadio, true);
 				}
