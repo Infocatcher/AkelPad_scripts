@@ -3347,7 +3347,7 @@ function converterDialog(modal) {
 			}
 
 			if(disableRadios) {
-				enabled(hWndItems[curItem2], false);
+				enabled(hWndItems[curItem2], curItem == curItem2);
 				enabled(hWndItems2[curItem], false);
 			}
 
