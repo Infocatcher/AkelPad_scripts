@@ -50,9 +50,9 @@
 //   -roundCurrenciesState=0       - see -roundMeasuresState
 //   -sortMeasures=true            - sort measures alphabetically
 //   -sortByName=true              - sort currencies by name (otherwise - by code)
-//   -maxHeight=0                  - maximum window height to create listboxes instead of radio buttons
-//                                   -1 => no resize window
-//                                    0 => always use listboxes
+//   -maxHeight=500                - maximum window height to create listboxes instead of radio buttons
+//             =0                  - (default) always use listboxes
+//             =-1                 - don't resize window (and use initial window height)
 //   -selectContext=7              - show N items before/after selected, 0 to disable (for listboxes)
 //   -disableRadios=true           - (see -maxHeight) forbid to select the same on left and right radio buttons
 //   -showLastUpdate=0             - don't show last update date for currencies
