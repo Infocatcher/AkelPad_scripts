@@ -1829,9 +1829,6 @@ if(from && to && from != to) {
 			.replace(/&&/g, "&")
 			.replace(/\s+\(.+\)$/, "");
 	};
-	var getCurrencyName = function(s) {
-		return (s === 1 ? BASE_CURRENCY : s).toLowerCase();
-	};
 	from = getName(from);
 	to   = getName(to);
 	for(var type in measures) {
@@ -1841,7 +1838,7 @@ if(from && to && from != to) {
 		var foundTo   = false;
 		for(var item in mo) {
 			var name = getName(item);
-			var cName = isCurrency && getCurrencyName(mo[item]);
+			var cName = isCurrency && getCurrencyName(mo[item]).toLowerCase();
 			if(name == from || cName == from)
 				from = foundFrom = item;
 			else if(name == to || cName == to)
@@ -1910,6 +1907,9 @@ function getCurrencyRatio(code) {
 	if(currencyRatios[code]) // Return expired value
 		return currencyRatios[code].ratio;
 	return NaN;
+}
+function getCurrencyName(s) {
+	return s === 1 ? BASE_CURRENCY : s;
 }
 var missingCurrencies = {
 	"exchange-rates.org": [
