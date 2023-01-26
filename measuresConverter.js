@@ -3177,7 +3177,7 @@ function converterDialog(modal) {
 			var moWL = {};
 			for(var measure in mo) {
 				var currencyCode = mo[measure];
-				if(currenciesWL.indexOf(currencyCode == 1 ? BASE_CURRENCY : currencyCode) != -1)
+				if(currenciesWL.indexOf(getCurrencyName(currencyCode)) != -1)
 					moWL[measure] = currencyCode;
 			}
 			mo = moWL;
@@ -3198,12 +3198,8 @@ function converterDialog(modal) {
 
 		if(!useListboxes && (isCurrency || sortMeasures)) {
 			var sortArr = [];
-			for(var measure in mo) {
-				var currencyCode = mo[measure];
-				if(currencyCode == 1)
-					currencyCode = BASE_CURRENCY;
-				sortArr.push([measure, _localize(measure), currencyCode]);
-			}
+			for(var measure in mo)
+				sortArr.push([measure, _localize(measure), getCurrencyName(mo[measure])]);
 			var sortIndx = isCurrency
 				? sortByName ? 1 : 2
 				: 1;
@@ -3439,8 +3435,8 @@ function converterDialog(modal) {
 	function getMeasureLabel(isCurrency, measure, item) {
 		return isCurrency
 			? sortByName
-				? _localize(measure) + " (" + (item == 1 ? BASE_CURRENCY : item) + ")"
-				: (item == 1 ? BASE_CURRENCY : item) + " (" + _localize(measure) + ")"
+				? _localize(measure) + " (" + getCurrencyName(item) + ")"
+				: getCurrencyName(item) + " (" + _localize(measure) + ")"
 			: _localize(measure);
 	}
 	function setWindowHeight(dlgH, hWnd) {
