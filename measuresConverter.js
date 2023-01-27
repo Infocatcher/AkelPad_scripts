@@ -3020,7 +3020,7 @@ function converterDialog(modal) {
 								var currencies = measures[CURRENCY];
 								var code = getCurrencyName(currencies[curItem]);
 								var code2 = getCurrencyName(currencies[curItem2]);
-								var nearestVisible = function(code) {
+								var nearestVisible = function(code, skip) {
 									var found, prevVisible;
 									for(var currency in currencies) {
 										var c = currencies[currency];
@@ -3028,6 +3028,8 @@ function converterDialog(modal) {
 											found = true;
 										}
 										else if(wl2.indexOf(c) != -1) {
+											if(currency == skip)
+												continue;
 											if(found)
 												return currency;
 											prevVisible = currency;
@@ -3036,9 +3038,9 @@ function converterDialog(modal) {
 									return prevVisible;
 								};
 								if(wl2.indexOf(code) == -1)
-									curItem = nearestVisible(code);
+									curItem = nearestVisible(code, curItem2);
 								if(wl2.indexOf(code2) == -1)
-									curItem2 = nearestVisible(code2);
+									curItem2 = nearestVisible(code2, curItem);
 							}
 							if(showAll)
 								toggleCurrenciesWL();
