@@ -3003,7 +3003,7 @@ function converterDialog(modal) {
 						var msg = "", wlTmp;
 						for(;;) {
 							var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("Preferred currencies:") + msg, wlTmp || wl);
-							if(!wl2 || /^[A-Z]{3}( *, *[A-Z]{3})*$/.test(wl2)) {
+							if(!wl2 || /^[A-Z]{3}( *, *[A-Z]{3})+$/.test(wl2)) {
 								if(wl2 == "")
 									wl2 = defaultCurrenciesWL;
 								break;
