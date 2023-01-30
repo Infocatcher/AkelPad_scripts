@@ -1624,6 +1624,9 @@ function _localize(s) {
 		"Show all": {
 			ru: "Показывать все"
 		},
+		": currencies": {
+			ru: ": валюты"
+		},
 		"Preferred currencies:": {
 			ru: "Избранные валюты:"
 		},
@@ -3002,7 +3005,8 @@ function converterDialog(modal) {
 						var wl = currenciesWL;
 						var msg = "", wlTmp;
 						for(;;) {
-							var wl2 = AkelPad.InputBox(hWnd, dialogTitle, _localize("Preferred currencies:") + msg, wlTmp || wl);
+							var title = dialogTitle + _localize(": currencies");
+							var wl2 = AkelPad.InputBox(hWnd, title, _localize("Preferred currencies:") + msg, wlTmp || wl);
 							if(!wl2 || /^[A-Z]{3}( *, *[A-Z]{3})+$/.test(wl2)) {
 								if(wl2 == "")
 									wl2 = defaultCurrenciesWL;
