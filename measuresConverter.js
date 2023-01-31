@@ -3651,40 +3651,42 @@ function converterDialog(modal) {
 				wlTmp = wl2;
 			}
 		}
+		if(!wl2)
+			return;
 		var showAll = checked(hWndCurrenciesAll);
-		if(wl2 && (showAll || wl2 != wl)) {
-			currenciesWL = wl2;
-			if(!showAll) {
-				var currencies = measures[CURRENCY];
-				var code = getCurrencyName(currencies[curItem]);
-				var code2 = getCurrencyName(currencies[curItem2]);
-				var nearestVisible = function(code, skip) {
-					var found, prevVisible;
-					for(var currency in currencies) {
-						var c = currencies[currency];
-						if(c == code) {
-							found = true;
-						}
-						else if(wl2.indexOf(c) != -1) {
-							if(currency == skip)
-								continue;
-							if(found)
-								return currency;
-							prevVisible = currency;
-						}
+		if(!showAll && wl2 == wl)
+			return;
+		currenciesWL = wl2;
+		if(!showAll) {
+			var currencies = measures[CURRENCY];
+			var code = getCurrencyName(currencies[curItem]);
+			var code2 = getCurrencyName(currencies[curItem2]);
+			var nearestVisible = function(code, skip) {
+				var found, prevVisible;
+				for(var currency in currencies) {
+					var c = currencies[currency];
+					if(c == code) {
+						found = true;
 					}
-					return prevVisible;
-				};
-				if(wl2.indexOf(code) == -1)
-					curItem = nearestVisible(code, curItem2);
-				if(wl2.indexOf(code2) == -1)
-					curItem2 = nearestVisible(code2, curItem);
-			}
-			if(showAll)
-				toggleCurrenciesWL();
-			else
-				updateCurrenciesWL();
+					else if(wl2.indexOf(c) != -1) {
+						if(currency == skip)
+							continue;
+						if(found)
+							return currency;
+						prevVisible = currency;
+					}
+				}
+				return prevVisible;
+			};
+			if(wl2.indexOf(code) == -1)
+				curItem = nearestVisible(code, curItem2);
+			if(wl2.indexOf(code2) == -1)
+				curItem2 = nearestVisible(code2, curItem);
 		}
+		if(showAll)
+			toggleCurrenciesWL();
+		else
+			updateCurrenciesWL();
 	}
 
 	function doPendingUpdate() {
