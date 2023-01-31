@@ -3002,55 +3002,7 @@ function converterDialog(modal) {
 						toggleCurrenciesWL();
 					break msgLoop;
 					case IDC_WL:
-						var wl = currenciesWL;
-						var msg = "", wlTmp;
-						for(;;) {
-							var title = dialogTitle + _localize(": currencies");
-							var wl2 = AkelPad.InputBox(hWnd, title, _localize("Preferred currencies:") + msg, wlTmp || wl);
-							if(!wl2 || /^[A-Z]{3}( *, *[A-Z]{3})+$/.test(wl2)) {
-								if(wl2 == "")
-									wl2 = defaultCurrenciesWL;
-								break;
-							}
-							else {
-								msg = "\n" + _localize("(comma-separated list, example: EUR,USD)");
-								wlTmp = wl2;
-							}
-						}
-						var showAll = checked(hWndCurrenciesAll);
-						if(wl2 && (showAll || wl2 != wl)) {
-							currenciesWL = wl2;
-							if(!showAll) {
-								var currencies = measures[CURRENCY];
-								var code = getCurrencyName(currencies[curItem]);
-								var code2 = getCurrencyName(currencies[curItem2]);
-								var nearestVisible = function(code, skip) {
-									var found, prevVisible;
-									for(var currency in currencies) {
-										var c = currencies[currency];
-										if(c == code) {
-											found = true;
-										}
-										else if(wl2.indexOf(c) != -1) {
-											if(currency == skip)
-												continue;
-											if(found)
-												return currency;
-											prevVisible = currency;
-										}
-									}
-									return prevVisible;
-								};
-								if(wl2.indexOf(code) == -1)
-									curItem = nearestVisible(code, curItem2);
-								if(wl2.indexOf(code2) == -1)
-									curItem2 = nearestVisible(code2, curItem);
-							}
-							if(showAll)
-								toggleCurrenciesWL();
-							else
-								updateCurrenciesWL();
-						}
+						setCurrenciesWL();
 					break msgLoop;
 					case IDC_SORT:
 						sortMeasures = checked(hWndSortMeasures);
@@ -3683,6 +3635,58 @@ function converterDialog(modal) {
 		selectedItems[curType] = [curItem, curItem2];
 		draw(curType, hWndDialog);
 	}
+	function setCurrenciesWL() {
+		var wl = currenciesWL;
+		var msg = "", wlTmp;
+		for(;;) {
+			var title = dialogTitle + _localize(": currencies");
+			var wl2 = AkelPad.InputBox(hWndDialog, title, _localize("Preferred currencies:") + msg, wlTmp || wl);
+			if(!wl2 || /^[A-Z]{3}( *, *[A-Z]{3})+$/.test(wl2)) {
+				if(wl2 == "")
+					wl2 = defaultCurrenciesWL;
+				break;
+			}
+			else {
+				msg = "\n" + _localize("(comma-separated list, example: EUR,USD)");
+				wlTmp = wl2;
+			}
+		}
+		var showAll = checked(hWndCurrenciesAll);
+		if(wl2 && (showAll || wl2 != wl)) {
+			currenciesWL = wl2;
+			if(!showAll) {
+				var currencies = measures[CURRENCY];
+				var code = getCurrencyName(currencies[curItem]);
+				var code2 = getCurrencyName(currencies[curItem2]);
+				var nearestVisible = function(code, skip) {
+					var found, prevVisible;
+					for(var currency in currencies) {
+						var c = currencies[currency];
+						if(c == code) {
+							found = true;
+						}
+						else if(wl2.indexOf(c) != -1) {
+							if(currency == skip)
+								continue;
+							if(found)
+								return currency;
+							prevVisible = currency;
+						}
+					}
+					return prevVisible;
+				};
+				if(wl2.indexOf(code) == -1)
+					curItem = nearestVisible(code, curItem2);
+				if(wl2.indexOf(code2) == -1)
+					curItem2 = nearestVisible(code2, curItem);
+			}
+			if(showAll)
+				toggleCurrenciesWL();
+			else
+				updateCurrenciesWL();
+		}
+	}
+
 	function doPendingUpdate() {
 		var pu = update.pendingUpdates && update.pendingUpdates.shift();
 		pu && pu.func.apply(this, pu.args);
