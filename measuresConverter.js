@@ -1954,7 +1954,7 @@ function shouldCacheURL(url) {
 }
 function getRatioFromResponse(response, code) {
 	// https://exchange-rates.org/converter/EUR/USD/1/N
-	if(/<div class="col-xs-6 result-cur2">\s*<dl>\s*<dt>\s*<strong>\s*<span>([^<>]+)<\/span>/.test(response))
+	if(/<span class="to-rate">([^<>]+)<\/span>/.test(response))
 		return validateRatio(stringToNumber(RegExp.$1));
 
 	// https://currency.world/convert/BTC/USD
