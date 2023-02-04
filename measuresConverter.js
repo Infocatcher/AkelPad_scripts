@@ -480,8 +480,9 @@ var measures = {
 
 		// https://currency.world/convert/
 		// https://currency.world/convert/BTC/USD
-		"Bitcoin": "BTC",
-		"Ethereum": "ETH"
+		"Bitcoin":  "BTC",
+		"Ethereum": "ETH",
+		"Gold":     "XAU"
 	}
 };
 
@@ -1594,6 +1595,10 @@ function _localize(s) {
 			ru: "Эфириум"
 		},
 
+		"Gold": {
+			ru: "Золото"
+		},
+
 		"OK": {
 			ru: "ОК"
 		},
@@ -1931,7 +1936,7 @@ function available(server, code) {
 	return true;
 }
 function getRequestURL(code) {
-	if(code == "BTC" || code == "ETH")
+	if(code == "BTC" || code == "ETH" || code == "XAU")
 		return "https://currency.world/convert/" + code + "/" + BASE_CURRENCY + "?" +  + new Date().getTime();
 	if(
 		available("fxexchangerate.com", code)
