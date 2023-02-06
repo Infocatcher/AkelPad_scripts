@@ -1934,6 +1934,9 @@ function getCurrencyRatio(code) {
 function getCurrencyName(s) {
 	return s === 1 ? BASE_CURRENCY : s;
 }
+var availableCurrencies = {
+	"currency.world": ["BTC", "ETH", "XAU"]
+};
 var missingCurrencies = {
 	"exchange-rates.org": [
 		"AWG", "BTN", "EEK", "FKP", "GYD", "KMF", "KPW", "LRD", "LTL", "LVL", "MNT", "MRO",
@@ -1943,11 +1946,14 @@ var missingCurrencies = {
 		"VES"
 	]
 };
+function isAvailable(server, code) {
+	return availableCurrencies[server].indexOf(code) != -1;
+}
 function notMissing(server, code) {
 	return missingCurrencies[server].indexOf(code) == -1;
 }
 function getRequestURL(code) {
-	if(code == "BTC" || code == "ETH" || code == "XAU")
+	if(isAvailable("currency.world", code))
 		return "https://currency.world/convert/" + code + "/" + BASE_CURRENCY + "?" +  + new Date().getTime();
 	if(
 		notMissing("fxexchangerate.com", code)
