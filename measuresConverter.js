@@ -85,6 +85,21 @@
 	AkelPad, WScript, ActiveXObject
 ) {
 
+if(!Array.prototype.indexOf) {
+	// Based on code from https://gist.github.com/revolunet/1908355
+	Array.prototype.indexOf = function(elt /*, from*/) {
+		var len = this.length >>> 0;
+		var from = +(arguments[1]) || 0;
+		from = from < 0 ? Math.ceil(from) : Math.floor(from);
+		if(from < 0)
+			from += len;
+		for(; from < len; ++from)
+			if(from in this && this[from] === elt)
+				return from;
+		return -1;
+	};
+}
+
 var measures = {
 	//~ todo: https://en.wikipedia.org/wiki/Conversion_of_units
 	"Prefi&xes": {
@@ -1928,19 +1943,15 @@ var missingCurrencies = {
 		"VES"
 	]
 };
-function available(server, code) {
-	var missing = missingCurrencies[server];
-	for(var i = 0, l = missing.length; i < l; ++i)
-		if(code == missing[i])
-			return false;
-	return true;
+function notMissing(server, code) {
+	return missingCurrencies[server].indexOf(code) == -1;
 }
 function getRequestURL(code) {
 	if(code == "BTC" || code == "ETH" || code == "XAU")
 		return "https://currency.world/convert/" + code + "/" + BASE_CURRENCY + "?" +  + new Date().getTime();
 	if(
-		available("fxexchangerate.com", code)
-		&& (preferFXExchangeRate || !available("exchange-rates.org", code))
+		notMissing("fxexchangerate.com", code)
+		&& (preferFXExchangeRate || !notMissing("exchange-rates.org", code))
 	) {
 		// See https://www.fxexchangerate.com/currency-converter-widget.html
 		// -> https://w.fxexchangerate.com/converter.php (not updated?)
