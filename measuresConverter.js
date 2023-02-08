@@ -1943,7 +1943,7 @@ var missingCurrencies = {
 		"MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC", "TOP", "VUV", "WST", "ZMK", "ZWD"
 	],
 	"fxexchangerate.com": [
-		"VES"
+		"VES", "ETH"
 	]
 };
 function isAvailable(server, code) {
@@ -1953,7 +1953,10 @@ function notMissing(server, code) {
 	return missingCurrencies[server].indexOf(code) == -1;
 }
 function getRequestURL(code) {
-	if(isAvailable("currency.world", code))
+	if(
+		isAvailable("currency.world", code)
+		&& (!preferFXExchangeRate || !notMissing("fxexchangerate.com", code))
+	)
 		return "https://currency.world/convert/" + code + "/" + BASE_CURRENCY + "?" +  + new Date().getTime();
 	if(
 		notMissing("fxexchangerate.com", code)
