@@ -464,6 +464,7 @@ var measures = {
 
 		// https://www.fxexchangerate.com/currency-converter-widget.html
 		"Albanian Lek":                  "ALL",
+		"Afghan afghani":                "AFN",
 		"Aruba Florin":                  "AWG",
 		"Bhutan Ngultrum":               "BTN",
 		"Estonian Kroon":                "EEK",
@@ -1518,6 +1519,9 @@ function _localize(s) {
 		"Albanian Lek": {
 			ru: "Албанский лек"
 		},
+		"Afghan afghani": {
+			ru: "Афганский афгани"
+		},
 		"Aruba Florin": {
 			ru: "Арубанский флорин"
 		},
@@ -1935,10 +1939,11 @@ function getCurrencyName(s) {
 	return s === 1 ? BASE_CURRENCY : s;
 }
 var availableCurrencies = {
-	"currency.world": ["BTC", "ETH", "XAU"]
+	"currency.world": ["BTC", "ETH", "XAU", "AFN"]
 };
 var missingCurrencies = {
 	"exchange-rates.org": [
+		"AFN",
 		"AWG", "BTN", "EEK", "FKP", "GYD", "KMF", "KPW", "LRD", "LTL", "LVL", "MNT", "MRO",
 		"MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC", "TOP", "VUV", "WST", "ZMK", "ZWD"
 	],
