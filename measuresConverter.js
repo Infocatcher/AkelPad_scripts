@@ -463,8 +463,9 @@ var measures = {
 		"Zimbabwe Dollar":               "ZWD",
 
 		// https://www.fxexchangerate.com/currency-converter-widget.html
-		"Albanian Lek":                  "ALL",
 		"Afghan afghani":                "AFN",
+		"Albanian Lek":                  "ALL",
+		"Angolan Kwanza":                "AOA",
 		"Aruba Florin":                  "AWG",
 		"Bhutan Ngultrum":               "BTN",
 		"Estonian Kroon":                "EEK",
@@ -1516,11 +1517,14 @@ function _localize(s) {
 			ru: "Зимбабве доллар"
 		},
 		// https://www.fxexchangerate.com/preview.php?ws=&fm=EUR&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=ru&tz=0s&wh=200x250
+		"Afghan afghani": {
+			ru: "Афганский афгани"
+		},
 		"Albanian Lek": {
 			ru: "Албанский лек"
 		},
-		"Afghan afghani": {
-			ru: "Афганский афгани"
+		"Angolan Kwanza": {
+			ru: "Ангольская кванза"
 		},
 		"Aruba Florin": {
 			ru: "Арубанский флорин"
@@ -1939,7 +1943,7 @@ function getCurrencyName(s) {
 	return s === 1 ? BASE_CURRENCY : s;
 }
 var availableCurrencies = {
-	"currency.world": ["BTC", "ETH", "XAU", "AFN"]
+	"currency.world": ["BTC", "ETH", "XAU", "AFN", "AOA"]
 };
 var missingCurrencies = {
 	"exchange-rates.org": [
