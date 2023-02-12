@@ -468,6 +468,7 @@ var measures = {
 		"Angolan Kwanza":                "AOA",
 		"Aruba Florin":                  "AWG",
 		"Azerbaijani Manat":             "AZN",
+		"Bosnia and Herzegovina Marka":  "BAM",
 		"Bhutan Ngultrum":               "BTN",
 		"Estonian Kroon":                "EEK",
 		"Falkland Islands Pound":        "FKP",
@@ -1533,6 +1534,9 @@ function _localize(s) {
 		"Azerbaijani Manat": {
 			ru: "Азербайджанский манат"
 		},
+		"Bosnia and Herzegovina Marka": {
+			ru: "Боснии и Герцеговины марка"
+		},
 		"Bhutan Ngultrum": {
 			ru: "Бутанский нгултрум"
 		},
@@ -1947,7 +1951,7 @@ function getCurrencyName(s) {
 	return s === 1 ? BASE_CURRENCY : s;
 }
 var availableCurrencies = {
-	"currency.world": ["BTC", "ETH", "XAU", "AFN", "AOA", "AZN"]
+	"currency.world": ["BTC", "ETH", "XAU", "AFN", "AOA", "AZN", "BAM"]
 };
 var missingCurrencies = {
 	"exchange-rates.org": [
