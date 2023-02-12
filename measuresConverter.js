@@ -1950,9 +1950,6 @@ function getCurrencyRatio(code) {
 function getCurrencyName(s) {
 	return s === 1 ? BASE_CURRENCY : s;
 }
-var availableCurrencies = {
-	"currency.world": ["BTC", "ETH", "XAU", "AFN", "AOA", "AZN", "BAM"]
-};
 var missingCurrencies = {
 	"exchange-rates.org": [
 		"AFN",
@@ -1961,17 +1958,15 @@ var missingCurrencies = {
 	],
 	"fxexchangerate.com": [
 		"VES", "ETH"
-	]
+	],
+	"currency.world": []
 };
-function isAvailable(server, code) {
-	return availableCurrencies[server].indexOf(code) != -1;
-}
 function notMissing(server, code) {
 	return missingCurrencies[server].indexOf(code) == -1;
 }
 function getRequestURL(code) {
 	if(
-		isAvailable("currency.world", code)
+		notMissing("currency.world", code)
 		&& (!preferFXExchangeRate || !notMissing("fxexchangerate.com", code))
 	)
 		return "https://currency.world/convert/" + code + "/" + BASE_CURRENCY + "?" +  + new Date().getTime();
