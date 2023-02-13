@@ -1952,9 +1952,9 @@ function getCurrencyName(s) {
 }
 var missingCurrencies = {
 	"exchange-rates.org": [
-		"AFN",
-		"AWG", "BTN", "EEK", "FKP", "GYD", "KMF", "KPW", "LRD", "LTL", "LVL", "MNT", "MRO",
-		"MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC", "TOP", "VUV", "WST", "ZMK", "ZWD"
+		"AFN", "AWG", "BTC", "BTN", "EEK", "ETH", "FKP", "GYD", "KMF", "KPW", "LRD", "LTL",
+		"LVL", "MNT", "MRO", "MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC", "TOP",
+		"VUV", "WST", "ZMK", "ZWD"
 	],
 	"fxexchangerate.com": [
 		"VES", "ETH"
