@@ -31,7 +31,10 @@
 //   Shift+F5                          - Force update data only for current currencies (double click on row)
 
 // Arguments:
-//   -preferFXExchangeRate=true    - prefer data from fxexchangerate.com (faster updates)
+//   -preferSources="fx,er,cw"     - priority for currency rate sources (from left to right):
+//                                   fx - fxexchangerate.com (faster updates)
+//                                   er - exchange-rates.org (better precision, but slow updates)
+//                                   cw - currency.world
 //   -offlineExpire=22*60*60*1000  - currency ratio expires after this time (in milliseconds)
 //                 =Infinity       - prevent auto-updates
 //   -updateOnStartup=true         - asynchronous update currency data on startup
@@ -1798,7 +1801,7 @@ var saveOptions  = getArg("saveOptions",  true);
 var savePosition = getArg("savePosition", true);
 var saveOffline  = getArg("saveOffline",  true);
 
-var preferFXExchangeRate  = getArg("preferFXExchangeRate", true);
+var preferSources         = getArg("preferSources", "fx,er,cw");
 var offlineExpire         = getArg("offlineExpire", 22*60*60*1000);
 var updateOnStartup       = getArg("updateOnStartup", true);
 var updateOnStartupReport = getArg("updateOnStartupReport", 1);
@@ -1827,6 +1830,14 @@ switch(currenciesWL.charAt(0)) {
 }
 if(enableCurrenciesWL !== undefined)
 	currenciesWL = currenciesWL.substr(1);
+
+var preferFXExchangeRate = getArg("preferFXExchangeRate"); // Legacy
+if(
+	preferFXExchangeRate !== undefined
+	&& getArg("preferSources") === undefined
+) {
+	preferSources = preferFXExchangeRate ? "fx,er,cw" : "er,fx,cw";
+}
 
 var from   = getArg("from");
 var to     = getArg("to");
@@ -1951,38 +1962,46 @@ function getCurrencyName(s) {
 	return s === 1 ? BASE_CURRENCY : s;
 }
 var missingCurrencies = {
-	"exchange-rates.org": [
+	// exchange-rates.org
+	er: [
 		"AFN", "AWG", "BTC", "BTN", "EEK", "ETH", "FKP", "GYD", "KMF", "KPW", "LRD", "LTL",
 		"LVL", "MNT", "MRO", "MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC", "TOP",
 		"VUV", "WST", "ZMK", "ZWD"
 	],
-	"fxexchangerate.com": [
+	// fxexchangerate.com
+	fx: [
 		"VES", "ETH"
 	],
-	"currency.world": []
+	// currency.world
+	cw: []
 };
 function notMissing(server, code) {
 	return missingCurrencies[server].indexOf(code) == -1;
 }
 function getRequestURL(code) {
-	if(
-		notMissing("currency.world", code)
-		&& (!preferFXExchangeRate || !notMissing("fxexchangerate.com", code))
-	)
-		return "https://currency.world/convert/" + code + "/" + BASE_CURRENCY + "?" +  + new Date().getTime();
-	if(
-		notMissing("fxexchangerate.com", code)
-		&& (preferFXExchangeRate || !notMissing("exchange-rates.org", code))
-	) {
-		// See https://www.fxexchangerate.com/currency-converter-widget.html
-		// -> https://w.fxexchangerate.com/converter.php (not updated?)
-		return "https://www.fxexchangerate.com/currency-converter-widget.html?" + new Date().getTime(); // BASE_CURRENCY == "USD" !
+	var sources = preferSources.split(",");
+	for(var i = 0, l = sources.length; i < l; ++i) {
+		var src = sources[i];
+		if(notMissing(src, code))
+			return getURL(src, code);
 	}
-	//return "https://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
-	// Will use https://translate.google.com/ as proxy
-	return "https://www-exchange--rates-org.translate.goog/converter/"
-		+ code + "/" + BASE_CURRENCY
-		+ "/1/N?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en";
+}
+function getURL(src, code) {
+	switch(src) {
+		case "fx":
+			// See https://www.fxexchangerate.com/currency-converter-widget.html
+			// -> https://w.fxexchangerate.com/converter.php (not updated?)
+			return "https://www.fxexchangerate.com/currency-converter-widget.html?" + new Date().getTime(); // BASE_CURRENCY == "USD" !
+		case "er":
+			//return "https://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
+			// Will use https://translate.google.com/ as proxy
+			return "https://www-exchange--rates-org.translate.goog/converter/"
+				+ code + "/" + BASE_CURRENCY
+				+ "/1/N?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en";
+		case "cw":
+		default:
+			return "https://currency.world/convert/" + code + "/" + BASE_CURRENCY + "?" +  + new Date().getTime();
+	}
 }
 function shouldCacheURL(url) {
 	if(/^https?:\/\/(\w+\.)*fxexchangerate\.com\//.test(url))
