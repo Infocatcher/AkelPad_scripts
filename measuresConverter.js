@@ -1966,7 +1966,7 @@ var missingCurrencies = {
 	er: [
 		"AFN", "AWG", "BTC", "BTN", "EEK", "ETH", "FKP", "GYD", "KMF", "KPW", "LRD", "LTL",
 		"LVL", "MNT", "MRO", "MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC", "TOP",
-		"VUV", "WST", "ZMK", "ZWD"
+		"VUV", "WST", "XAU", "ZMK", "ZWD"
 	],
 	// fxexchangerate.com
 	fx: [
