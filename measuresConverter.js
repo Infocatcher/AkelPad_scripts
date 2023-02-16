@@ -473,6 +473,7 @@ var measures = {
 		"Azerbaijani Manat":             "AZN",
 		"Bosnia and Herzegovina Marka":  "BAM",
 		"Bhutan Ngultrum":               "BTN",
+		"Congolese franc":               "CDF",
 		"Estonian Kroon":                "EEK",
 		"Falkland Islands Pound":        "FKP",
 		"Guinea Franc":                  "GNF",
@@ -1543,6 +1544,9 @@ function _localize(s) {
 		"Bhutan Ngultrum": {
 			ru: "Бутанский нгултрум"
 		},
+		"Congolese franc": {
+			ru: "Конголезский франк"
+		},
 		"Estonian Kroon": {
 			ru: "Эстонская крона"
 		},
@@ -1964,9 +1968,9 @@ function getCurrencyName(s) {
 var missingCurrencies = {
 	// exchange-rates.org
 	er: [
-		"AFN", "AWG", "BTC", "BTN", "EEK", "ETH", "FKP", "GYD", "KMF", "KPW", "LRD", "LTL",
-		"LVL", "MNT", "MRO", "MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC", "TOP",
-		"VUV", "WST", "XAU", "ZMK", "ZWD"
+		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ETH", "FKP", "GYD", "KMF", "KPW", "LRD",
+		"LTL", "LVL", "MNT", "MRO", "MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC",
+		"TOP", "VUV", "WST", "XAU", "ZMK", "ZWD"
 	],
 	// fxexchangerate.com
 	fx: [
