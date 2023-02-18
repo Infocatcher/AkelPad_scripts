@@ -466,16 +466,16 @@ var measures = {
 		"Zimbabwe Dollar":               "ZWD",
 
 		// https://www.fxexchangerate.com/currency-converter-widget.html
-		"Afghan afghani":                "AFN",
+		"Afghan Afghani":                "AFN",
 		"Albanian Lek":                  "ALL",
 		"Angolan Kwanza":                "AOA",
 		"Aruba Florin":                  "AWG",
 		"Azerbaijani Manat":             "AZN",
 		"Bosnia and Herzegovina Marka":  "BAM",
 		"Bhutan Ngultrum":               "BTN",
-		"Congolese franc":               "CDF",
+		"Congolese Franc":               "CDF",
 		"Estonian Kroon":                "EEK",
-		"Eritrean nakfa":                "ERN",
+		"Eritrean Nakfa":                "ERN",
 		"Falkland Islands Pound":        "FKP",
 		"Guinea Franc":                  "GNF",
 		"Guyana Dollar":                 "GYD",
@@ -1524,7 +1524,7 @@ function _localize(s) {
 			ru: "Зимбабве доллар"
 		},
 		// https://www.fxexchangerate.com/preview.php?ws=&fm=EUR&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=ru&tz=0s&wh=200x250
-		"Afghan afghani": {
+		"Afghan Afghani": {
 			ru: "Афганский афгани"
 		},
 		"Albanian Lek": {
@@ -1545,13 +1545,13 @@ function _localize(s) {
 		"Bhutan Ngultrum": {
 			ru: "Бутанский нгултрум"
 		},
-		"Congolese franc": {
+		"Congolese Franc": {
 			ru: "Конголезский франк"
 		},
 		"Estonian Kroon": {
 			ru: "Эстонская крона"
 		},
-		"Eritrean nakfa": {
+		"Eritrean Nakfa": {
 			ru: "Эритрейская накфа"
 		},
 		"Falkland Islands Pound": {
