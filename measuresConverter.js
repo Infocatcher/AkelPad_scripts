@@ -475,6 +475,7 @@ var measures = {
 		"Bhutan Ngultrum":               "BTN",
 		"Congolese franc":               "CDF",
 		"Estonian Kroon":                "EEK",
+		"Eritrean nakfa":                "ERN",
 		"Falkland Islands Pound":        "FKP",
 		"Guinea Franc":                  "GNF",
 		"Guyana Dollar":                 "GYD",
@@ -1550,6 +1551,9 @@ function _localize(s) {
 		"Estonian Kroon": {
 			ru: "Эстонская крона"
 		},
+		"Eritrean nakfa": {
+			ru: "Эритрейская накфа"
+		},
 		"Falkland Islands Pound": {
 			ru: "Фунт Фолклендских островов"
 		},
@@ -1968,9 +1972,9 @@ function getCurrencyName(s) {
 var missingCurrencies = {
 	// exchange-rates.org
 	er: [
-		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ETH", "FKP", "GYD", "KMF", "KPW", "LRD",
-		"LTL", "LVL", "MNT", "MRO", "MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD", "SVC",
-		"TOP", "VUV", "WST", "XAU", "ZMK", "ZWD"
+		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ERN", "ETH", "FKP", "GYD", "KMF", "KPW",
+		"LRD", "LTL", "LVL", "MNT", "MRO", "MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD",
+		"SVC", "TOP", "VUV", "WST", "XAU", "ZMK", "ZWD"
 	],
 	// fxexchangerate.com
 	fx: [
