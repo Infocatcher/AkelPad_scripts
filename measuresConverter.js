@@ -477,6 +477,7 @@ var measures = {
 		"Estonian Kroon":                "EEK",
 		"Eritrean Nakfa":                "ERN",
 		"Falkland Islands Pound":        "FKP",
+		"Georgian Lari":                 "GEL",
 		"Guinea Franc":                  "GNF",
 		"Guyana Dollar":                 "GYD",
 		"Kyrgyzstan Som":                "KGS",
@@ -1556,6 +1557,9 @@ function _localize(s) {
 		},
 		"Falkland Islands Pound": {
 			ru: "Фунт Фолклендских островов"
+		},
+		"Georgian Lari": {
+			ru: "Грузинский лари"
 		},
 		"Guinea Franc": {
 			ru: "Гвинейский франк"
