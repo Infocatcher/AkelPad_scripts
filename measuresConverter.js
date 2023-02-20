@@ -484,6 +484,7 @@ var measures = {
 		"Comoros Franc":                 "KMF",
 		"North Korean Won":              "KPW",
 		"Liberian Dollar":               "LRD",
+		"Malagasy Ariary":               "MGA",
 		"Macedonian Denar":              "MKD",
 		"Mongolian Tugrik":              "MNT",
 		"Mauritania Ougulya":            "MRO",
@@ -1579,6 +1580,9 @@ function _localize(s) {
 		"Liberian Dollar": {
 			ru: "Либерийский доллар"
 		},
+		"Malagasy Ariary": {
+			ru: "Малагасийский ариари"
+		},
 		"Macedonian Denar": {
 			ru: "Македонский денар"
 		},
@@ -1977,7 +1981,7 @@ var missingCurrencies = {
 	// exchange-rates.org
 	er: [
 		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ERN", "ETH", "FKP", "GYD", "KMF", "KPW",
-		"LRD", "LTL", "LVL", "MNT", "MRO", "MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD",
+		"LRD", "LTL", "LVL", "MGA", "MNT", "MRO", "MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD",
 		"SVC", "TOP", "VUV", "WST", "XAU", "ZMK", "ZWD"
 	],
 	// fxexchangerate.com
