@@ -489,6 +489,7 @@ var measures = {
 		"Mongolian Tugrik":              "MNT",
 		"Mauritania Ougulya":            "MRO",
 		"Maldives Rufiyaa":              "MVR",
+		"Mozambican Metical":            "MZN",
 		"Namibian Dollar":               "NAD",
 		"Papua New Guinea Kina":         "PGK",
 		"Solomon Islands Dollar":        "SBD",
@@ -1595,6 +1596,9 @@ function _localize(s) {
 		"Maldives Rufiyaa": {
 			ru: "Мальдивская руфия"
 		},
+		"Mozambican Metical": {
+			ru: "Мозамбикский метикал"
+		},
 		"Namibian Dollar": {
 			ru: "Намибийский доллар"
 		},
@@ -1981,7 +1985,7 @@ var missingCurrencies = {
 	// exchange-rates.org
 	er: [
 		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ERN", "ETH", "FKP", "GYD", "KMF", "KPW",
-		"LRD", "LTL", "LVL", "MGA", "MNT", "MRO", "MVR", "PGK", "SBD", "SHP", "SKK", "SLL", "STD",
+		"LRD", "LTL", "LVL", "MGA", "MNT", "MRO", "MVR", "MZN", "PGK", "SBD", "SHP", "SKK", "SLL", "STD",
 		"SVC", "TOP", "VUV", "WST", "XAU", "ZMK", "ZWD"
 	],
 	// fxexchangerate.com
