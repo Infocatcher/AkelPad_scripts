@@ -497,6 +497,7 @@ var measures = {
 		"St Helena Pound":               "SHP",
 		"Slovak Koruna":                 "SKK",
 		"Sierra Leone Leone":            "SLL",
+		"Surinamese Dollar":             "SRD",
 		"Sao Tome Dobra":                "STD",
 		"El Salvador Colon":             "SVC",
 		"Tonga Pa'ang":                  "TOP",
@@ -1620,6 +1621,9 @@ function _localize(s) {
 		"Sierra Leone Leone": {
 			ru: "Сьерра-леонский леоне"
 		},
+		"Surinamese Dollar": {
+			ru: "Суринамский доллар"
+		},
 		"Sao Tome Dobra": {
 			ru: "Сан-Томе и Принсипи добра"
 		},
@@ -1985,7 +1989,7 @@ var missingCurrencies = {
 	// exchange-rates.org
 	er: [
 		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ERN", "ETH", "FKP", "GYD", "KMF", "KPW",
-		"LRD", "LTL", "LVL", "MGA", "MNT", "MRO", "MVR", "MZN", "PGK", "SBD", "SHP", "SKK", "SLL", "STD",
+		"LRD", "LTL", "LVL", "MGA", "MNT", "MRO", "MVR", "MZN", "PGK", "SBD", "SHP", "SKK", "SLL", "SRD", "STD",
 		"SVC", "TOP", "VUV", "WST", "XAU", "ZMK", "ZWD"
 	],
 	// fxexchangerate.com
