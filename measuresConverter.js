@@ -500,6 +500,7 @@ var measures = {
 		"Surinamese Dollar":             "SRD",
 		"Sao Tome Dobra":                "STD",
 		"El Salvador Colon":             "SVC",
+		"Tajikistani Somoni":            "TJS",
 		"Tonga Pa'ang":                  "TOP",
 		"Uzbekistan Sum":                "UZS",
 		"Vanuatu Vatu":                  "VUV",
@@ -1630,6 +1631,9 @@ function _localize(s) {
 		"El Salvador Colon": {
 			ru: "Сальвадорский колон"
 		},
+		"Tajikistani Somoni": {
+			ru: "Таджикский сомони"
+		},
 		"Tonga Pa'ang": {
 			ru: "Тонганская паанга"
 		},
@@ -1990,7 +1994,7 @@ var missingCurrencies = {
 	er: [
 		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ERN", "ETH", "FKP", "GYD", "KMF", "KPW",
 		"LRD", "LTL", "LVL", "MGA", "MNT", "MRO", "MVR", "MZN", "PGK", "SBD", "SHP", "SKK", "SLL", "SRD", "STD",
-		"SVC", "TOP", "VUV", "WST", "XAU", "ZMK", "ZWD"
+		"SVC", "TJS", "TOP", "VUV", "WST", "XAU", "ZMK", "ZWD"
 	],
 	// fxexchangerate.com
 	fx: [
