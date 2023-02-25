@@ -502,6 +502,7 @@ var measures = {
 		"El Salvador Colon":             "SVC",
 		"Tajikistani Somoni":            "TJS",
 		"Tonga Pa'ang":                  "TOP",
+		"Turkmenistan Manat":            "TMT",
 		"Uzbekistan Sum":                "UZS",
 		"Vanuatu Vatu":                  "VUV",
 		"Samoa Tala":                    "WST",
@@ -1636,6 +1637,9 @@ function _localize(s) {
 		},
 		"Tonga Pa'ang": {
 			ru: "Тонганская паанга"
+		},
+		"Turkmenistan Manat": {
+			ru: "Туркменский манат"
 		},
 		"Uzbekistan Sum": {
 			ru: "Узбекский сум"
