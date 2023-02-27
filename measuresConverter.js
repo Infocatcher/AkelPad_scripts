@@ -1177,53 +1177,45 @@ function _localize(s) {
 			ru: "Вал&юта"
 		},
 		// https://ru.exchange-rates.org/AddCustomContent/RatesTable/Preview/RT0007HHO
-		"United Arab Emirates Dirham": {
-			ru: "ОАЭ дирхам"
+		// https://www.fxexchangerate.com/currency-converter-widget.html
+		"Afghan Afghani": {
+			ru: "Афганский афгани"
 		},
-		"Armenian Dram": {
-			ru: "Армянский драм"
+		"Albanian Lek": {
+			ru: "Албанский лек"
 		},
-		"Netherlands Antillian Guilder": {
-			ru: "Голландский гульден"
+		"Algerian Dinar": {
+			ru: "Алжирский динар"
+		},
+		"Angolan Kwanza": {
+			ru: "Ангольская кванза"
 		},
 		"Argentine Peso": {
 			ru: "Аргентинское песо"
 		},
+		"Armenian Dram": {
+			ru: "Армянский драм"
+		},
+		"Aruba Florin": {
+			ru: "Арубанский флорин"
+		},
 		"Australian Dollar": {
 			ru: "Австралийский доллар"
 		},
-		"Barbados Dollar": {
-			ru: "Барбадосский доллар"
-		},
-		"Bangladeshi Taka": {
-			ru: "Бангладеш така"
-		},
-		"Bulgarian Lev": {
-			ru: "Болгарский лев"
-		},
-		"Bahraini Dinar": {
-			ru: "Бахрейнский динар"
-		},
-		"Burundi Franc": {
-			ru: "Бурундийский франк"
-		},
-		"Bermudian Dollar": {
-			ru: "Бермудский доллар"
-		},
-		"Brunei Dollar": {
-			ru: "Брунейский доллар"
-		},
-		"Bolivian Boliviano": {
-			ru: "Боливийский боливиано"
-		},
-		"Brazilian Real": {
-			ru: "Бразильский реал"
+		"Azerbaijani Manat": {
+			ru: "Азербайджанский манат"
 		},
 		"Bahamian Dollar": {
 			ru: "Багамский доллар"
 		},
-		"Botswana Pula": {
-			ru: "Ботсванская пула"
+		"Bahraini Dinar": {
+			ru: "Бахрейнский динар"
+		},
+		"Bangladeshi Taka": {
+			ru: "Бангладеш така"
+		},
+		"Barbados Dollar": {
+			ru: "Барбадосский доллар"
 		},
 		"Belarusian Ruble": {
 			ru: "Белорусский рубль"
@@ -1231,11 +1223,59 @@ function _localize(s) {
 		"Belize Dollar": {
 			ru: "Белизский доллар"
 		},
+		"Bermudian Dollar": {
+			ru: "Бермудский доллар"
+		},
+		"Bhutan Ngultrum": {
+			ru: "Бутанский нгултрум"
+		},
+		"Bitcoin": {
+			ru: "Биткоин"
+		},
+		"Bolivian Boliviano": {
+			ru: "Боливийский боливиано"
+		},
+		"Bosnia and Herzegovina Marka": {
+			ru: "Боснии и Герцеговины марка"
+		},
+		"Botswana Pula": {
+			ru: "Ботсванская пула"
+		},
+		"Brazilian Real": {
+			ru: "Бразильский реал"
+		},
+		"British Pound": {
+			ru: "Английский фунт"
+		},
+		"Brunei Dollar": {
+			ru: "Брунейский доллар"
+		},
+		"Bulgarian Lev": {
+			ru: "Болгарский лев"
+		},
+		"Burundi Franc": {
+			ru: "Бурундийский франк"
+		},
+		"Cambodian Riel": {
+			ru: "Камбоджийский риель"
+		},
 		"Canadian Dollar": {
 			ru: "Канадский доллар"
 		},
-		"Swiss Franc": {
-			ru: "Швейцарский франк"
+		"Cape Verde Escudo": {
+			ru: "Кабо-Верде эскудо"
+		},
+		"Cayman Islands Dollar": {
+			ru: "Каймановых островов доллар"
+		},
+		"CFA BCEAO Franc": {
+			ru: "КФА ВСЕАО франк"
+		},
+		"CFA BEAC Franc": {
+			ru: "КФА BEAC франк"
+		},
+		"CFP Franc": {
+			ru: "КФП франк"
 		},
 		"Chilean Peso": {
 			ru: "Чилийское песо"
@@ -1246,32 +1286,50 @@ function _localize(s) {
 		"Colombian Peso": {
 			ru: "Колумбийское песо"
 		},
+		"Comoros Franc": {
+			ru: "Франк Комор"
+		},
+		"Congolese Franc": {
+			ru: "Конголезский франк"
+		},
 		"Costa Rican Colon": {
 			ru: "Коста-Риканский колон"
+		},
+		"Croatian Kuna": {
+			ru: "Хорватская куна"
 		},
 		"Cuban Peso": {
 			ru: "Кубинское песо"
 		},
-		"Cape Verde Escudo": {
-			ru: "Кабо-Верде эскудо"
-		},
 		"Czech Koruna": {
 			ru: "Чешская крона"
-		},
-		"Djibouti Franc": {
-			ru: "Джибути франк"
 		},
 		"Danish Krone": {
 			ru: "Датская крона"
 		},
+		"Djibouti Franc": {
+			ru: "Джибути франк"
+		},
 		"Dominican Peso": {
 			ru: "Доминиканское песо"
 		},
-		"Algerian Dinar": {
-			ru: "Алжирский динар"
+		"East Caribbean Dollar": {
+			ru: "Восточно–карибский доллар"
 		},
 		"Egyptian Pound": {
 			ru: "Египетский фунт"
+		},
+		"El Salvador Colon": {
+			ru: "Сальвадорский колон"
+		},
+		"Eritrean Nakfa": {
+			ru: "Эритрейская накфа"
+		},
+		"Estonian Kroon": {
+			ru: "Эстонская крона"
+		},
+		"Ethereum": {
+			ru: "Эфириум"
 		},
 		"Ethiopian Birr": {
 			ru: "Эфиопский быр"
@@ -1279,291 +1337,26 @@ function _localize(s) {
 		"Euro": {
 			ru: "Евро"
 		},
+		"Falkland Islands Pound": {
+			ru: "Фунт Фолклендских островов"
+		},
 		"Fiji Dollar": {
 			ru: "Фиджи доллар"
-		},
-		"British Pound": {
-			ru: "Английский фунт"
-		},
-		"Ghanaian Cedi": {
-			ru: "Ганский седи"
 		},
 		"Gambian Dalasi": {
 			ru: "Гамбийский даласи"
 		},
-		"Guatemalan Quetzal": {
-			ru: "Гватемальский кетсаль"
-		},
-		"Hong Kong Dollar": {
-			ru: "Гонконгский доллар"
-		},
-		"Honduran Lempira": {
-			ru: "Гондурасская лемпира"
-		},
-		"Croatian Kuna": {
-			ru: "Хорватская куна"
-		},
-		"Haitian Gourde": {
-			ru: "Гаитянский гурд"
-		},
-		"Hungarian Forint": {
-			ru: "Венгерский форинт"
-		},
-		"Indonesian Rupiah": {
-			ru: "Индонезийская рупия"
-		},
-		"Israeli New Shekel": {
-			ru: "Израильский шекель"
-		},
-		"Indian Rupee": {
-			ru: "Индийская рупия"
-		},
-		"Iraqi Dinar": {
-			ru: "Иракский динар"
-		},
-		"Iranian Rial": {
-			ru: "Иранский риал"
-		},
-		"Iceland Krona": {
-			ru: "Исландская крона"
-		},
-		"Jamaican Dollar": {
-			ru: "Ямайский доллар"
-		},
-		"Jordanian Dinar": {
-			ru: "Иорданский динар"
-		},
-		"Japanese Yen": {
-			ru: "Японская йена"
-		},
-		"Kenyan Shilling": {
-			ru: "Кенийский шиллинг"
-		},
-		"Cambodian Riel": {
-			ru: "Камбоджийский риель"
-		},
-		"Korean Won": {
-			ru: "Корейский вон (южный)"
-		},
-		"Kuwaiti Dinar": {
-			ru: "Кувейтский динар"
-		},
-		"Cayman Islands Dollar": {
-			ru: "Каймановых островов доллар"
-		},
-		"Kazakhstan Tenge": {
-			ru: "Казахский тенге"
-		},
-		"Lao Kip": {
-			ru: "Лаосский кип"
-		},
-		"Lebanese Pound": {
-			ru: "Ливанский фунт"
-		},
-		"Sri Lanka Rupee": {
-			ru: "Шри–Ланкийская рупия"
-		},
-		"Lesotho Loti": {
-			ru: "Лесото лоти"
-		},
-		"Lithuanian Litas": {
-			ru: "Литовский лит"
-		},
-		"Latvian Lats": {
-			ru: "Латвийский лат"
-		},
-		"Libyan Dinar": {
-			ru: "Ливийский динар"
-		},
-		"Moroccan Dirham": {
-			ru: "Марокканский дирхам"
-		},
-		"Moldovan Leu": {
-			ru: "Молдавский лей"
-		},
-		"Myanmar Kyat": {
-			ru: "Мьянма кьят"
-		},
-		"Macau Pataca": {
-			ru: "Макао патака"
-		},
-		"Mauritius Rupee": {
-			ru: "Маврикийская рупия"
-		},
-		"Malawi Kwacha": {
-			ru: "Малавийская квача"
-		},
-		"Mexican Peso": {
-			ru: "Мексиканское песо"
-		},
-		"Malaysian Ringgit": {
-			ru: "Малайзийский рингит"
-		},
-		"Nigerian Naira": {
-			ru: "Нигерийская найра"
-		},
-		"Nicaraguan Cordoba Oro": {
-			ru: "Никарагуанский кордоба"
-		},
-		"Norwegian Krone": {
-			ru: "Норвежская крона"
-		},
-		"Nepalese Rupee": {
-			ru: "Непальская рупия"
-		},
-		"New Zealand Dollar": {
-			ru: "Новозеландский доллар"
-		},
-		"Omani Rial": {
-			ru: "Оманский риал"
-		},
-		"Panamanian Balboa": {
-			ru: "Панамский балбоа"
-		},
-		"Peruvian Nuevo Sol": {
-			ru: "Перуанский сол"
-		},
-		"Philippine Peso": {
-			ru: "Филиппинское песо"
-		},
-		"Pakistan Rupee": {
-			ru: "Пакистанская рупия"
-		},
-		"Polish Zloty": {
-			ru: "Польский злотый"
-		},
-		"Paraguay Guarani": {
-			ru: "Парагвайский гуарани"
-		},
-		"Qatari Rial": {
-			ru: "Катарский риал"
-		},
-		"Romanian Leu": {
-			ru: "Румынский лей"
-		},
-		"Serbian Dinar": {
-			ru: "Сербский динар"
-		},
-		"Russian Ruble": {
-			ru: "Российский рубль"
-		},
-		"Rwanda Franc": {
-			ru: "Руандский франк"
-		},
-		"Saudi Riyal": {
-			ru: "Саудовский риал"
-		},
-		"Seychelles Rupee": {
-			ru: "Сейшелийская рупия"
-		},
-		"Swedish Krona": {
-			ru: "Шведская крона"
-		},
-		"Singapore Dollar": {
-			ru: "Сингапурский доллар"
-		},
-		"Somali Shilling": {
-			ru: "Сомалийский шиллинг"
-		},
-		"Syrian Pound": {
-			ru: "Сирийский фунт"
-		},
-		"Swaziland Lilangeni": {
-			ru: "Свазилендский лилангени"
-		},
-		"Thai Baht": {
-			ru: "Тайский бахт"
-		},
-		"Tunisian Dinar": {
-			ru: "Тунисский динар"
-		},
-		"Turkish Lira": {
-			ru: "Турецкая лира"
-		},
-		"Trinidad and Tobago Dollar": {
-			ru: "Тринидад и Тобаго доллар"
-		},
-		"Taiwan Dollar": {
-			ru: "Тайваньский доллар"
-		},
-		"Tanzanian Shilling": {
-			ru: "Танзанийский шиллинг"
-		},
-		"Ukraine Hryvnia": {
-			ru: "Украинская гривна"
-		},
-		"Uganda Shilling": {
-			ru: "Уганда шиллинг"
-		},
-		"US Dollar": {
-			ru: "США доллар"
-		},
-		"Uruguay Peso": {
-			ru: "Уругвайское песо"
-		},
-		"Venezuelan Bolivar": {
-			ru: "Венессуэльский боливар"
-		},
-		"Vietnamese Dong": {
-			ru: "Вьетнамский донг"
-		},
-		"CFA BEAC Franc": {
-			ru: "КФА BEAC франк"
-		},
-		"East Caribbean Dollar": {
-			ru: "Восточно–карибский доллар"
-		},
-		"CFA BCEAO Franc": {
-			ru: "КФА ВСЕАО франк"
-		},
-		"CFP Franc": {
-			ru: "КФП франк"
-		},
-		"South African Rand": {
-			ru: "ЮАР рэнд"
-		},
-		"Zambian Kwacha": {
-			ru: "Замбийская квача"
-		},
-		"Zimbabwe Dollar": {
-			ru: "Зимбабве доллар"
-		},
-		// https://www.fxexchangerate.com/preview.php?ws=&fm=EUR&ft=USD&hc=FFFFFF&hb=2D6AB4&bb=F0F0F0&bo=2D6AB4&lg=ru&tz=0s&wh=200x250
-		"Afghan Afghani": {
-			ru: "Афганский афгани"
-		},
-		"Albanian Lek": {
-			ru: "Албанский лек"
-		},
-		"Angolan Kwanza": {
-			ru: "Ангольская кванза"
-		},
-		"Aruba Florin": {
-			ru: "Арубанский флорин"
-		},
-		"Azerbaijani Manat": {
-			ru: "Азербайджанский манат"
-		},
-		"Bosnia and Herzegovina Marka": {
-			ru: "Боснии и Герцеговины марка"
-		},
-		"Bhutan Ngultrum": {
-			ru: "Бутанский нгултрум"
-		},
-		"Congolese Franc": {
-			ru: "Конголезский франк"
-		},
-		"Estonian Kroon": {
-			ru: "Эстонская крона"
-		},
-		"Eritrean Nakfa": {
-			ru: "Эритрейская накфа"
-		},
-		"Falkland Islands Pound": {
-			ru: "Фунт Фолклендских островов"
-		},
 		"Georgian Lari": {
 			ru: "Грузинский лари"
+		},
+		"Ghanaian Cedi": {
+			ru: "Ганский седи"
+		},
+		"Gold": {
+			ru: "Золото"
+		},
+		"Guatemalan Quetzal": {
+			ru: "Гватемальский кетсаль"
 		},
 		"Guinea Franc": {
 			ru: "Гвинейский франк"
@@ -1571,74 +1364,281 @@ function _localize(s) {
 		"Guyana Dollar": {
 			ru: "Гайанский доллар"
 		},
+		"Haitian Gourde": {
+			ru: "Гаитянский гурд"
+		},
+		"Honduran Lempira": {
+			ru: "Гондурасская лемпира"
+		},
+		"Hong Kong Dollar": {
+			ru: "Гонконгский доллар"
+		},
+		"Hungarian Forint": {
+			ru: "Венгерский форинт"
+		},
+		"Iceland Krona": {
+			ru: "Исландская крона"
+		},
+		"Indian Rupee": {
+			ru: "Индийская рупия"
+		},
+		"Indonesian Rupiah": {
+			ru: "Индонезийская рупия"
+		},
+		"Iranian Rial": {
+			ru: "Иранский риал"
+		},
+		"Iraqi Dinar": {
+			ru: "Иракский динар"
+		},
+		"Israeli New Shekel": {
+			ru: "Израильский шекель"
+		},
+		"Jamaican Dollar": {
+			ru: "Ямайский доллар"
+		},
+		"Japanese Yen": {
+			ru: "Японская йена"
+		},
+		"Jordanian Dinar": {
+			ru: "Иорданский динар"
+		},
+		"Kazakhstan Tenge": {
+			ru: "Казахский тенге"
+		},
+		"Kenyan Shilling": {
+			ru: "Кенийский шиллинг"
+		},
+		"Korean Won": {
+			ru: "Корейский вон (южный)"
+		},
+		"Kuwaiti Dinar": {
+			ru: "Кувейтский динар"
+		},
 		"Kyrgyzstan Som": {
 			ru: "Киргизский сом"
 		},
-		"Comoros Franc": {
-			ru: "Франк Комор"
+		"Lao Kip": {
+			ru: "Лаосский кип"
 		},
-		"North Korean Won": {
-			ru: "Северокорейская вона"
+		"Latvian Lats": {
+			ru: "Латвийский лат"
+		},
+		"Lebanese Pound": {
+			ru: "Ливанский фунт"
+		},
+		"Lesotho Loti": {
+			ru: "Лесото лоти"
 		},
 		"Liberian Dollar": {
 			ru: "Либерийский доллар"
 		},
-		"Malagasy Ariary": {
-			ru: "Малагасийский ариари"
+		"Libyan Dinar": {
+			ru: "Ливийский динар"
+		},
+		"Lithuanian Litas": {
+			ru: "Литовский лит"
+		},
+		"Macau Pataca": {
+			ru: "Макао патака"
 		},
 		"Macedonian Denar": {
 			ru: "Македонский денар"
 		},
-		"Mongolian Tugrik": {
-			ru: "Монгольский тугрик"
+		"Malagasy Ariary": {
+			ru: "Малагасийский ариари"
 		},
-		"Mauritania Ougulya": {
-			ru: "Мавританская угия"
+		"Malawi Kwacha": {
+			ru: "Малавийская квача"
+		},
+		"Malaysian Ringgit": {
+			ru: "Малайзийский рингит"
 		},
 		"Maldives Rufiyaa": {
 			ru: "Мальдивская руфия"
 		},
+		"Mauritania Ougulya": {
+			ru: "Мавританская угия"
+		},
+		"Mauritius Rupee": {
+			ru: "Маврикийская рупия"
+		},
+		"Mexican Peso": {
+			ru: "Мексиканское песо"
+		},
+		"Moldovan Leu": {
+			ru: "Молдавский лей"
+		},
+		"Mongolian Tugrik": {
+			ru: "Монгольский тугрик"
+		},
+		"Moroccan Dirham": {
+			ru: "Марокканский дирхам"
+		},
 		"Mozambican Metical": {
 			ru: "Мозамбикский метикал"
+		},
+		"Myanmar Kyat": {
+			ru: "Мьянма кьят"
 		},
 		"Namibian Dollar": {
 			ru: "Намибийский доллар"
 		},
+		"Nepalese Rupee": {
+			ru: "Непальская рупия"
+		},
+		"Netherlands Antillian Guilder": {
+			ru: "Голландский гульден"
+		},
+		"New Zealand Dollar": {
+			ru: "Новозеландский доллар"
+		},
+		"Nicaraguan Cordoba Oro": {
+			ru: "Никарагуанский кордоба"
+		},
+		"Nigerian Naira": {
+			ru: "Нигерийская найра"
+		},
+		"North Korean Won": {
+			ru: "Северокорейская вона"
+		},
+		"Norwegian Krone": {
+			ru: "Норвежская крона"
+		},
+		"Omani Rial": {
+			ru: "Оманский риал"
+		},
+		"Pakistan Rupee": {
+			ru: "Пакистанская рупия"
+		},
+		"Panamanian Balboa": {
+			ru: "Панамский балбоа"
+		},
 		"Papua New Guinea Kina": {
 			ru: "Папуа-Новая Гвинея кина"
 		},
-		"Solomon Islands Dollar": {
-			ru: "Соломоновых островов доллар"
+		"Paraguay Guarani": {
+			ru: "Парагвайский гуарани"
 		},
-		"Sudanese Pound": {
-			ru: "Суданский фунт"
+		"Peruvian Nuevo Sol": {
+			ru: "Перуанский сол"
 		},
-		"St Helena Pound": {
-			ru: "Святой Елены фунт"
+		"Philippine Peso": {
+			ru: "Филиппинское песо"
 		},
-		"Slovak Koruna": {
-			ru: "Словацкая крона"
+		"Polish Zloty": {
+			ru: "Польский злотый"
 		},
-		"Sierra Leone Leone": {
-			ru: "Сьерра-леонский леоне"
+		"Qatari Rial": {
+			ru: "Катарский риал"
 		},
-		"Surinamese Dollar": {
-			ru: "Суринамский доллар"
+		"Romanian Leu": {
+			ru: "Румынский лей"
+		},
+		"Russian Ruble": {
+			ru: "Российский рубль"
+		},
+		"Rwanda Franc": {
+			ru: "Руандский франк"
+		},
+		"Samoa Tala": {
+			ru: "Самоанская тала"
 		},
 		"Sao Tome Dobra": {
 			ru: "Сан-Томе и Принсипи добра"
 		},
-		"El Salvador Colon": {
-			ru: "Сальвадорский колон"
+		"Saudi Riyal": {
+			ru: "Саудовский риал"
+		},
+		"Serbian Dinar": {
+			ru: "Сербский динар"
+		},
+		"Seychelles Rupee": {
+			ru: "Сейшелийская рупия"
+		},
+		"Sierra Leone Leone": {
+			ru: "Сьерра-леонский леоне"
+		},
+		"Singapore Dollar": {
+			ru: "Сингапурский доллар"
+		},
+		"Slovak Koruna": {
+			ru: "Словацкая крона"
+		},
+		"Solomon Islands Dollar": {
+			ru: "Соломоновых островов доллар"
+		},
+		"Somali Shilling": {
+			ru: "Сомалийский шиллинг"
+		},
+		"South African Rand": {
+			ru: "ЮАР рэнд"
+		},
+		"Sri Lanka Rupee": {
+			ru: "Шри–Ланкийская рупия"
+		},
+		"St Helena Pound": {
+			ru: "Святой Елены фунт"
+		},
+		"Sudanese Pound": {
+			ru: "Суданский фунт"
+		},
+		"Surinamese Dollar": {
+			ru: "Суринамский доллар"
+		},
+		"Swaziland Lilangeni": {
+			ru: "Свазилендский лилангени"
+		},
+		"Swedish Krona": {
+			ru: "Шведская крона"
+		},
+		"Swiss Franc": {
+			ru: "Швейцарский франк"
+		},
+		"Syrian Pound": {
+			ru: "Сирийский фунт"
+		},
+		"Taiwan Dollar": {
+			ru: "Тайваньский доллар"
 		},
 		"Tajikistani Somoni": {
 			ru: "Таджикский сомони"
 		},
+		"Tanzanian Shilling": {
+			ru: "Танзанийский шиллинг"
+		},
+		"Thai Baht": {
+			ru: "Тайский бахт"
+		},
 		"Tonga Pa'ang": {
 			ru: "Тонганская паанга"
 		},
+		"Trinidad and Tobago Dollar": {
+			ru: "Тринидад и Тобаго доллар"
+		},
+		"Tunisian Dinar": {
+			ru: "Тунисский динар"
+		},
+		"Turkish Lira": {
+			ru: "Турецкая лира"
+		},
 		"Turkmenistan Manat": {
 			ru: "Туркменский манат"
+		},
+		"Uganda Shilling": {
+			ru: "Уганда шиллинг"
+		},
+		"Ukraine Hryvnia": {
+			ru: "Украинская гривна"
+		},
+		"United Arab Emirates Dirham": {
+			ru: "ОАЭ дирхам"
+		},
+		"Uruguay Peso": {
+			ru: "Уругвайское песо"
+		},
+		"US Dollar": {
+			ru: "США доллар"
 		},
 		"Uzbekistan Sum": {
 			ru: "Узбекский сум"
@@ -1646,22 +1646,20 @@ function _localize(s) {
 		"Vanuatu Vatu": {
 			ru: "Вануатский вату"
 		},
-		"Samoa Tala": {
-			ru: "Самоанская тала"
+		"Venezuelan Bolivar": {
+			ru: "Венессуэльский боливар"
+		},
+		"Vietnamese Dong": {
+			ru: "Вьетнамский донг"
 		},
 		"Yemen Riyal": {
 			ru: "Йеменский риал"
 		},
-
-		"Bitcoin": {
-			ru: "Биткоин"
+		"Zambian Kwacha": {
+			ru: "Замбийская квача"
 		},
-		"Ethereum": {
-			ru: "Эфириум"
-		},
-
-		"Gold": {
-			ru: "Золото"
+		"Zimbabwe Dollar": {
+			ru: "Зимбабве доллар"
 		},
 
 		"OK": {
