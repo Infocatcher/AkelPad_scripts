@@ -510,7 +510,7 @@ var measures = {
 		"CFP Franc":                     "XPF",
 		"Yemen Riyal":                   "YER",
 		"South African Rand":            "ZAR",
-		"Zambian Kwacha":                "ZMK",
+		"Zambian Kwacha":                "ZMW",
 		"Zimbabwe Dollar":               "ZWD"
 	}
 };
@@ -1998,7 +1998,7 @@ var missingCurrencies = {
 	er: [
 		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ERN", "ETH", "FKP", "GYD", "KMF", "KPW",
 		"LRD", "LTL", "LVL", "MGA", "MNT", "MRO", "MVR", "MZN", "PGK", "SBD", "SHP", "SKK", "SLL", "SRD", "STD",
-		"SVC", "TJS", "TOP", "VUV", "WST", "XAU", "ZMK", "ZWD"
+		"SVC", "TJS", "TOP", "VUV", "WST", "XAU", "ZWD"
 	],
 	// fxexchangerate.com
 	fx: [
@@ -2090,6 +2090,7 @@ function loadOfflineCurrencyData(readMode, forceDefault) {
 		if( // Obsolete codes
 			code == "BYR" // Removed since 2022-03-16
 			|| code == "VEF" // Removed since 2022-07-17
+			|| code == "ZMK" // Removed since 2023-02-25
 		)
 			continue;
 		var ratio = +parts[1];
