@@ -511,7 +511,7 @@ var measures = {
 		"Yemen Riyal":                   "YER",
 		"South African Rand":            "ZAR",
 		"Zambian Kwacha":                "ZMW",
-		"Zimbabwe Dollar":               "ZWD"
+		"Zimbabwean Dollar":             "ZWL"
 	}
 };
 
@@ -1658,8 +1658,8 @@ function _localize(s) {
 		"Zambian Kwacha": {
 			ru: "Замбийская квача"
 		},
-		"Zimbabwe Dollar": {
-			ru: "Зимбабве доллар"
+		"Zimbabwean Dollar": {
+			ru: "Зимбабвийский доллар"
 		},
 
 		"OK": {
@@ -1998,7 +1998,7 @@ var missingCurrencies = {
 	er: [
 		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ERN", "ETH", "FKP", "GYD", "KMF", "KPW",
 		"LRD", "LTL", "LVL", "MGA", "MNT", "MRO", "MVR", "MZN", "PGK", "SBD", "SHP", "SKK", "SLL", "SRD", "STD",
-		"SVC", "TJS", "TOP", "VUV", "WST", "XAU", "ZWD"
+		"SVC", "TJS", "TOP", "VUV", "WST", "XAU", "ZWL"
 	],
 	// fxexchangerate.com
 	fx: [
