@@ -3718,6 +3718,8 @@ function converterDialog(modal) {
 			return;
 		enableCurrenciesWL = !enableCurrenciesWL;
 		checked(hWndCurrenciesAll, !enableCurrenciesWL);
+		if(enableCurrenciesWL)
+			ensureCurrenciesVisibility();
 		updateCurrenciesWL();
 	}
 	function updateCurrenciesWL() {
