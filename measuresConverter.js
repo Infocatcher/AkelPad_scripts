@@ -2047,7 +2047,12 @@ function getRatioFromResponse(response, code) {
 		return validateRatio(stringToNumber(RegExp.$1));
 
 	// https://currency.world/convert/BTC/USD
-	if(response.indexOf('<meta name="author" content="Currency World"') != -1) {
+	if(
+		response.indexOf('<meta name="author" content="Currency World"') != -1
+		&& /<div id="xrate0" class="xrate">[-+.\dE]+ ([A-Z]{3}) = /.test(response)
+	) {
+		if(RegExp.$1 != code) // Fallback to default currency?
+			return NaN;
 		// Example:
 		// converted_amounts=[1,2.563371E-5]
 		if(/converted_amounts=\[[-+.\dE]+,([-+.\dE]+)\]/.test(response))
