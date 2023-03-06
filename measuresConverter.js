@@ -2006,7 +2006,9 @@ var missingCurrencies = {
 		"VES", "ETH"
 	],
 	// currency.world
-	cw: []
+	cw: [
+		"EEK", "LTL", "MRO", "SKK", "STD"
+	]
 };
 function notMissing(server, code) {
 	return missingCurrencies[server].indexOf(code) == -1;
