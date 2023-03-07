@@ -1998,8 +1998,8 @@ var missingCurrencies = {
 	// exchange-rates.org
 	er: [
 		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ERN", "ETH", "FKP", "GYD", "KMF", "KPW",
-		"LRD", "LTL", "LVL", "MGA", "MNT", "MRO", "MVR", "MZN", "PGK", "SBD", "SHP", "SKK", "SLL", "SRD", "STD",
-		"SVC", "TJS", "TOP", "VUV", "WST", "XAU", "ZWL"
+		"LRD", "LTL", "LVL", "MGA", "MNT", "MRO", "MVR", "MZN", "PGK", "SBD", "SHP", "SKK",
+		"SLL", "SRD", "STD", "SVC", "TJS", "TOP", "VUV", "WST", "XAU", "ZWL"
 	],
 	// fxexchangerate.com
 	fx: [
