@@ -1835,6 +1835,7 @@ var savePosition = getArg("savePosition", true);
 var saveOffline  = getArg("saveOffline",  true);
 
 var preferSources         = getArg("preferSources", "fx,er,cw");
+var testSource            = getArg("testSource");
 var offlineExpire         = getArg("offlineExpire", 22*60*60*1000);
 var updateOnStartup       = getArg("updateOnStartup", true);
 var updateOnStartupReport = getArg("updateOnStartupReport", 1);
@@ -1881,7 +1882,7 @@ if(updateSelf) {
 	updateOnStartupReport = 2;
 }
 
-if(updateMaxErrors < 0)
+if(updateMaxErrors < 0 || testSource)
 	updateMaxErrors = Infinity;
 
 var curType, curItem, curItem2;
@@ -2014,6 +2015,8 @@ function notMissing(server, code) {
 	return missingCurrencies[server].indexOf(code) == -1;
 }
 function getRequestURL(code) {
+	if(testSource) // Test mode!
+		return getURL(testSource, code);
 	var sources = preferSources.split(",");
 	for(var i = 0, l = sources.length; i < l; ++i) {
 		var src = sources[i];
