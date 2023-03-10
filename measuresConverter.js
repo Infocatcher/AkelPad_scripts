@@ -72,6 +72,8 @@
 //   -currencies="USD,EUR"         - white list for currencies
 //              ="-USD,EUR"        - force show all currencies on startup (use "-" to not specify white list)
 //              ="+USD,EUR"        - force apply white list on startup (use "+" to not specify white list)
+//   -testSource="fx"              - force update all currencies from given source (see -preferSources for codes)
+//                                   (will report errors, only for test purposes!)
 
 // Usage:
 //   Call("Scripts::Main", 1, "measuresConverter.js")
