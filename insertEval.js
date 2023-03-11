@@ -135,9 +135,14 @@ var utils = {
 			|| /\d+,\d+,\d+/.test(s) // Expression like [1,2,3]
 		)
 			return s;
-		return s
-			.replace(/(\d+)[ \xa0](?=\d)/g, "$1") // 12 345 -> 12345
-			.replace(/(\d+),(\d+)(?!,)/g, "$1.$2"); // 1,23 -> 1.23
+		// Try ignore comments:
+		// Handled data // commented
+		return s.replace(/^([^\r\n]*?)(\/\/[^\r\n]*)?$/mg, function(s, start, comment) {
+			return start
+				.replace(/(\d+)[ \xa0](?=\d)/g, "$1") // 12 345 -> 12345
+				.replace(/(\d+),(\d+)(?!,)/g, "$1.$2") // 1,23 -> 1.23
+				+ (comment || "");
+		});
 	},
 
 	append: function(s) {
