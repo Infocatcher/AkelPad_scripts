@@ -143,7 +143,7 @@ var utils = {
 				return s;
 			}
 			return start
-				.replace(/(\d+)[ \xa0](?=\d)/g, "$1") // 12 345 -> 12345
+				.replace(/(\d+)[ \xa0\u2002\u2003\u2009](?=\d)/g, "$1") // 12 345 -> 12345
 				.replace(/(\d+),(\d+)(?!,)/g, "$1.$2") // 1,23 -> 1.23
 				+ (comment || "");
 		});
