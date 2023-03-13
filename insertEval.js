@@ -60,6 +60,7 @@ function _localize(s) {
 }
 
 var hMainWnd = AkelPad.GetMainWnd();
+var hWndEdit = AkelPad.GetEditWnd();
 var oSys = AkelPad.SystemFunction();
 var dialogTitle = WScript.ScriptName.replace(/^[!-\-_]+/, "");
 dialogTitle = dialogTitle.charAt(0).toUpperCase() + dialogTitle.substr(1);
@@ -154,7 +155,6 @@ var utils = {
 		var sep = "\n";
 		s += "";
 
-		var hWndEdit = AkelPad.GetEditWnd();
 		setRedraw(hWndEdit, false);
 
 		var se = AkelPad.GetSelEnd();
@@ -178,7 +178,6 @@ var utils = {
 		if(!this._logMsgs.length)
 			return;
 		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
-		var hWndEdit = AkelPad.GetEditWnd();
 		setRedraw(hWndEdit, false);
 		AkelPad.SetSel(0, -1);
 		AkelPad.ReplaceSel(utils._logMsgs.join("\n"));
@@ -292,7 +291,7 @@ function calc(expr, forceAsk) {
 	}
 	if(res == AkelPad.GetSelText())
 		return;
-	if(!AkelPad.GetEditReadOnly(AkelPad.GetEditWnd()))
+	if(!AkelPad.GetEditReadOnly(hWndEdit))
 		AkelPad.ReplaceSel(res);
 	else {
 		utils._log(res);
