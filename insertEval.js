@@ -47,6 +47,9 @@ function _localize(s) {
 		},
 		"Result:": {
 			ru: "Результат:"
+		},
+		"Result (handled formatted numbers):": {
+			ru: "Результат (обработаны отформатированные числа):"
 		}
 	};
 	var lng = "en";
@@ -247,8 +250,10 @@ function calc(expr, forceAsk) {
 	if(formattedNumbers) {
 		var exprRaw = expr;
 		expr = utils.unformat(expr);
-		if(expr != exprRaw)
+		if(expr != exprRaw) {
 			resType = "p";
+			var unformatted = true;
+		}
 	}
 	var res;
 	try {
@@ -267,7 +272,8 @@ function calc(expr, forceAsk) {
 	var resRaw = res;
 	res = convType(res, resType);
 	utils._openLog();
-	var newExpr = utils.prompt(_localize("Result:"), res);
+	var msg = _localize(unformatted ? "Result (handled formatted numbers):" : "Result:");
+	var newExpr = utils.prompt(msg, res);
 	if(!newExpr)
 		return; // Cancel
 	if(newExpr != res) {
