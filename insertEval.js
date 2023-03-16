@@ -28,6 +28,8 @@
 //             =false       -           2+2= => "2+2=4"
 //   -formatted=true        - try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
 //   -fixFloatNumbers=true  - try fix "bugs" with floating point operations like 0.3/0.1 = 2.9999999999999995
+//   -hexUpper=true         - use upper case for hex numbers (0x12abf -> 0x12ABF)
+//            =false        - (default) use default lower case for hex numbers
 
 // Usage:
 //   Call("Scripts::Main", 1, "insertEval.js")
