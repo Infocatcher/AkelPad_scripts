@@ -39,6 +39,7 @@ var useLogPlugin     = AkelPad.GetArgValue("useLogPlugin", true);
 var useSpaces        = AkelPad.GetArgValue("useSpaces", true);
 var formattedNumbers = AkelPad.GetArgValue("formatted", true);
 var fixFloatNumbers  = AkelPad.GetArgValue("fixFloatNumbers", true);
+var hexUpper         = AkelPad.GetArgValue("hexUpper", false);
 
 function _localize(s) {
 	var strings = {
@@ -121,7 +122,8 @@ var utils = {
 	},
 
 	hex: function(n) {
-		return "0x" + (+n).toString(16);
+		var h = (+n).toString(16);
+		return "0x" + (hexUpper ? h.toUpperCase() : h);
 	},
 	oct: function(n) {
 		return "0o" + (+n).toString(8);
