@@ -39,7 +39,7 @@
 (function(evalWrapper) {
 var useLogPlugin     = AkelPad.GetArgValue("useLogPlugin", true);
 var useSpaces        = AkelPad.GetArgValue("useSpaces", true);
-var formattedNumbers = AkelPad.GetArgValue("formatted", true);
+var formattedNumbers = AkelPad.GetArgValue("formatted", 2);
 var fixFloatNumbers  = AkelPad.GetArgValue("fixFloatNumbers", true);
 var hexUpper         = AkelPad.GetArgValue("hexUpper", false);
 
@@ -276,7 +276,11 @@ function calc(expr, forceAsk) {
 	var resRaw = res;
 	res = convType(res, resType);
 	utils._openLog();
-	var msg = _localize(unformatted ? "Result (handled formatted numbers):" : "Result:");
+	var msg = _localize(
+		unformatted && formattedNumbers < 2
+			? "Result (handled formatted numbers):"
+			: "Result:"
+	);
 	var newExpr = utils.prompt(msg, res);
 	if(!newExpr)
 		return; // Cancel
