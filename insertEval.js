@@ -26,7 +26,9 @@
 //                =false    - show results in new document (as in old versions)
 //   -useSpaces=true        - (default) 2+2= => "2+2 = 4"
 //             =false       -           2+2= => "2+2=4"
-//   -formatted=true        - try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
+//   -formatted=0           - handle js-expressions as is
+//             =1           - (default) try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
+//             =2           - try handle formatted numbers + don't show warning in result prompt
 //   -fixFloatNumbers=true  - try fix "bugs" with floating point operations like 0.3/0.1 = 2.9999999999999995
 //   -hexUpper=true         - use upper case for hex numbers (0x12abf -> 0x12ABF)
 //            =false        - (default) use default lower case for hex numbers
