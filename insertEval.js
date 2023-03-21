@@ -41,7 +41,7 @@
 (function(evalWrapper) {
 var useLogPlugin     = AkelPad.GetArgValue("useLogPlugin", true);
 var useSpaces        = AkelPad.GetArgValue("useSpaces", true);
-var formattedNumbers = AkelPad.GetArgValue("formatted", 2);
+var formattedNumbers = AkelPad.GetArgValue("formatted", 1);
 var fixFloatNumbers  = AkelPad.GetArgValue("fixFloatNumbers", true);
 var hexUpper         = AkelPad.GetArgValue("hexUpper", false);
 
