@@ -260,7 +260,8 @@ function calc(expr, forceAsk) {
 		var exprRaw = expr;
 		expr = utils.unformat(expr);
 		if(expr != exprRaw) {
-			resType = "p";
+			if(!resType)
+				resType = "p";
 			var unformatted = true;
 		}
 	}
