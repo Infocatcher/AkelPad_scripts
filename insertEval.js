@@ -138,6 +138,9 @@ var utils = {
 	p: function(n) {
 		return toLocaleNum(formatNum(n));
 	},
+	r: function(n) { // Leave as is, e.g. for raw result of formatted expression
+		return n;
+	},
 
 	unformat: function(s) {
 		// Try ignore comments:
@@ -245,7 +248,7 @@ function calc(expr, forceAsk) {
 		/^\s*=\s*/.test(expr)
 		// 2+2= (since 2018-08-21)
 		// 2+2=b -> 0b100 (since 2018-09-03)
-		|| /\s*=\s*(0?[xob]|h|p)?$/i.test(expr)
+		|| /\s*=\s*(0?[xob]|h|p|r)?$/i.test(expr)
 	) {
 		expr = RegExp.rightContext || RegExp.leftContext;
 		resType = RegExp.$1.replace(/^0/, "").toLowerCase();
@@ -288,8 +291,8 @@ function calc(expr, forceAsk) {
 		return; // Cancel
 	if(newExpr != res) {
 		if(
-			/^\s*=\s*(0?[xob]|h|p)?$/i.test(newExpr) // "=", "=p", "=x" & Co
-			|| /^\s*(0?[xob]|h|p)$/i.test(newExpr) // "p", "x" & Co (without "=", looks like typo)
+			/^\s*=\s*(0?[xob]|h|p|r)?$/i.test(newExpr) // "=", "=p", "=x" & Co
+			|| /^\s*(0?[xob]|h|p|r)$/i.test(newExpr) // "p", "x" & Co (without "=", looks like typo)
 		) {
 			var rt = RegExp.$1.replace(/^0/, "").toLowerCase();
 			if(rt)
