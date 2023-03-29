@@ -125,9 +125,12 @@ var utils = {
 		this._log("print():\n" + s);
 	},
 
-	hex: function(n) {
+	hex: function(n, u) {
 		var h = (+n).toString(16);
-		return "0x" + (hexUpper ? h.toUpperCase() : h);
+		return "0x" + (u || hexUpper ? h.toUpperCase() : h);
+	},
+	HEX: function(n) {
+		return this.hex(n, true);
 	},
 	oct: function(n) {
 		return "0o" + (+n).toString(8);
@@ -199,6 +202,7 @@ var utils = {
 	}
 };
 utils.h = utils.x = utils.hex;
+utils.H = utils.X = utils.HEX;
 utils.o = utils.oct;
 utils.b = utils.bin;
 utils.window = utils;
@@ -251,7 +255,7 @@ function calc(expr, forceAsk) {
 		|| /\s*=\s*(0?[xob]|h|p|r)?$/i.test(expr)
 	) {
 		expr = RegExp.rightContext || RegExp.leftContext;
-		resType = RegExp.$1.replace(/^0/, "").toLowerCase();
+		resType = RegExp.$1.replace(/^0/, "");
 		var extOutput = true;
 	}
 	if(!resType && /^\s*0x[\da-f]/i.test(expr))
@@ -295,7 +299,7 @@ function calc(expr, forceAsk) {
 			/^\s*=\s*(0?[xob]|h|p|r)?$/i.test(newExpr) // "=", "=p", "=x" & Co
 			|| /^\s*(0?[xob]|h|p|r)$/i.test(newExpr) // "p", "x" & Co (without "=", looks like typo)
 		) {
-			var rt = RegExp.$1.replace(/^0/, "").toLowerCase();
+			var rt = RegExp.$1.replace(/^0/, "");
 			if(rt)
 				res = convType(resRaw, rt);
 			extOutput = true;
