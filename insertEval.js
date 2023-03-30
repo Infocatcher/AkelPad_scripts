@@ -257,7 +257,7 @@ function calc(expr, forceAsk) {
 		|| /\s*=\s*(0?[xob]|h|p|r)?$/i.test(expr)
 	) {
 		expr = RegExp.rightContext || RegExp.leftContext;
-		resType = RegExp.$1.replace(/^0/, "");
+		resType = getConverter(RegExp.$1);
 		var extOutput = true;
 	}
 	if(!resType && /^\s*0x[\da-f]/i.test(expr))
@@ -301,7 +301,7 @@ function calc(expr, forceAsk) {
 			/^\s*=\s*(0?[xob]|h|p|r)?$/i.test(newExpr) // "=", "=p", "=x" & Co
 			|| /^\s*(0?[xob]|h|p|r)$/i.test(newExpr) // "p", "x" & Co (without "=", looks like typo)
 		) {
-			var rt = RegExp.$1.replace(/^0/, "");
+			var rt = getConverter(RegExp.$1);
 			if(rt)
 				res = convType(resRaw, rt);
 			extOutput = true;
@@ -325,6 +325,12 @@ function calc(expr, forceAsk) {
 	}
 }
 
+function getConverter(key) {
+	key = key.replace(/^0/, "");
+	if(typeof utils[key] == "function")
+		return key;
+	return key.toLowerCase();
+}
 function convType(res, resType) {
 	if(resType && typeof utils[resType] == "function" && typeof res == "number" && isFinite(res))
 		return utils[resType](res);
