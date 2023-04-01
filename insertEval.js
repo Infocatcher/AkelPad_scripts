@@ -129,10 +129,12 @@ var utils = {
 
 	hex: function(n, u) {
 		var h = (+n).toString(16);
-		return "0x" + (u || hexUpper ? h.toUpperCase() : h);
+		if(u !== undefined ? u : hexUpper)
+			h = h.toUpperCase();
+		return "0x" + h;
 	},
 	HEX: function(n) {
-		return this.hex(n, true);
+		return this.hex(n, !hexUpper);
 	},
 	oct: function(n) {
 		return "0o" + (+n).toString(8);
