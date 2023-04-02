@@ -32,8 +32,8 @@
 //             =1           - (default) try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
 //             =2           - try handle formatted numbers + don't show warning in result prompt
 //   -fixFloatNumbers=true  - try fix "bugs" with floating point operations like 0.3/0.1 = 2.9999999999999995
-//   -hexUpper=true         - use upper case for hex numbers (0x12abf -> 0x12ABF)
-//            =false        - (default) use default lower case for hex numbers
+//   -hexUpper=true         - use upper case for hex numbers (0x12abf -> 0x12ABF) + lower case with =X/=H
+//            =false        - (default) use default lower case for hex numbers + upper case with =X/=H
 
 // Usage:
 //   Call("Scripts::Main", 1, "insertEval.js")
