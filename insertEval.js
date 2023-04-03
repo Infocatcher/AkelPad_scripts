@@ -256,7 +256,7 @@ function calc(expr, forceAsk) {
 		/^\s*=\s*/.test(expr)
 		// 2+2= (since 2018-08-21)
 		// 2+2=b -> 0b100 (since 2018-09-03)
-		|| /\s*=\s*(0?[xob]|h|p|r)?$/i.test(expr)
+		|| /\s*=\s*(0?[xob]|oct|bin|h(ex)?|p|r)?$/i.test(expr)
 	) {
 		expr = RegExp.rightContext || RegExp.leftContext;
 		resType = getConverter(RegExp.$1);
@@ -300,8 +300,8 @@ function calc(expr, forceAsk) {
 		return; // Cancel
 	if(newExpr != res) {
 		if(
-			/^\s*=\s*(0?[xob]|h|p|r)?$/i.test(newExpr) // "=", "=p", "=x" & Co
-			|| /^\s*(0?[xob]|h|p|r)$/i.test(newExpr) // "p", "x" & Co (without "=", looks like typo)
+			/^\s*=\s*(0?[xob]|oct|bin|h(ex)?|p|r)?$/i.test(newExpr) // "=", "=p", "=x" & Co
+			|| /^\s*(0?[xob]|oct|bin|h(ex)?|p|r)$/i.test(newExpr) // "p", "x" & Co (without "=", looks like typo)
 		) {
 			var rt = getConverter(RegExp.$1);
 			if(rt)
