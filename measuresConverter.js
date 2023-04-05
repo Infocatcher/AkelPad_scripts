@@ -2104,6 +2104,7 @@ function loadOfflineCurrencyData(readMode, forceDefault) {
 			code == "BYR" // Removed since 2022-03-16
 			|| code == "VEF" // Removed since 2022-07-17
 			|| code == "ZMK" // Removed since 2023-02-25
+			|| code == "ZWD" // Removed since 2023-03-02
 		)
 			continue;
 		var ratio = +parts[1];
