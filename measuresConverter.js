@@ -3890,10 +3890,11 @@ function converterDialog(modal) {
 		var ts = Infinity;
 		for(var code in currencyRatios) {
 			var data = currencyRatios[code];
-			if(data && data.ratio && data.timestamp) {
+			var t = data && data.timestamp;
+			if(t && data.ratio) {
 				db.push(code + "=" + data.ratio);
-				if(data.timestamp < ts)
-					ts = data.timestamp;
+				if(t < ts)
+					ts = t;
 			}
 		}
 		if(!db.length)
