@@ -1763,6 +1763,9 @@ function _localize(s) {
 		},
 		"Default currency data was successfully updated to %d": {
 			ru: "Значения по умолчанию для конвертирования валют успешно обновлены до %d"
+		},
+		"Warning! Update date of some currencies is too old (%old < %new)": {
+			ru: "Внимание! Дата обновления некоторых валют слишком старая (%old < %new)"
 		}
 	};
 	var lng = "en";
@@ -3888,6 +3891,7 @@ function converterDialog(modal) {
 	function selfUpdate() {
 		var db = [];
 		var ts = Infinity;
+		var tsMax = 0;
 		for(var code in currencyRatios) {
 			var data = currencyRatios[code];
 			var t = data && data.timestamp;
@@ -3895,6 +3899,8 @@ function converterDialog(modal) {
 				db.push(code + "=" + data.ratio);
 				if(t < ts)
 					ts = t;
+				if(t > tsMax)
+					tsMax = t;
 			}
 		}
 		if(!db.length)
@@ -3903,8 +3909,7 @@ function converterDialog(modal) {
 		db.sort();
 		var selfFile = WScript.ScriptFullName;
 
-		var d = new Date(ts);
-		var updDate = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+		var updDate = formatDate(ts);
 		var updated;
 		var selfCode = AkelPad.ReadFile(selfFile, 0, 65001, 1)
 			.replace(
@@ -3954,10 +3959,16 @@ function converterDialog(modal) {
 
 		saveFile(selfFile, selfCode);
 
+		var updWarn = tsMax - ts > 20*60*60*1000
+			? "\n\n" + _localize("Warning! Update date of some currencies is too old (%old < %new)")
+				.replace("%old", updDate)
+				.replace("%new", formatDate(tsMax))
+			: "";
 		AkelPad.MessageBox(
 			hWndDialog,
 			_localize("Default currency data was successfully updated to %d")
-				.replace("%d", updDate),
+				.replace("%d", updDate)
+				+ updWarn,
 			WScript.ScriptBaseName,
 			64 /*MB_ICONINFORMATION*/
 		);
@@ -3966,6 +3977,10 @@ function converterDialog(modal) {
 			var d = new Date();
 			return "_" + d.getFullYear()   + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
 			     + "_" + pad(d.getHours()) + "-" + pad(d.getMinutes())   + "-" + pad(d.getSeconds());
+		}
+		function formatDate(ts) {
+			var d = new Date(ts);
+			return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
 		}
 		function pad(n) {
 			return n > 9 ? n : "0" + n;
