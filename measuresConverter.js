@@ -3970,7 +3970,7 @@ function converterDialog(modal) {
 				.replace("%d", updDate)
 				+ updWarn,
 			WScript.ScriptBaseName,
-			64 /*MB_ICONINFORMATION*/
+			updWarn ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/
 		);
 
 		function gts() {
