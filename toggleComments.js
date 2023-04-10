@@ -115,6 +115,7 @@ var commentsRegions = {
 	//   extension: {
 	//       subExtension0: [[ext0_startMask0, ext0_endMask0], [ext0_startMask1, ext0_endMask1]],
 	//       subExtension1: [[ext1_startMask0, ext1_endMask0]]
+	//       subExtension2: [[ext2_startMask0, ext2_endMask1, canOmitEnd]]
 	//   }
 	// Or "link" to already defined extension:
 	//   otherExtension: "extension"
@@ -122,14 +123,14 @@ var commentsRegions = {
 	html: {
 		js: [["<script", "</script>"]],
 		css: [["<style", "</style>"]],
-		"..php..": [["<?php", "?>"], ["<?", "?>"]]
+		"..php..": [["<?php", "?>", true], ["<?", "?>", true]]
 	},
 	xhtml: "html",
 	htm:   "html",
 	php:   "html",
 	xml: {
 		css: [["<style", "</style>"]],
-		"..php..": [["<?php", "?>"], ["<?", "?>"]],
+		"..php..": [["<?php", "?>", true], ["<?", "?>", true]],
 		js: [
 			["<script", "</script>"],
 			["<![cdata[", "]]>"],
@@ -355,7 +356,7 @@ Comments.prototype = {
 		var startText = this.startText.toLowerCase();
 		var selText = this.selText.toLowerCase();
 		var endText = this.endText.toLowerCase();
-		var start, end;
+		var start, end, canOmitEnd;
 		var startIndx, endIndx;
 		var mParam;
 		for(var ext in mParams) {
@@ -363,8 +364,11 @@ Comments.prototype = {
 			for(var i = 0, len = mParam.length; i < len; ++i) {
 				start = mParam[i][0];
 				end = mParam[i][1];
+				canOmitEnd = mParam[i][2] || false;
 				startIndx = endText.indexOf(start);
 				endIndx = endText.indexOf(end);
+				if(endIndx == -1 && canOmitEnd)
+					endIndx = endText.length;
 				if(
 					startText.lastIndexOf(start) > startText.lastIndexOf(end)
 					&& (selText.indexOf(start) == -1) && (selText.indexOf(end) == -1)
