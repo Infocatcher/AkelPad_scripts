@@ -14,12 +14,12 @@
 // Example:
 //   2+2=    =>  "2+2 = 4"
 // Conversions:
-//   2*8=b   =>  "2*8 = 0b10000" (or =0b)
-//   2*8=o   =>  "2*8 = 0o20"    (or =0o)
-//   2*8=x   =>  "2*8 = 0x10"    (or =0x or =h)
-//   431=x   =>  "431 = 0x1af"
-//   431=X   =>  "431 = 0x1AF"    (or =0X or =H)
-//   1234=p  =>  "1234 = 1 234"
+//   2*8=b      =>  "2*8 = 0b10000" (or =0b)
+//   2*8=o      =>  "2*8 = 0o20"    (or =0o)
+//   2*8=x      =>  "2*8 = 0x10"    (or =0x or =h)
+//   431=x      =>  "431 = 0x1af"
+//   431=X      =>  "431 = 0x1AF"   (or =0X or =H)
+//   1234=p     =>  "1234 = 1 234"
 //   1 123+5=   =>  "1 123+5 = 1 128" (with -formatted=1/-formatted=2 + no conversion)
 //   1 123+5=r  =>  "1 123+5 = 1128"  (with -formatted=1/-formatted=2 + raw conversion)
 // Or type "=", "=b", "=o", "=x" or "=p" in result prompt to force print "expression = result"
