@@ -20,6 +20,8 @@
 //   431=x   =>  "431 = 0x1af"
 //   431=X   =>  "431 = 0x1AF"    (or =0X or =H)
 //   1234=p  =>  "1234 = 1 234"
+//   1 123+5=   =>  "1 123+5 = 1 128" (with -formatted=1/-formatted=2 + no conversion)
+//   1 123+5=r  =>  "1 123+5 = 1128"  (with -formatted=1/-formatted=2 + raw conversion)
 // Or type "=", "=b", "=o", "=x" or "=p" in result prompt to force print "expression = result"
 // (and optionally apply converter)
 
