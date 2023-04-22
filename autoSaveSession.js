@@ -130,6 +130,7 @@ function saveSession() {
 	}
 	timer = 0;
 	lastSave = new Date().getTime();
+	backupSessionOnce();
 	AkelPad.Call("Sessions::Main", 2, sessionName);
 	debug && _log("saved at " + new Date().toLocaleString());
 }
@@ -161,6 +162,22 @@ function destroyTimer() {
 		oSys.Call("user32::KillTimer", hWndTimer, nIDEvent);
 		oSys.UnregisterCallback(lpTimerCallback);
 		lpTimerCallback = 0;
+	}
+}
+function backupSessionOnce() {
+	backupSessionOnce = function() {};
+
+	var fileBase = AkelPad.GetAkelDir(4 /*ADTYPE_PLUGS*/) + "\\Sessions\\" + "OnExit";
+	var fileExt = ".session";
+
+	var fileBak = fileBase + "_autobackup_" + new Date().getTime() + fileExt;
+
+	var fso = new ActiveXObject("Scripting.FileSystemObject");
+	try {
+		fso.CopyFile(fileBase + fileExt, fileBak, true);
+	}
+	catch(e) {
+		debug && _log("backup failed: " + (e.message || e) + " " + file);
 	}
 }
 function _log(s) {
