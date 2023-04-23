@@ -164,10 +164,17 @@ function destroyTimer() {
 		lpTimerCallback = 0;
 	}
 }
+function sessionsDir() {
+	var sd = AkelPad.GetAkelDir(4 /*ADTYPE_PLUGS*/) + "\\Sessions\\";
+	sessionsDir = function() {
+		return sd;
+	};
+	return sd;
+}
 function backupSessionOnce() {
 	backupSessionOnce = function() {};
 
-	var fileBase = AkelPad.GetAkelDir(4 /*ADTYPE_PLUGS*/) + "\\Sessions\\" + "OnExit";
+	var fileBase = sessionsDir() + "OnExit";
 	var fileExt = ".session";
 
 	var fileBak = fileBase + "_autobackup_" + new Date().getTime() + fileExt;
