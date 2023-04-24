@@ -80,6 +80,7 @@ if(hMainWnd) {
 			AkelPad.WindowUnsubClass(3 /*WSC_FRAMEPROC*/);
 			destroyTimer();
 			error && AkelPad.MessageBox(hMainWnd, error, WScript.ScriptName, 16 /*MB_ICONERROR*/);
+			cleanupBackups();
 		}
 		else {
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
@@ -185,6 +186,43 @@ function backupSessionOnce() {
 	}
 	catch(e) {
 		debug && _log("backup failed: " + (e.message || e) + " " + file);
+	}
+}
+function cleanupBackups() {
+	var files = [];
+	var dir = sessionsDir();
+	// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=12548#12548
+	var lpFindData = AkelPad.MemAlloc(592 /*sizeof(WIN32_FIND_DATAW)*/);
+	if(!lpFindData)
+		return;
+	var hSearch = oSys.Call("kernel32::FindFirstFile" + _TCHAR, dir + "\\*", lpFindData)
+		|| AkelPad.MemFree(lpFindData);
+	if(!hSearch)
+		return;
+	do {
+		var fName = AkelPad.MemRead(_PtrAdd(lpFindData, 44 /*offsetof(WIN32_FIND_DATAW, cFileName)*/), _TSTR);
+		if(fName == "." || fName == "..")
+			continue;
+		var dwAttributes = AkelPad.MemRead(_PtrAdd(lpFindData, 0) /*offsetof(WIN32_FIND_DATAW, dwAttributes)*/, 3 /*DT_DWORD*/);
+		if(dwAttributes & 0x10 /*FILE_ATTRIBUTE_DIRECTORY*/)
+			continue;
+		if(/_autobackup_.*\.session$/i.test(fName))
+			files[files.length] = fName;
+	}
+	while(oSys.Call("kernel32::FindNextFile" + _TCHAR, hSearch, lpFindData));
+	oSys.Call("kernel32::FindClose", hSearch);
+	AkelPad.MemFree(lpFindData);
+
+	var maxBackups = 5;
+	if(files.length <= maxBackups)
+		return;
+	var fso = new ActiveXObject("Scripting.FileSystemObject");
+	for(var i = files.length - 1; i >= maxBackups; --i) {
+		try {
+			fso.DeleteFile(dir + "\\" + files[i]);
+		}
+		catch(e) {
+		}
 	}
 }
 function _log(s) {
