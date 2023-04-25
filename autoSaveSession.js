@@ -178,7 +178,7 @@ function backupSessionOnce() {
 	var fileBase = sessionsDir() + "OnExit";
 	var fileExt = ".session";
 
-	var fileBak = fileBase + "_autobackup_" + new Date().getTime() + fileExt;
+	var fileBak = fileBase + "_autobackup" + gts() + fileExt;
 
 	var fso = new ActiveXObject("Scripting.FileSystemObject");
 	try {
@@ -186,6 +186,15 @@ function backupSessionOnce() {
 	}
 	catch(e) {
 		debug && _log("backup failed: " + (e.message || e) + " " + file);
+	}
+
+	function gts() {
+		var d = new Date();
+		return "_" + d.getFullYear()   + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
+		     + "_" + pad(d.getHours()) + "-" + pad(d.getMinutes())   + "-" + pad(d.getSeconds());
+	}
+	function pad(n) {
+		return n > 9 ? n : "0" + n;
 	}
 }
 function cleanupBackups() {
