@@ -34,6 +34,7 @@ var minDelay = AkelPad.GetArgValue("minDelay", 8e3);
 var smallDelay = AkelPad.GetArgValue("smallDelay", 500);
 var sessionName = AkelPad.GetArgValue("session", "OnExit");
 var debug = AkelPad.GetArgValue("debug", false);
+var sessionBackup = AkelPad.GetArgValue("sessionBackup", "OnExit");
 
 var timer = 0;
 var lastSave = 0;
@@ -175,7 +176,10 @@ function sessionsDir() {
 function backupSessionOnce() {
 	backupSessionOnce = function() {};
 
-	var fileBase = sessionsDir() + "OnExit";
+	if(!sessionBackup)
+		return;
+
+	var fileBase = sessionsDir() + sessionBackup;
 	var fileExt = ".session";
 
 	var fileBak = fileBase + "_autobackup" + gts() + fileExt;
