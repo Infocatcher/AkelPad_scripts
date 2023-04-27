@@ -35,6 +35,7 @@ var smallDelay = AkelPad.GetArgValue("smallDelay", 500);
 var sessionName = AkelPad.GetArgValue("session", "OnExit");
 var debug = AkelPad.GetArgValue("debug", false);
 var sessionBackup = AkelPad.GetArgValue("sessionBackup", "OnExit");
+var maxBackups = AkelPad.GetArgValue("maxBackups", 5);
 
 var timer = 0;
 var lastSave = 0;
@@ -226,7 +227,6 @@ function cleanupBackups() {
 	oSys.Call("kernel32::FindClose", hSearch);
 	AkelPad.MemFree(lpFindData);
 
-	var maxBackups = 5;
 	if(files.length <= maxBackups)
 		return;
 	var fso = new ActiveXObject("Scripting.FileSystemObject");
