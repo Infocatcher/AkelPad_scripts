@@ -177,7 +177,7 @@ function sessionsDir() {
 function backupSessionOnce() {
 	backupSessionOnce = function() {};
 
-	if(!sessionBackup)
+	if(!sessionBackup || maxBackups <= 0)
 		return;
 
 	var fileBase = sessionsDir() + sessionBackup;
