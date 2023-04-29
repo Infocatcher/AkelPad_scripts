@@ -26,7 +26,7 @@ if(!isMDI) // We silently ignore SDI mode to allow use the same settings in any 
 	WScript.Quit();
 
 var startupDelay = AkelPad.GetArgValue("startupDelay", 1500);
-var stopWait = new Date().getTime() + startupDelay;
+var stopWait = now() + startupDelay;
 
 var hMainWnd = AkelPad.GetMainWnd();
 var oSys = AkelPad.SystemFunction();
@@ -116,14 +116,14 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 	}
 
 	if(stopWait) {
-		if(new Date().getTime() < stopWait)
+		if(now() < stopWait)
 			return;
 		stopWait = 0;
 	}
 	if(!AkelPad.GetEditFile(0))
 		return;
 
-	var delay = new Date().getTime() - lastSave > minDelay ? smallDelay : minDelay;
+	var delay = now() - lastSave > minDelay ? smallDelay : minDelay;
 	timer = saveSessionDelayed(delay);
 }
 function saveSession() {
@@ -132,7 +132,7 @@ function saveSession() {
 		return;
 	}
 	timer = 0;
-	lastSave = new Date().getTime();
+	lastSave = now();
 	backupSessionOnce();
 	AkelPad.Call("Sessions::Main", 2, sessionName);
 	debug && _log("saved at " + new Date().toLocaleString());
@@ -237,6 +237,9 @@ function cleanupBackups() {
 		catch(e) {
 		}
 	}
+}
+function now() {
+	return new Date().getTime();
 }
 function _log(s) {
 	oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, WScript.ScriptName + ": " + s);
