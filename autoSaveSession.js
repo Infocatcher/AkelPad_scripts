@@ -168,7 +168,18 @@ function destroyTimer() {
 	}
 }
 function sessionsDir() {
-	var sd = AkelPad.GetAkelDir(4 /*ADTYPE_PLUGS*/) + "\\Sessions\\";
+	var oSet = AkelPad.ScriptSettings();
+	if(oSet.Begin("Sessions", 0x21 /*POB_READ|POB_PLUGS*/)) {
+		var inAppData = oSet.Read("SaveSessions", 1 /*PO_DWORD*/) == 2;
+		oSet.End();
+	}
+	if(inAppData) {
+		var wsh = new ActiveXObject("WScript.Shell");
+		var sd = wsh.ExpandEnvironmentStrings("%AppData%\\AkelPad\\Sessions\\");
+	}
+	else {
+		sd = AkelPad.GetAkelDir(4 /*ADTYPE_PLUGS*/) + "\\Sessions\\";
+	}
 	sessionsDir = function() {
 		return sd;
 	};
