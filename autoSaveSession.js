@@ -37,6 +37,8 @@ var debug = AkelPad.GetArgValue("debug", false);
 var sessionBackup = AkelPad.GetArgValue("sessionBackup", "OnExit");
 var maxBackups = AkelPad.GetArgValue("maxBackups", 5);
 
+var bakName = "autobackup";
+
 var timer = 0;
 var lastSave = 0;
 
@@ -194,7 +196,7 @@ function backupSessionOnce() {
 	var fileBase = sessionsDir() + sessionBackup;
 	var fileExt = ".session";
 
-	var fileBak = fileBase + "_autobackup" + gts() + fileExt;
+	var fileBak = fileBase + "_" + bakName + gts() + fileExt;
 
 	var fso = new ActiveXObject("Scripting.FileSystemObject");
 	try {
@@ -231,7 +233,7 @@ function cleanupBackups() {
 		var dwAttributes = AkelPad.MemRead(_PtrAdd(lpFindData, 0) /*offsetof(WIN32_FIND_DATAW, dwAttributes)*/, 3 /*DT_DWORD*/);
 		if(dwAttributes & 0x10 /*FILE_ATTRIBUTE_DIRECTORY*/)
 			continue;
-		if(/_autobackup_.*\.session$/i.test(fName))
+		if(new RegExp("_" + escapeRegExp(bakName) + "_.*\\.session$", "i").test(fName))
 			files[files.length] = fName;
 	}
 	while(oSys.Call("kernel32::FindNextFile" + _TCHAR, hSearch, lpFindData));
@@ -251,6 +253,9 @@ function cleanupBackups() {
 }
 function now() {
 	return new Date().getTime();
+}
+function escapeRegExp(str) {
+	return str.replace(/[\\\/.^$+*?|()\[\]{}]/g, "\\$&");
 }
 function _log(s) {
 	oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, WScript.ScriptName + ": " + s);
