@@ -37,7 +37,7 @@ var debug = AkelPad.GetArgValue("debug", false);
 var sessionBackup = AkelPad.GetArgValue("sessionBackup", "OnExit");
 var maxBackups = AkelPad.GetArgValue("maxBackups", 5);
 
-var bakName = "autobackup";
+var bakName = "autobackup"; // Note: will search for "*_%bakName%_*.session" files
 
 var timer = 0;
 var lastSave = 0;
@@ -222,7 +222,7 @@ function cleanupBackups() {
 	var lpFindData = AkelPad.MemAlloc(592 /*sizeof(WIN32_FIND_DATAW)*/);
 	if(!lpFindData)
 		return;
-	var hSearch = oSys.Call("kernel32::FindFirstFile" + _TCHAR, dir + "\\*", lpFindData)
+	var hSearch = oSys.Call("kernel32::FindFirstFile" + _TCHAR, dir + "\\*_" + bakName + "_*.session", lpFindData)
 		|| AkelPad.MemFree(lpFindData);
 	if(!hSearch)
 		return;
@@ -233,8 +233,7 @@ function cleanupBackups() {
 		var dwAttributes = AkelPad.MemRead(_PtrAdd(lpFindData, 0) /*offsetof(WIN32_FIND_DATAW, dwAttributes)*/, 3 /*DT_DWORD*/);
 		if(dwAttributes & 0x10 /*FILE_ATTRIBUTE_DIRECTORY*/)
 			continue;
-		if(new RegExp("_" + escapeRegExp(bakName) + "_.*\\.session$", "i").test(fName))
-			files[files.length] = fName;
+		files[files.length] = fName;
 	}
 	while(oSys.Call("kernel32::FindNextFile" + _TCHAR, hSearch, lpFindData));
 	oSys.Call("kernel32::FindClose", hSearch);
@@ -253,9 +252,6 @@ function cleanupBackups() {
 }
 function now() {
 	return new Date().getTime();
-}
-function escapeRegExp(str) {
-	return str.replace(/[\\\/.^$+*?|()\[\]{}]/g, "\\$&");
 }
 function _log(s) {
 	oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, WScript.ScriptName + ": " + s);
