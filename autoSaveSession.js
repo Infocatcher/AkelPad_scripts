@@ -238,11 +238,12 @@ function cleanupBackups() {
 	while(oSys.Call("kernel32::FindNextFile" + _TCHAR, hSearch, lpFindData));
 	oSys.Call("kernel32::FindClose", hSearch);
 	AkelPad.MemFree(lpFindData);
+	files.sort();
 
 	if(files.length <= maxBackups)
 		return;
 	var fso = new ActiveXObject("Scripting.FileSystemObject");
-	for(var i = files.length - 1; i >= maxBackups; --i) {
+	for(var i = files.length - maxBackups - 1; i >= 0; --i) {
 		try {
 			fso.DeleteFile(dir + "\\" + files[i]);
 		}
