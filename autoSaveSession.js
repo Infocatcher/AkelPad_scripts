@@ -84,6 +84,8 @@ if(hMainWnd) {
 			AkelPad.WindowUnsubClass(3 /*WSC_FRAMEPROC*/);
 			destroyTimer();
 			error && AkelPad.MessageBox(hMainWnd, error, WScript.ScriptName, 16 /*MB_ICONERROR*/);
+			if(sessionName != sessionBackup)
+				backupSessionOnce();
 			cleanupBackups();
 		}
 		else {
@@ -135,7 +137,8 @@ function saveSession() {
 	}
 	timer = 0;
 	lastSave = now();
-	backupSessionOnce();
+	if(sessionName == sessionBackup)
+		backupSessionOnce();
 	AkelPad.Call("Sessions::Main", 2, sessionName);
 	debug && _log("saved at " + new Date().toLocaleString());
 }
