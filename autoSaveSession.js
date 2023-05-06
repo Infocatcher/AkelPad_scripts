@@ -246,12 +246,24 @@ function cleanupBackups() {
 	if(files.length <= maxBackups)
 		return;
 	var fso = new ActiveXObject("Scripting.FileSystemObject");
+	var errs = [];
 	for(var i = files.length - maxBackups - 1; i >= 0; --i) {
 		try {
 			fso.DeleteFile(dir + "\\" + files[i]);
 		}
 		catch(e) {
+			errs[errs.length] = e;
 		}
+	}
+	if(errs.length >= 10) {
+		var e = errs[errs.length - 1];
+		AkelPad.MessageBox(
+			hMainWnd,
+			"Failed to cleanup auto-backups, error:"
+			+ "\n" + (e.message || e),
+			WScript.ScriptName,
+			16 /*MB_ICONERROR*/
+		);
 	}
 }
 function now() {
