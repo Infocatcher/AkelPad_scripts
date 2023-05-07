@@ -260,7 +260,8 @@ function cleanupBackups() {
 		AkelPad.MessageBox(
 			hMainWnd,
 			"Failed to cleanup auto-backups, error:"
-			+ "\n" + (e.message || e),
+			+ "\n" + (e.message || e)
+			+ "\n\nPlease, check manually: " + dir + "*_" + bakName + "_*.session",
 			WScript.ScriptName,
 			16 /*MB_ICONERROR*/
 		);
