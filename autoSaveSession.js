@@ -252,15 +252,14 @@ function cleanupBackups() {
 			fso.DeleteFile(dir + "\\" + files[i]);
 		}
 		catch(e) {
-			errs[errs.length] = e;
+			errs[errs.length] = e.message || e;
 		}
 	}
 	if(errs.length >= 10) {
-		var e = errs[errs.length - 1];
 		AkelPad.MessageBox(
 			hMainWnd,
 			"Failed to cleanup auto-backups, error:"
-			+ "\n" + (e.message || e)
+			+ "\n" + errs[errs.length - 1]
 			+ "\n\nPlease, check manually: " + dir + "*_" + bakName + "_*.session",
 			WScript.ScriptName,
 			16 /*MB_ICONERROR*/
