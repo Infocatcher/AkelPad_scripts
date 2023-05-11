@@ -14,6 +14,8 @@
 //   -minDelay=8000        - (in ms) minimum interval between two saves
 //   -smallDelay=500       - (in ms) minimum daley between change and save
 //   -session="OnExit"     - name of session file
+//   -sessionBackup="OnExit" - name of session to backup before first write
+//   -maxBackups=5           - max backups to preserve (see -sessionBackup)
 //   -debug=true           - show debug messages in window title
 
 // Usage:
