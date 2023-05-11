@@ -10,13 +10,14 @@
 // Required Sessions plugin!
 
 // Arguments:
-//   -startupDelay=1500    - (in ms) ignore all changes just after startup
-//   -minDelay=8000        - (in ms) minimum interval between two saves
-//   -smallDelay=500       - (in ms) minimum daley between change and save
-//   -session="OnExit"     - name of session file
+//   -startupDelay=1500      - (in ms) ignore all changes just after startup
+//   -minDelay=8000          - (in ms) minimum interval between two saves
+//   -smallDelay=500         - (in ms) minimum daley between change and save
+//   -session="OnExit"       - name of session file
 //   -sessionBackup="OnExit" - name of session to backup before first write
 //   -maxBackups=5           - max backups to preserve (see -sessionBackup)
-//   -debug=true           - show debug messages in window title
+//                             will be stored in \Sessions\%SessionName%*_autobackup_%date%.session
+//   -debug=true             - show debug messages in window title
 
 // Usage:
 //   CmdLineBegin=/Call("Scripts::Main", 1, "autoSaveSession.js")
