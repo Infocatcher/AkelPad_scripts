@@ -89,7 +89,7 @@ if(hMainWnd) {
 			error && AkelPad.MessageBox(hMainWnd, error, WScript.ScriptName, 16 /*MB_ICONERROR*/);
 			if(sessionName != sessionBackup)
 				backupSessionOnce();
-			cleanupBackups();
+			sessionBackup && cleanupBackups();
 		}
 		else {
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
