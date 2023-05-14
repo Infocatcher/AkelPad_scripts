@@ -28,20 +28,20 @@ var isMDI = AkelPad.IsMDI();
 if(!isMDI) // We silently ignore SDI mode to allow use the same settings in any mode!
 	WScript.Quit();
 
-var startupDelay = AkelPad.GetArgValue("startupDelay", 1500);
-var stopWait = now() + startupDelay;
-
 var hMainWnd = AkelPad.GetMainWnd();
 var oSys = AkelPad.SystemFunction();
+
+var startupDelay = AkelPad.GetArgValue("startupDelay", 1500);
 var minDelay = AkelPad.GetArgValue("minDelay", 8e3);
 var smallDelay = AkelPad.GetArgValue("smallDelay", 500);
 var sessionName = AkelPad.GetArgValue("session", "OnExit");
-var debug = AkelPad.GetArgValue("debug", false);
 var sessionBackup = AkelPad.GetArgValue("sessionBackup", "OnExit");
 var maxBackups = AkelPad.GetArgValue("maxBackups", 5);
+var debug = AkelPad.GetArgValue("debug", false);
 
 var bakName = "autobackup"; // Note: will search for "*_%bakName%_*.session" files
 
+var stopWait = now() + startupDelay;
 var timer = 0;
 var lastSave = 0;
 
