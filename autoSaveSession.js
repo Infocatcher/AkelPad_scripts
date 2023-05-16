@@ -87,9 +87,10 @@ if(hMainWnd) {
 			AkelPad.WindowUnsubClass(3 /*WSC_FRAMEPROC*/);
 			destroyTimer();
 			error && AkelPad.MessageBox(hMainWnd, error, WScript.ScriptName, 16 /*MB_ICONERROR*/);
-			if(sessionName != sessionBackup)
+			if(sessionBackup && sessionBackup != sessionName)
 				backupSessionOnce();
-			sessionBackup && cleanupBackups();
+			if(sessionBackup && maxBackups >= 0)
+				cleanupBackups();
 		}
 		else {
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
@@ -140,7 +141,7 @@ function saveSession() {
 	}
 	timer = 0;
 	lastSave = now();
-	if(sessionName == sessionBackup)
+	if(sessionBackup && sessionBackup == sessionName)
 		backupSessionOnce();
 	AkelPad.Call("Sessions::Main", 2, sessionName);
 	debug && _log("saved at " + new Date().toLocaleString());
@@ -196,7 +197,7 @@ function sessionsDir() {
 function backupSessionOnce() {
 	backupSessionOnce = function() {};
 
-	if(!sessionBackup || maxBackups <= 0)
+	if(maxBackups <= 0)
 		return;
 
 	var fileBase = sessionsDir() + sessionBackup;
