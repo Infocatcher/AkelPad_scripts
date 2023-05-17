@@ -82,11 +82,9 @@ if(hMainWnd) {
 		) {
 			AkelPad.ScriptNoMutex(); // Allow other scripts running
 			AkelPad.WindowGetMessage(); // Message loop
-
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
 			AkelPad.WindowUnsubClass(3 /*WSC_FRAMEPROC*/);
 			destroyTimer();
-			error && AkelPad.MessageBox(hMainWnd, error, WScript.ScriptName, 16 /*MB_ICONERROR*/);
 			if(sessionBackup && sessionBackup != sessionName)
 				backupSessionOnce();
 			if(sessionBackup && maxBackups >= 0)
@@ -94,12 +92,13 @@ if(hMainWnd) {
 		}
 		else {
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
-			AkelPad.MessageBox(hMainWnd, "AkelPad.WindowSubClass(WSC_FRAMEPROC) failed!", WScript.ScriptName, 16 /*MB_ICONERROR*/);
+			error = "AkelPad.WindowSubClass(WSC_FRAMEPROC) failed!";
 		}
 	}
 	else {
-		AkelPad.MessageBox(hMainWnd, "AkelPad.WindowSubClass(WSC_MAINPROC) failed!", WScript.ScriptName, 16 /*MB_ICONERROR*/);
+		error = "AkelPad.WindowSubClass(WSC_MAINPROC) failed!";
 	}
+	error && AkelPad.MessageBox(hMainWnd, error, WScript.ScriptName, 16 /*MB_ICONERROR*/);
 }
 
 function mainCallback(hWnd, uMsg, wParam, lParam) {
