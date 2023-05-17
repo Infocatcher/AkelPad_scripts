@@ -48,7 +48,7 @@ var lastSave = 0;
 var lpTimerCallback = 0;
 var nIDEvent;
 var hWndTimer;
-var error = "";
+var lastError = "";
 
 debug && _log("start");
 
@@ -92,13 +92,13 @@ if(hMainWnd) {
 		}
 		else {
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
-			error = "AkelPad.WindowSubClass(WSC_FRAMEPROC) failed!";
+			lastError = "AkelPad.WindowSubClass(WSC_FRAMEPROC) failed!";
 		}
 	}
 	else {
-		error = "AkelPad.WindowSubClass(WSC_MAINPROC) failed!";
+		lastError = "AkelPad.WindowSubClass(WSC_MAINPROC) failed!";
 	}
-	error && AkelPad.MessageBox(hMainWnd, error, WScript.ScriptName, 16 /*MB_ICONERROR*/);
+	lastError && AkelPad.MessageBox(hMainWnd, lastError, WScript.ScriptName, 16 /*MB_ICONERROR*/);
 }
 
 function mainCallback(hWnd, uMsg, wParam, lParam) {
@@ -153,7 +153,7 @@ function saveSessionDelayed(delay) {
 		lpTimerCallback = oSys.RegisterCallback("saveSessionTimerProc");
 	}
 	if(!lpTimerCallback) {
-		error = "oSys.RegisterCallback() failed!\nScript was terminated.";
+		lastError = "oSys.RegisterCallback() failed!\nScript was terminated.";
 		oSys.Call("user32::PostQuitMessage", 0); // Exit message loop
 		return 0;
 	}
@@ -249,20 +249,21 @@ function cleanupBackups() {
 	if(files.length <= maxBackups)
 		return;
 	var fso = new ActiveXObject("Scripting.FileSystemObject");
-	var errs = [];
+	var errs = 0;
 	for(var i = files.length - maxBackups - 1; i >= 0; --i) {
 		try {
 			fso.DeleteFile(dir + "\\" + files[i]);
 		}
 		catch(e) {
-			errs[errs.length] = e.message || e;
+			++errs;
+			lastError = e.message || e;
 		}
 	}
-	if(errs.length >= 10) {
+	if(errs >= 10) {
 		AkelPad.MessageBox(
 			hMainWnd,
-			"Failed to cleanup auto-backups, error:"
-			+ "\n" + errs[errs.length - 1]
+			"Failed to cleanup auto-backups, last error:"
+			+ "\n" + lastError
 			+ "\n\nPlease, check manually: " + dir + "*_" + bakName + "_*.session",
 			WScript.ScriptName,
 			16 /*MB_ICONERROR*/
