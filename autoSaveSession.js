@@ -98,7 +98,7 @@ if(hMainWnd) {
 	else {
 		lastError = "AkelPad.WindowSubClass(WSC_MAINPROC) failed!";
 	}
-	lastError && AkelPad.MessageBox(hMainWnd, lastError, WScript.ScriptName, 16 /*MB_ICONERROR*/);
+	lastError && _error(lastError);
 }
 
 function mainCallback(hWnd, uMsg, wParam, lParam) {
@@ -260,18 +260,17 @@ function cleanupBackups() {
 		}
 	}
 	if(errs >= 10) {
-		AkelPad.MessageBox(
-			hMainWnd,
-			"Failed to cleanup auto-backups, last error:"
-			+ "\n" + lastError
-			+ "\n\nPlease, check manually: " + dir + "*_" + bakName + "_*.session",
-			WScript.ScriptName,
-			16 /*MB_ICONERROR*/
+		_error(
+			"Failed to cleanup auto-backups, last error:\n" + lastError
+			+ "\n\nPlease, check manually: " + dir + "*_" + bakName + "_*.session"
 		);
 	}
 }
 function now() {
 	return new Date().getTime();
+}
+function _error(e) {
+	AkelPad.MessageBox(hMainWnd, e, WScript.ScriptName, 16 /*MB_ICONERROR*/);
 }
 function _log(s) {
 	oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, WScript.ScriptName + ": " + s);
