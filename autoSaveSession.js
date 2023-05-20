@@ -116,7 +116,6 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 			case 0x804 /*AEN_HSCROLL*/:
 			case 0x805 /*AEN_VSCROLL*/:
 			case 0x81E /*AEN_SELCHANGED*/:
-				uMsg = cmd;
 			break;
 			default: return;
 		}
