@@ -138,9 +138,9 @@ function saveSession() {
 		return;
 	}
 	timer = 0;
-	lastSave = now();
 	if(sessionBackup && sessionBackup == sessionName)
 		backupSessionOnce();
+	lastSave = now();
 	AkelPad.Call("Sessions::Main", 2, sessionName);
 	debug && _log("saved at " + new Date().toLocaleString());
 }
