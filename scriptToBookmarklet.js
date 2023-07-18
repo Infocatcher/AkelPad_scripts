@@ -125,7 +125,7 @@ function scriptToBookmarklet() {
 		&& !/^alert\s*\(([^()]*\([^()]+\))*[^()]*\);?$/.test(text) // alert( ... );
 		&& !/\Walert\s*\(\s*[^)]+\s*\);?$/.test(text) // ... alert(x);
 	)
-		text += " void(0);";
+		text += " void 0;";
 
 	text = "javascript: " + text;
 
