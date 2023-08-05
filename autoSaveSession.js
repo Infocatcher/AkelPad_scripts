@@ -168,11 +168,11 @@ function saveSessionTimerProc(hWnd, uMsg, nIDEvent, dwTime) {
 	saveSession();
 }
 function destroyTimer() {
-	if(lpTimerCallback) {
-		oSys.Call("user32::KillTimer", hWndTimer, nIDEvent);
-		oSys.UnregisterCallback(lpTimerCallback);
-		lpTimerCallback = 0;
-	}
+	if(!lpTimerCallback)
+		return;
+	oSys.Call("user32::KillTimer", hWndTimer, nIDEvent);
+	oSys.UnregisterCallback(lpTimerCallback);
+	lpTimerCallback = 0;
 }
 function sessionsDir() {
 	var sd = (function() {
