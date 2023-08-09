@@ -2008,7 +2008,7 @@ var missingCurrencies = {
 	],
 	// fxexchangerate.com
 	fx: [
-		"VES", "ETH"
+		"SVC", "VES", "ETH"
 	],
 	// currency.world
 	cw: [
