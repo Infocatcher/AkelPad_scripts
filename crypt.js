@@ -1697,13 +1697,15 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 
 	var isAutoSave = AkelPad.IsPluginRunning("SaveFile::AutoSave");
 	isAutoSave && AkelPad.Call("SaveFile::AutoSave");
-
-	if(!modalDlg)
-		cryptDialog();
-	else if(!AkelPad.GetEditReadOnly(hWndEdit))
-		encryptOrDecrypt();
-
-	isAutoSave && AkelPad.Call("SaveFile::AutoSave");
+	try {
+		if(!modalDlg)
+			cryptDialog();
+		else if(!AkelPad.GetEditReadOnly(hWndEdit))
+			encryptOrDecrypt();
+	}
+	finally {
+		isAutoSave && AkelPad.Call("SaveFile::AutoSave");
+	}
 }
 
 function encryptOrDecrypt(pass) {
