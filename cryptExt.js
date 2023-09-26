@@ -3735,12 +3735,22 @@ var dialogTitle = WScript.ScriptName.replace(/^[!-\-_]+/, "");
 dialogTitle = dialogTitle.charAt(0).toUpperCase() + dialogTitle.substr(1);
 
 if(hMainWnd && !AkelPad.IsInclude()) {
-	if(test || test === undefined && !AkelPad.SendMessage(hMainWnd, 1185 /*AKD_GETTEXTLENGTH*/, hWndEdit, 0))
+	if(test || test === undefined && !AkelPad.SendMessage(hMainWnd, 1185 /*AKD_GETTEXTLENGTH*/, hWndEdit, 0)) {
 		cryptTest();
-	else if(!modalDlg)
-		cryptDialog();
-	else if(!AkelPad.GetEditReadOnly(hWndEdit))
-		encryptOrDecrypt();
+		WScript.Quit();
+	}
+
+	var isAutoSave = AkelPad.IsPluginRunning("SaveFile::AutoSave");
+	isAutoSave && AkelPad.Call("SaveFile::AutoSave");
+	try {
+		if(!modalDlg)
+			cryptDialog();
+		else if(!AkelPad.GetEditReadOnly(hWndEdit))
+			encryptOrDecrypt();
+	}
+	finally {
+		isAutoSave && AkelPad.Call("SaveFile::AutoSave");
+	}
 }
 
 function encryptOrDecrypt(pass) {
