@@ -49,6 +49,8 @@
 //               =1      - (default) save options after encrypt/decrypt
 //               =2      - save options on exit
 //   -savePosition=true  - allow store last window position
+//   -noAutoSave=true    - (default) automatically disable and re-enable SaveFile::AutoSave plugin
+//              =false   - don't handle SaveFile::AutoSave plugin
 
 // Usage:
 //   Call("Scripts::Main", 1, "crypt.js")
@@ -152,6 +154,7 @@ var warningTime  = getArg("warningTime", 4000);
 var test         = getArg("test");
 var saveOptions  = getArg("saveOptions", 1);
 var savePosition = getArg("savePosition", true);
+var noAutoSave   = getArg("noAutoSave", true);
 
 var decrypt = mode == MODE_DECRYPT;
 
@@ -1695,7 +1698,7 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 		WScript.Quit();
 	}
 
-	var isAutoSave = AkelPad.IsPluginRunning("SaveFile::AutoSave");
+	var isAutoSave = noAutoSave && AkelPad.IsPluginRunning("SaveFile::AutoSave");
 	isAutoSave && AkelPad.Call("SaveFile::AutoSave");
 	try {
 		if(!modalDlg)
