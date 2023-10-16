@@ -202,7 +202,7 @@ var oSys = AkelPad.SystemFunction();
 var fullText;
 var detectType;
 
-if(hMainWnd) {
+if(hMainWnd && hWndEdit) {
 	var ext, forceSet;
 	if(restore) {
 		forceSet = true;
