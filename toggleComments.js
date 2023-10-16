@@ -1117,7 +1117,7 @@ function _addStopMessage(msg) {
 	_stopMessages[_stopMessages.length] = msg;
 }
 
-if(hMainWnd) {
+if(hMainWnd && hWndEdit) {
 	parseContent(method);
 	if(_stopMessages.length)
 		AkelPad.MessageBox(hMainWnd, _stopMessages.join("\n\n"), dialogTitle, 48 /*MB_ICONEXCLAMATION*/);
