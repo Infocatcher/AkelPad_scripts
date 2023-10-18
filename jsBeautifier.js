@@ -9849,7 +9849,7 @@ function beautifyAkelEdit() {
 		var icon = failed ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/;
 		AkelPad.MessageBox(hMainWnd, failed || res, WScript.ScriptName, icon);
 		if(failed) {
-			if(AkelPad.GetTextRange(0, 1)) { // Non-empty doc?
+			if(!AkelPad.GetEditWnd() || AkelPad.GetTextRange(0, 1)) { // No docs or non-empty doc?
 				AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
 				AkelPad.SetSel(0, -1);
 			}
