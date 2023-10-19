@@ -179,6 +179,7 @@ function goToLongestLine(reverse, fromStart) {
 		var stopTime = new Date().getTime() + timeLimit;
 	var lines = 0;
 	var tabStop = AkelPad.SendMessage(AkelPad.GetEditWnd(), 3239 /*AEM_GETTABSTOP*/, 0, 0) || 8;
+	var singleLine = linesCount == 1;
 	for(;;) {
 		if(reverse) {
 			if(--line == -1)
@@ -220,6 +221,12 @@ function goToLongestLine(reverse, fromStart) {
 		indx = reverse
 			? lineStart - 1
 			: lineEnd   + 1;
+	}
+
+	if(singleLine) {
+		longestLine = 0;
+		longestLineLength = AkelPad.SendMessage(hWndEdit, 193 /*EM_LINELENGTH*/, 0, 0);
+		lines = count = 1;
 	}
 
 	if(ww) {
