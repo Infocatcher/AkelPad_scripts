@@ -141,6 +141,15 @@ if(hMainWnd) {
 
 function goToLongestLine(reverse, fromStart) {
 	var hWndEdit = AkelPad.GetEditWnd();
+	if(!hWndEdit) {
+		return {
+			line:        "–",
+			lineLength:  "–",
+			linesCount:  "–",
+			processed:   "–",
+			targetCount: "–"
+		};
+	}
 
 	var ww = AkelPad.SendMessage(hWndEdit, 3241 /*AEM_GETWORDWRAP*/, 0, 0);
 	if(ww) {
