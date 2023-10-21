@@ -82,7 +82,7 @@ var hMainWnd = AkelPad.GetMainWnd();
 var hWndEdit = AkelPad.GetEditWnd();
 var oSys = AkelPad.SystemFunction();
 
-if(hMainWnd && !AkelPad.GetEditReadOnly(hWndEdit))
+if(hMainWnd && hWndEdit && !AkelPad.GetEditReadOnly(hWndEdit))
 	insertTag();
 
 function insertTag() {
