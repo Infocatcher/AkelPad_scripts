@@ -49,7 +49,7 @@ var hMainWnd = AkelPad.GetMainWnd();
 var hWndEdit = AkelPad.GetEditWnd();
 var oSys = AkelPad.SystemFunction();
 
-if(hMainWnd)
+if(hMainWnd && hWndEdit)
 	scriptToBookmarklet();
 
 function scriptToBookmarklet() {
