@@ -2599,7 +2599,7 @@ function converterDialog(modal) {
 	}
 	function windowText(hWnd, pText) {
 		if(arguments.length > 1)
-			return oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, pText);
+			return oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, pText.replace(/\0/g, "¤"));
 		var len = oSys.Call("user32::GetWindowTextLength" + _TCHAR, hWnd);
 		var lpText = AkelPad.MemAlloc((len + 1)*_TSIZE);
 		if(!lpText)
