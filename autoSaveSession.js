@@ -12,7 +12,7 @@
 // Arguments:
 //   -startupDelay=1500      - (in ms) ignore all changes just after startup
 //   -minDelay=8000          - (in ms) minimum interval between two saves
-//   -smallDelay=500         - (in ms) minimum daley between change and save
+//   -smallDelay=500         - (in ms) minimum delay between change and save
 //   -session="OnExit"       - name of session file
 //   -sessionBackup="OnExit" - name of session to backup before first write (or empty -sessionBackup="" to disable)
 //   -maxBackups=5           - max backups to preserve (see -sessionBackup)
