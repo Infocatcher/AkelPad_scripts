@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=12843#12843
-// http://infocatcher.ucoz.net/js/akelpad_scripts/cryptExt.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=12843#p12843
+// https://infocatcher.ucoz.net/js/akelpad_scripts/cryptExt.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/cryptExt.js
 
 // (c) Infocatcher 2010-2012, 2014
@@ -1744,7 +1744,7 @@ sjcl.misc.pbkdf2 = function (password, salt, count, length, Prff) {
 
 // http://ats.oka.nu/titaniumcore/js/crypto/Cipher.sample.html
 var _scope = (function() {
-var scope = {}; // See http://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#18304
+var scope = {}; // See https://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#p18304
 
 /*
  * binary.js
@@ -5054,7 +5054,7 @@ function getArg(argName, defaultVal) {
 
 if(AkelPad.IsInclude()) {
 	// this.foo = ... doesn't work:
-	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#18304
+	// https://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#p18304
 	// But declarations without "var" becomes global
 	var _exports = {
 		cryptors: cryptors,

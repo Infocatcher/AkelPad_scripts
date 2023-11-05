@@ -1,5 +1,5 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=4311#4311
-// http://infocatcher.ucoz.net/js/akelpad_scripts/insertDateTemplateExample.js
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=4311#p4311
+// https://infocatcher.ucoz.net/js/akelpad_scripts/insertDateTemplateExample.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/insertDateTemplateExample.js
 
 // (c) Infocatcher 2008-2009, 2012

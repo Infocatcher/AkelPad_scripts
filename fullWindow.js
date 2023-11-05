@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=24434#24434
-// http://infocatcher.ucoz.net/js/akelpad_scripts/fullWindow.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=24434#p24434
+// https://infocatcher.ucoz.net/js/akelpad_scripts/fullWindow.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/fullWindow.js
 
 // (c) Infocatcher 2014

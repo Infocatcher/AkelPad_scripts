@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9924#9924
-// http://infocatcher.ucoz.net/js/akelpad_scripts/toggleComments.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=9924#p9924
+// https://infocatcher.ucoz.net/js/akelpad_scripts/toggleComments.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/toggleComments.js
 
 // (c) Infocatcher 2008-2022
@@ -1055,7 +1055,7 @@ Comments.prototype = {
 	***/
 	getBlockByIndex: function(startIndx, endIndx) {
 		// Based on Instructor's code
-		// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11382#11382
+		// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11382#p11382
 		var line1Start = this.getOffset(hWndEdit, 18 /*AEGI_WRAPLINEBEGIN*/, startIndx);
 		var line2Start = this.getOffset(hWndEdit, 18 /*AEGI_WRAPLINEBEGIN*/, endIndx);
 		var line2End   = this.getOffset(hWndEdit, 19 /*AEGI_WRAPLINEEND*/,   endIndx);
@@ -1068,7 +1068,7 @@ Comments.prototype = {
 	},
 	getLineByIndex: function(indx, prevLineStart, ignoreEmptyLine) {
 		// Based on Instructor's code
-		// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11382#11382
+		// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11382#p11382
 		//return this.getBlockByIndex(indx, indx);
 		var lineStart = this.getOffset(hWndEdit, 18 /*AEGI_WRAPLINEBEGIN*/, indx);
 		if(prevLineStart != undefined && lineStart != prevLineStart && lineStart == indx) {
@@ -1085,7 +1085,7 @@ Comments.prototype = {
 	},
 	getOffset: function(hWndEdit, nType /*AEGI_*/, nOffset) {
 		// Based on Instructor's code
-		// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11382#11382
+		// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11382#p11382
 		var lpIndex = AkelPad.MemAlloc(_X64 ? 24 : 12 /*sizeof(AECHARINDEX)*/);
 		if(!lpIndex)
 			return 0;
@@ -1283,7 +1283,7 @@ function getCoderAlias() {
 		&& !AkelPad.IsPluginRunning("Coder::AutoComplete")
 	)
 		return "";
-	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
+	// https://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#p19363
 	var hWndEdit = AkelPad.GetEditWnd();
 	var hDocEdit = AkelPad.GetEditDoc();
 	var pAlias = "";

@@ -1,5 +1,5 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=4272#4272
-// http://infocatcher.ucoz.net/js/akelpad_scripts/decodeHTML.js
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=4272#p4272
+// https://infocatcher.ucoz.net/js/akelpad_scripts/decodeHTML.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/decodeHTML.js
 
 // (c) Infocatcher 2009-2010

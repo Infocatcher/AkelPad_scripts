@@ -1,5 +1,5 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11387#11387
-// http://infocatcher.ucoz.net/js/akelpad_scripts/tabsRightLeft.js
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11387#p11387
+// https://infocatcher.ucoz.net/js/akelpad_scripts/tabsRightLeft.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/tabsRightLeft.js
 
 // (c) Infocatcher 2011, 2014
@@ -8,7 +8,7 @@
 
 //===================
 //// Switch between tabs in order of them arrangement (temporary check "Switch tabs: right-left" option)
-// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#4222
+// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#p4222
 // Proposed hotkeys: Ctrl+PageDown and Ctrl+PageUp
 
 // Usage:

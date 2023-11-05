@@ -1,5 +1,5 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18433#18433
-// http://infocatcher.ucoz.net/js/akelpad_scripts/restart.js
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=18433#p18433
+// https://infocatcher.ucoz.net/js/akelpad_scripts/restart.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/restart.js
 
 // (c) Infocatcher 2012-2014

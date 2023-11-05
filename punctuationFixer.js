@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
-// http://infocatcher.ucoz.net/js/akelpad_scripts/punctuationFixer.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#p9926
+// https://infocatcher.ucoz.net/js/akelpad_scripts/punctuationFixer.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/punctuationFixer.js
 
 // (c) Infocatcher 2008-2009, 2014

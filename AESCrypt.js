@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11212#11212
-// http://infocatcher.ucoz.net/js/akelpad_scripts/AESCrypt.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11212#p11212
+// https://infocatcher.ucoz.net/js/akelpad_scripts/AESCrypt.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/AESCrypt.js
 
 // (c) Infocatcher 2010-2011, 2014

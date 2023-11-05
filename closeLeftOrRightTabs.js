@@ -1,5 +1,5 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=24138#24138
-// http://infocatcher.ucoz.net/js/akelpad_scripts/closeLeftOrRightTabs.js
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=24138#p24138
+// https://infocatcher.ucoz.net/js/akelpad_scripts/closeLeftOrRightTabs.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/closeLeftOrRightTabs.js
 
 // (c) Infocatcher 2014
@@ -8,7 +8,7 @@
 
 //===================
 //// Close tabs to the left or right (temporary check "Switch tabs: right-left" option)
-// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#4222
+// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#p4222
 
 // Usage:
 //   Call("Scripts::Main", 1, "closeLeftOrRightTabs.js")           - close tabs to the right

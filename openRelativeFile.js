@@ -1,5 +1,5 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11346#11346
-// http://infocatcher.ucoz.net/js/akelpad_scripts/openRelativeFile.js
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11346#p11346
+// https://infocatcher.ucoz.net/js/akelpad_scripts/openRelativeFile.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/openRelativeFile.js
 
 // (c) Infocatcher 2011, 2014
@@ -348,7 +348,7 @@ function getParentDir(dir) {
 }
 function isFileBinary(pFile) {
 	// Thanks to Instructor
-	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11344#11344
+	// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11344#p11344
 	var lpDetectCodepage;
 	var bResult=false;
 

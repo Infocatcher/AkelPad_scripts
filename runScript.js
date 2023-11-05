@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11863#11863
-// http://infocatcher.ucoz.net/js/akelpad_scripts/runScript.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11863#p11863
+// https://infocatcher.ucoz.net/js/akelpad_scripts/runScript.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/runScript.js
 
 // (c) Infocatcher 2011-2021
@@ -9,7 +9,7 @@
 //===================
 //// Run script from AkelFiles\Plugs\Scripts\ directory
 // Required timer.js library (to disable Exec button right after click):
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=24559#24559
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=24559#p24559
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
 
 // Hotkeys:
@@ -685,7 +685,7 @@ function selectScriptDialog(modal) {
 		//		files[files.length] = name;
 		//}
 
-		// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=12548#12548
+		// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=12548#p12548
 		var lpFindData = AkelPad.MemAlloc(592 /*sizeof(WIN32_FIND_DATAW)*/);
 		if(!lpFindData)
 			return;

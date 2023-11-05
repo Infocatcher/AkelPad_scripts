@@ -1,6 +1,6 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11863#11863
-// http://infocatcher.ucoz.net/js/akelpad_scripts/executeScript.js
-// http://infocatcher.ucoz.net/js/akelpad_scripts/executeScript.vbs
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11863#p11863
+// https://infocatcher.ucoz.net/js/akelpad_scripts/executeScript.js
+// https://infocatcher.ucoz.net/js/akelpad_scripts/executeScript.vbs
 
 // (c) Infocatcher 2011
 // Version: 0.2.2 - 2011-12-20

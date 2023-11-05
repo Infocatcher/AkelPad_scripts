@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18306#18306
-// http://infocatcher.ucoz.net/js/akelpad_scripts/adblockPlusChecksum.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=18306#p18306
+// https://infocatcher.ucoz.net/js/akelpad_scripts/adblockPlusChecksum.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/adblockPlusChecksum.js
 
 // (c) Infocatcher 2012
@@ -10,8 +10,8 @@
 // http://adblockplus.org/en/faq_internal#checksum
 
 // Dependencies:
-//   getHash.js   - http://akelpad.sourceforge.net/forum/viewtopic.php?p=11096#11096
-//   converter.js - http://akelpad.sourceforge.net/forum/viewtopic.php?p=11095#11095
+//   getHash.js   - https://akelpad.sourceforge.net/forum/viewtopic.php?p=11096#p11096
+//   converter.js - https://akelpad.sourceforge.net/forum/viewtopic.php?p=11095#p11095
 
 
 var hMainWnd = AkelPad.GetMainWnd();

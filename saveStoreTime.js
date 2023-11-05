@@ -1,5 +1,5 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=10403#10403
-// http://infocatcher.ucoz.net/js/akelpad_scripts/saveStoreTime.js
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=10403#p10403
+// https://infocatcher.ucoz.net/js/akelpad_scripts/saveStoreTime.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/saveStoreTime.js
 
 // (c) Infocatcher 2010-2011, 2014
@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //// Save file and don't update modification time
-// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#4222
+// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#p4222
 
 // Usage:
 //   Call("Scripts::Main", 1, "saveStoreTime.js")

@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9927#9927
-// http://infocatcher.ucoz.net/js/akelpad_scripts/textStatistics.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=9927#p9927
+// https://infocatcher.ucoz.net/js/akelpad_scripts/textStatistics.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/textStatistics.js
 
 // (c) Infocatcher 2008-2022
@@ -354,7 +354,7 @@ function stringRepeat(pattern, count) {
 function Statusbar() {
 	this.get = this.set = this.save = this.restore = this.destroy = function() {};
 
-	// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=13656#13656
+	// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=13656#p13656
 	var hWndStatus = oSys.Call("user32::GetDlgItem", hMainWnd, 10002 /*ID_STATUS*/);
 	if(!hWndStatus || !oSys.Call("user32::IsWindowVisible", hWndStatus))
 		return;

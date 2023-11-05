@@ -7,7 +7,7 @@
 //// Automatically reload log-like file
 
 // Required timer.js library
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=24559#24559
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=24559#p24559
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
 
 var delay = 2e3; // In milliseconds

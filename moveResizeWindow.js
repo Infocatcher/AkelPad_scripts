@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=17270#17270
-// http://infocatcher.ucoz.net/js/akelpad_scripts/moveResizeWindow.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=17270#p17270
+// https://infocatcher.ucoz.net/js/akelpad_scripts/moveResizeWindow.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/moveResizeWindow.js
 
 // (c) Infocatcher 2012-2020
@@ -9,7 +9,7 @@
 //// Move or/and align AkelPad's main window
 
 // Icons for context menu:
-//   http://infocatcher.ucoz.net/js/akelpad_scripts/moveResizeWindow_icons.zip
+//   https://infocatcher.ucoz.net/js/akelpad_scripts/moveResizeWindow_icons.zip
 //   or https://github.com/Infocatcher/AkelPad_menu/tree/master/icons window_*.ico + window.xcf
 //   (based on Actual Window Manager's icons: http://www.actualtools.com/windowmanager/)
 

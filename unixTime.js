@@ -1,5 +1,5 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=12600#12600
-// http://infocatcher.ucoz.net/js/akelpad_scripts/unixTime.js
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=12600#p12600
+// https://infocatcher.ucoz.net/js/akelpad_scripts/unixTime.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/unixTime.js
 
 // (c) Infocatcher 2011-2012

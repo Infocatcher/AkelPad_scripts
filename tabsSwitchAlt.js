@@ -1,5 +1,5 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11387#11387
-// http://infocatcher.ucoz.net/js/akelpad_scripts/tabsSwitchAlt.js
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11387#p11387
+// https://infocatcher.ucoz.net/js/akelpad_scripts/tabsSwitchAlt.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/tabsSwitchAlt.js
 
 // (c) Infocatcher 2011, 2014
@@ -9,7 +9,7 @@
 //===================
 //// Switch between tabs using alternative way
 // (temporary check "Switch tabs: right-left" or "Switch tabs: next-previous" option)
-// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#4222
+// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#p4222
 // Proposed hotkeys: Ctrl+PageDown and Ctrl+PageUp
 
 // Usage:

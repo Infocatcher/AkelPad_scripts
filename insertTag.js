@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11213#11213
-// http://infocatcher.ucoz.net/js/akelpad_scripts/insertTag.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11213#p11213
+// https://infocatcher.ucoz.net/js/akelpad_scripts/insertTag.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/insertTag.js
 
 // (c) Infocatcher 2009-2012, 2014
@@ -265,7 +265,7 @@ function getCoderAlias() {
 		&& !AkelPad.IsPluginRunning("Coder::AutoComplete")
 	)
 		return "";
-	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
+	// https://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#p19363
 	var hWndEdit = AkelPad.GetEditWnd();
 	var hDocEdit = AkelPad.GetEditDoc();
 	var pAlias = "";

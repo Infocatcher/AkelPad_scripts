@@ -1,6 +1,6 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11246#11246
-// http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
-// http://infocatcher.ucoz.net/js/akelpad_scripts/Include/jsBeautifier_tests.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11246#p11246
+// https://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
+// https://infocatcher.ucoz.net/js/akelpad_scripts/Include/jsBeautifier_tests.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/jsBeautifier_tests.js
 
@@ -9800,7 +9800,7 @@ var hWndEdit = AkelPad.GetEditWnd();
 var oSys = AkelPad.SystemFunction();
 
 for(var p in window) {
-	// See http://akelpad.sourceforge.net/forum/viewtopic.php?p=19660#19660
+	// See https://akelpad.sourceforge.net/forum/viewtopic.php?p=19660#p19660
 	var _orig = eval("typeof " + p + ' == "undefined" ? undefined : ' + p + ";");
 	var _new = window[p];
 	if(_new === _orig)
@@ -10277,7 +10277,7 @@ function getSyntaxType(alias) {
 function getCoderAlias() {
 	if(!isCoderRunning())
 		return "";
-	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
+	// https://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#p19363
 	var hWndEdit = AkelPad.GetEditWnd();
 	var hDocEdit = AkelPad.GetEditDoc();
 	var pAlias = "";

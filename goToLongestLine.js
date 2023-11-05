@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=10403#10403
-// http://infocatcher.ucoz.net/js/akelpad_scripts/goToLongestLine.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=10403#p10403
+// https://infocatcher.ucoz.net/js/akelpad_scripts/goToLongestLine.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/goToLongestLine.js
 
 // (c) Infocatcher 2010-2022

@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11240#11240
-// http://infocatcher.ucoz.net/js/akelpad_scripts/replaceDiacriticLetters.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11240#p11240
+// https://infocatcher.ucoz.net/js/akelpad_scripts/replaceDiacriticLetters.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/replaceDiacriticLetters.js
 
 // (c) Infocatcher 2008, 2011-2012

@@ -1,5 +1,5 @@
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9927#9927
-// http://infocatcher.ucoz.net/js/akelpad_scripts/undoRedoAll.js
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=9927#p9927
+// https://infocatcher.ucoz.net/js/akelpad_scripts/undoRedoAll.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/undoRedoAll.js
 
 // (c) Infocatcher 2010, 2014

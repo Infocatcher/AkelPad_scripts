@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=24561#24561
-// http://infocatcher.ucoz.net/js/akelpad_scripts/autoSaveSession.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=24561#p24561
+// https://infocatcher.ucoz.net/js/akelpad_scripts/autoSaveSession.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/autoSaveSession.js
 
 // (c) Infocatcher 2012-2023
@@ -223,7 +223,7 @@ function backupSessionOnce() {
 function cleanupBackups() {
 	var files = [];
 	var dir = sessionsDir();
-	// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=12548#12548
+	// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=12548#p12548
 	var lpFindData = AkelPad.MemAlloc(592 /*sizeof(WIN32_FIND_DATAW)*/);
 	if(!lpFindData)
 		return;

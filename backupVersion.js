@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=10791#10791
-// http://infocatcher.ucoz.net/js/akelpad_scripts/backupVersion.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=10791#p10791
+// https://infocatcher.ucoz.net/js/akelpad_scripts/backupVersion.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/backupVersion.js
 
 // (c) Infocatcher 2011-2012, 2014-2015

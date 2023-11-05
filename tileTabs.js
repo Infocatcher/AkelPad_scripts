@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=17271#17271
-// http://infocatcher.ucoz.net/js/akelpad_scripts/tileTabs.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=17271#p17271
+// https://infocatcher.ucoz.net/js/akelpad_scripts/tileTabs.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/tileTabs.js
 
 // (c) Infocatcher 2012-2022
@@ -257,7 +257,7 @@ function Item() {
 function Statusbar() {
 	this.get = this.set = this.save = this.restore = this.destroy = function() {};
 
-	// Based on Instructor's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=13656#13656
+	// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=13656#p13656
 	var hWndStatus = oSys.Call("user32::GetDlgItem", hMainWnd, 10002 /*ID_STATUS*/);
 	if(!hWndStatus || !oSys.Call("user32::IsWindowVisible", hWndStatus))
 		return;

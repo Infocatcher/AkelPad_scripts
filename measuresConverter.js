@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=12107#12107
-// http://infocatcher.ucoz.net/js/akelpad_scripts/measuresConverter.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=12107#p12107
+// https://infocatcher.ucoz.net/js/akelpad_scripts/measuresConverter.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/measuresConverter.js
 
 // (c) Infocatcher 2011-2022
@@ -12,7 +12,7 @@
 // Can convert numbers and expressions, pick up selected text
 
 // Required timer.js library (only for -updateOnStartup=true):
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=24559#24559
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=24559#p24559
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/timer.js
 
 // Hotkeys:

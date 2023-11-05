@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11096#11096
-// http://infocatcher.ucoz.net/js/akelpad_scripts/getHash.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11096#p11096
+// https://infocatcher.ucoz.net/js/akelpad_scripts/getHash.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/getHash.js
 
 // (c) Infocatcher 2010-2014
@@ -2288,7 +2288,7 @@ function convertFromUnicode(str, cp) {
 		return ret;
 	}
 
-	// based on Fr0sT's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=7972#7972
+	// based on Fr0sT's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=7972#p7972
 
 	// current code page is UTF16* or UTF32* - set ansi current code page
 	// (WideChar <-> MultiByte functions don't work with this code pages)
@@ -2357,7 +2357,7 @@ function convertFromUnicode(str, cp) {
 
 if(AkelPad.IsInclude()) {
 	// this.foo = ... doesn't work:
-	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#18304
+	// https://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#p18304
 	// But declarations without "var" becomes global
 	var _exports = {
 		hashes: hashes,

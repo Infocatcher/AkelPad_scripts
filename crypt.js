@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=12843#12843
-// http://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=12843#p12843
+// https://infocatcher.ucoz.net/js/akelpad_scripts/crypt.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/crypt.js
 
 // (c) Infocatcher 2010-2012, 2014

@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#9926
-// http://infocatcher.ucoz.net/js/akelpad_scripts/newFileTemplate-test.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=9926#p9926
+// https://infocatcher.ucoz.net/js/akelpad_scripts/newFileTemplate-test.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/newFileTemplate-test.js
 
 // (c) Infocatcher 2009-2011
@@ -7,7 +7,7 @@
 // Author: Infocatcher
 
 //// Create new file from template
-// Works with ShowMenuEx.js http://akelpad.sourceforge.net/forum/viewtopic.php?p=8153#8153
+// Works with ShowMenuEx.js https://akelpad.sourceforge.net/forum/viewtopic.php?p=8153#p8153
 
 // Usage:
 // Call("Scripts::Main", 1, "newFileTemplate.js", "html")

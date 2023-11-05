@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=13096#13096
-// http://infocatcher.ucoz.net/js/akelpad_scripts/alignWithSpaces.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=13096#p13096
+// https://infocatcher.ucoz.net/js/akelpad_scripts/alignWithSpaces.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/alignWithSpaces.js
 
 // (c) Infocatcher 2011, 2014
@@ -992,7 +992,7 @@ function setRedraw(hWnd, bRedraw) {
 
 function getOffset(hWndEdit, nType /*AEGI_*/, nOffset) {
 	// Based on Instructor's code
-	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11382#11382
+	// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11382#p11382
 	var lpIndex = AkelPad.MemAlloc(_X64 ? 24 : 12 /*sizeof(AECHARINDEX)*/);
 	if(!lpIndex)
 		return 0;

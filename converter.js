@@ -1,5 +1,5 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11095#11095
-// http://infocatcher.ucoz.net/js/akelpad_scripts/converter.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11095#p11095
+// https://infocatcher.ucoz.net/js/akelpad_scripts/converter.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/converter.js
 
 // (c) Infocatcher 2010-2015
@@ -2917,7 +2917,7 @@ function convertFromUnicode(str, cp) {
 		return ret;
 	}
 
-	// based on Fr0sT's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=7972#7972
+	// based on Fr0sT's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=7972#p7972
 
 	// current code page is UTF16* or UTF32* - set ansi current code page
 	// (WideChar <-> MultiByte functions don't work with this code pages)
@@ -3017,7 +3017,7 @@ function convertToUnicode(str, cp) {
 		return ret;
 	}
 
-	// based on Fr0sT's code: http://akelpad.sourceforge.net/forum/viewtopic.php?p=7972#7972
+	// based on Fr0sT's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=7972#p7972
 
 	// current code page is UTF16* or UTF32* - set ansi current code page
 	// (WideChar <-> MultiByte functions don't work with this code pages)
@@ -3084,7 +3084,7 @@ function convertToUnicode(str, cp) {
 
 if(AkelPad.IsInclude()) {
 	// this.foo = ... doesn't work:
-	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#18304
+	// https://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#p18304
 	// But declarations without "var" becomes global
 	var _exports = {
 		converters: converters,
