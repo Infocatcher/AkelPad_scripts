@@ -69,9 +69,11 @@
 //                                   (also will be stored some options, that may be configured using arguments, e.g. -round*)
 //   -savePosition=true            - allow store last window position
 //   -saveOffline=true             - allow store currencies data
-//   -currencies="USD,EUR"         - white list for currencies
-//              ="-USD,EUR"        - force show all currencies on startup (use "-" to not specify white list)
-//              ="+USD,EUR"        - force apply white list on startup (use "+" to not specify white list)
+//   -currencies="USD,EUR"         - white list for currencies (comma-separated list)
+//              ="-"               - turn off white list on startup (will be used saved white list)
+//              ="-USD,EUR"        - turn off white list on startup + specify white list
+//              ="+"               - turn on white list on startup (will be used saved white list)
+//              ="+USD,EUR"        - turn on white list on startup + specify white list
 //   -testSource="fx"              - force update all currencies from given source (see -preferSources for codes)
 //                                   (will report errors, only for test purposes!)
 
