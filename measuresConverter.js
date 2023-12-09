@@ -448,7 +448,7 @@ var measures = {
 		"Myanmar Kyat":                  "MMK",
 		"Mongolian Tugrik":              "MNT",
 		"Macau Pataca":                  "MOP",
-		"Mauritania Ougulya":            "MRO",
+		"Mauritania Ouguiya":            "MRU",
 		"Mauritius Rupee":               "MUR",
 		"Maldives Rufiyaa":              "MVR",
 		"Malawi Kwacha":                 "MWK",
@@ -1461,7 +1461,7 @@ function _localize(s) {
 		"Maldives Rufiyaa": {
 			ru: "Мальдивская руфия"
 		},
-		"Mauritania Ougulya": {
+		"Mauritania Ouguiya": {
 			ru: "Мавританская угия"
 		},
 		"Mauritius Rupee": {
@@ -2005,16 +2005,16 @@ var missingCurrencies = {
 	// exchange-rates.org
 	er: [
 		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ERN", "ETH", "FKP", "GYD", "KMF", "KPW",
-		"LRD", "LTL", "LVL", "MGA", "MNT", "MRO", "MVR", "MZN", "PGK", "SBD", "SHP", "SKK",
+		"LRD", "LTL", "LVL", "MGA", "MNT", "MRU", "MVR", "MZN", "PGK", "SBD", "SHP", "SKK",
 		"SLL", "SRD", "STD", "SVC", "TJS", "TOP", "VUV", "WST", "XAU", "ZWL"
 	],
 	// fxexchangerate.com
 	fx: [
-		"SVC", "VES", "ETH"
+		"SVC", "VES", "ETH", "MRU"
 	],
 	// currency.world
 	cw: [
-		"EEK", "LTL", "MRO", "SKK", "STD"
+		"EEK", "LTL", "SKK", "STD"
 	]
 };
 function notMissing(server, code) {
@@ -2109,6 +2109,7 @@ function loadOfflineCurrencyData(readMode, forceDefault) {
 			|| code == "VEF" // Removed since 2022-07-17
 			|| code == "ZMK" // Removed since 2023-02-25
 			|| code == "ZWD" // Removed since 2023-03-02
+			|| code == "MRO" // Removed since 2023-12-09
 		)
 			continue;
 		var ratio = +parts[1];
