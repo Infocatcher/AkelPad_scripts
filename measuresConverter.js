@@ -2010,7 +2010,7 @@ var missingCurrencies = {
 	],
 	// fxexchangerate.com
 	fx: [
-		"SVC", "VES", "ETH", "MRU"
+		"ETH", "MRU", "VES"
 	],
 	// currency.world
 	cw: [
