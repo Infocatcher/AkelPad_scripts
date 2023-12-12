@@ -2220,7 +2220,7 @@ var asyncUpdater = {
 				}
 			}
 			if(!_this.activeRequests)
-				_this.onComplete && _this.onComplete(_this.getState(), code);
+				(_this.cache = {}) && _this.onComplete && _this.onComplete(_this.getState(), code);
 			else
 				_this.onProgress && _this.onProgress(_this.getState(), code);
 			delete _this.requests[code];
