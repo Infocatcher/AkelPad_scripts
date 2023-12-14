@@ -2258,7 +2258,7 @@ var asyncUpdater = {
 	},
 	getState: function() {
 		return {
-			total:         this.total || this.processed,
+			total:         this.total || (this.processed + this.noSource),
 			processed:     this.processed,
 			noSource:      this.noSource,
 			errors:        this.errors,
