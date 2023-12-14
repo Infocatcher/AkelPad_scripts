@@ -2029,6 +2029,7 @@ function getRequestURL(code) {
 		if(notMissing(src, code))
 			return getURL(src, code);
 	}
+	return undefined;
 }
 function getURL(src, code) {
 	switch(src) {
@@ -2152,7 +2153,7 @@ var asyncUpdater = {
 		this.onProgress = onProgress;
 		this.onComplete = onComplete;
 		this.total = total || 0;
-		this.activeRequests = this.processed = this.success = this.errors = this.abortedErrors = this.parseErrors = 0;
+		this.activeRequests = this.processed = this.success = this.errors = this.abortedErrors = this.parseErrors = this.noSource = 0;
 		this.aborted = this.stopped = false;
 		this.details = [];
 		this.cache = {};
@@ -2172,7 +2173,6 @@ var asyncUpdater = {
 			this.queue.push(code);
 			return null;
 		}
-		++this.processed;
 		var request = new ActiveXObject("Microsoft.XMLHTTP");
 		this.requests[code] = request;
 		var _this = this;
@@ -2227,6 +2227,12 @@ var asyncUpdater = {
 			request = code = _this = null; // Avoid memory leaks in old JScript versions (not tested)
 		};
 		var url = getRequestURL(code);
+		if(!url) {
+			++_this.noSource;
+			_this.details.push("Missing source URL: " + code);
+			return null;
+		}
+		++this.processed;
 		var cacheKey = shouldCacheURL(url);
 		var cached = cacheKey && this.cache[cacheKey];
 		if(cached) {
@@ -2254,6 +2260,7 @@ var asyncUpdater = {
 		return {
 			total:         this.total || this.processed,
 			processed:     this.processed,
+			noSource:      this.noSource,
 			errors:        this.errors,
 			abortedErrors: this.abortedErrors,
 			parseErrors:   this.parseErrors,
@@ -3875,7 +3882,7 @@ function converterDialog(modal) {
 						msg += "\n\n" + _localize("Details:\n%S").replace("%S", details)
 					icon |= state.parseErrors
 						? 16 /*MB_ICONERROR*/
-						: state.errors
+						: state.errors || state.noSource
 							? 48 /*MB_ICONEXCLAMATION*/
 							: 64 /*MB_ICONINFORMATION*/;
 				}
