@@ -1732,6 +1732,9 @@ function _localize(s) {
 		"Updated: %P/%T (%ET s)\n  - Success: %S\n  - Net errors: %NE\n  - Parse errors: %PE\n  - Aborted: %A": {
 			ru: "Обновлено: %P/%T (%ET с)\n  - Успешно: %S\n  - Ошибки сети: %NE\n  - Ошибки парсера: %PE\n  - Прервано: %A"
 		},
+		"\n  - Missing update URL: %M": {
+			ru: "\n  - Нет источника обновления: %M"
+		},
 		"Details:\n%S": {
 			ru: "Подробности:\n%S"
 		},
@@ -3877,6 +3880,8 @@ function converterDialog(modal) {
 						.replace("%PE", state.parseErrors)
 						.replace("%A",  state.abortedErrors)
 						.replace("%ET", elapsedTime);
+					if(state.noSource)
+						msg += _localize("\n  - Missing update URL: %M").replace("%M", state.noSource);
 					var details = state.details.join("\n");
 					if(details)
 						msg += "\n\n" + _localize("Details:\n%S").replace("%S", details)
