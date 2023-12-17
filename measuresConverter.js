@@ -2151,19 +2151,37 @@ var asyncUpdater = {
 	maxErrors: updateMaxErrors,
 	queue: [],
 	requests: {},
+	state: {
+		total:         0,
+		processed:     0,
+		noSource:      0,
+		errors:        0,
+		abortedErrors: 0,
+		parseErrors:   0,
+		success:       0,
+		hasTotal:      false,
+		aborted:       false,
+		stopped:       false,
+		details:       []
+	},
 	cache: {},
 	init: function(onProgress, onComplete, total) {
 		this.onProgress = onProgress;
 		this.onComplete = onComplete;
-		this.total = total || 0;
-		this.activeRequests = this.processed = this.success = this.errors = this.abortedErrors = this.parseErrors = this.noSource = 0;
-		this.aborted = this.stopped = false;
-		this.details = [];
+		this.activeRequests = 0;
+		var state = this.state;
+		for(var p in state)
+			if(typeof state[p] == "number")
+				state[p] = 0;
+		if((state.hasTotal = total > 0))
+			state.total = total;
+		state.aborted = state.stopped = false;
+		state.details.length = 0;
 		this.cache = {};
 		this.queue.length = 0;
 	},
 	abort: function() {
-		this.aborted = true;
+		this.state.aborted = true;
 		var requests = this.requests;
 		for(var code in requests) {
 			requests[code].abort();
@@ -2178,6 +2196,7 @@ var asyncUpdater = {
 		}
 		var request = new ActiveXObject("Microsoft.XMLHTTP");
 		this.requests[code] = request;
+		var state = this.state;
 		var _this = this;
 		var onReadyStateChange = request.onreadystatechange = function() {
 			if(request.readyState != 4)
@@ -2186,20 +2205,20 @@ var asyncUpdater = {
 			if(request.status != 200) {
 				err = true;
 				if(request.status == 0) {
-					++_this.abortedErrors;
-					_this.details.push("Aborted: " + code + " " + url);
+					++state.abortedErrors;
+					state.details.push("Aborted: " + code + " " + url);
 				}
 				else {
-					++_this.errors;
-					_this.details.push("Network error: " + code + " " + url);
+					++state.errors;
+					state.details.push("Network error: " + code + " " + url);
 				}
 			}
 			var cnt = --_this.activeRequests;
-			if(_this.errors > _this.maxErrors) { //~ todo: (_this.errors + _this.abortedErrors) ?
-				_this.stopped = true;
+			if(state.errors > _this.maxErrors) { //~ todo: (state.errors + state.abortedErrors) ?
+				state.stopped = true;
 				_this.queue.length = 0;
 			}
-			if(!_this.stopped && !_this.aborted)
+			if(!state.stopped && !state.aborted)
 				while(cnt++ < _this.maxActiveRequests && _this.queue.length > 0)
 					_this.nextRequest();
 			if(!err) {
@@ -2211,11 +2230,11 @@ var asyncUpdater = {
 				}
 				var ratio = getRatioFromResponse(request.responseText, code);
 				if(isNaN(ratio)) {
-					++_this.parseErrors;
-					_this.details.push("Parse error: " + code + " " + url);
+					++state.parseErrors;
+					state.details.push("Parse error: " + code + " " + url);
 				}
 				else {
-					++_this.success;
+					++state.success;
 					currencyRatios[code] = {
 						ratio: ratio,
 						timestamp: _timestamp || new Date().getTime()
@@ -2223,19 +2242,21 @@ var asyncUpdater = {
 				}
 			}
 			if(!_this.activeRequests)
-				(_this.cache = {}) && _this.onComplete && _this.onComplete(_this.getState(), code);
+				(_this.cache = {}) && _this.onComplete && _this.onComplete(state, code);
 			else
-				_this.onProgress && _this.onProgress(_this.getState(), code);
+				_this.onProgress && _this.onProgress(state, code);
 			delete _this.requests[code];
-			request = code = _this = null; // Avoid memory leaks in old JScript versions (not tested)
+			request = code = state = _this = null; // Avoid memory leaks in old JScript versions (not tested)
 		};
+		if(!state.hasTotal)
+			++state.total;
 		var url = getRequestURL(code);
 		if(!url) {
-			++_this.noSource;
-			_this.details.push("Missing source URL: " + code);
+			++state.noSource;
+			state.details.push("Missing source URL: " + code);
 			return null;
 		}
-		++this.processed;
+		++state.processed;
 		var cacheKey = shouldCacheURL(url);
 		var cached = cacheKey && this.cache[cacheKey];
 		if(cached) {
@@ -2258,20 +2279,6 @@ var asyncUpdater = {
 	},
 	nextRequest: function() {
 		this.addRequest(this.queue.shift());
-	},
-	getState: function() {
-		return {
-			total:         this.total || (this.processed + this.noSource),
-			processed:     this.processed,
-			noSource:      this.noSource,
-			errors:        this.errors,
-			abortedErrors: this.abortedErrors,
-			parseErrors:   this.parseErrors,
-			success:       this.success,
-			aborted:       this.aborted,
-			stopped:       this.stopped,
-			details:       this.details
-		};
 	}
 };
 function updateCurrencyDataAsync(force, onStart, onProgress, onComplete, maskInclude) {
