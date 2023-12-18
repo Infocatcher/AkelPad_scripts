@@ -4017,7 +4017,7 @@ function converterDialog(modal) {
 		}
 	}
 	function cancelUpdate() {
-		if(!asyncUpdater.activeRequests || asyncUpdater.aborted)
+		if(!asyncUpdater.activeRequests || asyncUpdater.state.aborted)
 			return false;
 		if(
 			AkelPad.MessageBox(
