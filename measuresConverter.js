@@ -31,7 +31,7 @@
 //   Shift+F5                          - Force update data only for current currencies (double click on row)
 
 // Arguments:
-//   -preferSources="fx,er,cw"     - priority for currency rate sources (from left to right):
+//   -preferSources="fx,er,cw"     - priority for currency rate sources (from left to right, comma-separated):
 //                                   fx - fxexchangerate.com (faster updates)
 //                                   er - exchange-rates.org (better precision, but slow updates)
 //                                   cw - currency.world
