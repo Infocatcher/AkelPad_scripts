@@ -1,14 +1,14 @@
-﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11246#11246
-// http://infocatcher.ucoz.net/js/akelpad_scripts/Include/jsBeautifier_tests.js
+﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=11246#p11246
+// https://infocatcher.ucoz.net/js/akelpad_scripts/Include/jsBeautifier_tests.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/Include/jsBeautifier_tests.js
 
 // Tests part of jsBeautifier.js, don't use directly!
 // Should be placed in AkelFiles\Plugs\Scripts\Include\jsBeautifier_tests.js
-// http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
+// https://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // Scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2022-10-21 17:16:17 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2023-11-07 00:24:16 UTC]
 
 
 //== js/test/generated/beautify-javascript-tests.js
@@ -211,7 +211,7 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
                     'if (foo)' + eo + '{}' + ec + 'else /regex/.test();');
                 test_fragment('if (foo)' + to + '{', 'if (foo)' + eo + '{');
                 test_fragment('foo' + to + '{', 'foo' + eo + '{');
-                test_fragment('return;' + to + '{', 'return;' + eo + '{');
+                test_fragment('return;' + to + '{', 'return;\n{');
                 bt( 'function x()' + to + '{\n    foo();\n}zzz', 'function x()' + eo +'{\n    foo();\n}\nzzz');
                 bt( 'var a = new function a()' + to + '{};', 'var a = new function a()' + eo + '{};');
                 bt( 'var a = new function a()' + to + '    {},\n    b = new function b()' + to + '    {};',
@@ -376,6 +376,18 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             'var' + unicode_char(160) + unicode_char(3232) + '_' + unicode_char(3232) + ' = "hi";',
             //  -- output --
             'var ' + unicode_char(3232) + '_' + unicode_char(3232) + ' = "hi";');
+
+        // Issue #2159: Invalid prettification of object with unicode escape character as object key - test scenario: object with unicode as key
+        bt(
+            '{\\u{1d4b6}:"ascr"}',
+            //  -- output --
+            '{\n' +
+            '    \\u{1d4b6}: "ascr"\n' +
+            '}');
+        bt(
+            'var \\u{E4}\\u{ca0}\\u{0cA0}\\u{000000Ca0} = {\n' +
+            '    \\u{ca0}rgerlich: true\n' +
+            '};');
 
 
         //============================================================
@@ -2768,6 +2780,18 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '        !but_this_can,\n' +
             '    proper: "first_token_should_never_wrap" +\n' +
             '        "but_this_can"\n' +
+            '}');
+
+        // Issue #1932 - Javascript object property with -/+ symbol wraps issue
+        bt(
+            '{\n' +
+            '            "1234567891234567891234567891234": -433,\n' +
+            '            "abcdefghijklmnopqrstuvwxyz12345": +11\n' +
+            '}',
+            //  -- output --
+            '{\n' +
+            '    "1234567891234567891234567891234": -433,\n' +
+            '    "abcdefghijklmnopqrstuvwxyz12345": +11\n' +
             '}');
         test_fragment(
             '' + wrap_input_2 + '',
@@ -6939,6 +6963,30 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
             '    });\n' +
             'var test = 1;');
 
+        // Issue #1852 - semicolon followed by block statement
+        bt(
+            '(function() {\n' +
+            '    some_code_here();\n' +
+            '    {\n' +
+            '        /* IE11 let bug bypass */\n' +
+            '        let index;\n' +
+            '        for (index in a) {\n' +
+            '            a[index];\n' +
+            '        }\n' +
+            '    }\n' +
+            '})();');
+
+        // Issue #1852 - semicolon followed by block statement 2
+        bt(
+            'let x = { A: 1 }; { console.log("hello"); }',
+            //  -- output --
+            'let x = {\n' +
+            '    A: 1\n' +
+            '};\n' +
+            '{\n' +
+            '    console.log("hello");\n' +
+            '}');
+
         // Issue #772
         bt(
             'this.initAttributes([\n' +
@@ -8827,6 +8875,48 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
 
 
         //============================================================
+        // Record data type
+        reset_options();
+        set_name('Record data type');
+
+        // regular record with primitive
+        bt(
+            'a = #{ b:"c", d:1, e:true };',
+            //  -- output --
+            'a = #{\n' +
+            '    b: "c",\n' +
+            '    d: 1,\n' +
+            '    e: true\n' +
+            '};');
+
+        // nested record
+        bt(
+            'a = #{b:#{ c:1,d:2,}, e:"f"};',
+            //  -- output --
+            'a = #{\n' +
+            '    b: #{\n' +
+            '        c: 1,\n' +
+            '        d: 2,\n' +
+            '    },\n' +
+            '    e: "f"\n' +
+            '};');
+
+        // # not directly followed by { is not handled as record
+        bt(
+            'a = # {\n' +
+            '    b: 1,\n' +
+            '    d: true\n' +
+            '};');
+
+        // example of already valid and beautified record
+        bt(
+            'a = #{\n' +
+            '    b: 1,\n' +
+            '    d: true\n' +
+            '};');
+
+
+        //============================================================
         // Old tests
         reset_options();
         set_name('Old tests');
@@ -10219,21 +10309,40 @@ function run_javascript_tests(test_obj, Urlencoded, js_beautify, html_beautify, 
         bt('"—"');
         bt('"\\x41\\x42\\x43\\x01"', '"\\x41\\x42\\x43\\x01"');
         bt('"\\u2022"', '"\\u2022"');
+        bt('"\\u{2022}"', '"\\u{2022}"');
         bt('a = /\s+/');
         // bt('a = /\\x41/','a = /A/');
         bt('"\\u2022";a = /\s+/;"\\x41\\x42\\x43\\x01".match(/\\x41/);','"\\u2022";\na = /\s+/;\n"\\x41\\x42\\x43\\x01".match(/\\x41/);');
-        test_fragment('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"', '"\\x22\\x27", \'\\x22\\x27\', "\\x5c", \'\\x5c\', "\\xff and \\xzz", "unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"');
+
+        test_fragment('"\\x41\\x42\\x01\\x43"');
+        test_fragment('"\\x41\\x42\\u0001\\x43"');
+        test_fragment('"\\x41\\x42\\u{0001}\\x43"');
+        test_fragment('"\\x20\\x40\\x4a"');
+        test_fragment('"\\xff\\x40\\x4a"');
+        test_fragment('"\\u0072\\u016B\\u0137\\u012B\\u0074\\u0069\\u0073"');
+        test_fragment('"\\u{0072}\\u{016B}\\u{110000}\\u{137}\\u012B\\x74\\u{0000069}\\u{073}"');
+        test_fragment('"Google Chrome est\\u00E1 actualizado."');
+        test_fragment(
+            '"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"',
+            '"\\x22\\x27", \'\\x22\\x27\', "\\x5c", \'\\x5c\', "\\xff and \\xzz", "unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"');
 
         opts.unescape_strings = true;
+
+        test_fragment('"\\x41\\x42\\x01\\x43"', '"AB\\x01C"');
+        test_fragment('"\\x41\\x42\\u0001\\x43"', '"AB\\u0001C"');
+        test_fragment('"\\x41\\x42\\u{0001}\\x43"', '"AB\\u{0001}C"');
         test_fragment('"\\x20\\x40\\x4a"', '" @J"');
         test_fragment('"\\xff\\x40\\x4a"');
         test_fragment('"\\u0072\\u016B\\u0137\\u012B\\u0074\\u0069\\u0073"', '"\u0072\u016B\u0137\u012B\u0074\u0069\u0073"');
+        test_fragment('"\\u{0072}\\u{016B}\\u{110000}\\u{137}\\u012B\\x74\\u{0000069}\\u{073}"', '"\u0072\u016B\\u{110000}\u0137\u012B\u0074\u0069\u0073"');
         test_fragment('"Google Chrome est\\u00E1 actualizado."', '"Google Chrome está actualizado."');
-        test_fragment('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff"',
-           '"\\"\\\'", \'\\"\\\'\', "\\\\", \'\\\\\', "\\xff and \\xzz", "unicode \\u0000 \\" \\\' \\\\ ' + unicode_char(0xffff) + '"');
+        test_fragment(
+            '"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff"',
+            '"\\"\\\'", \'\\"\\\'\', "\\\\", \'\\\\\', "\\xff and \\xzz", "unicode \\u0000 \\" \\\' \\\\ ' + unicode_char(0xffff) + '"');
 
         // For error case, return the string unchanged
-        test_fragment('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"',
+        test_fragment(
+            '"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"',
             '"\\"\\\'", \'\\"\\\'\', "\\\\", \'\\\\\', "\\xff and \\xzz", "unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"');
 
         reset_options();
@@ -21505,6 +21614,19 @@ function run_css_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_bea
 
 
         //============================================================
+        // Issue #2012, #2147
+        reset_options();
+        set_name('Issue #2012, #2147');
+        t('@extend .btn-blue:hover;');
+        t('@import url("chrome://communicator/skin/");');
+        t('@apply w-4 lg:w-10 space-y-3 lg:space-x-12;');
+        t(
+            'h3 {\n' +
+            '    @apply flex flex-col lg:flex-row space-y-3 lg:space-x-12 items-start;\n' +
+            '}');
+
+
+        //============================================================
         //
         reset_options();
         set_name('');
@@ -24170,6 +24292,133 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    [(ngModel)]="myValue" [disabled]="isDisabled" [placeholder]="placeholder"\n' +
             '    [typeahead]="suggestionsSource" [typeaheadOptionField]="suggestionValueField" [typeaheadItemTemplate]="suggestionTemplate" [typeaheadWaitMs]="300"\n' +
             '    (typeaheadOnSelect)="onSuggestionSelected($event)" />');
+
+
+        //============================================================
+        // Test wrap_attributes_min_attrs with force/force-xx options - (wrap_attributes = ""force"", wrap_attributes_min_attrs = "4")
+        reset_options();
+        set_name('Test wrap_attributes_min_attrs with force/force-xx options - (wrap_attributes = ""force"", wrap_attributes_min_attrs = "4")');
+        opts.wrap_attributes = 'force';
+        opts.wrap_attributes_min_attrs = 4;
+        bth(
+            '<input type="four attributes should wrap"     class="form-control"  autocomplete="off"\n' +
+            '[(ngModel)]="myValue" />',
+            //  -- output --
+            '<input type="four attributes should wrap"\n' +
+            '    class="form-control"\n' +
+            '    autocomplete="off"\n' +
+            '    [(ngModel)]="myValue" />');
+        bth(
+            '<input type="three attributes should not wrap"    autocomplete="off"\n' +
+            '[(ngModel)]="myValue" />',
+            //  -- output --
+            '<input type="three attributes should not wrap" autocomplete="off" [(ngModel)]="myValue" />');
+        bth(
+            '<cmpnt v-bind:xx="four attributes with valueless attribute should wrap"  @someevent="dosomething"  someprop\n' +
+            'class="xx-button">\n' +
+            '<div class="alert alert-info" style="margin-left: 1px;" role="alert">lorem ipsum</div>\n' +
+            '</cmpnt>',
+            //  -- output --
+            '<cmpnt v-bind:xx="four attributes with valueless attribute should wrap"\n' +
+            '    @someevent="dosomething"\n' +
+            '    someprop\n' +
+            '    class="xx-button">\n' +
+            '    <div class="alert alert-info" style="margin-left: 1px;" role="alert">lorem ipsum</div>\n' +
+            '</cmpnt>');
+
+        // Test wrap_attributes_min_attrs with force/force-xx options - (wrap_attributes = ""force-aligned"", wrap_attributes_min_attrs = "4")
+        reset_options();
+        set_name('Test wrap_attributes_min_attrs with force/force-xx options - (wrap_attributes = ""force-aligned"", wrap_attributes_min_attrs = "4")');
+        opts.wrap_attributes = 'force-aligned';
+        opts.wrap_attributes_min_attrs = 4;
+        bth(
+            '<input type="four attributes should wrap"     class="form-control"  autocomplete="off"\n' +
+            '[(ngModel)]="myValue" />',
+            //  -- output --
+            '<input type="four attributes should wrap"\n' +
+            '       class="form-control"\n' +
+            '       autocomplete="off"\n' +
+            '       [(ngModel)]="myValue" />');
+        bth(
+            '<input type="three attributes should not wrap"    autocomplete="off"\n' +
+            '[(ngModel)]="myValue" />',
+            //  -- output --
+            '<input type="three attributes should not wrap" autocomplete="off" [(ngModel)]="myValue" />');
+        bth(
+            '<cmpnt v-bind:xx="four attributes with valueless attribute should wrap"  @someevent="dosomething"  someprop\n' +
+            'class="xx-button">\n' +
+            '<div class="alert alert-info" style="margin-left: 1px;" role="alert">lorem ipsum</div>\n' +
+            '</cmpnt>',
+            //  -- output --
+            '<cmpnt v-bind:xx="four attributes with valueless attribute should wrap"\n' +
+            '       @someevent="dosomething"\n' +
+            '       someprop\n' +
+            '       class="xx-button">\n' +
+            '    <div class="alert alert-info" style="margin-left: 1px;" role="alert">lorem ipsum</div>\n' +
+            '</cmpnt>');
+
+        // Test wrap_attributes_min_attrs with force/force-xx options - (wrap_attributes = ""force-expand-multiline"", wrap_attributes_min_attrs = "4")
+        reset_options();
+        set_name('Test wrap_attributes_min_attrs with force/force-xx options - (wrap_attributes = ""force-expand-multiline"", wrap_attributes_min_attrs = "4")');
+        opts.wrap_attributes = 'force-expand-multiline';
+        opts.wrap_attributes_min_attrs = 4;
+        bth(
+            '<input type="four attributes should wrap"     class="form-control"  autocomplete="off"\n' +
+            '[(ngModel)]="myValue" />',
+            //  -- output --
+            '<input\n' +
+            '    type="four attributes should wrap"\n' +
+            '    class="form-control"\n' +
+            '    autocomplete="off"\n' +
+            '    [(ngModel)]="myValue"\n' +
+            '/>');
+        bth(
+            '<input type="three attributes should not wrap"    autocomplete="off"\n' +
+            '[(ngModel)]="myValue" />',
+            //  -- output --
+            '<input type="three attributes should not wrap" autocomplete="off" [(ngModel)]="myValue" />');
+        bth(
+            '<cmpnt v-bind:xx="four attributes with valueless attribute should wrap"  @someevent="dosomething"  someprop\n' +
+            'class="xx-button">\n' +
+            '<div class="alert alert-info" style="margin-left: 1px;" role="alert">lorem ipsum</div>\n' +
+            '</cmpnt>',
+            //  -- output --
+            '<cmpnt\n' +
+            '    v-bind:xx="four attributes with valueless attribute should wrap"\n' +
+            '    @someevent="dosomething"\n' +
+            '    someprop\n' +
+            '    class="xx-button"\n' +
+            '>\n' +
+            '    <div class="alert alert-info" style="margin-left: 1px;" role="alert">lorem ipsum</div>\n' +
+            '</cmpnt>');
+
+
+        //============================================================
+        // Test wrap_attributes_min_attrs = 1 with force/force-xx options - (wrap_attributes = ""force"", wrap_attributes_min_attrs = "1")
+        reset_options();
+        set_name('Test wrap_attributes_min_attrs = 1 with force/force-xx options - (wrap_attributes = ""force"", wrap_attributes_min_attrs = "1")');
+        opts.wrap_attributes = 'force';
+        opts.wrap_attributes_min_attrs = 1;
+        bth('<input type="one attribute"/>', '<input type="one attribute" />');
+
+        // Test wrap_attributes_min_attrs = 1 with force/force-xx options - (wrap_attributes = ""force-aligned"", wrap_attributes_min_attrs = "1")
+        reset_options();
+        set_name('Test wrap_attributes_min_attrs = 1 with force/force-xx options - (wrap_attributes = ""force-aligned"", wrap_attributes_min_attrs = "1")');
+        opts.wrap_attributes = 'force-aligned';
+        opts.wrap_attributes_min_attrs = 1;
+        bth('<input type="one attribute"/>', '<input type="one attribute" />');
+
+        // Test wrap_attributes_min_attrs = 1 with force/force-xx options - (wrap_attributes = ""force-expand-multiline"", wrap_attributes_min_attrs = "1")
+        reset_options();
+        set_name('Test wrap_attributes_min_attrs = 1 with force/force-xx options - (wrap_attributes = ""force-expand-multiline"", wrap_attributes_min_attrs = "1")');
+        opts.wrap_attributes = 'force-expand-multiline';
+        opts.wrap_attributes_min_attrs = 1;
+        bth(
+            '<input type="one attribute"/>',
+            //  -- output --
+            '<input\n' +
+            '    type="one attribute"\n' +
+            '/>');
 
 
         //============================================================
@@ -28350,6 +28599,12 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    <li>test content\n' +
             '</ol>');
         bth(
+            '<menu>\n' +
+            '    <li>test content\n' +
+            '    <li>test content\n' +
+            '    <li>test content\n' +
+            '</menu>');
+        bth(
             '<ol>\n' +
             '    <li>\n' +
             '        test content\n' +
@@ -28362,6 +28617,28 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '    <li>\n' +
             '        test content\n' +
             '</ol>');
+        bth(
+            '<menu>\n' +
+            '    <li>\n' +
+            '        test content\n' +
+            '    <li>\n' +
+            '        <ol>\n' +
+            '            <li> level 1 check\n' +
+            '            <li>\n' +
+            '                <menu>\n' +
+            '                    <li> level 2 check\n' +
+            '                    <li>\n' +
+            '                        <ul>\n' +
+            '                            <li> level 3 check\n' +
+            '                        </ul>\n' +
+            '                    <li>\n' +
+            '                        test content\n' +
+            '                </menu>\n' +
+            '        </ol>\n' +
+            '    <li> test content\n' +
+            '    <li>\n' +
+            '        test content\n' +
+            '</menu>');
         bth(
             '<dl>\n' +
             '    <dt>\n' +
@@ -30776,6 +31053,29 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '<span>\n' +
             '    <span>\n' +
             '        <span>The time for this result is 1:02</span><time-dot>.</time-dot><time-decimals>27</time-decimals>\n' +
+            '    </span>\n' +
+            '</span>');
+
+
+        //============================================================
+        // Disables custom elements inlining with inline_custom_elements=false
+        reset_options();
+        set_name('Disables custom elements inlining with inline_custom_elements=false');
+        opts.inline_custom_elements = false;
+        bth(
+            '<span>\n' +
+            '    <span>\n' +
+            '        <span>The time for this result is 1:02</span\n' +
+            '        ><time-dot>.</time-dot\n' +
+            '        ><time-decimals>27</time-decimals>\n' +
+            '    </span>\n' +
+            '</span>',
+            //  -- output --
+            '<span>\n' +
+            '    <span>\n' +
+            '        <span>The time for this result is 1:02</span>\n' +
+            '        <time-dot>.</time-dot>\n' +
+            '        <time-decimals>27</time-decimals>\n' +
             '    </span>\n' +
             '</span>');
 
