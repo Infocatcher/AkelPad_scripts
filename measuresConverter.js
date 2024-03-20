@@ -3225,7 +3225,11 @@ function converterDialog(modal) {
 				if(prevLastUpdate && lastUpdateStr != prevLastUpdate && ensureTimers()) {
 					lastUpdateStr = prevLastUpdate + " -> " + lastUpdateStr;
 					setDialogTitle._ignore = true;
-					setTimeout(function() {
+					setTimeout(function restoreTitle() {
+						if(asyncUpdater.activeRequests) {
+							setTimeout(restoreTitle, 3e3);
+							return;
+						}
 						setDialogTitle._ignore = false;
 						sdt._lastUpdate = sdt._lastUpdateKey = "";
 						setDialogTitle(hWnd);
