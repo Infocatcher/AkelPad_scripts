@@ -3226,7 +3226,10 @@ function converterDialog(modal) {
 					lastUpdateStr = prevLastUpdate + " -> " + lastUpdateStr;
 					setDialogTitle._ignore = true;
 					setTimeout(function restoreTitle() {
-						if(asyncUpdater.activeRequests) {
+						if(
+							asyncUpdater.activeRequests
+							|| asyncUpdater.endingState
+						) {
 							setTimeout(restoreTitle, 3e3);
 							return;
 						}
@@ -3906,7 +3909,9 @@ function converterDialog(modal) {
 					var msg = _localize("No update needed!");
 					icon |= 64 /*MB_ICONINFORMATION*/;
 				}
+				asyncUpdater.endingState = true;
 				AkelPad.MessageBox(hWndDialog, msg, title, icon);
+				asyncUpdater.endingState = false;
 				updateSelf && selfUpdate();
 				doPendingUpdate();
 			},
