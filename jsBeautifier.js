@@ -274,6 +274,12 @@ if(!String.prototype.startsWith) {
 		return this.substring(pos, pos + search.length) === search;
 	};
 }
+if(!String.prototype.endsWith) {
+	String.prototype.endsWith = function(search, rawPos) {
+		var pos = rawPos > 0 ? Math.min(rawPos|0, this.length) : this.length;
+		return this.substring(pos - search.length, pos) === search;
+	};
+}
 if(!String.prototype.includes) {
 	String.prototype.includes = function(searchString, position) {
 		return this.indexOf(searchString, position) !== -1;
