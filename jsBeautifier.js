@@ -241,6 +241,11 @@ if(!Array.prototype.indexOf) {
 		return -1;
 	};
 }
+if(!Array.prototype.includes) {
+	Array.prototype.includes = function(elt /*, from*/) {
+		return Array.prototype.indexOf.apply(this, arguments) != -1;
+	};
+}
 if(!Array.prototype.some) {
 	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some#Polyfill
 	Array.prototype.some = function(fun, thisArg) {
