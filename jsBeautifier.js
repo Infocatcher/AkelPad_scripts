@@ -10122,7 +10122,7 @@ function beautifyAkelEdit() {
 }
 
 function convertSource(file, text) {
-	var TESTS_COUNT = 55280; // Inserted manually, to show better progress...
+	var TESTS_COUNT = 56041; // Inserted manually, to show better progress...
 	text = text
 		.replace(/\r\n?|\n\r?/g, "\r\n")
 		.replace(/[ \t]+([\n\r]|$)/g, "$1");
