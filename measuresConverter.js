@@ -38,9 +38,10 @@
 //   -offlineExpire=22*60*60*1000  - currency ratio expires after this time (in milliseconds)
 //                 =Infinity       - prevent auto-updates
 //   -updateOnStartup=true         - asynchronous update currency data on startup
-//   -updateOnStartupReport=0      - don't show report for startup update (-updateOnStartup=true)
+//   -updateOnStartupReport=0      - don't show report for startup update (-updateOnStartup=true), sum of flags
 //                         =1      - (default) show only errors
 //                         =2      - always show
+//                         =4      - (default) silently close
 //   -updateSelf=false             - (use at your own risk!) update default currencies data
 //   -updateMaxErrors=4            - abort update, if reached too many errors (use -1 to ignore errors)
 //   -convertNumbers=true          - convert numbers (1234.5 -> 1 234,5)
@@ -1847,7 +1848,7 @@ var preferSources         = getArg("preferSources", "fx,er,cw");
 var testSource            = getArg("testSource");
 var offlineExpire         = getArg("offlineExpire", 22*60*60*1000);
 var updateOnStartup       = getArg("updateOnStartup", true);
-var updateOnStartupReport = getArg("updateOnStartupReport", 1);
+var updateOnStartupReport = getArg("updateOnStartupReport", 1|4);
 var updateSelf            = getArg("updateSelf", false);
 var updateMaxErrors       = getArg("updateMaxErrors", 4);
 var convertNumbers        = getArg("convertNumbers", true);
@@ -3155,7 +3156,7 @@ function converterDialog(modal) {
 					break msgLoop;
 					case IDC_UPDATE_STARTUP:
 						var force = !!updateSelf;
-						update(force, updateOnStartupReport, undefined, true);
+						update(force, updateOnStartupReport & ~4, undefined, updateOnStartupReport & 4);
 					break msgLoop;
 					case IDC_COPY_RES: // Used message to override Ctrl+C
 						AkelPad.SetClipboardText(windowText(hWndResult));
