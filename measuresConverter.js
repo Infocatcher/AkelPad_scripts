@@ -2165,9 +2165,10 @@ var asyncUpdater = {
 		details:       []
 	},
 	cache: {},
-	init: function(onProgress, onComplete, total) {
+	init: function(onProgress, onComplete, total, isStartup) {
 		this.onProgress = onProgress;
 		this.onComplete = onComplete;
+		this.isStartup = isStartup;
 		this.activeRequests = 0;
 		var state = this.state;
 		for(var p in state)
@@ -2281,7 +2282,7 @@ var asyncUpdater = {
 		this.addRequest(this.queue.shift());
 	}
 };
-function updateCurrencyDataAsync(force, onStart, onProgress, onComplete, maskInclude) {
+function updateCurrencyDataAsync(force, onStart, onProgress, onComplete, maskInclude, isStartup) {
 	var codes = [];
 	var currencies = measures[CURRENCY];
 	var now = new Date().getTime();
@@ -2305,7 +2306,7 @@ function updateCurrencyDataAsync(force, onStart, onProgress, onComplete, maskInc
 		return;
 	}
 	onStart && onStart();
-	asyncUpdater.init(onProgress, onComplete, total);
+	asyncUpdater.init(onProgress, onComplete, total, isStartup);
 	for(var i = 0; i < total; ++i)
 		asyncUpdater.addRequest(codes[i]);
 }
@@ -3154,7 +3155,7 @@ function converterDialog(modal) {
 					break msgLoop;
 					case IDC_UPDATE_STARTUP:
 						var force = !!updateSelf;
-						update(force, updateOnStartupReport);
+						update(force, updateOnStartupReport, undefined, true);
 					break msgLoop;
 					case IDC_COPY_RES: // Used message to override Ctrl+C
 						AkelPad.SetClipboardText(windowText(hWndResult));
@@ -3189,7 +3190,7 @@ function converterDialog(modal) {
 					update(true, 2);
 			break;
 			case 16: //WM_CLOSE
-				if(cancelUpdate())
+				if(cancelUpdate(true))
 					return 1;
 				lastVal = windowText(hWndValue);
 				saveSettings();
@@ -3830,7 +3831,7 @@ function converterDialog(modal) {
 		var pu = update.pendingUpdates && update.pendingUpdates.shift();
 		pu && pu.func.apply(this, pu.args);
 	}
-	function update(force, report, maskInclude) {
+	function update(force, report, maskInclude, isStartup) {
 		var pendingUpdates = update.pendingUpdates || (update.pendingUpdates = []);
 		if(asyncUpdater.activeRequests) {
 			pendingUpdates.push({ func: update, args: arguments });
@@ -3870,6 +3871,7 @@ function converterDialog(modal) {
 						report == 1
 						&& (!state || !state.errors && !state.parseErrors && !state.abortedErrors)
 					)
+					|| asyncUpdater.noReport
 				) {
 					doPendingUpdate();
 					return;
@@ -3915,7 +3917,8 @@ function converterDialog(modal) {
 				updateSelf && selfUpdate();
 				doPendingUpdate();
 			},
-			maskInclude
+			maskInclude,
+			isStartup
 		);
 		setDialogTitle();
 	}
@@ -4025,17 +4028,19 @@ function converterDialog(modal) {
 			AkelPad.TextFind(0, "(?<=^// \\[built-in currencies data: )[\\d\\-]+", 0x280001 /*FRF_DOWN|FRF_BEGINNING|FRF_REGEXP*/);
 		}
 	}
-	function cancelUpdate() {
+	function cancelUpdate(force) {
 		if(!asyncUpdater.activeRequests || asyncUpdater.state.aborted)
 			return false;
 		if(
-			AkelPad.MessageBox(
+			asyncUpdater.isStartup
+			|| AkelPad.MessageBox(
 				hWndDialog,
 				_localize("Cancel update?"),
 				dialogTitle,
 				33 /*MB_OKCANCEL|MB_ICONQUESTION*/
 			) == 1 /*IDOK*/
 		) {
+			asyncUpdater.noReport = true;
 			asyncUpdater.abort();
 			return false;
 		}
