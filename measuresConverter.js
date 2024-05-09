@@ -3756,7 +3756,7 @@ function converterDialog(modal) {
 			var maskInclude = {};
 			maskInclude[curItem] = maskInclude[curItem2] = true;
 		}
-		update(force, onlyCurrent ? 1 : 2, maskInclude);
+		update(force, onlyCurrent ? 1 : 2, maskInclude, onlyCurrent);
 	}
 	function toggleCurrenciesWL() {
 		if(curType != CURRENCY)
