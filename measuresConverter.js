@@ -3004,7 +3004,8 @@ function converterDialog(modal) {
 					var upd = function() {
 						postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
 					};
-					ensureTimers() ? setTimeout(upd, 800) : upd();
+					var delay = curType == CURRENCY ? 0 : 800;
+					delay && ensureTimers() ? setTimeout(upd, delay) : upd();
 				}
 			break;
 			case 7: //WM_SETFOCUS
