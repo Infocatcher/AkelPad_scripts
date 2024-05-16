@@ -37,11 +37,12 @@
 //                                   cw - currency.world
 //   -offlineExpire=22*60*60*1000  - currency ratio expires after this time (in milliseconds)
 //                 =Infinity       - prevent auto-updates
-//   -updateOnStartup=true         - asynchronous update currency data on startup
-//   -updateOnStartupReport=0      - don't show report for startup update (-updateOnStartup=true), sum of flags
-//                         =1      - (default) show only errors
+//   -updateOnStartup=true         - asynchronously update currency data on startup
+//   -updateOnStartupReport=5      - (=1+4, default) show report for startup update (-updateOnStartup=true), sum of flags:
+//                         =0      - don't show
+//                         =1      - show only errors
 //                         =2      - always show
-//                         =4      - (default) silently close
+//                         =4      - silently close: don't prevent dialog window from closing
 //   -updateSelf=false             - (use at your own risk!) update default currencies data
 //   -updateMaxErrors=4            - abort update, if reached too many errors (use -1 to ignore errors)
 //   -convertNumbers=true          - convert numbers (1234.5 -> 1 234,5)
