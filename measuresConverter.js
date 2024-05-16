@@ -35,7 +35,7 @@
 //                                   fx - fxexchangerate.com (faster updates)
 //                                   er - exchange-rates.org (better precision, but slow updates)
 //                                   cw - currency.world
-//   -offlineExpire=22*60*60*1000  - currency ratio expires after this time (in milliseconds)
+//   -offlineExpire=16*60*60*1000  - currency ratio expires after this time (in milliseconds)
 //                 =Infinity       - prevent auto-updates
 //   -updateOnStartup=true         - asynchronously update currency data on startup
 //   -updateOnStartupReport=5      - (=1+4, default) show report for startup update (-updateOnStartup=true), sum of flags:
@@ -1847,7 +1847,7 @@ var saveOffline  = getArg("saveOffline",  true);
 
 var preferSources         = getArg("preferSources", "fx,er,cw");
 var testSource            = getArg("testSource");
-var offlineExpire         = getArg("offlineExpire", 22*60*60*1000);
+var offlineExpire         = getArg("offlineExpire", 16*60*60*1000);
 var updateOnStartup       = getArg("updateOnStartup", true);
 var updateOnStartupReport = getArg("updateOnStartupReport", 1|4);
 var updateSelf            = getArg("updateSelf", false);
