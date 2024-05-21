@@ -47,6 +47,7 @@ var useLogPlugin     = AkelPad.GetArgValue("useLogPlugin", true);
 var useSpaces        = AkelPad.GetArgValue("useSpaces", true);
 var formattedNumbers = AkelPad.GetArgValue("formatted", 1);
 var fixFloatNumbers  = AkelPad.GetArgValue("fixFloatNumbers", true);
+var binOctNumbers    = AkelPad.GetArgValue("binOctNumbers", true);
 var hexUpper         = AkelPad.GetArgValue("hexUpper", false);
 
 function _localize(s) {
@@ -275,6 +276,16 @@ function calc(expr, forceAsk) {
 				resType = "p";
 			var unformatted = true;
 		}
+	}
+	if(binOctNumbers) try {
+		eval("0b1");
+	}
+	catch(e) {
+		if(!exprRaw)
+			exprRaw = expr;
+		expr = expr
+			.replace(/0b([01]+)(?=\D|$)/gi, "parseInt($1, 2)")
+			.replace(/0o([0-7]+)(?=\D|$)/gi, "parseInt($1, 8)");
 	}
 	var res;
 	try {
