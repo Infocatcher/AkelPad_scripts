@@ -58,8 +58,11 @@ function _localize(s) {
 		"Result:": {
 			ru: "Результат:"
 		},
-		"Result (handled formatted numbers):": {
-			ru: "Результат (обработаны отформатированные числа):"
+		"* handled formatted numbers": {
+			ru: "* обработаны отформатированные числа"
+		},
+		"* handled binary and octal numbers": {
+			ru: "* обработаны двоичные и восьмеричные числа"
 		}
 	};
 	var lng = "en";
@@ -283,9 +286,12 @@ function calc(expr, forceAsk) {
 	catch(e) {
 		if(!exprRaw)
 			exprRaw = expr;
+		var exprBORaw = expr;
 		expr = expr
 			.replace(/0b([01]+)(?=\D|$)/gi, "parseInt($1, 2)")
 			.replace(/0o([0-7]+)(?=\D|$)/gi, "parseInt($1, 8)");
+		var hasBinOct = expr != exprBORaw;
+		exprBORaw = undefined;
 	}
 	var res;
 	try {
@@ -304,11 +310,11 @@ function calc(expr, forceAsk) {
 	var resRaw = res;
 	res = convType(res, resType);
 	utils._openLog();
-	var msg = _localize(
-		unformatted && formattedNumbers < 2
-			? "Result (handled formatted numbers):"
-			: "Result:"
-	);
+	var msg = _localize("Result:");
+	if(unformatted && formattedNumbers < 2)
+		msg += "\n" + _localize("* handled formatted numbers");
+	if(hasBinOct)
+		msg += "\n" + _localize("* handled binary and octal numbers");
 	var newExpr = utils.prompt(msg, res);
 	if(!newExpr)
 		return; // Cancel
