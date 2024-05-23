@@ -45,9 +45,10 @@
 (function(evalWrapper) {
 var useLogPlugin     = AkelPad.GetArgValue("useLogPlugin", true);
 var useSpaces        = AkelPad.GetArgValue("useSpaces", true);
-var formattedNumbers = AkelPad.GetArgValue("formatted", 1);
+var formattedNumbers = AkelPad.GetArgValue("formatted", true);
 var fixFloatNumbers  = AkelPad.GetArgValue("fixFloatNumbers", true);
 var binOctNumbers    = AkelPad.GetArgValue("binOctNumbers", true);
+var showWarnings     = AkelPad.GetArgValue("warnings", true);
 var hexUpper         = AkelPad.GetArgValue("hexUpper", false);
 
 function _localize(s) {
@@ -311,9 +312,9 @@ function calc(expr, forceAsk) {
 	res = convType(res, resType);
 	utils._openLog();
 	var msg = _localize("Result:");
-	if(unformatted && formattedNumbers < 2)
+	if(showWarnings && unformatted)
 		msg += "\n" + _localize("* handled formatted numbers");
-	if(hasBinOct)
+	if(showWarnings && hasBinOct)
 		msg += "\n" + _localize("* handled binary and octal numbers");
 	var newExpr = utils.prompt(msg, res);
 	if(!newExpr)
