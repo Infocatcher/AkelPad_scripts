@@ -289,8 +289,8 @@ function calc(expr, forceAsk) {
 			exprRaw = expr;
 		var exprBORaw = expr;
 		expr = expr
-			.replace(/0b([01]+)(?=\D|$)/gi, "parseInt($1, 2)")
-			.replace(/0o([0-7]+)(?=\D|$)/gi, "parseInt($1, 8)");
+			.replace(/0b([01]+)(?=\D|$)/gi, 'parseInt("$1", 2)')
+			.replace(/0o([0-7]+)(?=\D|$)/gi, 'parseInt("$1", 8)');
 		var hasBinOct = expr != exprBORaw;
 		exprBORaw = undefined;
 	}
