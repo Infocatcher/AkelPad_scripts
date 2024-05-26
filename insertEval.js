@@ -285,7 +285,7 @@ function calc(expr, forceAsk) {
 		}
 	}
 	if(binOctNumbers) try {
-		eval("0b1");
+		eval("0b1 + 0o7");
 	}
 	catch(e) {
 		if(!exprRaw)
