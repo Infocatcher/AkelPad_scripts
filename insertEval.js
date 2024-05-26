@@ -20,8 +20,8 @@
 //   431=x      =>  "431 = 0x1af"   (in lower case by default, use -hexUpper=true to invert)
 //   431=X      =>  "431 = 0x1AF"   (or =0X or =H, in upper case, use -hexUpper=true to invert)
 //   1234=p     =>  "1234 = 1 234"
-//   1 123+5=   =>  "1 123+5 = 1 128" (with -formatted=1/-formatted=2 + no conversion)
-//   1 123+5=r  =>  "1 123+5 = 1128"  (with -formatted=1/-formatted=2 + raw conversion)
+//   1 123+5=   =>  "1 123+5 = 1 128" (with -formatted=true)
+//   1 123+5=r  =>  "1 123+5 = 1128"  (with -formatted=true + raw conversion)
 // Or type "=", "=b", "=o", "=x" or "=p" in result prompt to force print "expression = result"
 // (and optionally apply converter)
 
@@ -30,9 +30,12 @@
 //                =false    - show results in new document (as in old versions)
 //   -useSpaces=true        - (default) 2+2= => "2+2 = 4"
 //             =false       -           2+2= => "2+2=4"
-//   -formatted=0           - handle js-expressions as is
-//             =1           - (default) try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
-//             =2           - try handle formatted numbers + don't show warning in result prompt
+//   -formatted=true        - (default) try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
+//             =false       - handle js-expressions as is
+//   -binOctNumbers=true    - (default) try handle binary and octal numbers like 0b10 and 0o755
+//                 =false   - handle js-expressions as is
+//   -warnings=true         - (default) show warnings in case of handled numbers (for -formatted=true or -binOctNumbers=true)
+//            =false        - don't show warnings
 //   -fixFloatNumbers=true  - try fix "bugs" with floating point operations like 0.3/0.1 = 2.9999999999999995
 //   -hexUpper=true         - use upper case for hex numbers (0x12abf -> 0x12ABF) + lower case with =X/=H
 //            =false        - (default) use default lower case for hex numbers + upper case with =X/=H
