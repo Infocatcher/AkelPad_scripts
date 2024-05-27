@@ -327,7 +327,8 @@ function calc(expr, forceAsk) {
 			/^\s*=\s*(0?[xob]|oct|bin|h(ex)?|p|r(aw)?)?$/i.test(newExpr) // "=", "=p", "=x" & Co
 			|| /^\s*(0?[xob]|oct|bin|h(ex)?|p|r(aw)?)$/i.test(newExpr) // "p", "x" & Co (without "=", looks like typo)
 		) {
-			var rt = getConverter(RegExp.$1);
+			var rtr = RegExp.$1;
+			var rt = getConverter(rtr);
 			if(rt)
 				res = convType(resRaw, rt);
 			extOutput = true;
@@ -339,7 +340,10 @@ function calc(expr, forceAsk) {
 	}
 	if(extOutput) {
 		var sp = useSpaces ? " " : "";
-		res = (exprRaw || expr) + (/[\r\n]$/.test(expr) ? "=" : sp + "=") + sp + res;
+		var exprPrint = rtr == "R" && exprRaw && expr != exprRaw
+			? exprRaw + "\n" + expr
+			: exprRaw || expr;
+		res = exprPrint + (/[\r\n]$/.test(expr) ? "=" : sp + "=") + sp + res;
 	}
 	if(res == AkelPad.GetSelText())
 		return;
