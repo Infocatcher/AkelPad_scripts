@@ -343,7 +343,7 @@ function calc(expr, forceAsk) {
 		var exprPrint = rtr == "R" && exprRaw && expr != exprRaw
 			? exprRaw + "\n" + expr
 			: exprRaw || expr;
-		res = exprPrint + (/[\r\n]$/.test(expr) ? "=" : sp + "=") + sp + res;
+		res = exprPrint + (/[\r\n]$/.test(exprPrint) ? "=" : sp + "=") + sp + res;
 	}
 	if(res == AkelPad.GetSelText())
 		return;
