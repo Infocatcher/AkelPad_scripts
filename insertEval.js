@@ -48,6 +48,7 @@
 (function(evalWrapper) {
 var useLogPlugin     = AkelPad.GetArgValue("useLogPlugin", true);
 var useSpaces        = AkelPad.GetArgValue("useSpaces", true);
+var useNewline       = AkelPad.GetArgValue("useNewline", true);
 var formattedNumbers = AkelPad.GetArgValue("formatted", true);
 var fixFloatNumbers  = AkelPad.GetArgValue("fixFloatNumbers", true);
 var binOctNumbers    = AkelPad.GetArgValue("binOctNumbers", true);
@@ -343,6 +344,8 @@ function calc(expr, forceAsk) {
 		var exprPrint = rtr == "R" && exprRaw && expr != exprRaw
 			? exprRaw + "\n" + expr
 			: exprRaw || expr;
+		if(useNewline && /\S\s*[\r\n]\s*\S/.test(exprPrint))
+			exprPrint += "\n";
 		res = exprPrint + (/[\r\n]$/.test(exprPrint) ? "=" : sp + "=") + sp + res;
 	}
 	if(res == AkelPad.GetSelText())
