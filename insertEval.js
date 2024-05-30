@@ -30,6 +30,8 @@
 //                =false    - show results in new document (as in old versions)
 //   -useSpaces=true        - (default) 2+2= => "2+2 = 4"
 //             =false       -           2+2= => "2+2=4"
+//   -useNewline=true       - (default) add newline before "=" for multiline expressions
+//              =false      - add "=" right after any expression
 //   -formatted=true        - (default) try handle formatted numbers: 1 234,15 + 1,85 -> 1234.15 + 1.85
 //             =false       - handle js-expressions as is
 //   -binOctNumbers=true    - (default) try handle binary and octal numbers like 0b10 and 0o755
