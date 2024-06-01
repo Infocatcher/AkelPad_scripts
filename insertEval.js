@@ -2,8 +2,8 @@
 // https://infocatcher.ucoz.net/js/akelpad_scripts/insertEval.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/insertEval.js
 
-// (c) Infocatcher 2010-2023
-// Version: 0.2.0pre5 - 2023-03-18
+// (c) Infocatcher 2010-2024
+// Version: 0.2.0pre6 - 2024-06-01
 // Author: Infocatcher
 
 //// Script like built-in Calculator.js
