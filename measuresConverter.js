@@ -3862,11 +3862,12 @@ function converterDialog(modal) {
 			},
 			function onComplete(state, code) {
 				onCodeUpdated(code);
-				if(btnLabel && !pendingUpdates.length) {
+				if(btnLabel) {
 					windowText(hWndUpdate, btnLabel);
-					//if(curType != CURRENCY)
-					setDialogTitle();
-					state && saveOffline && saveOfflineCurrencyData(true);
+					if(!pendingUpdates.length) {
+						setDialogTitle();
+						state && saveOffline && saveOfflineCurrencyData(true);
+					}
 				}
 				if(
 					!report
