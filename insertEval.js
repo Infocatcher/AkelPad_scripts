@@ -325,7 +325,7 @@ function calc(expr, forceAsk) {
 	var newExpr = utils.prompt(msg, res);
 	if(!newExpr)
 		return; // Cancel
-	if(newExpr != res) {
+	if(newExpr != "" + res) {
 		if(
 			/^\s*=\s*(0?[xob]|oct|bin|h(ex)?|p|r(aw)?)?$/i.test(newExpr) // "=", "=p", "=x" & Co
 			|| /^\s*(0?[xob]|oct|bin|h(ex)?|p|r(aw)?)$/i.test(newExpr) // "p", "x" & Co (without "=", looks like typo)
