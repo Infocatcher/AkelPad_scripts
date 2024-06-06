@@ -309,7 +309,7 @@ function calc(expr, forceAsk) {
 		if(exprRaw && expr != exprRaw)
 			err += "\n\nUnformatted expression:\n" + expr;
 		AkelPad.MessageBox(hMainWnd, err, dialogTitle, 16 /*MB_ICONERROR*/);
-		calc(expr, true);
+		calc(exprRaw || expr, true);
 		return;
 	}
 	if(fixFloatNumbers && typeof res == "number" && isFinite(res))
