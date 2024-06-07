@@ -300,9 +300,9 @@ function calc(expr, forceAsk) {
 		var hasBinOct = expr != exprBORaw;
 		exprBORaw = undefined;
 	}
-	var res;
+	var uselessUtils = !!utils[expr];
 	try {
-		res = evalWrapper(expr, utils);
+		var res = evalWrapper(expr, uselessUtils ? {} : utils);
 	}
 	catch(e) {
 		var err = e.name + "\n" + e.message;
