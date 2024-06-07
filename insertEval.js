@@ -260,6 +260,8 @@ function fixPrecision(n, prec) {
 }
 
 function calc(expr, forceAsk) {
+	if(forceAsk)
+		var prevExpr = expr;
 	if(!expr || forceAsk)
 		expr = utils.prompt(_localize("Expression:"), expr);
 	if(!expr)
@@ -309,7 +311,7 @@ function calc(expr, forceAsk) {
 		if(exprRaw && expr != exprRaw)
 			err += "\n\nUnformatted expression:\n" + expr;
 		AkelPad.MessageBox(hMainWnd, err, dialogTitle, 16 /*MB_ICONERROR*/);
-		calc(exprRaw || expr, true);
+		calc(uselessUtils && prevExpr || exprRaw || expr, true);
 		return;
 	}
 	if(fixFloatNumbers && typeof res == "number" && isFinite(res))
