@@ -302,7 +302,7 @@ function calc(expr, forceAsk) {
 		var hasBinOct = expr != exprBORaw;
 		exprBORaw = undefined;
 	}
-	var uselessUtils = !!utils[expr];
+	var uselessUtils = !!utils[expr.replace(/^\s*/, "")];
 	try {
 		var res = evalWrapper(expr, uselessUtils ? {} : utils);
 	}
