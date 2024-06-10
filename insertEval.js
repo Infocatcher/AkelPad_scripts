@@ -48,14 +48,14 @@
 //===================
 
 (function(evalWrapper) {
-var useLogPlugin     = AkelPad.GetArgValue("useLogPlugin", true);
-var useSpaces        = AkelPad.GetArgValue("useSpaces", true);
-var useNewline       = AkelPad.GetArgValue("useNewline", true);
-var formattedNumbers = AkelPad.GetArgValue("formatted", true);
+var useLogPlugin     = AkelPad.GetArgValue("useLogPlugin",    true);
+var useSpaces        = AkelPad.GetArgValue("useSpaces",       true);
+var useNewline       = AkelPad.GetArgValue("useNewline",      true);
+var formattedNumbers = AkelPad.GetArgValue("formatted",       true);
 var fixFloatNumbers  = AkelPad.GetArgValue("fixFloatNumbers", true);
-var binOctNumbers    = AkelPad.GetArgValue("binOctNumbers", true);
-var showWarnings     = AkelPad.GetArgValue("warnings", true);
-var hexUpper         = AkelPad.GetArgValue("hexUpper", false);
+var binOctNumbers    = AkelPad.GetArgValue("binOctNumbers",   true);
+var showWarnings     = AkelPad.GetArgValue("warnings",        true);
+var hexUpper         = AkelPad.GetArgValue("hexUpper",        false);
 
 function _localize(s) {
 	var strings = {
