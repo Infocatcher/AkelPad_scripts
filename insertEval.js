@@ -210,6 +210,7 @@ var utils = {
 		if(!this._logMsgs.length)
 			return;
 		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+		var hWndEdit = AkelPad.GetEditWnd();
 		setRedraw(hWndEdit, false);
 		AkelPad.SetSel(0, -1);
 		AkelPad.ReplaceSel(utils._logMsgs.join("\n"));
