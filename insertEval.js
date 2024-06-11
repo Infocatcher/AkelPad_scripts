@@ -356,7 +356,7 @@ function calc(expr, forceAsk) {
 	if(res == AkelPad.GetSelText())
 		return;
 	if(!AkelPad.GetEditReadOnly(hWndEdit))
-		AkelPad.ReplaceSel(res);
+		AkelPad.ReplaceSel("" + res); // Stringify to print undefined as "undefined"
 	else {
 		utils._log(res);
 		utils._openLog();
