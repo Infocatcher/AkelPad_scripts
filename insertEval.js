@@ -187,6 +187,7 @@ var utils = {
 		var sep = "\n";
 		s += "";
 
+		ensureEdit();
 		setRedraw(hWndEdit, false);
 
 		var se = AkelPad.GetSelEnd();
@@ -355,8 +356,10 @@ function calc(expr, forceAsk) {
 	}
 	if(res == AkelPad.GetSelText())
 		return;
-	if(!AkelPad.GetEditReadOnly(hWndEdit))
+	if(!AkelPad.GetEditReadOnly(hWndEdit)) {
+		ensureEdit();
 		AkelPad.ReplaceSel("" + res); // Stringify to print undefined as "undefined"
+	}
 	else {
 		utils._log(res);
 		utils._openLog();
@@ -377,6 +380,12 @@ function convType(res, resType) {
 
 hMainWnd && calc(AkelPad.GetSelText());
 
+function ensureEdit() {
+	if(hWndEdit)
+		return;
+	AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+	hWndEdit = AkelPad.GetEditWnd();
+}
 function setRedraw(hWnd, bRedraw) {
 	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
 	bRedraw && oSys.Call("user32::InvalidateRect", hWnd, 0, true);
