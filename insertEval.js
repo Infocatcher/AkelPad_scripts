@@ -210,7 +210,7 @@ var utils = {
 	_openLog: function() {
 		if(!this._logMsgs.length)
 			return;
-		AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+		openNewFile();
 		var hWndEdit = AkelPad.GetEditWnd();
 		setRedraw(hWndEdit, false);
 		AkelPad.SetSel(0, -1);
@@ -383,8 +383,11 @@ hMainWnd && calc(AkelPad.GetSelText());
 function ensureEdit() {
 	if(hWndEdit)
 		return;
-	AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+	openNewFile();
 	hWndEdit = AkelPad.GetEditWnd();
+}
+function openNewFile() {
+	AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
 }
 function setRedraw(hWnd, bRedraw) {
 	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
