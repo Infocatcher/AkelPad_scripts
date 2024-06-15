@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/insertEval.js
 
 // (c) Infocatcher 2010-2024
-// Version: 0.2.0pre6 - 2024-06-01
+// Version: 0.2.0pre7 - 2024-06-15
 // Author: Infocatcher
 
 //// Script like built-in Calculator.js
