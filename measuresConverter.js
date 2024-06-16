@@ -4327,13 +4327,13 @@ function isExpression(str) {
 	// 1 234,12 + 6 -> 1234.12 + 6
 	var nums = str.split(/\s*[-+*\/()]+\s*/);
 	for(var i = 0, l = nums.length; i < l; ++i)
-		if(nums[i] && !/^\d[\d\s\xa0]*([,.][\d\s\xa0]*\d)?(e[+-]?\d+)?$/i.test(nums[i]))
+		if(nums[i] && !/^\d[\d\s\xa0\u2002\u2003\u2009]*([,.][\d\s\xa0\u2002\u2003\u2009]*\d)?(e[+-]?\d+)?$/i.test(nums[i]))
 			return false;
 	return true;
 }
 function prepareExpression(str) {
 	return str
-		.replace(/(\d)[\s\xa0]+/g, "$1") // 12 345 -> 12345
+		.replace(/(\d)[\s\xa0\u2002\u2003\u2009]+/g, "$1") // 12 345 -> 12345
 		.replace(/(\d),/g, "$1.") // 1,23 -> 1.23
 		.replace(/([.,]|[-+*\/\s](\([-\s]?)*)\s*$/, ""); // Looks like non-terminated expression (e.g. "2+2*")
 }
