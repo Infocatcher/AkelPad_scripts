@@ -4365,14 +4365,13 @@ function formatNum(n) {
 }
 function toLocaleNum(n) {
 	// Apply locale settings: 1 234 567,1 234 567 (Russian), 1,234,567.1,234,567 (English), etc.
-	if(!localeNumbers.delimiter)
-		localeNumbers();
+	var ln = localeNumbers();
 	return ("" + n)
-		// We may have \xa0 in localeNumbers.delimiter
+		// We may have \xa0 in ln.delimiter
 		.replace(/\./g,   "\0.\0")
 		.replace(/\xa0/g, "\0 \0")
-		.replace(/\0\.\0/g, localeNumbers.delimiter)
-		.replace(/\0 \0/g,  localeNumbers.separator);
+		.replace(/\0\.\0/g, ln.delimiter)
+		.replace(/\0 \0/g,  ln.separator);
 }
 function localeNumbers() {
 	// Detect locale delimiter (e.g. 0.1 -> 0,1)
@@ -4381,8 +4380,13 @@ function localeNumbers() {
 	// Detect locale separator (e.g. 123456 -> 123 456 or 123,456)
 	if(/^\D*\d+(\D+)/.test((1234567890123).toLocaleString()))
 		var ls = RegExp.$1;
-	localeNumbers.delimiter = ld && ls ? ld : ".";
-	localeNumbers.separator = ld && ls ? ls : "\xa0";
+	var ln = {
+		delimiter: ld && ls ? ld : ".",
+		separator: ld && ls ? ls : "\xa0"
+	};
+	return (localeNumbers = function() {
+		return ln;
+	})();
 }
 
 function ensureTimers() {
