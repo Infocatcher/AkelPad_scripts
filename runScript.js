@@ -262,6 +262,7 @@ function selectScriptDialog(modal) {
 	var mlStyle = 0x201044; // ES_MULTILINE|ES_WANTRETURN|WS_VSCROLL|ES_AUTOVSCROLL
 	var hGuiFont = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
 	var ignoreResize = false;
+	var fixFocus = false;
 	var argsLineH = 14;
 	var argsH = 21 + (argsMultiline ? argsLineH*(argsLines - 1) : 0);
 	var gbH = 27 + argsH;
@@ -535,6 +536,17 @@ function selectScriptDialog(modal) {
 					setArgsLines(shift ? -argsLines + ARGS_LINES_MAX : 1);
 				else if(ctrl && (wParam == 109 /*VK_SUBTRACT*/ || wParam == 189 /*-/_*/)) // Ctrl+-
 					setArgsLines(shift ? -argsLines + 1 : -1);
+				else if(wParam == 9 /*VK_TAB*/ && !ctrl && argsMultiline) {
+					// Force focus next control, if Tab key was pressed inside arguments control
+					if(oSys.Call("user32::GetFocus") != hWndArgs)
+						fixFocus = false;
+					else { // Actually Tab key is already handled, don't move focus for first call
+						if(fixFocus)
+							oSys.Call("user32::SetFocus", shift ? hWndArgsDec : hWndListBox);
+						else
+							fixFocus = true;
+					}
+				}
 			break;
 			case 273: //WM_COMMAND
 				var idc = wParam & 0xffff;
