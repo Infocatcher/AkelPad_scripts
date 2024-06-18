@@ -540,12 +540,10 @@ function selectScriptDialog(modal) {
 					// Force focus next control, if Tab key was pressed inside arguments control
 					if(oSys.Call("user32::GetFocus") != hWndArgs)
 						fixFocus = false;
-					else { // Actually Tab key is already handled, don't move focus for first call
-						if(fixFocus)
-							oSys.Call("user32::SetFocus", shift ? hWndArgsDec : hWndListBox);
-						else
-							fixFocus = true;
-					}
+					else if(fixFocus) // Actually Tab key is already handled, don't move focus for first call
+						oSys.Call("user32::SetFocus", shift ? hWndArgsDec : hWndListBox);
+					else
+						fixFocus = true;
 				}
 			break;
 			case 273: //WM_COMMAND
