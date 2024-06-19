@@ -494,9 +494,9 @@ function selectScriptDialog(modal) {
 				var ctrl = getKeyState(17 /*VK_CONTROL*/);
 				var shift = getKeyState(16 /*VK_SHIFT*/);
 				//var alt = getKeyState(18 /*VK_MENU*/);
-				if(wParam == 27) //VK_ESCAPE
+				if(wParam == 27 /*VK_ESCAPE*/) // Esc
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
-				else if(wParam == 13) { //VK_RETURN
+				else if(wParam == 13 /*VK_RETURN*/) { // Enter, Enter+…
 					if(ctrl || shift && !argsMultiline) { // Ctrl+Enter, Shift+Enter
 						if(argsMultiline && oSys.Call("user32::GetFocus") == hWndArgs) {
 							AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, false, 0);
@@ -520,7 +520,7 @@ function selectScriptDialog(modal) {
 				}
 				else if(wParam == 114 /*VK_F3*/) // F3
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EXEC, 0);
-				else if(wParam == 112 /*VK_F1*/)
+				else if(wParam == 112 /*VK_F1*/) // F1
 					navigate(ctrl || shift);
 				else if(wParam == 113 /*VK_F2*/ || ctrl && wParam == 83 /*S*/) { // F2, Ctrl+S
 					var so = saveOptions;
@@ -530,13 +530,13 @@ function selectScriptDialog(modal) {
 				}
 				else if(wParam == 115 /*VK_F4*/ || ctrl && wParam == 69 /*E*/) // F4, Ctrl+E
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EDIT, 0);
-				else if(wParam == 116 /*VK_F5*/)
+				else if(wParam == 116 /*VK_F5*/) // F5
 					redrawListbox();
 				else if(ctrl && (wParam == 107 /*VK_ADD*/ || wParam == 187 /*+/=*/)) // Ctrl++
 					setArgsLines(shift ? -argsLines + ARGS_LINES_MAX : 1);
 				else if(ctrl && (wParam == 109 /*VK_SUBTRACT*/ || wParam == 189 /*-/_*/)) // Ctrl+-
 					setArgsLines(shift ? -argsLines + 1 : -1);
-				else if(wParam == 9 /*VK_TAB*/ && !ctrl && argsMultiline) {
+				else if(wParam == 9 /*VK_TAB*/ && !ctrl && argsMultiline) { // Tab, Shift+Tab (fix)
 					// Force focus next control, if Tab key was pressed inside arguments control
 					if(oSys.Call("user32::GetFocus") != hWndArgs)
 						fixFocus = false;
