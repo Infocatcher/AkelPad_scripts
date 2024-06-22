@@ -684,7 +684,7 @@ function selectScriptDialog(modal) {
 			AkelPad.WindowNoNextProc(hListBoxSubClass);
 	}
 
-	function fillListBox(hWndDialog, topIndex) {
+	function fillListBox(hWndDialog, prevCurIndex, prevTopIndex) {
 		//var t = new Date().getTime();
 		var files = [];
 		// Foollowing is very slow (especially on slow devices like USB flash):
@@ -757,8 +757,12 @@ function selectScriptDialog(modal) {
 		if(indx == undefined)
 			curName = "";
 		else {
-			topIndex >= 0 && AkelPad.SendMessage(hWndListBox, 0x197 /*LB_SETTOPINDEX*/, topIndex, 0);
-			setListBoxSel(indx);
+			if(prevTopIndex >= 0)
+				AkelPad.SendMessage(hWndListBox, 0x197 /*LB_SETTOPINDEX*/, prevTopIndex, 0);
+			if(prevCurIndex == indx)
+				AkelPad.SendMessage(hWndListBox, 0x186 /*LB_SETCURSEL*/, indx, 0);
+			else
+				setListBoxSel(indx);
 		}
 	}
 	function redrawListbox() {
@@ -768,8 +772,9 @@ function selectScriptDialog(modal) {
 		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
 
 		var top = AkelPad.SendMessage(hWndListBox, 0x18E /*LB_GETTOPINDEX*/, 0, 0);
+		var cur = AkelPad.SendMessage(hWndListBox, 0x188 /*LB_GETCURSEL*/, 0, 0);
 		AkelPad.SendMessage(hWndListBox,  0x184 /*LB_RESETCONTENT*/, 0, 0);
-		fillListBox(hWndDialog, top);
+		fillListBox(hWndDialog, cur, top);
 
 		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, true, 0);
 		oSys.Call("user32::InvalidateRect", hWndListBox, 0, true);
