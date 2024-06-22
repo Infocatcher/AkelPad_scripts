@@ -315,7 +315,7 @@ function selectScriptDialog(modal) {
 				dlgMinH = scale.y(dlgMinH) + sizeNonClientY;
 
 				// Dialog caption
-				oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, dialogTitle);
+				windowText(hWnd, dialogTitle);
 
 				//centerWindow(hWnd);
 				//centerWindow(hWnd, hMainWnd);
@@ -717,7 +717,7 @@ function selectScriptDialog(modal) {
 		oSys.Call("kernel32::FindClose", hSearch);
 		AkelPad.MemFree(lpFindData);
 		//var dt = new Date().getTime() - t;
-		//oSys.Call("user32::SetWindowText" + _TCHAR, hWndDialog, dialogTitle + " [" + dt + " ms]");
+		//windowText(hWndDialog, dialogTitle + " [" + dt + " ms]");
 		//files.sort();
 
 		var lpStr = AkelPad.MemAlloc(256*_TSIZE);
