@@ -769,15 +769,15 @@ function selectScriptDialog(modal) {
 		for(var name in argsObj)
 			delete argsObj[name];
 
-		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
+		//AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, false, 0);
 
 		var top = AkelPad.SendMessage(hWndListBox, 0x18E /*LB_GETTOPINDEX*/, 0, 0);
 		var cur = AkelPad.SendMessage(hWndListBox, 0x188 /*LB_GETCURSEL*/, 0, 0);
 		AkelPad.SendMessage(hWndListBox,  0x184 /*LB_RESETCONTENT*/, 0, 0);
 		fillListBox(hWndDialog, cur, top);
 
-		AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, true, 0);
-		oSys.Call("user32::InvalidateRect", hWndListBox, 0, true);
+		//AkelPad.SendMessage(hWndDialog, 11 /*WM_SETREDRAW*/, true, 0);
+		//oSys.Call("user32::InvalidateRect", hWndListBox, 0, true);
 
 		updArgs();
 	}
