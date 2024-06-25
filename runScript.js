@@ -685,16 +685,6 @@ function selectScriptDialog(modal) {
 	}
 
 	function fillListBox(hWndDialog, prevCurIndex, prevTopIndex) {
-		//var t = new Date().getTime();
-		var files = [];
-		// Foollowing is very slow (especially on slow devices like USB flash):
-		//var filesEnum = new Enumerator(fso.GetFolder(scriptsDir).Files);
-		//for(; !filesEnum.atEnd(); filesEnum.moveNext()) {
-		//	var name = filesEnum.item().Name;
-		//	if(isScript(name))
-		//		files[files.length] = name;
-		//}
-
 		// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=12548#p12548
 		var lpFindData = AkelPad.MemAlloc(592 /*sizeof(WIN32_FIND_DATAW)*/);
 		if(!lpFindData)
@@ -703,33 +693,23 @@ function selectScriptDialog(modal) {
 			|| AkelPad.MemFree(lpFindData);
 		if(!hSearch)
 			return;
+
+		var lpStr = AkelPad.MemAlloc(256*_TSIZE);
+		if(!lpStr) {
+			AkelPad.MemFree(lpFindData);
+			return;
+		}
+		var read = oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/);
+
 		do {
-			var fName = AkelPad.MemRead(_PtrAdd(lpFindData, 44 /*offsetof(WIN32_FIND_DATAW, cFileName)*/), _TSTR);
-			if(fName == "." || fName == "..")
+			var name = AkelPad.MemRead(_PtrAdd(lpFindData, 44 /*offsetof(WIN32_FIND_DATAW, cFileName)*/), _TSTR);
+			if(name == "." || name == "..")
 				continue;
 			var dwAttributes = AkelPad.MemRead(_PtrAdd(lpFindData, 0) /*offsetof(WIN32_FIND_DATAW, dwAttributes)*/, 3 /*DT_DWORD*/);
 			if(dwAttributes & 0x10 /*FILE_ATTRIBUTE_DIRECTORY*/)
 				continue;
-			if(isScript(fName))
-				files[files.length] = fName;
-		}
-		while(oSys.Call("kernel32::FindNextFile" + _TCHAR, hSearch, lpFindData));
-		oSys.Call("kernel32::FindClose", hSearch);
-		AkelPad.MemFree(lpFindData);
-		//var dt = new Date().getTime() - t;
-		//windowText(hWndDialog, dialogTitle + " [" + dt + " ms]");
-		//files.sort();
-
-		var lpStr = AkelPad.MemAlloc(256*_TSIZE);
-		if(!lpStr)
-			return;
-
-		var read = oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/);
-
-		var indx = 0;
-		for(var i = 0, l = files.length; i < l; ++i) {
-			var name = files[i];
-
+			if(!isScript(name))
+				continue;
 			if(read) {
 				var args = argsFromStorage(oSet.Read(getPrefName(name), 3 /*PO_STRING*/) || "");
 				var oldArgs = oSet.Read("lastArgs-" + encodeURIComponent(name), 3 /*PO_STRING*/);
@@ -737,7 +717,6 @@ function selectScriptDialog(modal) {
 					_cleanup[name] = oldArgs;
 				argsObj[name] = args || oldArgs || "";
 			}
-
 			AkelPad.MemCopy(lpStr, name.substr(0, 255), _TSTR);
 			var pos = AkelPad.SendMessage(hWndListBox,  0x180 /*LB_ADDSTRING*/, 0, lpStr);
 			if(pos < 0) {
@@ -750,6 +729,9 @@ function selectScriptDialog(modal) {
 				break;
 			}
 		}
+		while(oSys.Call("kernel32::FindNextFile" + _TCHAR, hSearch, lpFindData));
+		oSys.Call("kernel32::FindClose", hSearch);
+		AkelPad.MemFree(lpFindData);
 		AkelPad.MemFree(lpStr);
 		read && oSet.End();
 
