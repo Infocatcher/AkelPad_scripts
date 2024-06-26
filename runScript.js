@@ -689,19 +689,10 @@ function selectScriptDialog(modal) {
 		var lpFindData = AkelPad.MemAlloc(592 /*sizeof(WIN32_FIND_DATAW)*/);
 		if(!lpFindData)
 			return;
-		var hSearch = oSys.Call("kernel32::FindFirstFile" + _TCHAR, scriptsDir + "\\*", lpFindData)
-			|| AkelPad.MemFree(lpFindData);
-		if(!hSearch)
-			return;
-
+		var hSearch = oSys.Call("kernel32::FindFirstFile" + _TCHAR, scriptsDir + "\\*", lpFindData);
 		var lpStr = AkelPad.MemAlloc(256*_TSIZE);
-		if(!lpStr) {
-			AkelPad.MemFree(lpFindData);
-			return;
-		}
 		var read = oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/);
-
-		do {
+		if(hSearch && lpStr) do {
 			var name = AkelPad.MemRead(_PtrAdd(lpFindData, 44 /*offsetof(WIN32_FIND_DATAW, cFileName)*/), _TSTR);
 			if(name == "." || name == "..")
 				continue;
@@ -730,10 +721,11 @@ function selectScriptDialog(modal) {
 			}
 		}
 		while(oSys.Call("kernel32::FindNextFile" + _TCHAR, hSearch, lpFindData));
-		oSys.Call("kernel32::FindClose", hSearch);
-		AkelPad.MemFree(lpFindData);
-		AkelPad.MemFree(lpStr);
-		read && oSet.End();
+
+		hSearch    && oSys.Call("kernel32::FindClose", hSearch);
+		lpFindData && AkelPad.MemFree(lpFindData);
+		lpStr      && AkelPad.MemFree(lpStr);
+		read       && oSet.End();
 
 		var indx = getIndexFromString(curName);
 		if(indx == undefined)
