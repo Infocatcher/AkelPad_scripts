@@ -69,6 +69,9 @@ function _localize(s) {
 		},
 		"Loading…": {
 			ru: "Загрузка…"
+		},
+		"Updated!": {
+			ru: "Обновлено!"
 		}
 	};
 	var lng = "en";
@@ -774,8 +777,12 @@ function selectScriptDialog(modal) {
 
 		updArgs();
 
-		WScript.Sleep(50);
-		oSys.Call("user32::DestroyWindow", hWndLoading);
+		ensureTimers(function() {
+			windowText(hWndLoading, _localize("Updated!"));
+			setTimeout(function() {
+				oSys.Call("user32::DestroyWindow", hWndLoading);
+			}, 700);
+		}) || oSys.Call("user32::DestroyWindow", hWndLoading);
 	}
 	function setListBoxSel(i) {
 		var context = selectContext;
@@ -838,10 +845,16 @@ function selectScriptDialog(modal) {
 	}
 	function ensureTimers(callback, arg) {
 		var lib = "timer.js";
-		(ensureTimers = fso.FileExists(AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/) + "\\" + lib)
+		return (ensureTimers = fso.FileExists(AkelPad.GetAkelDir(6 /*ADTYPE_INCLUDE*/) + "\\" + lib)
 			&& AkelPad.Include(lib)
-			? function(callback, arg) { callback(arg); }
-			: function() {})(callback, arg);
+			? function(callback, arg) {
+				callback(arg);
+				return true;
+			}
+			: function() {
+				return false;
+			}
+		)(callback, arg);
 	}
 	function notifyButton(hWndBtn) {
 		var moveFocus = oSys.Call("user32::GetFocus") == hWndBtn;
