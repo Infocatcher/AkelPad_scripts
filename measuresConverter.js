@@ -3670,6 +3670,8 @@ function converterDialog(modal) {
 		var res = convert(num, from, to);
 		res = numToStr(res);
 		if(closeFlag) {
+			if(!AkelPad.GetEditWnd())
+				AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
 			AkelPad.ReplaceSel(res);
 			closeDialog();
 		}
