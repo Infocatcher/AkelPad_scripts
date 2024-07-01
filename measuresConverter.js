@@ -3051,7 +3051,8 @@ function converterDialog(modal) {
 				switch(idc) {
 					case IDC_OK:
 					case IDC_CONVERT:
-						convertGUI(true, true, idc == IDC_OK);
+						var isOK = idc == IDC_OK;
+						convertGUI(true, !isOK, isOK);
 					break msgLoop;
 					case IDC_CANCEL:
 						closeDialog();
