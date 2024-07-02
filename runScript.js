@@ -757,7 +757,7 @@ function selectScriptDialog(modal) {
 			2,            //x
 			0,            //y
 			96,           //nWidth
-			13,           //nHeight
+			14,           //nHeight
 			hWndListBox,  //hWndParent
 			IDC_STATIC,   //ID
 			hInstanceDLL, //hInstance
