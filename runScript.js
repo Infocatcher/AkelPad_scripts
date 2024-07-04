@@ -107,7 +107,7 @@ var savePosition  = AkelPad.GetArgValue("savePosition", true);
 var saveSize      = AkelPad.GetArgValue("saveSize", true);
 var selectContext = AkelPad.GetArgValue("selectContext", 3);
 var saveArgsLines = AkelPad.GetArgValue("saveArgsLines", true);
-var argsLines     = AkelPad.GetArgValue("argsLines", 1);
+var argsLines     = AkelPad.GetArgValue("argsLines", 6);
 
 var ARGS_LINES_MAX = 15;
 function limitArgsLines(al) {
@@ -258,8 +258,8 @@ function selectScriptDialog(modal) {
 	var hWndOK, hWndExec, hWndEdit, hWndCancel;
 	var hWndArgsInc, hWndArgsDec;
 
-	var lbW = 260;
-	var lbH = 320;
+	var lbW = 220;
+	var lbH = 200;
 
 	var btnW = 82;
 	var btnH = 23;
