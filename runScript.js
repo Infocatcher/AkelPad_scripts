@@ -27,7 +27,7 @@
 //   Escape                       - Cancel
 
 // Arguments:
-//   -saveOptions=1               - save options:
+//   -saveOptions=1               - save options, sum of flags:
 //                                    0 - don't save
 //                                    1 - save only for runned scripts
 //                                    2 - always save
@@ -35,8 +35,8 @@
 //   -saveSize=true               - save last window size
 //   -saveArgsLines=true          - save lines count for arguments text field
 //   -selectOpenedScript=5        - select currently opened script in the list, sum of flags:
-//                                    1 - select on startup,
-//                                    2 - select on window focus,
+//                                    1 - select on startup (will be ignored, if used -script argument)
+//                                    2 - select on window focus
 //                                    4 - select on window focus only after second runScript.js call
 //   -selectContext=3             - show N items before/after selected, 0 to disable
 //   -argsLines=1                 - force specify lines count for arguments text field
