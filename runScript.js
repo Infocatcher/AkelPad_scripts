@@ -27,20 +27,20 @@
 //   Escape                       - Cancel
 
 // Arguments:
-//   -saveOptions=1               - save options, sum of flags:
-//                                    0 - don't save
-//                                    1 - save only for runned scripts
-//                                    2 - always save
-//   -savePosition=true           - save last window position
-//   -saveSize=true               - save last window size
-//   -saveArgsLines=true          - save lines count for arguments text field
 //   -selectOpenedScript=5        - select currently opened script in the list, sum of flags:
 //                                    1 - select on startup (will be ignored, if used -script argument)
 //                                    2 - select on window focus
 //                                    4 - select on window focus only after second runScript.js call
+//   -script="someScript.js"      - select someScript.js in the list
 //   -selectContext=3             - show N items before/after selected, 0 to disable
 //   -argsLines=1                 - force specify lines count for arguments text field
-//   -script="someScript.js"      - select someScript.js in the list
+//   -saveOptions=1               - save options, sum of flags:
+//                                    0 - don't save
+//                                    1 - save only for runned scripts
+//                                    2 - always save
+//   -saveArgsLines=true          - save lines count for arguments text field
+//   -saveSize=true               - save last window size
+//   -savePosition=true           - save last window position
 
 // Usage:
 //   Call("Scripts::Main", 1, "runScript.js")
@@ -102,12 +102,12 @@ function getPrefName(scriptName) {
 // Read arguments:
 var selectScript  = AkelPad.GetArgValue("selectOpenedScript", 1|4);
 var scriptName    = AkelPad.GetArgValue("script", "") || selectScript & 1 && getCurScript();
-var saveOptions   = AkelPad.GetArgValue("saveOptions", 1);
-var savePosition  = AkelPad.GetArgValue("savePosition", true);
-var saveSize      = AkelPad.GetArgValue("saveSize", true);
 var selectContext = AkelPad.GetArgValue("selectContext", 3);
-var saveArgsLines = AkelPad.GetArgValue("saveArgsLines", true);
 var argsLines     = AkelPad.GetArgValue("argsLines", 6);
+var saveOptions   = AkelPad.GetArgValue("saveOptions", 1);
+var saveArgsLines = AkelPad.GetArgValue("saveArgsLines", true);
+var saveSize      = AkelPad.GetArgValue("saveSize", true);
+var savePosition  = AkelPad.GetArgValue("savePosition", true);
 
 var ARGS_LINES_MAX = 15;
 function limitArgsLines(al) {
