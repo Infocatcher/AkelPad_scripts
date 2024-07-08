@@ -596,7 +596,11 @@ var spacesEntities = {
 	nbsp:     "\u00a0",
 	ensp:     "\u2002",
 	emsp:     "\u2003",
-	thinsp:   "\u2009"
+	emsp13:   "\u2004",
+	emsp14:   "\u2005",
+	puncsp:   "\u2008",
+	thinsp:   "\u2009",
+	hairsp:   "\u200a"
 };
 function encodeHTML(str) {
 	if(entitiesBlackList) {
