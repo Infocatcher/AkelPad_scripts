@@ -176,7 +176,7 @@ var utils = {
 				return s;
 			}
 			return start
-				.replace(/(\d+)[ \xa0\u2002\u2003\u2009](?=\d)/g, "$1") // 12 345 -> 12345
+				.replace(/(\d+)[ \xa0\u2002-\u200a](?=\d)/g, "$1") // 12 345 -> 12345
 				.replace(/(\d+),(\d+)(?!,)/g, "$1.$2") // 1,23 -> 1.23
 				+ (comment || "");
 		});
@@ -229,7 +229,7 @@ utils.window = utils;
 
 function formatNum(n) {
 	// 1234567.1234567 -> 1 234 567.1 234 567
-	//return Number(n).toLocaleString().replace(/\s*[^\d\s\xa0\u2002\u2003\u2009].*$/, "");
+	//return Number(n).toLocaleString().replace(/\s*[^\d\s\xa0\u2002-\u200a].*$/, "");
 	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
 }
 function toLocaleNum(n) {
