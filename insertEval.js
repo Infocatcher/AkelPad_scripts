@@ -237,11 +237,9 @@ function toLocaleNum(n) {
 	if(!localeNumbers.delimiter)
 		localeNumbers();
 	return ("" + n)
-		// We may have \xa0 in localeNumbers.delimiter
-		.replace(/\./g,   "\0.\0")
-		.replace(/\xa0/g, "\0 \0")
-		.replace(/\0\.\0/g, localeNumbers.delimiter)
-		.replace(/\0 \0/g,  localeNumbers.separator);
+		.replace(/\xa0/g, "\0 \0") // We may have \xa0 in localeNumbers.delimiter
+		.replace(/\./g,    localeNumbers.delimiter)
+		.replace(/\0 \0/g, localeNumbers.separator);
 }
 function localeNumbers() {
 	// Detect locale delimiter (e.g. 0.1 -> 0,1)
