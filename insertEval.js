@@ -201,7 +201,10 @@ var utils = {
 
 	_logMsgs: [],
 	_log: function() {
-		var s = Array.prototype.join.call(arguments, "\n");
+		var a = arguments;
+		for(var i = 0, l = a.length; i < l; ++i)
+			a[i] = "" + a[i];
+		var s = Array.prototype.join.call(a, "\n");
 		if(useLogPlugin)
 			AkelPad.Call("Log::Output", 4, s, s.length, 2, 0, ".js");
 		else
