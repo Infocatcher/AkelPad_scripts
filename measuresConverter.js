@@ -4336,7 +4336,7 @@ function isExpression(str) {
 }
 function prepareExpression(str) {
 	return str
-		.replace(/(\d)[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+/g, "$1") // 12 345 -> 12345
+		.replace(/(\d)[ \xa0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+/g, "$1") // 12 345 -> 12345
 		.replace(/(\d),/g, "$1.") // 1,23 -> 1.23
 		.replace(/([.,]|[-+*\/\s](\([-\s]?)*)\s*$/, ""); // Looks like non-terminated expression (e.g. "2+2*")
 }
@@ -4363,7 +4363,7 @@ function fixPrecision(n, prec) {
 }
 function formatNum(n) {
 	// 1234567.1234567 -> 1 234 567.1 234 567
-	//return Number(n).toLocaleString().replace(/\s*[^\d\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff].*$/, "");
+	//return Number(n).toLocaleString().replace(/\s*[^\d\s\xa0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff].*$/, "");
 	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
 }
 function toLocaleNum(n) {
