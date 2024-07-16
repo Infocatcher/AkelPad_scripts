@@ -2510,8 +2510,7 @@ function encodeEntities(str, entities) {
 		if(entitiesBlackList && entity in entitiesBlackList)
 			continue;
 		var chr = entities[entity];
-		var hex = chr.charCodeAt(0).toString(16);
-		hex = "\\u" + ("000" + hex).slice(-4);
+		var hex = u(chr);
 		str = str.replace(new RegExp(hex, "g"), "&" + entity + ";");
 	}
 	return str;
@@ -2564,15 +2563,12 @@ function decodeHTML(str) {
 		.replace(/&quot;/g, '"')
 		.replace(/&amp;/g, "&");
 }
+function u(h) {
+	return "\\u" + ("000" + h).slice(-4);
+}
 
 function encodeEscapes(str) {
-	return str.replace(
-		/[^!-~ \t\n\r]/ig,
-		function(s) {
-			var hex = s.charCodeAt(0).toString(16);
-			return "\\u" + ("000" + hex).slice(-4);
-		}
-	);
+	return str.replace(/[^!-~ \t\n\r]/ig, u);
 }
 function decodeEscapes(str) {
 	if(customEscapesDecoder)
