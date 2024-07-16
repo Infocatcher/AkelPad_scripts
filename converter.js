@@ -2509,8 +2509,7 @@ function encodeEntities(str, entities) {
 	for(var entity in entities) {
 		if(entitiesBlackList && entity in entitiesBlackList)
 			continue;
-		var chr = entities[entity];
-		var hex = u(chr);
+		var hex = uu(entities[entity]);
 		str = str.replace(new RegExp(hex, "g"), "&" + entity + ";");
 	}
 	return str;
@@ -2562,6 +2561,12 @@ function decodeHTML(str) {
 		.replace(/&gt;/g, ">")
 		.replace(/&quot;/g, '"')
 		.replace(/&amp;/g, "&");
+}
+function uu(s) {
+	var out = "";
+	for(var i = 0, l = s.length; i < l; ++i)
+		out += u(s.charCodeAt(i).toString(16));
+	return out;
 }
 function u(h) {
 	return "\\u" + ("000" + h).slice(-4);
