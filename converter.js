@@ -348,7 +348,7 @@ dialogTitle = dialogTitle.charAt(0).toUpperCase() + dialogTitle.substr(1);
 var specialEntities = {
 	// Converted from \omni.ja\res\dtd\htmlmathml-f.ent in Firefox 128.0
 	AElig:                           "\u00c6",
-	AMP:                             "\u0026",
+	//AMP:                           "\u0026",
 	Aacute:                          "\u00c1",
 	Abreve:                          "\u0102",
 	Acirc:                           "\u00c2",
@@ -2537,8 +2537,12 @@ function decodeHTML(str) {
 					// "key in object" Doesn't work in old JScript, but "replace(str, function)" doesn't work too
 					if(entitiesBlackList && entity in entitiesBlackList)
 						return s;
-					if(decodeSpecialEntities && entity in specialEntities)
-						return specialEntities[entity];
+					if(decodeSpecialEntities) {
+						if(entity == "AMP")
+							return "&";
+						if(entity in specialEntities)
+							return specialEntities[entity];
+					}
 					if(decodeSpacesEntities && entity in spacesEntities)
 						return spacesEntities[entity];
 					return s;
