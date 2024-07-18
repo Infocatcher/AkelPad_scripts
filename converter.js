@@ -2127,7 +2127,7 @@ var specialEntities = {
 	searr:                           "\u2198",
 	searrow:                         "\u2198",
 	sect:                            "\u00a7",
-	semi:                            "\u003b",
+	//semi:                          "\u003b",
 	seswar:                          "\u2929",
 	setminus:                        "\u2216",
 	setmn:                           "\u2216",
@@ -2471,6 +2471,11 @@ var spacesEntities = {
 	hairsp:   "\u200a"
 };
 function encodeHTML(str) {
+	if(
+		encodeSpecialEntities
+		&& (!entitiesBlackList || !("semi" in entitiesBlackList))
+	)
+		str = str.replace(/;/g, "\0\1\2\3;\3\2\1\0");
 	if(entitiesBlackList) {
 		if(!("amp" in entitiesBlackList))
 			str = str.replace(/&/g, "&amp;");
@@ -2488,8 +2493,10 @@ function encodeHTML(str) {
 			.replace(/>/g, "&gt;")
 			.replace(/"/g, "&quot;");
 	}
-	if(encodeSpecialEntities)
+	if(encodeSpecialEntities) {
+		str = str.replace(/\0\1\2\3;\3\2\1\0/g, "&semi;");
 		str = encodeEntities(str, specialEntities);
+	}
 	if(encodeSpacesEntities)
 		str = encodeEntities(str, spacesEntities);
 	if(encodeChars) {
@@ -2540,6 +2547,8 @@ function decodeHTML(str) {
 					if(decodeSpecialEntities) {
 						if(entity == "AMP")
 							return "&";
+						if(entity == "semi")
+							return ";";
 						if(entity in specialEntities)
 							return specialEntities[entity];
 					}
