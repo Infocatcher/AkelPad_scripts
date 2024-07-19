@@ -2,8 +2,8 @@
 // https://infocatcher.ucoz.net/js/akelpad_scripts/converter.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/converter.js
 
-// (c) Infocatcher 2010-2015
-// Version: 0.2.5pre - 2015-03-07
+// (c) Infocatcher 2010-2024
+// Version: 0.2.5pre2 - 2024-07-20
 // Author: Infocatcher
 
 //// Encode/decode miscellaneous things
