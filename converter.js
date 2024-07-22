@@ -3015,7 +3015,7 @@ function encodeQuotedPrintable(str, cp) {
 	var i = 0;
 	str = convertFromUnicode(str, cp || codePageQP);
 	return str.replace(
-		/=|[^!-~\s]/g,
+		/=|[^!-~ ]/g,
 		function(s) {
 			var code = s.charCodeAt(0);
 			var hex = code.toString(16).toUpperCase();
