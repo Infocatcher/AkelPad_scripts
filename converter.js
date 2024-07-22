@@ -3011,7 +3011,8 @@ function decodeBase64(str) {
 }
 
 function encodeQuotedPrintable(str, cp) {
-	//~ todo: limit lines to 76 characters
+	var max = 76;
+	var i = 0;
 	str = convertFromUnicode(str, cp || codePageQP);
 	return str.replace(
 		/=|[^!-~\s]/g,
@@ -3020,7 +3021,19 @@ function encodeQuotedPrintable(str, cp) {
 			var hex = code.toString(16).toUpperCase();
 			return "=" + ("0" + hex).slice(-2);
 		}
-	);
+	).replace(/[\r\n]+|=[\dA-F]{2}|./g, function(s) {
+		if(/^[\r\n]/.test(s))
+			i = 0;
+		else {
+			var len = s.length;
+			i += len;
+			if(i >= max) {
+				i = len;
+				return "=\n" + s;
+			}
+		}
+		return s;
+	});
 }
 function decodeQuotedPrintable(str, cp) {
 	if(!isQuotedPrintable(str))
