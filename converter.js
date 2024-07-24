@@ -3012,26 +3012,26 @@ function decodeBase64(str) {
 
 function encodeQuotedPrintable(str, cp) {
 	var max = 76;
-	var i = 0;
+	var c = 0;
 	str = convertFromUnicode(str, cp || codePageQP);
-	return str.replace(
-		/[\s\S]/g,
-		function(chr) {
-			var s = chr;
-			if(/=|[^!-~ ]/.test(chr)) {
-				var code = chr.charCodeAt(0);
-				var hex = code.toString(16).toUpperCase();
-				s = "=" + ("0" + hex).slice(-2);
-			}
-			var len = s.length;
-			i += len;
-			if(i >= max) {
-				i = len;
-				return "=\n" + s;
-			}
-			return s;
+	var out = [];
+	for(var i = 0, l = str.length; i < l; ++i) {
+		var s = str.charAt(i);
+		if(/=|[^!-~ ]/.test(s)) {
+			var code = s.charCodeAt(0);
+			var hex = code.toString(16).toUpperCase();
+			s = "=" + ("0" + hex).slice(-2);
 		}
-	);
+		var len = s.length;
+		c += len;
+		if(c >= max) {
+			c = len;
+			out[out.length] = "=\n" + s;
+			continue;
+		}
+		out[out.length] = s;
+	}
+	return out.join("");
 }
 function decodeQuotedPrintable(str, cp) {
 	if(!isQuotedPrintable(str))
