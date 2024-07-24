@@ -3015,25 +3015,23 @@ function encodeQuotedPrintable(str, cp) {
 	var i = 0;
 	str = convertFromUnicode(str, cp || codePageQP);
 	return str.replace(
-		/=|[^!-~ ]/g,
-		function(s) {
-			var code = s.charCodeAt(0);
-			var hex = code.toString(16).toUpperCase();
-			return "=" + ("0" + hex).slice(-2);
-		}
-	).replace(/[\r\n]+|=[\dA-F]{2}|./g, function(s) {
-		if(/^[\r\n]/.test(s))
-			i = 0;
-		else {
+		/[\s\S]/g,
+		function(chr) {
+			var s = chr;
+			if(/=|[^!-~ ]/.test(chr)) {
+				var code = chr.charCodeAt(0);
+				var hex = code.toString(16).toUpperCase();
+				s = "=" + ("0" + hex).slice(-2);
+			}
 			var len = s.length;
 			i += len;
 			if(i >= max) {
 				i = len;
 				return "=\n" + s;
 			}
+			return s;
 		}
-		return s;
-	});
+	);
 }
 function decodeQuotedPrintable(str, cp) {
 	if(!isQuotedPrintable(str))
