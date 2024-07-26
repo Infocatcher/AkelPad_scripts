@@ -23,7 +23,7 @@
 //   Ctrl+S                   - Save file
 //   F1                       - "Help" (just open this file)
 
-// Encode/decode HTML entities:
+// HTML entities, encode/decode:
 //   &    <=> &amp;
 //   <    <=> &lt;
 //   >    <=> &gt;
@@ -31,42 +31,43 @@
 //   ©    <=> &copy;  (and some other entities, see arguments)
 //   char <=> &#code; (see arguments)
 
-// Convert JavaScript escape sequences
+// Escape sequences (JavaScript), convert:
 //   \u00a9 <=> ©
 //   \xa9   <=> ©
 
-// Escape/unescape special RegExp symbols:
+// Regular expressions special symbols, escape/unescape:
 //   http://example.com/ <=> http:\/\/example\.com\/
 
-// Escape/unescape special strings symbols:
+// String literals special symbols, escape/unescape:
 //   ab"cd\ef <=> ab\"cd\\ef
 // Select string with commas to don't escape another commas inside:
 //   "ab"cd'ef" <=> "ab\"cd'ef"
 
-// Encode/decode Uniform Resource Identifiers (URIs) with
+// Uniform Resource Identifier (URI), encode/decode with
 // encodeURI()/decodeURI()
 //   https://ru.wikipedia.org/wiki/%D0%A2%D0%B5%D1%81%D1%82 <=> https://ru.wikipedia.org/wiki/Тест
 // or encodeURIComponent()/decodeURIComponent()
 //   https%3A%2F%2Fru.wikipedia.org%2Fwiki%2F%D0%A2%D0%B5%D1%81%D1%82 <=> https://ru.wikipedia.org/wiki/Тест
 
-// Hexadecimal escape/unescape
+// Hexadecimal escape/unescape:
 //   JavaScript's escape()/unescape()
 //   "test тест" <=> %22test%20%u0442%u0435%u0441%u0442%22
 
-// Base64 encode/decode
-// based on code from http://www.farfarfar.com/scripts/encrypt/
+// Base64 encode/decode:
 //   Test, проверка <=> VGVzdCwg0L/RgNC+0LLQtdGA0LrQsA== (used UTF-8 code page)
+// (based on code from http://www.farfarfar.com/scripts/encrypt/)
 
-// Quoted-printable encode/decode
+// Quoted-printable encode/decode:
 // -type="QuotedPrintable"
 //   [=3D] <=> [=]
 
-// Convert charset
+// Charset, semi-recode:
 // -type="Charset"
 //   Encode: WideCharToMultiByte() http://msdn.microsoft.com/en-us/library/dd374130(v=vs.85).aspx
 //   Decode: MultiByteToWideChar() http://msdn.microsoft.com/en-us/library/dd319072(v=vs.85).aspx
 //   Íå÷òî <=> Нечто (with cp1251 aka windows-1251)
-// -type="Recode" (works like built-in recode command, not available from UI)
+// Charset, recode:
+// -type="Recode" (works like built-in recode command in AkelPad itself, not available from UI)
 //   бНОПНЯ <=> Вопрос (from cp20866 aka KOI8-R to cp1251 aka windows-1251)
 
 // Arguments:
