@@ -3706,7 +3706,7 @@ function converterDialog(modal) {
 				checked(hWndType.URI, type == "uri");
 
 				// Radiobutton URI Component converter
-				hWndType.URIC = createWindowEx(
+				hWndType.URIComponent = createWindowEx(
 					0,             //dwExStyle
 					"BUTTON",      //lpClassName
 					0,             //lpWindowName
@@ -3720,8 +3720,8 @@ function converterDialog(modal) {
 					hInstanceDLL,  //hInstance
 					0              //lpParam
 				);
-				setWindowFontAndText(hWndType.URIC, hGuiFont, _localize("Uniform Resource Identifier (U&RI), full"));
-				checked(hWndType.URIC, type == "uricomponent");
+				setWindowFontAndText(hWndType.URIComponent, hGuiFont, _localize("Uniform Resource Identifier (U&RI), full"));
+				checked(hWndType.URIComponent, type == "uricomponent");
 
 
 				// Options for encode URI component:
@@ -3799,7 +3799,7 @@ function converterDialog(modal) {
 				checked(hWndType.base64, type == "base64");
 
 				// Radiobutton Base64 converter
-				hWndType.QP = createWindowEx(
+				hWndType.quotedPrintable = createWindowEx(
 					0,               //dwExStyle
 					"BUTTON",        //lpClassName
 					0,               //lpWindowName
@@ -3813,8 +3813,8 @@ function converterDialog(modal) {
 					hInstanceDLL,    //hInstance
 					0                //lpParam
 				);
-				setWindowFontAndText(hWndType.QP, hGuiFont, _localize("&Quoted-Printable"));
-				checked(hWndType.QP, type == "quotedprintable");
+				setWindowFontAndText(hWndType.quotedPrintable, hGuiFont, _localize("&Quoted-Printable"));
+				checked(hWndType.quotedPrintable, type == "quotedprintable");
 
 				// Radiobutton Charset converter
 				hWndType.charset = createWindowEx(
@@ -4060,15 +4060,15 @@ function converterDialog(modal) {
 			break;
 			case 7: //WM_SETFOCUS
 				var hWndChecked;
-				if(checked(hWndType.HTML))         hWndChecked = hWndType.HTML;
-				else if(checked(hWndType.escapes)) hWndChecked = hWndType.escapes;
-				else if(checked(hWndType.regExp))  hWndChecked = hWndType.regExp;
-				else if(checked(hWndType.string))  hWndChecked = hWndType.string;
-				else if(checked(hWndType.URI))     hWndChecked = hWndType.URI;
-				else if(checked(hWndType.URIC))    hWndChecked = hWndType.URIC;
-				else if(checked(hWndType.base64))  hWndChecked = hWndType.base64;
-				else if(checked(hWndType.QP))      hWndChecked = hWndType.QP;
-				else if(checked(hWndType.charset)) hWndChecked = hWndType.charset;
+				if(checked(hWndType.HTML))                 hWndChecked = hWndType.HTML;
+				else if(checked(hWndType.escapes))         hWndChecked = hWndType.escapes;
+				else if(checked(hWndType.regExp))          hWndChecked = hWndType.regExp;
+				else if(checked(hWndType.string))          hWndChecked = hWndType.string;
+				else if(checked(hWndType.URI))             hWndChecked = hWndType.URI;
+				else if(checked(hWndType.URIComponent))    hWndChecked = hWndType.URIComponent;
+				else if(checked(hWndType.base64))          hWndChecked = hWndType.base64;
+				else if(checked(hWndType.quotedPrintable)) hWndChecked = hWndType.quotedPrintable;
+				else if(checked(hWndType.charset))         hWndChecked = hWndType.charset;
 				oSys.Call("user32::SetFocus", hWndChecked);
 			break;
 			case 256: //WM_KEYDOWN
@@ -4163,16 +4163,16 @@ function converterDialog(modal) {
 					case IDC_TYPE_BASE64:
 					case IDC_TYPE_QP:
 					case IDC_TYPE_CHARSET:
-						checked(hWndType.HTML,     idc == IDC_TYPE_HTML);
-						checked(hWndType.escapes,  idc == IDC_TYPE_ESCAPES);
-						checked(hWndType.regExp,   idc == IDC_TYPE_REGEXP);
-						checked(hWndType.string,   idc == IDC_TYPE_STRING);
-						checked(hWndType.URI,      idc == IDC_TYPE_URI);
-						checked(hWndType.URIC,     idc == IDC_TYPE_URIC);
-						checked(hWndType.unescape, idc == IDC_TYPE_UNESCAPE);
-						checked(hWndType.base64,   idc == IDC_TYPE_BASE64);
-						checked(hWndType.QP,       idc == IDC_TYPE_QP);
-						checked(hWndType.charset,  idc == IDC_TYPE_CHARSET);
+						checked(hWndType.HTML,            idc == IDC_TYPE_HTML);
+						checked(hWndType.escapes,         idc == IDC_TYPE_ESCAPES);
+						checked(hWndType.regExp,          idc == IDC_TYPE_REGEXP);
+						checked(hWndType.string,          idc == IDC_TYPE_STRING);
+						checked(hWndType.URI,             idc == IDC_TYPE_URI);
+						checked(hWndType.URIComponent,    idc == IDC_TYPE_URIC);
+						checked(hWndType.unescape,        idc == IDC_TYPE_UNESCAPE);
+						checked(hWndType.base64,          idc == IDC_TYPE_BASE64);
+						checked(hWndType.quotedPrintable, idc == IDC_TYPE_QP);
+						checked(hWndType.charset,         idc == IDC_TYPE_CHARSET);
 						setHTMLOptions();
 						setBase64Options();
 
@@ -4457,7 +4457,7 @@ function converterDialog(modal) {
 		enabled(hWndEncChrHex, isHTML && checked(hWndEncChr));
 	}
 	function setBase64Options() {
-		var on = checked(hWndType.URIC) && !checked(hWndModeDecode);
+		var on = checked(hWndType.URIComponent) && !checked(hWndModeDecode);
 		enabled(hWndToDataURI, on);
 		enabled(hWndToBase64, on && checked(hWndToDataURI));
 	}
@@ -4472,13 +4472,13 @@ function converterDialog(modal) {
 			type = "string";
 		else if(checked(hWndType.URI))
 			type = "uri";
-		else if(checked(hWndType.URIC))
+		else if(checked(hWndType.URIComponent))
 			type = "uricomponent";
 		else if(checked(hWndType.unescape))
 			type = "unescape";
 		else if(checked(hWndType.base64))
 			type = "base64";
-		else if(checked(hWndType.QP))
+		else if(checked(hWndType.quotedPrintable))
 			type = "quotedprintable";
 		else if(checked(hWndType.charset))
 			type = "charset";
