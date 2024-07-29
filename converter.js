@@ -4059,17 +4059,14 @@ function converterDialog(modal) {
 				outputH = scale.y(outputH);
 			break;
 			case 7: //WM_SETFOCUS
-				var hWndChecked;
-				if(checked(hWndType.HTML))                 hWndChecked = hWndType.HTML;
-				else if(checked(hWndType.escapes))         hWndChecked = hWndType.escapes;
-				else if(checked(hWndType.regExp))          hWndChecked = hWndType.regExp;
-				else if(checked(hWndType.string))          hWndChecked = hWndType.string;
-				else if(checked(hWndType.URI))             hWndChecked = hWndType.URI;
-				else if(checked(hWndType.URIComponent))    hWndChecked = hWndType.URIComponent;
-				else if(checked(hWndType.base64))          hWndChecked = hWndType.base64;
-				else if(checked(hWndType.quotedPrintable)) hWndChecked = hWndType.quotedPrintable;
-				else if(checked(hWndType.charset))         hWndChecked = hWndType.charset;
-				oSys.Call("user32::SetFocus", hWndChecked);
+				for(var t in hWndType) {
+					var h = hWndType[t];
+					if(checked(h)) {
+						var hWndChecked = h;
+						break;
+					}
+				}
+				oSys.Call("user32::SetFocus", hWndChecked || hWndOK);
 			break;
 			case 256: //WM_KEYDOWN
 				var ctrl = getKeyState(17 /*VK_CONTROL*/);
@@ -4462,27 +4459,14 @@ function converterDialog(modal) {
 		enabled(hWndToBase64, on && checked(hWndToDataURI));
 	}
 	function readControlsState() {
-		if(checked(hWndType.HTML))
-			type = "html";
-		else if(checked(hWndType.escapes))
-			type = "escapes";
-		else if(checked(hWndType.regExp))
-			type = "regexp";
-		else if(checked(hWndType.string))
-			type = "string";
-		else if(checked(hWndType.URI))
-			type = "uri";
-		else if(checked(hWndType.URIComponent))
-			type = "uricomponent";
-		else if(checked(hWndType.unescape))
-			type = "unescape";
-		else if(checked(hWndType.base64))
-			type = "base64";
-		else if(checked(hWndType.quotedPrintable))
-			type = "quotedprintable";
-		else if(checked(hWndType.charset))
-			type = "charset";
-		else
+		for(var t in hWndType) {
+			var h = hWndType[t];
+			if(checked(h)) {
+				var newType = type = t.toLowerCase();
+				break;
+			}
+		}
+		if(!newType)
 			return false;
 
 		if(checked(hWndModeAuto))
