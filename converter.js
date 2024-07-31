@@ -46,7 +46,8 @@
 // Uniform Resource Identifier (URI), encode/decode with
 // encodeURI()/decodeURI()
 //   https://ru.wikipedia.org/wiki/%D0%A2%D0%B5%D1%81%D1%82 <=> https://ru.wikipedia.org/wiki/Тест
-// or encodeURIComponent()/decodeURIComponent()
+// Uniform Resource Identifier (URI), full, encode/decode with
+// encodeURIComponent()/decodeURIComponent()
 //   https%3A%2F%2Fru.wikipedia.org%2Fwiki%2F%D0%A2%D0%B5%D1%81%D1%82 <=> https://ru.wikipedia.org/wiki/Тест
 
 // Hexadecimal escape/unescape:
@@ -61,12 +62,12 @@
 // -type="QuotedPrintable"
 //   [=3D] <=> [=]
 
-// Charset, semi-recode:
+// Charset (semi-recode):
 // -type="Charset"
 //   Encode: WideCharToMultiByte() http://msdn.microsoft.com/en-us/library/dd374130(v=vs.85).aspx
 //   Decode: MultiByteToWideChar() http://msdn.microsoft.com/en-us/library/dd319072(v=vs.85).aspx
 //   Íå÷òî <=> Нечто (with cp1251 aka windows-1251)
-// Charset, recode:
+// Charset (recode):
 // -type="Recode" (works like built-in recode command in AkelPad itself, not available from UI)
 //   бНОПНЯ <=> Вопрос (from cp20866 aka KOI8-R to cp1251 aka windows-1251)
 
@@ -251,6 +252,7 @@ function _localize(s) {
 	_localize = function(s) {
 		return strings[s] && strings[s][lng] || s;
 	};
+	_localize._strings = strings;
 	return _localize(s);
 }
 
@@ -4537,6 +4539,33 @@ function converterDialog(modal) {
 	function getKeyState(key) {
 		return oSys.Call("user32::GetAsyncKeyState", key) & 0x8000; // Fix 4-byte result in AkelPad x64
 	}
+	function showHelp() {
+		var res = AkelPad.OpenFile(WScript.ScriptFullName);
+		if(
+			res != 0 /*EOD_SUCCESS*/
+			&& res != -13 /*EOD_WINDOW_EXIST*/
+		)
+			return;
+
+		var help = "// Hotkeys:";
+		for(var t in hWndType) {
+			var h = hWndType[t];
+			if(!checked(h))
+				continue;
+			var text = windowText(h);
+			loop: for(var str in _localize._strings) {
+				var o = _localize._strings[str];
+				for(var lng in o) {
+					if(o[lng] == text) {
+						help = "// " + str.replace(/&/, "");
+						break loop;
+					}
+				}
+			}
+			break;
+		}
+		AkelPad.TextFind(AkelPad.GetEditWnd(), help, 0x200001 /*FRF_DOWN|FRF_BEGINNING*/);
+	}
 
 	function Scale(hDC, hWnd) {
 		var hNewDC = hDC || oSys.Call("user32::GetDC", hWnd);
@@ -4612,15 +4641,6 @@ function savePrefs() {
 		toBase64:              toBase64
 	});
 	prefs.end();
-}
-function showHelp() {
-	var res = AkelPad.OpenFile(WScript.ScriptFullName);
-	if(
-		res == 0 /*EOD_SUCCESS*/
-		|| res == -13 /*EOD_WINDOW_EXIST*/
-	) {
-		AkelPad.TextFind(AkelPad.GetEditWnd(), "// Hotkeys:", 0x200001 /*FRF_DOWN|FRF_BEGINNING*/);
-	}
 }
 
 function getAllText() {
