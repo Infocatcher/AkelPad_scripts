@@ -194,11 +194,13 @@ function sessionsDir() {
 }
 function backupSessionOnce() {
 	backupSessionOnce = function() {};
-
+	backupSession(sessionBackup);
+}
+function backupSession(sessionName) {
 	if(maxBackups <= 0)
 		return;
 
-	var fileBase = sessionsDir() + sessionBackup;
+	var fileBase = sessionsDir() + sessionName;
 	var fileExt = ".session";
 
 	var fileBak = fileBase + "_" + bakName + gts() + fileExt;
