@@ -15,6 +15,7 @@
 //   -smallDelay=500         - (in ms) minimum delay between change and save
 //   -session="OnExit"       - name of session file
 //   -sessionBackup="OnExit" - name of session to backup before first write (or empty -sessionBackup="" to disable)
+//   -backupInterval=120     - also backup session file (see -session) each N minutes (only if something was changed)
 //   -maxBackups=5           - max backups to preserve (see -sessionBackup)
 //                             will be stored in \Sessions\%SessionName%*_autobackup_%date%.session
 //   -debug=true             - show debug messages in window title
@@ -36,6 +37,7 @@ var minDelay = AkelPad.GetArgValue("minDelay", 8e3);
 var smallDelay = AkelPad.GetArgValue("smallDelay", 500);
 var sessionName = AkelPad.GetArgValue("session", "OnExit");
 var sessionBackup = AkelPad.GetArgValue("sessionBackup", "OnExit");
+var backupInterval = AkelPad.GetArgValue("backupInterval", 2*60)*60e3;
 var maxBackups = AkelPad.GetArgValue("maxBackups", 5);
 var debug = AkelPad.GetArgValue("debug", false);
 
@@ -44,6 +46,7 @@ var bakName = "autobackup"; // Note: will search for "*_%bakName%_*.session" fil
 var stopWait = now() + startupDelay;
 var timer = 0;
 var lastSave = 0;
+var lastBackup = 0;
 
 var lpTimerCallback = 0;
 var nIDEvent;
@@ -88,7 +91,7 @@ if(hMainWnd) {
 			if(sessionBackup && sessionBackup != sessionName)
 				backupSessionOnce();
 			if(sessionBackup && maxBackups >= 0)
-				cleanupBackups();
+				cleanupBackups(sessionBackup);
 		}
 		else {
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
@@ -141,6 +144,11 @@ function saveSession() {
 	if(sessionBackup && sessionBackup == sessionName)
 		backupSessionOnce();
 	lastSave = now();
+	if(lastSave > lastBackup + backupInterval) {
+		lastBackup = lastSave;
+		backupSession(sessionName);
+		cleanupBackups(sessionName);
+	}
 	AkelPad.Call("Sessions::Main", 2, sessionName);
 	debug && _log("saved at " + new Date().toLocaleString());
 }
@@ -222,14 +230,14 @@ function backupSession(sessionName) {
 		return n > 9 ? n : "0" + n;
 	}
 }
-function cleanupBackups() {
+function cleanupBackups(sessionName) {
 	var files = [];
 	var dir = sessionsDir();
 	// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=12548#p12548
 	var lpFindData = AkelPad.MemAlloc(592 /*sizeof(WIN32_FIND_DATAW)*/);
 	if(!lpFindData)
 		return;
-	var hSearch = oSys.Call("kernel32::FindFirstFile" + _TCHAR, dir + "\\*_" + bakName + "_*.session", lpFindData)
+	var hSearch = oSys.Call("kernel32::FindFirstFile" + _TCHAR, dir + "\\" + sessionName + "_" + bakName + "_*.session", lpFindData)
 		|| AkelPad.MemFree(lpFindData);
 	if(!hSearch)
 		return;
