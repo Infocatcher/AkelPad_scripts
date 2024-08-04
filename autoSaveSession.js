@@ -15,7 +15,7 @@
 //   -smallDelay=500         - (in ms) minimum delay between change and save
 //   -session="OnExit"       - name of session file
 //   -sessionBackup="OnExit" - name of session to backup before first write (or empty -sessionBackup="" to disable)
-//   -backupInterval=120     - also backup session file (see -session) each N minutes (only if something was changed)
+//   -backupInterval=120     - also backup session file (see -session) each N minutes (only if something was changed, -backupInterval=0 to disable)
 //   -maxBackups=5           - max backups to preserve (see -sessionBackup)
 //                             will be stored in \Sessions\%SessionName%*_autobackup_%date%.session
 //   -debug=true             - show debug messages in window title
@@ -144,7 +144,7 @@ function saveSession() {
 	if(sessionBackup && sessionBackup == sessionName)
 		backupSessionOnce();
 	lastSave = now();
-	if(lastSave > lastBackup + backupInterval) {
+	if(backupInterval > 0 && lastSave > lastBackup + backupInterval) {
 		lastBackup = lastSave;
 		backupSession(sessionName);
 		cleanupBackups(sessionName);
