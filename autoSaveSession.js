@@ -17,6 +17,7 @@
 //   -sessionBackup="OnExit" - name of session to backup before first write (or empty -sessionBackup="" to disable)
 //   -backupInterval=120     - also backup session file (see -session) each N minutes (only if something was changed, -backupInterval=0 to disable)
 //   -maxBackups=5           - max backups to preserve (see -sessionBackup)
+//   -maxIntervalBackups=5   - max backups to preserve (see -backupInterval)
 //                             will be stored in \Sessions\%SessionName%*_autobackup_%date%.session
 //   -debug=true             - show debug messages in window title
 
@@ -39,6 +40,7 @@ var sessionName = AkelPad.GetArgValue("session", "OnExit");
 var sessionBackup = AkelPad.GetArgValue("sessionBackup", "OnExit");
 var backupInterval = AkelPad.GetArgValue("backupInterval", 2*60)*60e3;
 var maxBackups = AkelPad.GetArgValue("maxBackups", 5);
+var maxIntervalBackups = AkelPad.GetArgValue("maxIntervalBackups", 5);
 var debug = AkelPad.GetArgValue("debug", false);
 
 var bakName = "autobackup"; // Note: will search for "*_%bakName%_*.session" files
@@ -91,7 +93,7 @@ if(hMainWnd) {
 			if(sessionBackup && sessionBackup != sessionName)
 				backupSessionOnce();
 			if(sessionBackup && maxBackups >= 0)
-				cleanupBackups(sessionBackup);
+				cleanupBackups(sessionBackup, maxBackups);
 		}
 		else {
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
@@ -144,10 +146,14 @@ function saveSession() {
 	if(sessionBackup && sessionBackup == sessionName)
 		backupSessionOnce();
 	lastSave = now();
-	if(backupInterval > 0 && lastSave > lastBackup + backupInterval) {
+	if(
+		backupInterval > 0
+		&& maxIntervalBackups > 0
+		&& lastSave > lastBackup + backupInterval
+	) {
 		lastBackup = lastSave;
 		backupSession(sessionName);
-		cleanupBackups(sessionName);
+		cleanupBackups(sessionName, maxIntervalBackups);
 	}
 	AkelPad.Call("Sessions::Main", 2, sessionName);
 	debug && _log("saved at " + new Date().toLocaleString());
@@ -202,12 +208,9 @@ function sessionsDir() {
 }
 function backupSessionOnce() {
 	backupSessionOnce = function() {};
-	backupSession(sessionBackup);
+	maxBackups > 0 && backupSession(sessionBackup);
 }
 function backupSession(sessionName) {
-	if(maxBackups <= 0)
-		return;
-
 	var fileBase = sessionsDir() + sessionName;
 	var fileExt = ".session";
 
@@ -230,7 +233,7 @@ function backupSession(sessionName) {
 		return n > 9 ? n : "0" + n;
 	}
 }
-function cleanupBackups(sessionName) {
+function cleanupBackups(sessionName, maxBackups) {
 	var files = [];
 	var dir = sessionsDir();
 	// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=12548#p12548
