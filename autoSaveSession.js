@@ -230,7 +230,7 @@ function gts() {
 	     + "_" + pad(d.getHours()) + "-" + pad(d.getMinutes())   + "-" + pad(d.getSeconds());
 }
 function pad(n) {
-	return n > 9 ? n : "0" + n;
+	return n > 9 ? "" + n : "0" + n;
 }
 function cleanupBackups(sessionName, maxBackups) {
 	var files = [];
