@@ -216,22 +216,21 @@ function backupSession(sessionName) {
 
 	var fileBak = fileBase + "_" + bakName + gts() + fileExt;
 
-	var fso = new ActiveXObject("Scripting.FileSystemObject");
+	var fso = backupSession._fso || (backupSession._fso = new ActiveXObject("Scripting.FileSystemObject"));
 	try {
 		fso.CopyFile(fileBase + fileExt, fileBak, true);
 	}
 	catch(e) {
 		debug && _log("backup failed: " + (e.message || e) + " " + file);
 	}
-
-	function gts() {
-		var d = new Date();
-		return "_" + d.getFullYear()   + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
-		     + "_" + pad(d.getHours()) + "-" + pad(d.getMinutes())   + "-" + pad(d.getSeconds());
-	}
-	function pad(n) {
-		return n > 9 ? n : "0" + n;
-	}
+}
+function gts() {
+	var d = new Date();
+	return "_" + d.getFullYear()   + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
+	     + "_" + pad(d.getHours()) + "-" + pad(d.getMinutes())   + "-" + pad(d.getSeconds());
+}
+function pad(n) {
+	return n > 9 ? n : "0" + n;
 }
 function cleanupBackups(sessionName, maxBackups) {
 	var files = [];
