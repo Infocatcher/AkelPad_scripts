@@ -239,7 +239,7 @@ function cleanupBackups(sessionName, maxBackups) {
 	var lpFindData = AkelPad.MemAlloc(592 /*sizeof(WIN32_FIND_DATAW)*/);
 	if(!lpFindData)
 		return;
-	var hSearch = oSys.Call("kernel32::FindFirstFile" + _TCHAR, dir + "\\" + sessionName + "_" + bakName + "_*.session", lpFindData)
+	var hSearch = oSys.Call("kernel32::FindFirstFile" + _TCHAR, dir + sessionName + "_" + bakName + "_*.session", lpFindData)
 		|| AkelPad.MemFree(lpFindData);
 	if(!hSearch)
 		return;
