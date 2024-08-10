@@ -14,10 +14,10 @@
 //   -minDelay=8000          - (in ms) minimum interval between two saves
 //   -smallDelay=500         - (in ms) minimum delay between change and save
 //   -session="OnExit"       - name of session file
-//   -sessionBackup="OnExit" - name of session to backup before first write (or empty -sessionBackup="" to disable)
-//   -backupInterval=120     - also backup session file (see -session) each N minutes (only if something was changed, -backupInterval=0 to disable)
-//   -maxBackups=5           - max backups to preserve (see -sessionBackup)
-//   -maxIntervalBackups=5   - max backups to preserve (see -backupInterval)
+//   -sessionBackup="OnExit" - name of session to backup before first write
+//   -backupInterval=120     - also backup session file (see -session) each N minutes (only if something was changed)
+//   -maxBackups=5           - max backups to preserve or 0 to disable backups (see -sessionBackup)
+//   -maxIntervalBackups=5   - max backups to preserve or 0 to disable backups (see -backupInterval)
 //                             will be stored in \Sessions\%SessionName%*_autobackup_%date%.session
 //   -debug=true             - show debug messages in window title
 
