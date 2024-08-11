@@ -262,12 +262,13 @@ function cleanupBackups(sessionName, maxBackups) {
 	var fso = new ActiveXObject("Scripting.FileSystemObject");
 	var errs = 0;
 	for(var i = files.length - maxBackups - 1; i >= 0; --i) {
+		var path = dir + "\\" + files[i];
 		try {
-			fso.DeleteFile(dir + "\\" + files[i]);
+			fso.DeleteFile(path);
 		}
 		catch(e) {
 			++errs;
-			lastError = e.message || e;
+			lastError = path + ":\n" + (e.message || e);
 		}
 	}
 	if(errs >= 10) {
