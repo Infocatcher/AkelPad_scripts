@@ -266,7 +266,7 @@ function cleanupBackups(sessionName, maxBackups) {
 	var fso = new ActiveXObject("Scripting.FileSystemObject");
 	var errs = 0;
 	for(var i = files.length - maxBackups - 1; i >= 0; --i) {
-		var path = dir + "\\" + files[i];
+		var path = dir + files[i];
 		try {
 			fso.DeleteFile(path);
 		}
