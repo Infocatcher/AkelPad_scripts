@@ -94,6 +94,8 @@ if(hMainWnd) {
 				backupSessionOnce();
 			if(sessionBackup && maxBackups >= 0)
 				cleanupBackups(sessionBackup, maxBackups);
+			if((!sessionBackup || sessionBackup != sessionName) && maxIntervalBackups == 0)
+				cleanupBackups(sessionName, maxIntervalBackups);
 		}
 		else {
 			AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
