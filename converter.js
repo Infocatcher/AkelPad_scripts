@@ -2584,11 +2584,11 @@ function decodeHTML(str) {
 function uu(s) {
 	var out = "";
 	for(var i = 0, l = s.length; i < l; ++i)
-		out += u(s.charCodeAt(i).toString(16));
+		out += u(s.charAt(i));
 	return out;
 }
-function u(h) {
-	return "\\u" + ("000" + h).slice(-4);
+function u(c) {
+	return "\\u" + ("000" + c.charCodeAt(0).toString(16)).slice(-4);
 }
 
 function encodeEscapes(str) {
