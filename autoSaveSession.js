@@ -22,9 +22,10 @@
 //   -debug=true             - show debug messages in window title
 
 // Usage:
+// In AkelPad.ini or in registry (HKEY_CURRENT_USER\Software\Akelsoft\AkelPad)
 //   CmdLineBegin=/Call("Scripts::Main", 1, "autoSaveSession.js")
-//   CmdLineBegin=/Call("Scripts::Main", 1, "autoSaveSession.js", '-startupDelay=2000 -minDelay=12000 -session="OnExit"')
-// (see AkelHelp*.htm for manual settings)
+//   CmdLineBegin=/Call("Scripts::Main", 1, "autoSaveSession.js", '-startupDelay=2000 -minDelay=12000 -session="AutoSave"')
+// (see AkelHelp-Eng.htm#ch4/AkelHelp-Rus.htm#ch4 for manual settings)
 
 var isMDI = AkelPad.IsMDI();
 if(!isMDI) // We silently ignore SDI mode to allow use the same settings in any mode!
