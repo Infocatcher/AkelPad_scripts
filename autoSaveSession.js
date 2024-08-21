@@ -56,6 +56,9 @@ var nIDEvent;
 var hWndTimer;
 var lastError = "";
 
+if(!hMainWnd)
+	WScript.Quit();
+
 debug && _log("start");
 
 var hScript = AkelPad.ScriptHandle(WScript.ScriptName, 3 /*SH_FINDSCRIPT*/);
@@ -65,9 +68,6 @@ if(hScript && AkelPad.ScriptHandle(hScript, 13 /*SH_GETMESSAGELOOP*/)) {
 	AkelPad.ScriptHandle(hScript, 33 /*SH_CLOSESCRIPT*/);
 	WScript.Quit();
 }
-
-if(!hMainWnd)
-	WScript.Quit();
 
 if(
 	AkelPad.WindowSubClass(
