@@ -55,6 +55,7 @@ var lpTimerCallback = 0;
 var nIDEvent;
 var hWndTimer;
 var lastError = "";
+var backuped = {};
 
 if(!hMainWnd)
 	WScript.Quit();
@@ -93,7 +94,7 @@ if(
 		AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
 		AkelPad.WindowUnsubClass(3 /*WSC_FRAMEPROC*/);
 		destroyTimer();
-		if(sessionBackup && sessionBackup != sessionName)
+		if(sessionBackup != sessionName)
 			backupSessionOnce();
 		if(sessionBackup && maxBackups >= 0)
 			cleanupBackups(sessionBackup, maxBackups);
@@ -147,8 +148,6 @@ function saveSession() {
 		return;
 	}
 	timer = 0;
-	if(sessionBackup && sessionBackup == sessionName)
-		backupSessionOnce();
 	lastSave = now();
 	if(
 		backupInterval > 0
@@ -159,6 +158,8 @@ function saveSession() {
 		backupSession(sessionName);
 		cleanupBackups(sessionName, maxIntervalBackups);
 	}
+	if(sessionBackup == sessionName)
+		backupSessionOnce();
 	AkelPad.Call("Sessions::Main", 2, sessionName);
 	debug && _log("saved at " + new Date().toLocaleString());
 }
@@ -211,8 +212,8 @@ function sessionsDir() {
 	return sd;
 }
 function backupSessionOnce() {
-	backupSessionOnce = function() {};
-	maxBackups > 0 && backupSession(sessionBackup);
+	if(sessionBackup && maxBackups > 0 && !backuped[sessionBackup])
+		backupSession(sessionBackup);
 }
 function backupSession(sessionName) {
 	var fileBase = sessionsDir() + sessionName;
@@ -223,6 +224,7 @@ function backupSession(sessionName) {
 	var fso = backupSession._fso || (backupSession._fso = new ActiveXObject("Scripting.FileSystemObject"));
 	try {
 		fso.CopyFile(fileBase + fileExt, fileBak, true);
+		backuped[sessionName] = true;
 	}
 	catch(e) {
 		debug && _log("backup failed: " + (e.message || e) + " " + file);
