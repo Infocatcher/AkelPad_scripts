@@ -108,8 +108,9 @@ var utils = {
 		AkelPad.MessageBox(hMainWnd, "" + msg, dialogTitle, 48 /*MB_ICONEXCLAMATION*/);
 	},
 	prompt: function(msg, defaultVal) {
-		var ret = AkelPad.InputBox(hMainWnd, dialogTitle, "" + msg, "" + defaultVal);
-		return ret == undefined ? null : ret;
+		var v = ("" + defaultVal).replace(/\0/g, "◙");
+		var ret = AkelPad.InputBox(hMainWnd, dialogTitle, "" + msg, v);
+		return ret == undefined ? null : ret.replace(/◙/g, "\0");
 	},
 	confirm: function(msg) {
 		return AkelPad.MessageBox(hMainWnd, "" + msg, dialogTitle, 33 /*MB_OKCANCEL|MB_ICONQUESTION*/) == 1 /*IDOK*/;
