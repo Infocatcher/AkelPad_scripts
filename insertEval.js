@@ -88,14 +88,19 @@ var oSys = AkelPad.SystemFunction();
 var dialogTitle = WScript.ScriptName.replace(/^[!-\-_]+/, "");
 dialogTitle = dialogTitle.charAt(0).toUpperCase() + dialogTitle.substr(1);
 
-if(
-	useLogPlugin
-	&& oSys.Call(
-		"kernel32::GetFileAttributes" + _TCHAR,
-		AkelPad.GetAkelDir(4 /*ADTYPE_PLUGS*/) + "\\Log.dll"
-	) == -1
-)
-	useLogPlugin = false;
+function _useLogPlugin() {
+	if(
+		useLogPlugin
+		&& oSys.Call(
+			"kernel32::GetFileAttributes" + _TCHAR,
+			AkelPad.GetAkelDir(4 /*ADTYPE_PLUGS*/) + "\\Log.dll"
+		) == -1
+	)
+		useLogPlugin = false;
+	return (_useLogPlugin = function() {
+		return useLogPlugin;
+	})();
+}
 
 var document = new ActiveXObject("htmlfile");
 // Initialize document (we can't use something like document.documentElement without this):
@@ -206,7 +211,7 @@ var utils = {
 		for(var i = 0, l = a.length; i < l; ++i)
 			a[i] = "" + a[i];
 		var s = Array.prototype.join.call(a, "\n");
-		if(useLogPlugin)
+		if(_useLogPlugin())
 			AkelPad.Call("Log::Output", 4, s, s.length, 2, 0, ".js");
 		else
 			this._logMsgs.push(s);
