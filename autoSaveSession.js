@@ -34,15 +34,15 @@ if(!isMDI) // We silently ignore SDI mode to allow use the same settings in any 
 var hMainWnd = AkelPad.GetMainWnd();
 var oSys = AkelPad.SystemFunction();
 
-var startupDelay = AkelPad.GetArgValue("startupDelay", 1500);
-var minDelay = AkelPad.GetArgValue("minDelay", 8e3);
-var smallDelay = AkelPad.GetArgValue("smallDelay", 500);
-var sessionName = AkelPad.GetArgValue("session", "OnExit");
-var sessionBackup = AkelPad.GetArgValue("sessionBackup", "OnExit");
-var backupInterval = AkelPad.GetArgValue("backupInterval", 2*60)*60e3;
-var maxBackups = AkelPad.GetArgValue("maxBackups", 5);
+var startupDelay       = AkelPad.GetArgValue("startupDelay",       1500);
+var minDelay           = AkelPad.GetArgValue("minDelay",           8000);
+var smallDelay         = AkelPad.GetArgValue("smallDelay",         500);
+var sessionName        = AkelPad.GetArgValue("session",            "OnExit");
+var sessionBackup      = AkelPad.GetArgValue("sessionBackup",      "OnExit");
+var backupInterval     = AkelPad.GetArgValue("backupInterval",     2*60)*60e3;
+var maxBackups         = AkelPad.GetArgValue("maxBackups",         5);
 var maxIntervalBackups = AkelPad.GetArgValue("maxIntervalBackups", 5);
-var debug = AkelPad.GetArgValue("debug", false);
+var debug              = AkelPad.GetArgValue("debug",              false);
 
 var bakName = "autobackup"; // Note: will search for "*_%bakName%_*.session" files
 
