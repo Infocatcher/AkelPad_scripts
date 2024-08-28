@@ -32,6 +32,8 @@ if(!isMDI) // We silently ignore SDI mode to allow use the same settings in any 
 	WScript.Quit();
 
 var hMainWnd = AkelPad.GetMainWnd();
+if(!hMainWnd)
+	WScript.Quit();
 var oSys = AkelPad.SystemFunction();
 
 var startupDelay       = AkelPad.GetArgValue("startupDelay",       1500);
@@ -56,9 +58,6 @@ var nIDEvent;
 var hWndTimer;
 var lastError = "";
 var backuped = {};
-
-if(!hMainWnd)
-	WScript.Quit();
 
 debug && _log("start");
 
