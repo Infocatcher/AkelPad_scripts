@@ -10,7 +10,7 @@
 // Required Sessions plugin!
 
 // Arguments:
-//   -startupDelay=1500      - (in ms) ignore all changes just after startup
+//   -startupDelay=1500      - (in ms) initial delay to ignore all changes just after startup
 //   -minDelay=8000          - (in ms) minimum interval between two saves
 //   -smallDelay=500         - (in ms) minimum delay between change and save
 //   -session="OnExit"       - name of session file
@@ -28,7 +28,7 @@
 // (see AkelHelp-Eng.htm#ch4/AkelHelp-Rus.htm#ch4 for manual settings)
 
 var isMDI = AkelPad.IsMDI();
-if(!isMDI) // We silently ignore SDI mode to allow use the same settings in any mode!
+if(!isMDI) // Silently ignore SDI mode to allow use the same settings in any mode
 	WScript.Quit();
 
 var hMainWnd = AkelPad.GetMainWnd();
