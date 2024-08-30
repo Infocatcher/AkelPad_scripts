@@ -12,7 +12,7 @@
 // Arguments:
 //   -startupDelay=1500      - (in ms) initial delay to ignore all changes just after startup
 //   -minDelay=8000          - (in ms) minimum interval between two saves
-//   -smallDelay=500         - (in ms) minimum delay between change and save
+//   -saveDelay=500          - (in ms) minimum delay between change and save
 //   -session="OnExit"       - name of session file
 //   -sessionBackup="OnExit" - name of session to backup before first write
 //   -backupInterval=120     - also backup session file (see -session) each N minutes (only if something was changed)
@@ -38,7 +38,7 @@ var oSys = AkelPad.SystemFunction();
 
 var startupDelay       = AkelPad.GetArgValue("startupDelay",       1500);
 var minDelay           = AkelPad.GetArgValue("minDelay",           8000);
-var smallDelay         = AkelPad.GetArgValue("smallDelay",         500);
+var saveDelay          = AkelPad.GetArgValue("saveDelay",          500);
 var sessionName        = AkelPad.GetArgValue("session",            "OnExit");
 var sessionBackup      = AkelPad.GetArgValue("sessionBackup",      "OnExit");
 var backupInterval     = AkelPad.GetArgValue("backupInterval",     2*60)*60e3;
@@ -138,7 +138,7 @@ function mainCallback(hWnd, uMsg, wParam, lParam) {
 	if(!AkelPad.GetEditFile(0))
 		return;
 
-	var delay = now() - lastSave > minDelay ? smallDelay : minDelay;
+	var delay = now() - lastSave > minDelay ? saveDelay : minDelay;
 	timer = saveSessionDelayed(delay);
 }
 function saveSession() {
