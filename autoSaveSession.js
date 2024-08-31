@@ -46,6 +46,11 @@ var maxBackups         = AkelPad.GetArgValue("maxBackups",         5);
 var maxIntervalBackups = AkelPad.GetArgValue("maxIntervalBackups", 5);
 var debug              = AkelPad.GetArgValue("debug",              false);
 
+// Deprecated arguments:
+var smallDelay = AkelPad.GetArgValue("smallDelay", undefined);
+if(smallDelay != undefined && AkelPad.GetArgValue("saveDelay", undefined) == undefined)
+	saveDelay = smallDelay;
+
 var bakName = "autobackup"; // Note: will search for "*_%bakName%_*.session" files
 
 var stopWait = now() + startupDelay;
