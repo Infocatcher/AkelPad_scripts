@@ -80,6 +80,7 @@ cmd = cmd
 	.replace(/%workDir%/g, curDir)
 	.replace(/%akelExe%/g, akelExe)
 	.replace(/%session%/g, session);
+oSys.Call("kernel32::SetEnvironmentVariable" + _TCHAR, "__AkelPad:autoSaveSession.js", "");
 AkelPad.Exec(cmd, akelDir);
 AkelPad.Command(4109); // Exit
 
