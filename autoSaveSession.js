@@ -52,6 +52,7 @@ if(smallDelay != undefined && AkelPad.GetArgValue("saveDelay", undefined) == und
 	saveDelay = smallDelay;
 
 var bakName = "autobackup"; // Note: will search for "*_%bakName%_*.session" files
+var envKey = "__AkelPad:autoSaveSession.js";
 
 var stopWait = now() + startupDelay;
 var timer = 0;
@@ -69,10 +70,37 @@ debug && _log("start");
 var hScript = AkelPad.ScriptHandle(WScript.ScriptName, 3 /*SH_FINDSCRIPT*/);
 if(hScript && AkelPad.ScriptHandle(hScript, 13 /*SH_GETMESSAGELOOP*/)) {
 	// Script is running, second call close it
-	debug && _log("quit");
+	oSys.Call("kernel32::SetEnvironmentVariable" + _TCHAR, envKey, 0);
+	debug && _log("second call -> quit");
 	AkelPad.ScriptHandle(hScript, 33 /*SH_CLOSESCRIPT*/);
 	WScript.Quit();
 }
+
+var MAX_PATH = 0x104;
+var lpBuffer = AkelPad.MemAlloc(MAX_PATH*_TSIZE);
+if(!lpBuffer)
+	WScript.Quit();
+
+if(oSys.Call("kernel32::GetModuleFileName" + _TCHAR, null, lpBuffer, MAX_PATH))
+	var akelExe = AkelPad.MemRead(lpBuffer, _TSTR);
+
+var newSize = oSys.Call("kernel32::GetEnvironmentVariable" + _TCHAR, envKey, lpBuffer, MAX_PATH);
+var envVal = newSize && AkelPad.MemRead(lpBuffer, _TSTR);
+AkelPad.MemFree(lpBuffer);
+/*
+if(newSize && newSize > MAX_PATH) {
+	lpBuffer = AkelPad.MemAlloc(newSize);
+	oSys.Call("kernel32::GetEnvironmentVariable" + _TCHAR, envKey, lpBuffer, MAX_PATH);
+	envVal = AkelPad.MemRead(lpBuffer, _TSTR);
+	AkelPad.MemFree(lpBuffer);
+}
+*/
+if(envVal && envVal == akelExe) {
+	debug && _log("ignore second instance");
+	WScript.Echo("ignore second instance");
+	WScript.Quit();
+}
+oSys.Call("kernel32::SetEnvironmentVariable" + _TCHAR, envKey, akelExe);
 
 if(
 	AkelPad.WindowSubClass(
@@ -104,6 +132,7 @@ if(
 			cleanupBackups(sessionBackup, maxBackups);
 		if((!sessionBackup || sessionBackup != sessionName) && maxIntervalBackups == 0)
 			cleanupBackups(sessionName, maxIntervalBackups);
+		oSys.Call("kernel32::SetEnvironmentVariable" + _TCHAR, envKey, 0);
 	}
 	else {
 		AkelPad.WindowUnsubClass(1 /*WSC_MAINPROC*/);
