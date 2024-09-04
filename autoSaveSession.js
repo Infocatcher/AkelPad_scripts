@@ -27,6 +27,10 @@
 //   CmdLineBegin=/Call("Scripts::Main", 1, "autoSaveSession.js", '-startupDelay=2000 -minDelay=12000 -session="AutoSave"')
 // (see AkelHelp-Eng.htm#ch4/AkelHelp-Rus.htm#ch4 for manual settings)
 
+// Known issues:
+// Script will be unloaded, if window closing was canceled from usaved tab(s) prompt, see
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=35042#p35042
+
 var isMDI = AkelPad.IsMDI();
 if(!isMDI) // Silently ignore SDI mode to allow use the same settings in any mode
 	WScript.Quit();
