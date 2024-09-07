@@ -86,15 +86,17 @@ if(!lpBuffer)
 	WScript.Quit();
 
 var akelDir = AkelPad.GetAkelDir();
-var newSize = oSys.Call("kernel32::GetEnvironmentVariable" + _TCHAR, envKey, lpBuffer, MAX_PATH);
-var envVal = newSize && AkelPad.MemRead(lpBuffer, _TSTR);
+var readEnv, newSize, envVal;
+(readEnv = function(bufSize) {
+	newSize = oSys.Call("kernel32::GetEnvironmentVariable" + _TCHAR, envKey, lpBuffer, bufSize);
+	envVal = newSize && AkelPad.MemRead(lpBuffer, _TSTR);
+})(MAX_PATH);
 AkelPad.MemFree(lpBuffer);
 if(
 	newSize > MAX_PATH
 	&& (lpBuffer = AkelPad.MemAlloc(newSize*_TSIZE))
 ) {
-	newSize = oSys.Call("kernel32::GetEnvironmentVariable" + _TCHAR, envKey, lpBuffer, newSize);
-	envVal = newSize && AkelPad.MemRead(lpBuffer, _TSTR);
+	readEnv(newSize);
 	AkelPad.MemFree(lpBuffer);
 }
 if(envVal && envVal == akelDir) {
