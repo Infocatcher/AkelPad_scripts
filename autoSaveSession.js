@@ -89,14 +89,14 @@ var akelDir = AkelPad.GetAkelDir();
 var newSize = oSys.Call("kernel32::GetEnvironmentVariable" + _TCHAR, envKey, lpBuffer, MAX_PATH);
 var envVal = newSize && AkelPad.MemRead(lpBuffer, _TSTR);
 AkelPad.MemFree(lpBuffer);
-/*
-if(newSize && newSize > MAX_PATH) {
-	lpBuffer = AkelPad.MemAlloc(newSize);
-	oSys.Call("kernel32::GetEnvironmentVariable" + _TCHAR, envKey, lpBuffer, MAX_PATH);
-	envVal = AkelPad.MemRead(lpBuffer, _TSTR);
+if(
+	newSize > MAX_PATH
+	&& (lpBuffer = AkelPad.MemAlloc(newSize*_TSIZE))
+) {
+	newSize = oSys.Call("kernel32::GetEnvironmentVariable" + _TCHAR, envKey, lpBuffer, newSize);
+	envVal = newSize && AkelPad.MemRead(lpBuffer, _TSTR);
 	AkelPad.MemFree(lpBuffer);
 }
-*/
 if(envVal && envVal == akelDir) {
 	debug && _log("ignore second instance");
 	WScript.Echo("ignore second instance");
