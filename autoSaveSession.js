@@ -101,7 +101,6 @@ if(
 }
 if(envVal && envVal == akelDir) {
 	debug && _log("ignore second instance");
-	WScript.Echo("ignore second instance");
 	WScript.Quit();
 }
 oSys.Call("kernel32::SetEnvironmentVariable" + _TCHAR, envKey, akelDir);
