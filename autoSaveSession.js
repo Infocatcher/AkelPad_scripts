@@ -68,6 +68,9 @@ var nIDEvent;
 var hWndTimer;
 var lastError = "";
 var backuped = {};
+var akelTitle = "AkelPad";
+var titleOn = " @";
+var titleOff = " !@";
 
 debug && _log("start");
 
@@ -75,6 +78,7 @@ var hScript = AkelPad.ScriptHandle(WScript.ScriptName, 3 /*SH_FINDSCRIPT*/);
 if(hScript && AkelPad.ScriptHandle(hScript, 13 /*SH_GETMESSAGELOOP*/)) {
 	// Script is running, second call close it
 	oSys.Call("kernel32::SetEnvironmentVariable" + _TCHAR, envKey, 0);
+	windowText(hMainWnd, akelTitle + titleOff);
 	debug && _log("second call -> quit");
 	AkelPad.ScriptHandle(hScript, 33 /*SH_CLOSESCRIPT*/);
 	WScript.Quit();
@@ -100,10 +104,12 @@ if(
 	AkelPad.MemFree(lpBuffer);
 }
 if(envVal && envVal == akelDir) {
+	windowText(hMainWnd, akelTitle + titleOff);
 	debug && _log("ignore second instance");
 	WScript.Quit();
 }
 oSys.Call("kernel32::SetEnvironmentVariable" + _TCHAR, envKey, akelDir);
+windowText(hMainWnd, akelTitle + titleOn);
 
 if(
 	AkelPad.WindowSubClass(
@@ -325,9 +331,12 @@ function cleanupBackups(sessionName, maxBackups) {
 function now() {
 	return new Date().getTime();
 }
+function windowText(hWnd, pText) {
+	return oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, pText);
+}
 function _error(e) {
 	AkelPad.MessageBox(hMainWnd, e, WScript.ScriptName, 16 /*MB_ICONERROR*/);
 }
 function _log(s) {
-	oSys.Call("user32::SetWindowText" + _TCHAR, hMainWnd, WScript.ScriptName + ": " + s);
+	windowText(hMainWnd, WScript.ScriptName + ": " + s);
 }
