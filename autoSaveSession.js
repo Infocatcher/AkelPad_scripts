@@ -48,6 +48,8 @@ var sessionBackup      = AkelPad.GetArgValue("sessionBackup",      "OnExit");
 var backupInterval     = AkelPad.GetArgValue("backupInterval",     2*60)*60e3;
 var maxBackups         = AkelPad.GetArgValue("maxBackups",         5);
 var maxIntervalBackups = AkelPad.GetArgValue("maxIntervalBackups", 5);
+var onTitle            = AkelPad.GetArgValue("onTitle",            "AkelPad");
+var offTitle           = AkelPad.GetArgValue("offTitle",           "AkelPad !@");
 var debug              = AkelPad.GetArgValue("debug",              false);
 
 // Deprecated arguments:
@@ -68,9 +70,7 @@ var nIDEvent;
 var hWndTimer;
 var lastError = "";
 var backuped = {};
-var akelTitle = "AkelPad";
-var titleOn = " @";
-var titleOff = " !@";
+var tweakTitle = (onTitle || offTitle) && onTitle != offTitle;
 
 debug && _log("start");
 
@@ -78,7 +78,7 @@ var hScript = AkelPad.ScriptHandle(WScript.ScriptName, 3 /*SH_FINDSCRIPT*/);
 if(hScript && AkelPad.ScriptHandle(hScript, 13 /*SH_GETMESSAGELOOP*/)) {
 	// Script is running, second call close it
 	oSys.Call("kernel32::SetEnvironmentVariable" + _TCHAR, envKey, 0);
-	windowText(hMainWnd, akelTitle + titleOff);
+	tweakTitle && windowText(hMainWnd, offTitle);
 	debug && _log("second call -> quit");
 	AkelPad.ScriptHandle(hScript, 33 /*SH_CLOSESCRIPT*/);
 	WScript.Quit();
@@ -104,12 +104,12 @@ if(
 	AkelPad.MemFree(lpBuffer);
 }
 if(envVal && envVal == akelDir) {
-	windowText(hMainWnd, akelTitle + titleOff);
+	tweakTitle && windowText(hMainWnd, offTitle);
 	debug && _log("ignore second instance");
 	WScript.Quit();
 }
 oSys.Call("kernel32::SetEnvironmentVariable" + _TCHAR, envKey, akelDir);
-windowText(hMainWnd, akelTitle + titleOn);
+tweakTitle && windowText(hMainWnd, onTitle);
 
 if(
 	AkelPad.WindowSubClass(
