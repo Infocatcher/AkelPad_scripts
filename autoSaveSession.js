@@ -19,6 +19,9 @@
 //   -maxBackups=5           - max backups to preserve or 0 to disable backups (see -sessionBackup)
 //   -maxIntervalBackups=5   - max backups to preserve or 0 to disable backups (see -backupInterval)
 //                             will be stored in \Sessions\%SessionName%*_autobackup_%date%.session
+//   -onTitle="AkelPad"      - window title in case of running autoSaveSession.js
+//   -offTitle="AkelPad !@"  - window title in case of not running autoSaveSession.js
+//                             or -onTitle="" -offTitle="" to not change window title
 //   -debug=true             - show debug messages in window title
 
 // Usage:
