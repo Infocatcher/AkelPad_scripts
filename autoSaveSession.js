@@ -21,6 +21,8 @@
 //                             will be stored in \Sessions\%SessionName%*_autobackup_%date%.session
 //   -onTitle="AkelPad"      - window title in case of running autoSaveSession.js
 //   -offTitle="AkelPad !@"  - window title in case of not running autoSaveSession.js
+//                             (to indicate, that script is not running in non-primary window instance,
+//                             because Sessions plugin works correctly only with one window)
 //                             or -onTitle="" -offTitle="" to not change window title
 //   -debug=true             - show debug messages in window title
 
