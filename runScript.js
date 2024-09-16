@@ -728,10 +728,10 @@ function selectScriptDialog(modal) {
 		}
 		while(oSys.Call("kernel32::FindNextFile" + _TCHAR, hSearch, lpFindData));
 
-		hSearch    && oSys.Call("kernel32::FindClose", hSearch);
-		lpFindData && AkelPad.MemFree(lpFindData);
-		lpStr      && AkelPad.MemFree(lpStr);
-		read       && oSet.End();
+		AkelPad.MemFree(lpFindData);
+		hSearch && oSys.Call("kernel32::FindClose", hSearch);
+		lpStr   && AkelPad.MemFree(lpStr);
+		read    && oSet.End();
 
 		var indx = getIndexFromString(curName);
 		if(indx == undefined)
