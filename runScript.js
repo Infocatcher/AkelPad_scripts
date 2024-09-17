@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/runScript.js
 
 // (c) Infocatcher 2011-2024
-// Version: 0.2.9pre3 - 2024-06-29
+// Version: 0.2.9pre4 - 2024-09-18
 // Author: Infocatcher
 
 //===================
