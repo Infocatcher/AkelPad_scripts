@@ -238,7 +238,7 @@ var measures = {
 		"Square inch (in²)": Math.pow(0.0254, 2),
 		"Square foot (ft²)": Math.pow(0.0254*12, 2),
 		"Square yard (yd²)": Math.pow(0.0254*12*3, 2),
-		"Square mile": Math.pow(0.0254*12*3*1760, 2), // 1609.344
+		"Square mile": Math.pow(0.0254*12*3*1760, 2), // Math.pow(1609.344, 2)
 		"Square nautical mile": Math.pow(1852, 2),
 		"Acre": Math.pow(0.0254*12*3, 2)*4840
 	},
