@@ -306,8 +306,8 @@ var measures = {
 	"Temperat&ure": {
 		"Celsius degree (°C)": 1,
 		"Kelvin degree (°K)": {
-			toBase:   function(n) { return n - 273.16; },
-			fromBase: function(n) { return n + 273.16; }
+			toBase:   function(n) { return n - 273.15; },
+			fromBase: function(n) { return n + 273.15; }
 		},
 		"Fahrenheit degree (°F)": {
 			toBase:   function(n) { return (n - 32)*5/9; },
