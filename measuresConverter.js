@@ -312,6 +312,10 @@ var measures = {
 		"Fahrenheit degree (°F)": {
 			toBase:   function(n) { return (n - 32)*5/9; },
 			fromBase: function(n) { return n*9/5 + 32; }
+		},
+		"Rankine degree (°R)": {
+			toBase:   function(n) { return n*5/9 - 273.15; },
+			fromBase: function(n) { return (n + 273.15)*9/5; }
 		}
 	},
 	"&Energy": {
@@ -1075,6 +1079,9 @@ function _localize(s) {
 		},
 		"Fahrenheit degree (°F)": {
 			ru: "Градусы Фаренгейта (°F)"
+		},
+		"Rankine degree (°R)": {
+			ru: "Градусы Ранкина (°R)"
 		},
 
 		"&Energy": {
