@@ -233,11 +233,13 @@ function getTextStatistics() {
 	res += "\n";
 	progress(40, _localize("Symbols…"));
 
+	// Note: used /[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/
+	// instead of /\s/ to match behavior of modern js-engines 
 	res +=             _localize("Symbols: ")                + formatNum(txt.length) + "\n";
 	res += "  – "    + _localize("Cyrillic: ")               + formatNum(countOf(txt, /[а-яё]/ig)) + "\n";
 	res += "  – "    + _localize("Latin: ")                  + formatNum(countOf(txt, /[a-z]/ig)) + "\n";
 	res += "  – "    + _localize("Digits: ")                 + formatNum(countOf(txt, /\d/g)) + "\n";
-	res += "  – "    + _localize("Space symbols: ")          + formatNum(countOf(txt, /\s/g)) + "\n";
+	res += "  – "    + _localize("Space symbols: ")          + formatNum(countOf(txt, /[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/g)) + "\n";
 	res += "     = " + _localize("Spaces: ")                 + formatNum(countOf(txt, / /g)) + "\n";
 	res += "     = " + _localize("Tabs: ")                   + formatNum(countOf(txt, /\t/g)) + "\n";
 	res += "     = " + _localize("Carriage returns (\\r): ") + formatNum(countOf(txt, /\r/g)) + "\n";
@@ -246,8 +248,8 @@ function getTextStatistics() {
 	res += "\n";
 	progress(50, _localize("Words…"));
 
-	var wordsCyr = countOf(txt, /(^|\s|[^-а-яёa-z\d])[а-яё]+(-[а-яё]+)*(?=$|\s|[^-а-яёa-z\d])/ig);
-	var wordsLat = countOf(txt, /(^|\s|[^-а-яёa-z\d])[a-z]+(-[a-z]+)*('[st])?(?=$|\s|[^-а-яёa-z\d])/ig);
+	var wordsCyr = countOf(txt, /(^|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёa-z\d])[а-яё]+(-[а-яё]+)*(?=$|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёa-z\d])/ig);
+	var wordsLat = countOf(txt, /(^|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёa-z\d])[a-z]+(-[a-z]+)*('[st])?(?=$|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёa-z\d])/ig);
 	res +=          _localize("Words: ")    + formatNum(wordsCyr + wordsLat) + "\n";
 	res += "  – " + _localize("Cyrillic: ") + formatNum(wordsCyr) + "\n";
 	res += "  – " + _localize("Latin: ")    + formatNum(wordsLat) + "\n";
