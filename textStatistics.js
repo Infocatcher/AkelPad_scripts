@@ -12,6 +12,7 @@
 //   -maxLine=40    - maximum displayed symbols for longest line
 //   -maxMixed=5    - maximum displayed words with mixed Cyrillic/Latin symbols
 //   -maxWord=40    - maximum displayed symbols for words with mixed Cyrillic/Latin symbols
+//                    (or use -arg=Infinity to display all symbols or words)
 
 // Usage:
 //   Call("Scripts::Main", 1, "textStatistics.js")
