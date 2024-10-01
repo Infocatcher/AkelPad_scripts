@@ -185,8 +185,11 @@ function getTextStatistics() {
 		? cFile + ":\n" + (selMark ? selMark + "\n\n" : "\n")
 		: (selMark ? selMark + "\n\n" : "");
 
+	// Note: used /[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/
+	// instead of /\s/ to match behavior of modern js-engines
+
 	res +=          _localize("Lines: ")       + formatNum(countOf(txtn, /^/mg)) + "\n";
-	res += "  – " + _localize("Only spaces: ") + formatNum(countOf(txt, /^[\t ]+$/mg)) + "\n";
+	res += "  – " + _localize("Only spaces: ") + formatNum(countOf(txt, /^[\t \xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+$/mg)) + "\n";
 	res += "  – " + _localize("Empty: ")       + formatNum(countOf(txtn, /^$/mg)) + "\n";
 
 	res += "\n";
@@ -243,8 +246,6 @@ function getTextStatistics() {
 	res += "\n";
 	progress(40, _localize("Symbols…"));
 
-	// Note: used /[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/
-	// instead of /\s/ to match behavior of modern js-engines 
 	res +=             _localize("Symbols: ")                + formatNum(txt.length) + "\n";
 	res += "  – "    + _localize("Cyrillic: ")               + formatNum(countOf(txt, /[а-яё]/ig)) + "\n";
 	res += "  – "    + _localize("Latin: ")                  + formatNum(countOf(txt, /[a-z]/ig)) + "\n";
