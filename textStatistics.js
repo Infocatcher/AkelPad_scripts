@@ -13,8 +13,9 @@
 //   -maxMixed=5    - maximum displayed words with mixed Cyrillic/Latin symbols
 //   -maxWord=40    - maximum displayed symbols for words with mixed Cyrillic/Latin symbols
 //                    (or use -arg=Infinity to display all symbols or words)
-//   -output=0      - (default) use massage box to show statistics
-//          =1      - use Log plugin to show statistics
+//   -output=0      - (default) show statistics in massage box
+//          =1      - in Log plugin
+//          =2      - in new document
 
 // Usage:
 //   Call("Scripts::Main", 1, "textStatistics.js")
@@ -155,6 +156,18 @@ function showTextStatistics() {
 		break;
 		case 1:
 			AkelPad.Call("Log::Output", 4, res, res.length, 2, 0, ".txt");
+		break;
+		case 2:
+			AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
+			AkelPad.SetSel(0, -1);
+			AkelPad.ReplaceSel(res);
+			AkelPad.SetSel(0, 0);
+			if(
+				AkelPad.IsPluginRunning("Coder::HighLight")
+				|| AkelPad.IsPluginRunning("Coder::AutoComplete")
+				|| AkelPad.IsPluginRunning("Coder::CodeFold")
+			)
+				AkelPad.Call("Coder::Settings", 1, ".txt");
 	}
 }
 function getTextStatistics() {
