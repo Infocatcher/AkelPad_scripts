@@ -87,6 +87,9 @@ function _localize(s) {
 		"Tabs: ": {
 			ru: "Табуляции: "
 		},
+		"Null characters (\\0): ": {
+			ru: "Нулевые символы (\\0): "
+		},
 		"Carriage returns (\\r): ": {
 			ru: "Возвраты каретки (\\r): "
 		},
@@ -266,6 +269,7 @@ function getTextStatistics() {
 	res += "  – "    + _localize("Space symbols: ")          + formatNum(countOf(txt, /[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/g)) + "\n";
 	res += "     = " + _localize("Spaces: ")                 + formatNum(countOf(txt, / /g)) + "\n";
 	res += "     = " + _localize("Tabs: ")                   + formatNum(countOf(txt, /\t/g)) + "\n";
+	res += "     = " + _localize("Null characters (\\0): ")  + formatNum(countOf(txt, /\0/g)) + "\n";
 	res += "     = " + _localize("Carriage returns (\\r): ") + formatNum(countOf(txt, /\r/g)) + "\n";
 	res += "     = " + _localize("Line feeds (\\n): ")       + formatNum(countOf(txt, /\n/g)) + "\n";
 
