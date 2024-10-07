@@ -382,6 +382,7 @@ function stringRepeat(pattern, count) {
 }
 
 function Statusbar() {
+	// Note: destroy() don't used since 2024-10-06
 	this.get = this.set = this.save = this.restore = this.destroy = function() {};
 
 	// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=13656#p13656
@@ -391,18 +392,22 @@ function Statusbar() {
 	var nParts = AkelPad.SendMessage(hWndStatus, 1030 /*SB_GETPARTS*/, 0, 0);
 	if(nParts <= 5)
 		return;
-	var lpTextBuffer = AkelPad.MemAlloc(1024 * _TSIZE);
-	if(!lpTextBuffer)
-		return;
+
 	var _origStatus, _customStatus;
 	this.get = function() {
+		var lenType = AkelPad.SendMessage(hWndStatus, _TSTR ? 1036 /*SB_GETTEXTLENGTHW*/ : 1027 /*SB_GETTEXTLENGTHA*/, nParts - 1, 0);
+		var len = lenType & 0xffff; // low word
+		var lpTextBuffer = AkelPad.MemAlloc((len + 1)*_TSIZE);
+		if(!lpTextBuffer)
+			return "";
 		AkelPad.SendMessage(hWndStatus, _TSTR ? 1037 /*SB_GETTEXTW*/ : 1026 /*SB_GETTEXTA*/, nParts - 1, lpTextBuffer);
-		return AkelPad.MemRead(lpTextBuffer, _TSTR);
+		var text = AkelPad.MemRead(lpTextBuffer, _TSTR);
+		AkelPad.MemFree(lpTextBuffer);
+		return text;
 	};
 	this.set = function(pStatusText) {
 		_customStatus = pStatusText;
-		AkelPad.MemCopy(lpTextBuffer, pStatusText, _TSTR);
-		AkelPad.SendMessage(hWndStatus, _TSTR ? 1035 /*SB_SETTEXTW*/ : 1025 /*SB_SETTEXTA*/, nParts - 1, lpTextBuffer);
+		AkelPad.SendMessage(hWndStatus, _TSTR ? 1035 /*SB_SETTEXTW*/ : 1025 /*SB_SETTEXTA*/, nParts - 1, pStatusText);
 	};
 	this.save = function() {
 		_origStatus = this.get();
@@ -410,9 +415,5 @@ function Statusbar() {
 	this.restore = function() {
 		if(_origStatus != undefined && this.get() == _customStatus)
 			this.set(_origStatus);
-		this.destroy();
-	};
-	this.destroy = function() {
-		AkelPad.MemFree(lpTextBuffer);
 	};
 }
