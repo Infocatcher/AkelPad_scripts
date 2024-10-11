@@ -4564,7 +4564,7 @@ function converterDialog(modal) {
 			}
 			break;
 		}
-		AkelPad.TextFind(AkelPad.GetEditWnd(), help, 0x200001 /*FRF_DOWN|FRF_BEGINNING*/);
+		AkelPad.TextFind(0, help, 0x200001 /*FRF_DOWN|FRF_BEGINNING*/);
 	}
 
 	function Scale(hDC, hWnd) {
