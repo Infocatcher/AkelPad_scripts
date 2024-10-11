@@ -159,6 +159,7 @@ function selectScriptDialog(modal) {
 	var IDC_CUR_SCRIPT = 1008;
 	var IDC_OK_DELAY   = 1009;
 	var IDC_EXEC_DELAY = 1010;
+	var IDC_EDIT_ARGS  = 1011;
 
 	var hWndDialog = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, dialogClass, 0);
 	if(hWndDialog) {
@@ -534,6 +535,8 @@ function selectScriptDialog(modal) {
 					saveSettings(true);
 					saveOptions = so;
 				}
+				else if(wParam == 115 /*VK_F4*/ && shift) // Shift+F4
+					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EDIT_ARGS, 0);
 				else if(wParam == 115 /*VK_F4*/ || ctrl && wParam == 69 /*E*/) // F4, Ctrl+E
 					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EDIT, 0);
 				else if(wParam == 116 /*VK_F5*/) // F5
@@ -583,10 +586,13 @@ function selectScriptDialog(modal) {
 						}
 					break;
 					case IDC_EDIT:
+					case IDC_EDIT_ARGS:
 						if(!curName)
 							break;
 						AkelPad.Call("Scripts::Main", 3, curName);
 						oSys.Call("user32::SetFocus", hMainWnd);
+						if(idc == IDC_EDIT_ARGS)
+							AkelPad.TextFind(0, "^// Arguments:?", 0x280001 /*FRF_DOWN|FRF_BEGINNING|FRF_REGEXP*/);
 						ensureTimers(notifyButton, hWndEdit);
 					break;
 					case IDC_CANCEL:
