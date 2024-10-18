@@ -593,7 +593,8 @@ function selectScriptDialog(modal) {
 						oSys.Call("user32::SetFocus", hMainWnd);
 						if(idc == IDC_EDIT_ARGS) {
 							var comment = /\.vbs$/i.test(AkelPad.GetEditFile(0)) ? "^'+" : "^//+";
-							AkelPad.TextFind(0, comment + "\\s+Arguments:?", 0x280001 /*FRF_DOWN|FRF_BEGINNING|FRF_REGEXP*/);
+							var argsPattern = comment + "\\s+(?:Arguments|Usage):?";
+							AkelPad.TextFind(0, argsPattern, 0x280001 /*FRF_DOWN|FRF_BEGINNING|FRF_REGEXP*/);
 						}
 						ensureTimers(notifyButton, hWndEdit);
 					break;
