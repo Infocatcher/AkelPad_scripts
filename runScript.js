@@ -682,6 +682,8 @@ function selectScriptDialog(modal) {
 					setArgsLines(-argsLines + ARGS_LINES_MAX);
 				else if(wParam == hWndArgsDec)
 					setArgsLines(-argsLines + 1);
+				else if(wParam == hWndEdit)
+					postMessage(hWnd, 273 /*WM_COMMAND*/, IDC_EDIT_ARGS, 0);
 				return 1;
 			case 16: //WM_CLOSE
 				saveSettings();
