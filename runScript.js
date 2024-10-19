@@ -17,6 +17,7 @@
 //   Ctrl+Enter (Shift+Enter), F3 - Exec
 //   Shift+Enter                  - Insert newline in multiline arguments text field
 //   F4, Ctrl+E                   - Edit
+//   Shift+F4                     - Open script and scroll to arguments description ("Arguments:" or "Usage:")
 //   F2, Ctrl+S                   - Rewrite options (and remove arguments for removed files)
 //   F1, Shift+F1                 - Next/previous script
 //   F5                           - Refresh scripts list
