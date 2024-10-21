@@ -18,13 +18,14 @@
 //   Shift+Enter                  - Insert newline in multiline arguments text field
 //   F4, Ctrl+E                   - Edit
 //   Shift+F4                     - Open script and scroll to arguments description ("Arguments:" or "Usage:")
+//                                  (right-click on "Edit" button)
 //   F2, Ctrl+S                   - Rewrite options (and remove arguments for removed files)
 //   F1, Shift+F1                 - Next/previous script
 //   F5                           - Refresh scripts list
 //   Ctrl++                       - increase lines count for arguments text field
 //   Ctrl+-                       - decrease lines count for arguments text field
-//   Ctrl+Shift++                 - set lines count for arguments text field to max value
-//   Ctrl+Shift+-                 - set lines count for arguments text field to 1
+//   Ctrl+Shift++                 - set lines count for arguments text field to max value (right-click on "+" button)
+//   Ctrl+Shift+-                 - set lines count for arguments text field to 1 (right-click on "−" button)
 //   Escape                       - Cancel
 
 // Arguments:
