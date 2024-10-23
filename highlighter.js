@@ -136,7 +136,7 @@ var hlExtRecognize = {
 			&& /(^|\n|\r)Words:[\n\r]/.test(str);
 	},
 	js: function(str) {
-		return /(^|\s)var\s+\S/.test(str);
+		return /(^|\s)(var|let)\s+\S/.test(str);
 	},
 	vbs: function(str) {
 		return /(^|\s)dim\s+\S/i.test(str);
