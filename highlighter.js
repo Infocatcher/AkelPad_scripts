@@ -220,8 +220,12 @@ if(hMainWnd && hWndEdit) {
 			AkelPad.IsPluginRunning("Coder::HighLight")
 			|| AkelPad.IsPluginRunning("Coder::AutoComplete")
 			|| AkelPad.IsPluginRunning("Coder::CodeFold")
-		)
-			AkelPad.Call("Coder::Settings", 1, ext);
+		) {
+			if(/^\w+$/.test(ext))
+				AkelPad.Call("Coder::Settings", 1, ext);
+			else
+				AkelPad.Call("Coder::Settings", 6, ext);
+		}
 	}
 }
 
