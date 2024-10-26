@@ -149,6 +149,9 @@ var hlExtRecognize = {
 	},
 	ini: function(str) {
 		return /(^|\n|\r)[^=\s]+=/.test(str);
+	},
+	"descript.ion": function(str) {
+		return /^(("[^"\r\n]+"|[^\s"]+) +[^\r\n]+([\r\n]+|$)){3}/.test(str);
 	}
 };
 //== Settings end
