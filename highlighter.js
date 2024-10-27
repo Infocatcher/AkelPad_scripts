@@ -79,7 +79,9 @@ var hlExtRecognize = {
 			|| /<\?.*\?>/.test(str) && (
 				/\Whtmlspecialchars\s*\(/i.test(str)
 				|| /\Wsession_start\s*\(\)/i.test(str)
-				|| /\Wmysql_query\s*\(/i.test(str)
+				|| /\Wmysqli?_query\s*\(/i.test(str)
+				|| /\Wmysqli?_query\s*\(/i.test(str)
+				|| /\$\w+\s*->\s*query\s*\(/i.test(str)
 			);
 	},
 	xbl: function(str) {
