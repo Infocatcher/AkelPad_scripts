@@ -72,7 +72,7 @@ var hlExtRecognize = {
 	// Syntax:
 	//   extension: function(str) { return isExtension; }
 	html: function(str) {
-		return /^\s*<!DOCTYPE html\W/.test(str) || /<\/html[\s>]/i.test(str);
+		return /^\s*<!DOCTYPE html\W/.test(str) || /<\/(html|body)[\s>]/i.test(str);
 	},
 	php: function(str) {
 		return /<\?php\W.*\?>/.test(str)
