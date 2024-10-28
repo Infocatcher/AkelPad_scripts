@@ -75,8 +75,8 @@ var hlExtRecognize = {
 		return /^\s*<!DOCTYPE html\W/.test(str) || /<\/(html|body)[\s>]/i.test(str);
 	},
 	php: function(str) {
-		return /<\?php\W.*\?>/.test(str)
-			|| /<\?.*\?>/.test(str) && (
+		return /<\?php\W/.test(str)
+			|| /<\?/.test(str) && (
 				/\Whtmlspecialchars\s*\(/i.test(str)
 				|| /\Wsession_start\s*\(\)/i.test(str)
 				|| /\Wmysqli?_query\s*\(/i.test(str)
