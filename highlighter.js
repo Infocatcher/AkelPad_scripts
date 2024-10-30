@@ -121,7 +121,7 @@ var hlExtRecognize = {
 	},
 	cpp: function(str) {
 		return /(^|\n|\r)#define\s\S/.test(str)
-			|| /(^|\n|\r)#include\s\S/.test(str);
+			|| /(^|\n|\r)#include\s+[<"'][^<>"']+\.h[>"']/.test(str);
 	},
 	manifest: function(str) {
 		return /(^|\n|\r)content[ \t]\S/.test(str);
