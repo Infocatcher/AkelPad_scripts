@@ -150,7 +150,7 @@ var hlExtRecognize = {
 			|| /\W[a-z-]\s*:\s*(\d+|(\d+)?\.\d+)(px|em|%|pt)[\s;]/i.test(str);
 	},
 	ini: function(str) {
-		return /(^|\n|\r)[^=\s]+=/.test(str);
+		return /(^|\n|\r)[^\[#;=\s][^=\s]*=/.test(str);
 	},
 	"descript.ion": function(str) {
 		return /^(("[^"\r\n]+"|[^\s"]+) +[^\r\n]+([\r\n]+|$)){3}/.test(str);
