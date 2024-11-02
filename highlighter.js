@@ -71,6 +71,9 @@ var hlExtRecognize = {
 	// Used for unsaved files without filename and extension
 	// Syntax:
 	//   extension: function(str) { return isExtension; }
+	au3: function(str) {
+		return /(^|\n|\r)#AutoIt[^\r\n=]+=/i.test(str);
+	},
 	html: function(str) {
 		return /^\s*<!DOCTYPE html\W/.test(str) || /<\/(html|body)[\s>]/i.test(str);
 	},
