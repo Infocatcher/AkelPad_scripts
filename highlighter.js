@@ -146,7 +146,8 @@ var hlExtRecognize = {
 			|| /\.\s*(getElementById|querySelector(All)?)\s*\W/.test(str);
 	},
 	vbs: function(str) {
-		return /(^|\s)dim\s+\S/i.test(str);
+		return /(^|\s)dim\s+\S/i.test(str)
+			|| /(^|\s)function\s+\w+\s*\([\s\S]+\send function(\s|$)/i.test(str);
 	},
 	css: function(str) {
 		return /!\s*important[\s;]/.test(str)
