@@ -72,7 +72,8 @@ var hlExtRecognize = {
 	// Syntax:
 	//   extension: function(str) { return isExtension; }
 	au3: function(str) {
-		return /(^|\n|\r)#AutoIt[^\r\n=]+=/i.test(str);
+		return /(^|\n|\r)#AutoIt[^\r\n=]+=/i.test(str)
+			|| /(^|\s)Func\s+\w+\s*\([\s\S]+\sEndFunc(\s|$)/.test(str);
 	},
 	html: function(str) {
 		return /^\s*<!DOCTYPE html\W/.test(str) || /<\/(html|body)[\s>]/i.test(str);
