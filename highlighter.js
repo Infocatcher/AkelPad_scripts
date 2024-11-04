@@ -131,7 +131,7 @@ var hlExtRecognize = {
 		return /(^|\n|\r)content[ \t]\S/.test(str);
 	},
 	akelmenu: function(str) {
-		return /("|'|`)[ +](Command\(\d+\)|Call\(|Exec\()/.test(str);
+		return /(^|\n|\r)[ \t]*-?"[^"]*"[ \t]+(Command\(\d+\)|\+?Call\(|Exec\(|Link\(\d+\))/.test(str);
 	},
 	bat: function(str) {
 		return /^@echo off\s/i.test(str)
