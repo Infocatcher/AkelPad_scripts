@@ -135,7 +135,8 @@ var hlExtRecognize = {
 	},
 	bat: function(str) {
 		return /^@echo off\s/i.test(str)
-			|| /(^|\s)if( not)? exist\s/.test(str);
+			|| /(^|\s)if( not)? exist\s/.test(str)
+			|| /%~dp0/.test(str);
 	},
 	coder: function(str) {
 		return /(^|\n|\r)Delimiters:[\n\r]/.test(str)
