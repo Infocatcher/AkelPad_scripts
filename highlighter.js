@@ -28,16 +28,17 @@ var hlExtRegions = {
 	// Syntax:
 	//   extension: {
 	//       subExtension0: [[ext0_startMask0, ext0_endMask0], [ext0_startMask1, ext0_endMask1]],
-	//       subExtension1: [[ext1_startMask0, ext1_endMask0]]
+	//       subExtension1: [[ext1_startMask0, ext1_endMask0]],
+	//       subExtension1: [[ext1_startMask0, ext1_endMask0], canOmitEnd]
 	//   }
-	// Or "links" like
+	// Or "link" to already defined extension:
 	//   otherExtension: "extension"
 	// "extension" must be already defined!
 	// Masks is case unsensitive.
 	html: {
 		js: [["<script", "</script>"]],
 		css: [["<style", "</style>"]],
-		php: [["<?php", "?>"], ["<?", "?>"]]
+		php: [["<?php", "?>", true], ["<?", "?>", true]]
 	},
 	htm: "html",
 	xhtml: "html",
@@ -56,7 +57,7 @@ var hlExtRegions = {
 			["<handler", "</handler>"]
 		],
 		css: [["<style", "</style>"]],
-		php: [["<?php", "?>"], ["<?", "?>"]]
+		php: [["<?php", "?>", true], ["<?", "?>", true]]
 	},
 	xul: "xml",
 	xbl: "xml"
@@ -311,15 +312,19 @@ function defineExtRegion(mSet) {
 	var startText = fText.substring(0, ss).toLowerCase();
 	var selText   = fText.substring(ss, se).toLowerCase();
 	var endText   = fText.substring(se, fText.length).toLowerCase();
-	var i, start, end, startIndx, endIndx;
+	var i, start, end, canOmitEnd;
+	var startIndx, endIndx;
 	var mParams;
 	for(var ext in mSet) {
 		mParams = mSet[ext];
 		for(i = 0, len = mParams.length; i < len; ++i) {
 			start = mParams[i][0];
 			end = mParams[i][1];
+			canOmitEnd = mParams[i][2] || false;
 			startIndx = endText.indexOf(start);
 			endIndx = endText.indexOf(end);
+			if(endIndx == -1 && canOmitEnd)
+				endIndx = endText.length;
 			if(
 				startText.lastIndexOf(start) > startText.lastIndexOf(end)
 				&& selText.indexOf(start) == -1 && selText.indexOf(end) == -1
