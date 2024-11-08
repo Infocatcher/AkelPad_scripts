@@ -2,8 +2,8 @@
 // https://infocatcher.ucoz.net/js/akelpad_scripts/highlighter.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/highlighter.js
 
-// (c) Infocatcher 2009-2012
-// Version: 0.3.4 - 2012-04-06
+// (c) Infocatcher 2009-2024
+// Version: 0.3.5pre - 2024-11-09
 // Author: Infocatcher
 
 //===================
