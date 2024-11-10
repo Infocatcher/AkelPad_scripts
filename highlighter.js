@@ -219,7 +219,7 @@ if(hMainWnd && hWndEdit) {
 	var ext, forceSet;
 	if(restore) {
 		forceSet = true;
-		ext = /\.([^.]+)$/i.test(AkelPad.GetEditFile(0)) ? RegExp.$1.toLowerCase() : "";
+		ext = /[\\\/]([^\\\/]+)$/i.test(AkelPad.GetEditFile(0)) ? RegExp.$1 : "";
 	}
 	else {
 		ext = getExt();
