@@ -11,8 +11,8 @@
 
 // Arguments:
 //   -noRecognize    - don't use recognize mechanism for unsaved files or files without extension
-//   -restore        - use extension of current file (without dialog)
-//   -saveLastExt=0  - don't save last used extension
+//   -restore        - use name of current file (without dialog)
+//   -saveLastExt=0  - don't save last used extension/alias
 //               =1  - save only typed (default)
 //               =2  - always save
 
