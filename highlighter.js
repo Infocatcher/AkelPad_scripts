@@ -219,7 +219,7 @@ if(hMainWnd && hWndEdit) {
 	var ext, forceSet;
 	if(restore) {
 		forceSet = true;
-		ext = /[\\\/]([^\\\/]+)$/i.test(AkelPad.GetEditFile(0)) ? RegExp.$1 : "";
+		ext = getCurrentFileName();
 	}
 	else {
 		ext = getExt();
@@ -262,6 +262,9 @@ function getExt() {
 	if(saveLastExt && (typedExt != ext.toLowerCase() || saveLastExt == 2))
 		pref("lastExt", 3 /*PO_STRING*/, typedExt);
 	return typedExt;
+}
+function getCurrentFileName() {
+	return /[\\\/]([^\\\/]+)$/i.test(AkelPad.GetEditFile(0)) ? RegExp.$1 : "";
 }
 function getCurrentExt() {
 	var filePath = AkelPad.GetEditFile(0);
