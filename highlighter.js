@@ -261,6 +261,8 @@ function getExt() {
 	typedExt = typedExt.toLowerCase();
 	if(saveLastExt && (typedExt != ext.toLowerCase() || saveLastExt == 2))
 		pref("lastExt", 3 /*PO_STRING*/, typedExt);
+	if(typedExt == "/" || typedExt == "\\")
+		return getCurrentFileName();
 	return typedExt;
 }
 function getCurrentFileName() {
