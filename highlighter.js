@@ -9,6 +9,9 @@
 //===================
 //// Set extension manually for Coder plugin
 
+// Special:
+// Type \ or / to use name of current file instead of extension
+
 // Arguments:
 //   -noRecognize    - don't use recognize mechanism for unsaved files or files without extension
 //   -restore        - use name of current file (without dialog)
