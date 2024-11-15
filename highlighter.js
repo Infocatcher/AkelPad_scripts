@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/highlighter.js
 
 // (c) Infocatcher 2009-2024
-// Version: 0.3.5pre - 2024-11-09
+// Version: 0.3.5pre2 - 2024-11-15
 // Author: Infocatcher
 
 //===================
