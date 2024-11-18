@@ -198,7 +198,7 @@ if(argsl >= 2) {
 		var appData = appsData[app];
 		var path = getPath(appData.paths);
 		if(path) {
-			if(appData.isBrowser) {
+			if(appData.isBrowser && allowMappings) {
 				for(var p in mappings) {
 					var pl = p.length;
 					if(file.substr(0, pl) == p) {
