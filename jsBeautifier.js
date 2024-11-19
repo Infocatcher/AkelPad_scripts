@@ -10188,6 +10188,11 @@ function convertSource(file, text) {
 				"for (var k = 0, l = strings.length; k < l; ++k) {"
 			);
 	}
+	else if(file == "js/lib/unpackers/p_a_c_k_e_r_unpacker.js") {
+		text = text
+			.replace("\"(){return'\\\\w+'};", "\"(){return'\\\\\\\\w+'};")
+			.replace("\"'\\\\b'+e(c)+'\\\\b','g')", "\"'\\\\\\\\b'+e(c)+'\\\\\\\\b','g')");
+	}
 	else if(file.substr(0, 18) == "js/test/generated/") {
 		text = text
 			.replace(
