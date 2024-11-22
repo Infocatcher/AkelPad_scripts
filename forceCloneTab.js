@@ -1,6 +1,15 @@
-﻿// https://github.com/Infocatcher/AkelPad_scripts/blob/master/forceCloneTab.js
+﻿// https://infocatcher.ucoz.net/js/akelpad_scripts/forceCloneTab.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/forceCloneTab.js
 
-//// Force clone tab (even if "Single open file" in turned on)
+// (c) Infocatcher 2024
+// Version: 0.1.0 - 2024-11-23
+// Author: Infocatcher
+
+//// Force clone tab (even if "Single open file" is turned on)
+// Based on Instructor's code: https://akelpad.sourceforge.net/forum/viewtopic.php?p=4222#p4222
+
+// Usage:
+//   Call("Scripts::Main", 1, "forceCloneTab.js")
 
 var hMainWnd = AkelPad.GetMainWnd();
 if(!hMainWnd)
