@@ -99,6 +99,9 @@ Encode HTML entities (&amp; => &amp;amp;)
 \+ [executeScript.vbs](executeScript.vbs)
 <br>Execute selected or all code
 
+##### [forceCloneTab.js](forceCloneTab.js)
+Force clone tab (even if "Single open file" is turned on)
+
 ##### [forgetAboutTab.js](forgetAboutTab.js)
 Close current tab and remove information about it from recent files
 
