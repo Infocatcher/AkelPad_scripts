@@ -351,17 +351,15 @@ function formatNum(n) {
 	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
 }
 function formatWord(s) {
-	var maxLength = maxWord;
-	if(s.length > maxLength)
-		return s.substr(0, maxLength) + "…";
+	if(s.length > maxWord)
+		return s.substr(0, maxWord) + "…";
 	return s;
 }
 function formatLine(s) {
-	var maxLength = maxLine;
 	var tabWidth = AkelPad.SendMessage(AkelPad.GetEditWnd(), 3239 /*AEM_GETTABSTOP*/, 0, 0) || 8;
 	var tab = stringRepeat(" ", tabWidth);
-	var ret = s.substr(0, maxLength);
-	while(ret.replace(/\t/g, tab).length > maxLength)
+	var ret = s.substr(0, maxLine);
+	while(ret.replace(/\t/g, tab).length > maxLine)
 		ret = ret.substr(0, ret.length - 1);
 	return ret == s
 		? ret
