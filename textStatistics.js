@@ -214,6 +214,7 @@ function getTextStatistics() {
 	var longestLine  = -1,       longestLineNum,  longestLineText;
 	var shortestLine = Infinity, shortestLineNum, shortestLineText;
 	var lines = txtn.split("\n");
+	txtn = null;
 	var curLine, curLen;
 	var tabStop = AkelPad.SendMessage(AkelPad.GetEditWnd(), 3239 /*AEM_GETTABSTOP*/, 0, 0) || 8;
 	for(var i = 0, l = lines.length; i < l; ++i) {
