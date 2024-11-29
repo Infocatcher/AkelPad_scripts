@@ -264,8 +264,8 @@ function getTextStatistics() {
 	progress(40, _localize("Symbols…"));
 
 	res +=             _localize("Symbols: ")                + formatNum(txt.length) + "\n";
-	res += "  – "    + _localize("Cyrillic: ")               + formatNum(countOf(txt, /[а-яё]/ig)) + "\n";
-	res += "  – "    + _localize("Latin: ")                  + formatNum(countOf(txt, /[a-z]/ig)) + "\n";
+	res += "  – "    + _localize("Cyrillic: ")               + formatNum(countOf(txt, /[а-яёА-ЯЁ]/g)) + "\n";
+	res += "  – "    + _localize("Latin: ")                  + formatNum(countOf(txt, /[a-zA-Z]/g)) + "\n";
 	res += "  – "    + _localize("Digits: ")                 + formatNum(countOf(txt, /\d/g)) + "\n";
 	res += "  – "    + _localize("Space symbols: ")          + formatNum(countOf(txt, /[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/g)) + "\n";
 	res += "     = " + _localize("Spaces: ")                 + formatNum(countOf(txt, / /g)) + "\n";
@@ -277,8 +277,8 @@ function getTextStatistics() {
 	res += "\n";
 	progress(50, _localize("Words…"));
 
-	var wordsCyr = countOf(txt, /(^|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёa-z\d])[а-яё]+(-[а-яё]+)*(?=$|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёa-z\d])/ig);
-	var wordsLat = countOf(txt, /(^|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёa-z\d])[a-z]+(-[a-z]+)*('[st])?(?=$|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёa-z\d])/ig);
+	var wordsCyr = countOf(txt, /(^|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёА-ЯЁa-zA-Z\d])[а-яёА-ЯЁ]+(-[а-яёА-ЯЁ]+)*(?=$|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёА-ЯЁa-zA-Z\d])/g);
+	var wordsLat = countOf(txt, /(^|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёА-ЯЁa-zA-Z\d])[a-zA-Z]+(-[a-zA-Z]+)*('[sStT])?(?=$|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёА-ЯЁa-zA-Z\d])/g);
 	res +=          _localize("Words: ")    + formatNum(wordsCyr + wordsLat) + "\n";
 	res += "  – " + _localize("Cyrillic: ") + formatNum(wordsCyr) + "\n";
 	res += "  – " + _localize("Latin: ")    + formatNum(wordsLat) + "\n";
@@ -287,7 +287,7 @@ function getTextStatistics() {
 	progress(60, _localize("Mixed symbols…"));
 
 	try {
-		var cyrLatMixM = txt.match(/((\\)?[a-z][-\wа-яё]*[а-яё]|[а-яё][-\wа-яё]*[a-z])/ig);
+		var cyrLatMixM = txt.match(/((\\)?[a-zA-Z][-\wа-яёА-ЯЁ]*[а-яёА-ЯЁ]|[а-яёА-ЯЁ][-\wа-яёА-ЯЁ]*[a-zA-Z])/g);
 		var cyrLatMix = cyrLatMixM ? cyrLatMixM.length : 0;
 
 		progress(70, _localize("Mixed symbols…"));
@@ -295,7 +295,7 @@ function getTextStatistics() {
 		for(var i = 0; i < cyrLatMix; ++i) {
 			var s = cyrLatMixM[i];
 			if(
-				/^[a-z]+-[а-яё]+$/i.test(s) // Something like "esc-последовательность"
+				/^[a-zA-Z]+-[а-яёА-ЯЁ]+$/.test(s) // Something like "esc-последовательность"
 				|| /^\\[rn][а-яёА-ЯЁ]+$/.test(s) // Ignore \n and \r: "…\nНовая строка"
 			)
 				continue;
@@ -321,7 +321,7 @@ function getTextStatistics() {
 	progress(80, _localize("Numbers…"));
 
 	var numsDec = countOf(txt, /(^|\W)\d+([.,]\d+)?(?=(\W|$))/g); // Be careful with numbers like "0,2"
-	var numsHex = countOf(txt, /(^|\W)0x[\da-f]+(?=(\W|$))/ig);
+	var numsHex = countOf(txt, /(^|\W)0[xX][\da-fA-F]+(?=(\W|$))/g);
 	res +=          _localize("Numbers: ")     + formatNum(numsDec + numsHex) + "\n";
 	res += "  – " + _localize("Decimal: ")     + formatNum(numsDec) + "\n";
 	res += "  – " + _localize("Hexadecimal: ") + formatNum(numsHex) + "\n";
