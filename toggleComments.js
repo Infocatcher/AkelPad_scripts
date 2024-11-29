@@ -101,6 +101,7 @@ var commentsSets = {
 	//ahk: [ ["\r/*"], ["\r*/"], [";"] ],
 	ahk: [ null, null, [";"] ],
 	awk: [ null, null, ["#"] ],
+	sh: [ null, null, ["#"] ],
 	py: [ null, null, ["#"] ],
 	pyw: "py",
 	"1s": [ null, null, ["//"] ],
