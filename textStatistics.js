@@ -342,8 +342,18 @@ function countOf(txt, regexp) {
 	}
 	catch(e) {
 		getTextStatistics.__error = e && e.message || ("" + e);
-		return NaN;
 	}
+	if(regexp.global) try {
+		var cnt = 0;
+		while(regexp.exec(txt) != null)
+			++cnt
+		getTextStatistics.__error = "";
+		return cnt;
+	}
+	catch(e) {
+		getTextStatistics.__error = e && e.message || ("" + e);
+	}
+	return NaN;
 }
 function formatNum(n) {
 	if(isNaN(n))
