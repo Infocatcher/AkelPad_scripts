@@ -43,6 +43,10 @@
 // Select string with commas to don't escape another commas inside:
 //   "ab"cd'ef" <=> "ab\"cd'ef"
 
+// File path delimiter:
+// -type="Pathdelim"
+//   / <=> \
+
 // Uniform Resource Identifier (URI), encode/decode with
 // encodeURI()/decodeURI()
 //   https://ru.wikipedia.org/wiki/%D0%A2%D0%B5%D1%81%D1%82 <=> https://ru.wikipedia.org/wiki/Тест
@@ -70,10 +74,6 @@
 // Charset (recode):
 // -type="Recode" (works like built-in recode command in AkelPad itself, not available from UI)
 //   бНОПНЯ <=> Вопрос (from cp20866 aka KOI8-R to cp1251 aka windows-1251)
-
-// File path delimiter:
-// -type="Pathdelim"
-//   / <=> \
 
 // Arguments:
 //   -mode=0                                 - (default) auto encode or decode
