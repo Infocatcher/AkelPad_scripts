@@ -129,6 +129,9 @@ function _localize(s) {
 		"n/a": {
 			ru: "н/д"
 		},
+		"Too slow: time limit exceeded…": {
+			ru: "Слишком медленно: достигнуто ограничение по времени…"
+		},
 		"Warning! Executed with errors:\n%E": {
 			ru: "Внимание! Выполнено с ошибками:\n%E"
 		}
@@ -344,9 +347,16 @@ function countOf(txt, regexp) {
 		getTextStatistics.__error = e && e.message || ("" + e);
 	}
 	if(regexp.global) try {
+		var t = new Date().getTime() + 3000;
 		var cnt = 0;
-		while(regexp.exec(txt) != null)
-			++cnt
+		while(regexp.exec(txt) != null) {
+			if(!(++cnt % 100) && new Date().getTime() > t) {
+				getTextStatistics.__error = _localize("Too slow: time limit exceeded…");
+				var n = new Number(cnt);
+				n._tsPrefix = ">";
+				return n;
+			}
+		}
 		getTextStatistics.__error = "";
 		return cnt;
 	}
@@ -356,10 +366,10 @@ function countOf(txt, regexp) {
 	return NaN;
 }
 function formatNum(n) {
-	if(isNaN(n))
+	if(typeof n == "number" && isNaN(n))
 		return _localize("n/a");
 	// 1234567 -> 1 234 567
-	return ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
+	return (n._tsPrefix || "") + ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
 }
 function formatWord(s) {
 	if(s.length > maxWord)
