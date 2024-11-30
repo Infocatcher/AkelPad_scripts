@@ -71,6 +71,10 @@
 // -type="Recode" (works like built-in recode command in AkelPad itself, not available from UI)
 //   бНОПНЯ <=> Вопрос (from cp20866 aka KOI8-R to cp1251 aka windows-1251)
 
+// File path delimiter:
+// -type="Pathdelim"
+//   / <=> \
+
 // Arguments:
 //   -mode=0                                 - (default) auto encode or decode
 //   -mode=1                                 - encode
@@ -210,6 +214,9 @@ function _localize(s) {
 		},
 		"&Charset (semi-recode)": {
 			ru: "&Кодировка (частичное перекодирование)"
+		},
+		"&File path delimiter: / <=> \\": {
+			ru: "Разделитель пути к &файлу: / <=> \\"
 		},
 		"Direction": {
 			ru: "Направление"
@@ -3085,6 +3092,17 @@ var converters = {
 		encode: escapeString,
 		decode: unescapeString
 	},
+	pathdelim : {
+		prettyName: "File path delimiter",
+		firstAction: "decode",
+		speed: [323, 228],
+		encode: function(str) {
+			return convertPathDelim(str);
+		},
+		decode: function(str) {
+			return convertPathDelim(str);
+		}
+	},
 	uri: {
 		prettyName: "URI",
 		firstAction: "decode",
@@ -3349,36 +3367,37 @@ function converterDialog(modal) {
 	var disabled = false;
 	var disabledTimeout = 150;
 
-	var IDC_STATIC        = -1;
-	var IDC_TYPE_HTML     = 1001;
-	var IDC_DEC_ENT       = 1002;
-	var IDC_ENC_ENT       = 1003;
-	var IDC_DEC_ENT_SP    = 1004;
-	var IDC_ENC_ENT_SP    = 1005;
-	var IDC_DEC_CHR       = 1006;
-	var IDC_ENC_CHR       = 1007;
-	var IDC_ENC_CHR_HEX   = 1008;
-	var IDC_TYPE_ESCAPES  = 1009;
-	var IDC_TYPE_REGEXP   = 1010;
-	var IDC_TYPE_STRING   = 1011;
-	var IDC_TYPE_URI      = 1012;
-	var IDC_TYPE_URIC     = 1013;
-	var IDC_TO_DATA_URI   = 1014;
-	var IDC_TO_BASE64     = 1015;
-	var IDC_TYPE_UNESCAPE = 1016;
-	var IDC_TYPE_BASE64   = 1017;
-	var IDC_TYPE_QP       = 1018;
-	var IDC_TYPE_CHARSET  = 1019;
-	var IDC_MODE_AUTO     = 1020;
-	var IDC_MODE_ENCODE   = 1021;
-	var IDC_MODE_DECODE   = 1022;
-	var IDC_ACT_INSERT    = 1023;
-	var IDC_ACT_COPY      = 1024;
-	var IDC_ACT_SHOW      = 1025;
-	var IDC_OUTPUT        = 1026;
-	var IDC_OK            = 1027;
-	var IDC_CONVERT       = 1028;
-	var IDC_CANCEL        = 1029;
+	var IDC_STATIC         = -1;
+	var IDC_TYPE_HTML      = 1001;
+	var IDC_DEC_ENT        = 1002;
+	var IDC_ENC_ENT        = 1003;
+	var IDC_DEC_ENT_SP     = 1004;
+	var IDC_ENC_ENT_SP     = 1005;
+	var IDC_DEC_CHR        = 1006;
+	var IDC_ENC_CHR        = 1007;
+	var IDC_ENC_CHR_HEX    = 1008;
+	var IDC_TYPE_ESCAPES   = 1009;
+	var IDC_TYPE_REGEXP    = 1010;
+	var IDC_TYPE_STRING    = 1011;
+	var IDC_TYPE_PATHDELIM = 1012;
+	var IDC_TYPE_URI       = 1013;
+	var IDC_TYPE_URIC      = 1014;
+	var IDC_TO_DATA_URI    = 1015;
+	var IDC_TO_BASE64      = 1016;
+	var IDC_TYPE_UNESCAPE  = 1017;
+	var IDC_TYPE_BASE64    = 1018;
+	var IDC_TYPE_QP        = 1019;
+	var IDC_TYPE_CHARSET   = 1020;
+	var IDC_MODE_AUTO      = 1021;
+	var IDC_MODE_ENCODE    = 1022;
+	var IDC_MODE_DECODE    = 1023;
+	var IDC_ACT_INSERT     = 1024;
+	var IDC_ACT_COPY       = 1025;
+	var IDC_ACT_SHOW       = 1026;
+	var IDC_OUTPUT         = 1027;
+	var IDC_OK             = 1028;
+	var IDC_CONVERT        = 1029;
+	var IDC_CANCEL         = 1030;
 
 	var hWndGroupType;
 	var hWndType = {};
@@ -3418,7 +3437,7 @@ function converterDialog(modal) {
 	var sizeNonClientY = oSys.Call("user32::GetSystemMetrics", 33 /*SM_CYSIZEFRAME*/) * 2 + oSys.Call("user32::GetSystemMetrics", 4 /*SM_CYCAPTION*/);
 
 	var dlgMinW = scale.x(410) + sizeNonClientX;
-	var dlgMinH = scale.y(430) + sizeNonClientY; // + outputH + 12
+	var dlgMinH = scale.y(449) + sizeNonClientY; // + outputH + 12
 	var outputMinH = 20;
 
 	if(outputH != undefined)
@@ -3478,7 +3497,7 @@ function converterDialog(modal) {
 					12,           //x
 					10,           //y
 					386,          //nWidth
-					271,          //nHeight
+					291,          //nHeight
 					hWnd,         //hWndParent
 					IDC_STATIC,   //ID
 					hInstanceDLL, //hInstance
@@ -3689,6 +3708,24 @@ function converterDialog(modal) {
 				setWindowFontAndText(hWndType.string, hGuiFont, _localize("&String literals special symbols"));
 				checked(hWndType.string, type == "string");
 
+				// Radiobutton File Path Delimiter
+				hWndType.pathdelim = createWindowEx(
+					0,                //dwExStyle
+					"BUTTON",         //lpClassName
+					0,                //lpWindowName
+					0x50000004,       //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
+					24,               //x
+					149,              //y
+					350,              //nWidth
+					16,               //nHeight
+					hWnd,             //hWndParent
+					IDC_TYPE_PATHDELIM, //ID
+					hInstanceDLL,     //hInstance
+					0                 //lpParam
+				);
+				setWindowFontAndText(hWndType.pathdelim, hGuiFont, _localize("&File path delimiter: / <=> \\"));
+				checked(hWndType.pathdelim, type == "pathdelim");
+
 				// Radiobutton URI converter
 				hWndType.URI = createWindowEx(
 					0,            //dwExStyle
@@ -3696,7 +3733,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50000004,   //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,           //x
-					149,          //y
+					166,          //y
 					350,          //nWidth
 					16,           //nHeight
 					hWnd,         //hWndParent
@@ -3714,7 +3751,7 @@ function converterDialog(modal) {
 					0,             //lpWindowName
 					0x50000004,    //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,            //x
-					166,           //y
+					183,           //y
 					350,           //nWidth
 					16,            //nHeight
 					hWnd,          //hWndParent
@@ -3734,7 +3771,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50010003,      //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					40,              //x
-					183,             //y
+					202,             //y
 					220,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -3752,7 +3789,7 @@ function converterDialog(modal) {
 					0,             //lpWindowName
 					0x50010003,    //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					324,           //x
-					183,           //y
+					202,           //y
 					72,            //nWidth
 					16,            //nHeight
 					hWnd,          //hWndParent
@@ -3771,7 +3808,7 @@ function converterDialog(modal) {
 					0,                 //lpWindowName
 					0x50000004,        //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,                //x
-					202,               //y
+					221,               //y
 					350,               //nWidth
 					16,                //nHeight
 					hWnd,              //hWndParent
@@ -3789,7 +3826,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,              //x
-					221,             //y
+					240,             //y
 					350,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -3807,7 +3844,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,              //x
-					240,             //y
+					259,             //y
 					350,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -3825,7 +3862,7 @@ function converterDialog(modal) {
 					0,                //lpWindowName
 					0x50000004,       //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,               //x
-					259,              //y
+					278,              //y
 					350,              //nWidth
 					16,               //nHeight
 					hWnd,             //hWndParent
@@ -3844,7 +3881,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50000007,   //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					12,           //x
-					291,          //y
+					310,          //y
 					386,          //nWidth
 					42,           //nHeight
 					hWnd,         //hWndParent
@@ -3861,7 +3898,7 @@ function converterDialog(modal) {
 					0,             //lpWindowName
 					0x50000004,    //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,            //x
-					309,           //y
+					328,           //y
 					116,           //nWidth
 					16,            //nHeight
 					hWnd,          //hWndParent
@@ -3879,7 +3916,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					148,             //x
-					309,             //y
+					328,             //y
 					116,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -3897,7 +3934,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					272,             //x
-					309,             //y
+					328,             //y
 					116,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -3916,7 +3953,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50000007,   //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					12,           //x
-					343,          //y
+					362,          //y
 					386,          //nWidth
 					42,           //nHeight
 					hWnd,         //hWndParent
@@ -3933,7 +3970,7 @@ function converterDialog(modal) {
 					0,              //lpWindowName
 					0x50010003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					24,             //x
-					361,            //y
+					380,            //y
 					116,            //nWidth
 					16,             //nHeight
 					hWnd,           //hWndParent
@@ -3951,7 +3988,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					148,          //x
-					361,          //y
+					380,          //y
 					116,          //nWidth
 					16,           //nHeight
 					hWnd,         //hWndParent
@@ -3969,7 +4006,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					272,          //x
-					361,          //y
+					380,          //y
 					116,          //nWidth
 					16,           //nHeight
 					hWnd,         //hWndParent
@@ -3987,7 +4024,7 @@ function converterDialog(modal) {
 					0,                     //lpWindowName
 					0x50315904,            //WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_HSCROLL|ES_LEFT|ES_MULTILINE|ES_DISABLENOSCROLL|WS_TABSTOP|ES_SUNKEN|ES_NOHIDESEL|ES_READONLY
 					12,                    //x
-					397,                   //y
+					416,                   //y
 					386,                   //nWidth
 					outputH,               //nHeight
 					hWnd,                  //hWndParent
@@ -4009,7 +4046,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010001,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_DEFPUSHBUTTON
 					75,           //x
-					396 + dh,     //y
+					415 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -4026,7 +4063,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					187,          //x
-					396 + dh,     //y
+					415 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -4043,7 +4080,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					299,          //x
-					396 + dh,     //y
+					415 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -4156,6 +4193,7 @@ function converterDialog(modal) {
 					case IDC_TYPE_ESCAPES:
 					case IDC_TYPE_REGEXP:
 					case IDC_TYPE_STRING:
+					case IDC_TYPE_PATHDELIM:
 					case IDC_TYPE_URI:
 					case IDC_TYPE_URIC:
 					case IDC_TYPE_UNESCAPE:
@@ -4166,6 +4204,7 @@ function converterDialog(modal) {
 						checked(hWndType.escapes,         idc == IDC_TYPE_ESCAPES);
 						checked(hWndType.regExp,          idc == IDC_TYPE_REGEXP);
 						checked(hWndType.string,          idc == IDC_TYPE_STRING);
+						checked(hWndType.pathdelim,       idc == IDC_TYPE_PATHDELIM);
 						checked(hWndType.URI,             idc == IDC_TYPE_URI);
 						checked(hWndType.URIComponent,    idc == IDC_TYPE_URIC);
 						checked(hWndType.unescape,        idc == IDC_TYPE_UNESCAPE);
@@ -5009,6 +5048,18 @@ function convertToUnicode(str, cp) {
 	}
 
 	return ret;
+}
+
+function convertPathDelim(str) {
+	var posDelimWin = str.indexOf("\\");
+	var posDelimUnx = str.indexOf("/");
+	if (posDelimWin != -1 && (posDelimUnx == -1 || posDelimUnx > posDelimWin)) {
+		str = str.replace(/\\/g, "/");
+	}
+	else if (posDelimWin != -1 || posDelimUnx != -1) {
+		str = str.replace(/\//g, "\\");
+	}
+	return str;
 }
 
 if(AkelPad.IsInclude()) {
