@@ -45,7 +45,7 @@
 
 // File path delimiter:
 // -type="Pathdelim"
-//   / <=> \
+//   \ => /
 
 // Uniform Resource Identifier (URI), encode/decode with
 // encodeURI()/decodeURI()
@@ -215,8 +215,8 @@ function _localize(s) {
 		"&Charset (semi-recode)": {
 			ru: "&Кодировка (частичное перекодирование)"
 		},
-		"&File path delimiter: / <=> \\": {
-			ru: "Разделитель пути к &файлу: / <=> \\"
+		"&File path delimiter: \\ => /": {
+			ru: "Разделитель пути к &файлу: \\ => /"
 		},
 		"Direction": {
 			ru: "Направление"
@@ -3092,15 +3092,15 @@ var converters = {
 		encode: escapeString,
 		decode: unescapeString
 	},
-	pathdelim : {
+	pathdelim: {
 		prettyName: "File path delimiter",
 		firstAction: "decode",
 		speed: [323, 228],
 		encode: function(str) {
-			return convertPathDelim(str);
+			return pathDelimToUnix(str);
 		},
 		decode: function(str) {
-			return convertPathDelim(str);
+			return pathDelimToWin(str);
 		}
 	},
 	uri: {
@@ -3723,7 +3723,7 @@ function converterDialog(modal) {
 					hInstanceDLL,     //hInstance
 					0                 //lpParam
 				);
-				setWindowFontAndText(hWndType.pathdelim, hGuiFont, _localize("&File path delimiter: / <=> \\"));
+				setWindowFontAndText(hWndType.pathdelim, hGuiFont, _localize("&File path delimiter: \\ => /"));
 				checked(hWndType.pathdelim, type == "pathdelim");
 
 				// Radiobutton URI converter
@@ -5050,16 +5050,19 @@ function convertToUnicode(str, cp) {
 	return ret;
 }
 
-function convertPathDelim(str) {
-	var posDelimWin = str.indexOf("\\");
-	var posDelimUnx = str.indexOf("/");
-	if (posDelimWin != -1 && (posDelimUnx == -1 || posDelimUnx > posDelimWin)) {
-		str = str.replace(/\\/g, "/");
+function pathDelimToWin(str) {
+	if(mode == MODE_AUTO) {
+		var posDelimWin = str.indexOf("\\");
+		var posDelimUnx = str.indexOf("/");
+		if(posDelimWin != -1 && (posDelimUnx == -1 || posDelimUnx > posDelimWin)) {
+			return pathDelimToUnix(str);
+		}
 	}
-	else if (posDelimWin != -1 || posDelimUnx != -1) {
-		str = str.replace(/\//g, "\\");
-	}
-	return str;
+	return str.replace(/\//g, "\\");
+}
+
+function pathDelimToUnix(str) {
+	return str.replace(/\\/g, "/");
 }
 
 if(AkelPad.IsInclude()) {
