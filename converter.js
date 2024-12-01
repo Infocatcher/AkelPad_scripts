@@ -4610,7 +4610,9 @@ function converterDialog(modal) {
 				var o = _localize._strings[str];
 				for(var lng in o) {
 					if(o[lng] == text) {
-						help = "// " + str.replace(/&/, "");
+						help = "// " + str
+							.replace(/&/, "")
+							.replace(/:.*$/, ":");
 						break loop;
 					}
 				}
