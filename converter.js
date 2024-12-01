@@ -44,8 +44,8 @@
 //   "ab"cd'ef" <=> "ab\"cd'ef"
 
 // File path delimiter:
-// -type="Pathdelim"
-//   \ => /
+//   \ <=> /
+// (Windows style <=> Unix style)
 
 // Uniform Resource Identifier (URI), encode/decode with
 // encodeURI()/decodeURI()
@@ -79,7 +79,7 @@
 //   -mode=0                                 - (default) auto encode or decode
 //   -mode=1                                 - encode
 //   -mode=2                                 - decode
-//   -type="RegExp"                          - type of converter ("HTML", "Escapes", "RegExp", "String",
+//   -type="RegExp"                          - type of converter ("HTML", "Escapes", "RegExp", "String", "Pathdelim",
 //                                             "URI", "URIComponent", "Unescape", "Base64", "QuotedPrintable"
 //                                             "Charset", "Recode")
 //   -action=1                               - sum of flags: 1 - insert, 2 - copy, 4 - show
@@ -2760,6 +2760,20 @@ function unescapeString(str) {
 	return convertString(str, false);
 }
 
+function pathDelimToWin(str) {
+	if(mode == MODE_AUTO) {
+		var posDelimWin = str.indexOf("\\");
+		var posDelimUnx = str.indexOf("/");
+		if(posDelimWin != -1 && (posDelimUnx == -1 || posDelimUnx > posDelimWin)) {
+			return pathDelimToUnix(str);
+		}
+	}
+	return str.replace(/\//g, "\\");
+}
+function pathDelimToUnix(str) {
+	return str.replace(/\\/g, "/");
+}
+
 function encodeURIWrapped(str) {
 	return encodeURIWrapper(
 		str,
@@ -3093,7 +3107,7 @@ var converters = {
 		decode: unescapeString
 	},
 	pathdelim: {
-		prettyName: "File path delimiter",
+		prettyName: "File Path Delimiter",
 		firstAction: "decode",
 		speed: [323, 228],
 		encode: function(str) {
@@ -3710,18 +3724,18 @@ function converterDialog(modal) {
 
 				// Radiobutton File Path Delimiter
 				hWndType.pathdelim = createWindowEx(
-					0,                //dwExStyle
-					"BUTTON",         //lpClassName
-					0,                //lpWindowName
-					0x50000004,       //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
-					24,               //x
-					149,              //y
-					350,              //nWidth
-					16,               //nHeight
-					hWnd,             //hWndParent
+					0,                  //dwExStyle
+					"BUTTON",           //lpClassName
+					0,                  //lpWindowName
+					0x50000004,         //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
+					24,                 //x
+					149,                //y
+					350,                //nWidth
+					16,                 //nHeight
+					hWnd,               //hWndParent
 					IDC_TYPE_PATHDELIM, //ID
-					hInstanceDLL,     //hInstance
-					0                 //lpParam
+					hInstanceDLL,       //hInstance
+					0                   //lpParam
 				);
 				setWindowFontAndText(hWndType.pathdelim, hGuiFont, _localize("&File path delimiter: \\ => /"));
 				checked(hWndType.pathdelim, type == "pathdelim");
@@ -5048,21 +5062,6 @@ function convertToUnicode(str, cp) {
 	}
 
 	return ret;
-}
-
-function pathDelimToWin(str) {
-	if(mode == MODE_AUTO) {
-		var posDelimWin = str.indexOf("\\");
-		var posDelimUnx = str.indexOf("/");
-		if(posDelimWin != -1 && (posDelimUnx == -1 || posDelimUnx > posDelimWin)) {
-			return pathDelimToUnix(str);
-		}
-	}
-	return str.replace(/\//g, "\\");
-}
-
-function pathDelimToUnix(str) {
-	return str.replace(/\\/g, "/");
 }
 
 if(AkelPad.IsInclude()) {
