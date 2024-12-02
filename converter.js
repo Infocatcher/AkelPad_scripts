@@ -3264,6 +3264,7 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 	}
 
 	var res;
+	var actions = [];
 	if(auto && actionObj)
 		actionObj.value = firstAction;
 	if(speedTest)
@@ -3271,6 +3272,7 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 	if(useFirstAction || auto) {
 		try {
 			res = converter[firstAction](text);
+			actions[actions.length] = firstAction;
 		}
 		catch(e) {
 			if(useFirstAction) { // Don't show in auto mode
@@ -3291,6 +3293,7 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 	if(useSecondAction) {
 		try {
 			res = converter[secondAction](text);
+			actions[actions.length] = secondAction;
 			if(auto && actionObj)
 				actionObj.value = secondAction;
 		}
@@ -3309,7 +3312,7 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 	if(speedTest) {
 		AkelPad.MessageBox(
 			hWnd || hMainWnd,
-			"Speed: " + text.length/(new Date().getTime() - t),
+			"Speed (" + actions.join(", ") + "): " + text.length/(new Date().getTime() - t),
 			dialogTitle + " :: " + converter.prettyName,
 			64 /*MB_ICONINFORMATION*/
 		);
