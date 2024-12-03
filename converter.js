@@ -3148,7 +3148,7 @@ var converters = {
 	quotedprintable: {
 		prettyName: "Quoted-Printable",
 		firstAction: "decode",
-		speed: [10e3, 10e3], //~ todo: use real values
+		speed: [290, 560],
 		encode: encodeQuotedPrintable,
 		decode: decodeQuotedPrintable
 	},
