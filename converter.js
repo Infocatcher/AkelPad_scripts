@@ -3109,7 +3109,7 @@ var converters = {
 	pathdelim: {
 		prettyName: "File Path Delimiter",
 		firstAction: "decode",
-		speed: [323, 228],
+		speed: [380e3, 380e3],
 		encode: function(str) {
 			return pathDelimToUnix(str);
 		},
