@@ -4596,7 +4596,8 @@ function converterDialog(modal) {
 		return oSys.Call("user32::GetAsyncKeyState", key) & 0x8000; // Fix 4-byte result in AkelPad x64
 	}
 	function showHelp() {
-		var res = AkelPad.OpenFile(WScript.ScriptFullName);
+		var res = AkelPad.GetEditFile(0) != WScript.ScriptFullName
+			&& AkelPad.OpenFile(WScript.ScriptFullName);
 		if(
 			res != 0 /*EOD_SUCCESS*/
 			&& res != -13 /*EOD_WINDOW_EXIST*/
