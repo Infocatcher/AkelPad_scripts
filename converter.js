@@ -4603,7 +4603,7 @@ function converterDialog(modal) {
 		)
 			return;
 
-		var help = "// Hotkeys:";
+		var help = "// Hotkeys";
 		for(var t in hWndType) {
 			var h = hWndType[t];
 			if(!checked(h))
@@ -4614,15 +4614,16 @@ function converterDialog(modal) {
 				for(var lng in o) {
 					if(o[lng] == text) {
 						help = "// " + str
-							.replace(/&/, "")
-							.replace(/:.*$/, ":");
+							.replace(/(^|[^&])&([^&])/, "$1$2")
+							.replace(/&&/g, "&")
+							.replace(/:.*$/, "");
 						break loop;
 					}
 				}
 			}
 			break;
 		}
-		AkelPad.TextFind(0, help, 0x200001 /*FRF_DOWN|FRF_BEGINNING*/);
+		AkelPad.TextFind(0, escapeRegExp(help) + ":?[^\r\n]*", 0x280001 /*FRF_DOWN|FRF_BEGINNING|FRF_REGEXP*/);
 	}
 
 	function Scale(hDC, hWnd) {
