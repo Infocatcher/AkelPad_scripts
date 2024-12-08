@@ -3073,7 +3073,6 @@ function isQuotedPrintable(str) {
 }
 
 var convertersNoGUI = {
-	charset: true,
 	recode: true
 };
 var converters = {
