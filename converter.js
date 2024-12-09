@@ -66,12 +66,12 @@
 // -type="QuotedPrintable"
 //   [=3D] <=> [=]
 
-// Charset (semi-recode):
+// Charset, partial recode:
 // -type="Charset"
 //   Encode: WideCharToMultiByte() http://msdn.microsoft.com/en-us/library/dd374130(v=vs.85).aspx
 //   Decode: MultiByteToWideChar() http://msdn.microsoft.com/en-us/library/dd319072(v=vs.85).aspx
 //   Íå÷òî <=> Нечто (with cp1251 aka windows-1251)
-// Charset (recode):
+// Charset, recode:
 // -type="Recode" (works like built-in recode command in AkelPad itself, not available from UI)
 //   бНОПНЯ <=> Вопрос (from cp20866 aka KOI8-R to cp1251 aka windows-1251)
 
@@ -212,8 +212,8 @@ function _localize(s) {
 		"&Quoted-Printable": {
 			ru: "&Quoted-Printable"
 		},
-		"&Charset (semi-recode)": {
-			ru: "&Кодировка (частичное перекодирование)"
+		"&Charset, partial recode": {
+			ru: "&Кодировка, частичное перекодирование"
 		},
 		"&File path delimiter": {
 			ru: "Разделитель пути к &файлу"
@@ -3932,7 +3932,7 @@ function converterDialog(modal) {
 					hInstanceDLL,     //hInstance
 					0                 //lpParam
 				);
-				setWindowFontAndText(hWndType.charset, hGuiFont, _localize("&Charset (semi-recode)"));
+				setWindowFontAndText(hWndType.charset, hGuiFont, _localize("&Charset, partial recode"));
 				checked(hWndType.charset, type == "charset");
 				createHelpLabel(278, "Таб", "Òàá");
 
