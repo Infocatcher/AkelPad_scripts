@@ -3159,7 +3159,10 @@ var converters = {
 			return convertFromUnicode(str, codePage);
 		},
 		decode: function(str) {
-			return convertToUnicode(str, codePage);
+			var out = convertToUnicode(str, codePage);
+			if(mode == MODE_AUTO && this.encode(out) != str)
+				return this.encode(str);
+			return out;
 		}
 	},
 	recode: {
