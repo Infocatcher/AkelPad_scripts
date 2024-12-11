@@ -3501,7 +3501,11 @@ function converterDialog(modal) {
 					AkelPad.SendMessage(hWnd, 48 /*WM_SETFONT*/, hFont, true);
 					windowText(hWnd, pText);
 				}
-				function createHelpLabel(y, from, to) {
+				function createHelpLabel(y, label) {
+					if(!/ => /.test(_localize(label)))
+						return;
+					var from = RegExp.leftContext;
+					var to   = RegExp.rightContext;
 					var hWndLabel = createWindowEx(
 						0,            //dwExStyle
 						"STATIC",     //lpClassName
@@ -3579,7 +3583,7 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndType.HTML, hGuiFont, _localize("&HTML entities"));
 				checked(hWndType.HTML, type == "html");
-				createHelpLabel(28, "&&", "&&amp;");
+				createHelpLabel(28, "&& => &&amp;");
 
 
 				// Options for HTML:
@@ -3727,7 +3731,7 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndType.escapes, hGuiFont, _localize("&Escape sequences"));
 				checked(hWndType.escapes, type == "escapes");
-				createHelpLabel(98, "æ", "\\u00e6");
+				createHelpLabel(98, "æ => \\u00e6");
 
 				// Radiobutton RegExp converter
 				hWndType.regExp = createWindowEx(
@@ -3746,7 +3750,7 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndType.regExp, hGuiFont, _localize("Re&gular expressions special symbols"));
 				checked(hWndType.regExp, type == "regexp");
-				createHelpLabel(115, ".*", "\\.\\*");
+				createHelpLabel(115, ".* => \\.\\*");
 
 				// Radiobutton String converter
 				hWndType.string = createWindowEx(
@@ -3765,7 +3769,7 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndType.string, hGuiFont, _localize("&String literals special symbols"));
 				checked(hWndType.string, type == "string");
-				createHelpLabel(132, "\"\\", "\\\"\\\\");
+				createHelpLabel(132, "\"\\ => \\\"\\\\");
 
 				// Radiobutton File Path Delimiter
 				hWndType.pathdelim = createWindowEx(
@@ -3784,7 +3788,7 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndType.pathdelim, hGuiFont, _localize("&File path delimiter"));
 				checked(hWndType.pathdelim, type == "pathdelim");
-				createHelpLabel(149, "\\", "/");
+				createHelpLabel(149, "\\ => /");
 
 				// Radiobutton URI converter
 				hWndType.URI = createWindowEx(
@@ -3803,7 +3807,7 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndType.URI, hGuiFont, _localize("&URI"));
 				checked(hWndType.URI, type == "uri");
-				createHelpLabel(166, "/æ", "/%C3%A6");
+				createHelpLabel(166, "/æ => /%C3%A6");
 
 				// Radiobutton URI Component converter
 				hWndType.URIComponent = createWindowEx(
@@ -3822,7 +3826,7 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndType.URIComponent, hGuiFont, _localize("U&RI, full"));
 				checked(hWndType.URIComponent, type == "uricomponent");
-				createHelpLabel(183, "/æ", "%2F%C3%A6");
+				createHelpLabel(183, "/æ => %2F%C3%A6");
 
 
 				// Options for encode URI component:
@@ -3880,7 +3884,7 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndType.unescape, hGuiFont, _localize("Hexadeci&mal escape"));
 				checked(hWndType.unescape, type == "unescape");
-				createHelpLabel(221, "æć", "%E6%u0107");
+				createHelpLabel(221, "æć => %E6%u0107");
 
 				// Radiobutton Base64 converter
 				hWndType.base64 = createWindowEx(
@@ -3899,7 +3903,7 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndType.base64, hGuiFont, _localize("Base&64"));
 				checked(hWndType.base64, type == "base64");
-				createHelpLabel(240, "æ", "w6Y=");
+				createHelpLabel(240, "æ => w6Y=");
 
 				// Radiobutton Base64 converter
 				hWndType.quotedPrintable = createWindowEx(
@@ -3918,7 +3922,7 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndType.quotedPrintable, hGuiFont, _localize("&Quoted-Printable"));
 				checked(hWndType.quotedPrintable, type == "quotedprintable");
-				createHelpLabel(259, "/æ", "/=C3=A6");
+				createHelpLabel(259, "/æ => /=C3=A6");
 
 				// Radiobutton Charset converter
 				hWndType.charset = createWindowEx(
@@ -3937,7 +3941,7 @@ function converterDialog(modal) {
 				);
 				setWindowFontAndText(hWndType.charset, hGuiFont, _localize("&Charset, partial recode"));
 				checked(hWndType.charset, type == "charset");
-				createHelpLabel(278, "Таб", "Òàá");
+				createHelpLabel(278, "Таб => Òàá");
 
 
 				// GroupBox mode
