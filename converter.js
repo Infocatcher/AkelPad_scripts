@@ -77,19 +77,20 @@
 
 // Arguments:
 //   -mode=0                                 - (default) auto encode or decode
-//   -mode=1                                 - encode
-//   -mode=2                                 - decode
+//        =1                                 - encode
+//        =2                                 - decode
 //   -type="RegExp"                          - type of converter ("HTML", "Escapes", "RegExp", "String", "Pathdelim",
 //                                             "URI", "URIComponent", "Unescape", "Base64", "QuotedPrintable"
 //                                             "Charset", "Recode")
 //   -action=1                               - sum of flags: 1 - insert, 2 - copy, 4 - show
 //   -dialog=false                           - don't show dialog
+//   -helpLabels=true                        - show help labels in dialog window
 //   -onlySelected=true                      - use only selected text
 //   -warningTime=4000                       - show warning for slow calculations
 //   -test=true                              - display convert speed
 //   -saveOptions=0                          - don't store options
-//   -saveOptions=1                          - (default) save options after converting
-//   -saveOptions=2                          - save options on exit
+//               =1                          - (default) save options after converting
+//               =2                          - save options on exit
 //   -savePosition=true                      - allow store last window position
 //   -saveSize=true                          - allow store height of output field
 // Arguments for HTML converter:
@@ -286,6 +287,7 @@ if(saveOptions || savePosition || saveSize)
 	var prefs = new Prefs();
 
 var forceShowDialog       = getArg("dialog", true);
+var helpLabels            = getArg("helpLabels", true);
 var onlySelected          = getArg("onlySelected", false);
 var warningTime           = getArg("warningTime", 4000);
 
@@ -3469,6 +3471,8 @@ function converterDialog(modal) {
 	var helpDX = radioW + 8;
 	var helpW = 24;
 	var helpW2 = 78;
+	if(!helpLabels)
+		radioW = helpDX + helpW + helpW2;
 
 	var dlgW = dlgMinW;
 	var dlgH = dlgMinH + scale.y(dh);
@@ -3502,7 +3506,7 @@ function converterDialog(modal) {
 					windowText(hWnd, pText);
 				}
 				function createHelpLabel(y, label) {
-					if(!/ => /.test(_localize(label)))
+					if(!helpLabels || !/ => /.test(_localize(label)))
 						return;
 					var from = RegExp.leftContext;
 					var to   = RegExp.rightContext;
