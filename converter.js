@@ -3457,8 +3457,10 @@ function converterDialog(modal) {
 	var sizeNonClientX = oSys.Call("user32::GetSystemMetrics", 32 /*SM_CXSIZEFRAME*/) * 2;
 	var sizeNonClientY = oSys.Call("user32::GetSystemMetrics", 33 /*SM_CYSIZEFRAME*/) * 2 + oSys.Call("user32::GetSystemMetrics", 4 /*SM_CYCAPTION*/);
 
-	var dlgMinW = scale.x(410) + sizeNonClientX;
-	var dlgMinH = scale.y(449) + sizeNonClientY; // + outputH + 12
+	var baseW = 420;
+	var baseH = 449;
+	var dlgMinW = scale.x(baseW) + sizeNonClientX;
+	var dlgMinH = scale.y(baseH) + sizeNonClientY; // + outputH + 12
 	var outputMinH = 20;
 
 	if(outputH != undefined)
@@ -3467,12 +3469,21 @@ function converterDialog(modal) {
 		outputH = 76; // Default height
 
 	var dh = action & ACT_SHOW ? outputH + 12 : 0;
-	var radioW = 256;
-	var helpDX = radioW + 8;
+	var gapW = 12;
+	var groupW = baseW - gapW*2;
 	var helpW = 24;
 	var helpW2 = 78;
-	if(!helpLabels)
-		radioW = helpDX + helpW + helpW2;
+	var radioW = 256;
+	var radioW = groupW - gapW*2;
+	if(helpLabels) {
+		radioW -= 8 + helpW + helpW2;
+		var helpDX = gapW*2 + radioW + 8;
+	}
+
+	var thirdW = (groupW - gapW*4)/3 |0;
+
+	var btnW = 100;
+	var btnX = baseW - (btnW + gapW)*3;
 
 	var dlgW = dlgMinW;
 	var dlgH = dlgMinH + scale.y(dh);
@@ -3515,7 +3526,7 @@ function converterDialog(modal) {
 						"STATIC",     //lpClassName
 						0,            //lpWindowName
 						0x58000000,   //WS_VISIBLE|WS_CHILD|WS_DISABLED
-						24 + helpDX,  //x
+						helpDX,       //x
 						y,            //y
 						helpW,        //nWidth
 						16,           //nHeight
@@ -3530,7 +3541,7 @@ function converterDialog(modal) {
 						"STATIC",            //lpClassName
 						0,                   //lpWindowName
 						0x58000000,          //WS_VISIBLE|WS_CHILD|WS_DISABLED
-						24 + helpDX + helpW, //x
+						helpDX + helpW,      //x
 						y,                   //y
 						helpW2,              //nWidth
 						16,                  //nHeight
@@ -3559,7 +3570,7 @@ function converterDialog(modal) {
 					0x50000007,   //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					12,           //x
 					10,           //y
-					386,          //nWidth
+					groupW,       //nWidth
 					291,          //nHeight
 					hWnd,         //hWndParent
 					IDC_STATIC,   //ID
@@ -3956,7 +3967,7 @@ function converterDialog(modal) {
 					0x50000007,   //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					12,           //x
 					310,          //y
-					386,          //nWidth
+					groupW,       //nWidth
 					42,           //nHeight
 					hWnd,         //hWndParent
 					IDC_STATIC,   //ID
@@ -3971,9 +3982,9 @@ function converterDialog(modal) {
 					"BUTTON",      //lpClassName
 					0,             //lpWindowName
 					0x50000004,    //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
-					24,            //x
+					gapW*2,        //x
 					328,           //y
-					116,           //nWidth
+					thirdW,        //nWidth
 					16,            //nHeight
 					hWnd,          //hWndParent
 					IDC_MODE_AUTO, //ID
@@ -3989,9 +4000,9 @@ function converterDialog(modal) {
 					"BUTTON",        //lpClassName
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
-					148,             //x
+					gapW*3 + thirdW, //x
 					328,             //y
-					116,             //nWidth
+					thirdW,          //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
 					IDC_MODE_ENCODE, //ID
@@ -4007,9 +4018,9 @@ function converterDialog(modal) {
 					"BUTTON",        //lpClassName
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
-					272,             //x
+					gapW*4 + thirdW*2, //x
 					328,             //y
-					116,             //nWidth
+					thirdW,          //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
 					IDC_MODE_DECODE, //ID
@@ -4028,7 +4039,7 @@ function converterDialog(modal) {
 					0x50000007,   //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					12,           //x
 					362,          //y
-					386,          //nWidth
+					groupW,       //nWidth
 					42,           //nHeight
 					hWnd,         //hWndParent
 					IDC_STATIC,   //ID
@@ -4043,9 +4054,9 @@ function converterDialog(modal) {
 					"BUTTON",       //lpClassName
 					0,              //lpWindowName
 					0x50010003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
-					24,             //x
+					gapW*2,         //x
 					380,            //y
-					116,            //nWidth
+					thirdW,         //nWidth
 					16,             //nHeight
 					hWnd,           //hWndParent
 					IDC_ACT_INSERT, //ID
@@ -4061,9 +4072,9 @@ function converterDialog(modal) {
 					"BUTTON",     //lpClassName
 					0,            //lpWindowName
 					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
-					148,          //x
+					gapW*3 + thirdW, //x
 					380,          //y
-					116,          //nWidth
+					thirdW,       //nWidth
 					16,           //nHeight
 					hWnd,         //hWndParent
 					IDC_ACT_COPY, //ID
@@ -4079,9 +4090,9 @@ function converterDialog(modal) {
 					"BUTTON",     //lpClassName
 					0,            //lpWindowName
 					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
-					272,          //x
+					gapW*4 + thirdW*2, //x
 					380,          //y
-					116,          //nWidth
+					thirdW,       //nWidth
 					16,           //nHeight
 					hWnd,         //hWndParent
 					IDC_ACT_SHOW, //ID
@@ -4099,7 +4110,7 @@ function converterDialog(modal) {
 					0x50315904,            //WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_HSCROLL|ES_LEFT|ES_MULTILINE|ES_DISABLENOSCROLL|WS_TABSTOP|ES_SUNKEN|ES_NOHIDESEL|ES_READONLY
 					12,                    //x
 					416,                   //y
-					386,                   //nWidth
+					groupW,                //nWidth
 					outputH,               //nHeight
 					hWnd,                  //hWndParent
 					IDC_OUTPUT,            //ID
@@ -4119,9 +4130,9 @@ function converterDialog(modal) {
 					"BUTTON",     //lpClassName
 					0,            //lpWindowName
 					0x50010001,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_DEFPUSHBUTTON
-					75,           //x
+					btnX,         //x
 					415 + dh,     //y
-					100,          //nWidth
+					btnW,         //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
 					IDC_OK,       //ID
@@ -4136,9 +4147,9 @@ function converterDialog(modal) {
 					"BUTTON",     //lpClassName
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
-					187,          //x
+					btnX + gapW + btnW, //x
 					415 + dh,     //y
-					100,          //nWidth
+					btnW,         //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
 					IDC_CONVERT,  //ID
@@ -4153,9 +4164,9 @@ function converterDialog(modal) {
 					"BUTTON",     //lpClassName
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
-					299,          //x
+					btnX + (gapW + btnW)*2, //x
 					415 + dh,     //y
-					100,          //nWidth
+					btnW,         //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
 					IDC_CANCEL,   //ID
