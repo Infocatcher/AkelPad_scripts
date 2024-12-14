@@ -3537,18 +3537,18 @@ function converterDialog(modal) {
 					);
 					setWindowFontAndText(hWndLabel, hGuiFont, from);
 					hWndLabel = createWindowEx(
-						0,                   //dwExStyle
-						"STATIC",            //lpClassName
-						0,                   //lpWindowName
-						0x58000000,          //WS_VISIBLE|WS_CHILD|WS_DISABLED
-						helpDX + helpW,      //x
-						y,                   //y
-						helpW2,              //nWidth
-						16,                  //nHeight
-						hWnd,                //hWndParent
-						IDC_STATIC,          //ID
-						hInstanceDLL,        //hInstance
-						0                    //lpParam
+						0,              //dwExStyle
+						"STATIC",       //lpClassName
+						0,              //lpWindowName
+						0x58000000,     //WS_VISIBLE|WS_CHILD|WS_DISABLED
+						helpDX + helpW, //x
+						y,              //y
+						helpW2,         //nWidth
+						16,             //nHeight
+						hWnd,           //hWndParent
+						IDC_STATIC,     //ID
+						hInstanceDLL,   //hInstance
+						0               //lpParam
 					);
 					setWindowFontAndText(hWndLabel, hGuiFont, "=> " + to);
 				}
@@ -4014,18 +4014,18 @@ function converterDialog(modal) {
 
 				// Radiobutton decode
 				hWndModeDecode = createWindowEx(
-					0,               //dwExStyle
-					"BUTTON",        //lpClassName
-					0,               //lpWindowName
-					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
+					0,                 //dwExStyle
+					"BUTTON",          //lpClassName
+					0,                 //lpWindowName
+					0x50000004,        //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					gapW*4 + thirdW*2, //x
-					328,             //y
-					thirdW,          //nWidth
-					16,              //nHeight
-					hWnd,            //hWndParent
-					IDC_MODE_DECODE, //ID
-					hInstanceDLL,    //hInstance
-					0                //lpParam
+					328,               //y
+					thirdW,            //nWidth
+					16,                //nHeight
+					hWnd,              //hWndParent
+					IDC_MODE_DECODE,   //ID
+					hInstanceDLL,      //hInstance
+					0                  //lpParam
 				);
 				setWindowFontAndText(hWndModeDecode, hGuiFont, _localize("&Decode"));
 				checked(hWndModeDecode, mode == MODE_DECODE);
@@ -4068,36 +4068,36 @@ function converterDialog(modal) {
 
 				// Checkbox copy
 				hWndActCopy = createWindowEx(
-					0,            //dwExStyle
-					"BUTTON",     //lpClassName
-					0,            //lpWindowName
-					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
+					0,               //dwExStyle
+					"BUTTON",        //lpClassName
+					0,               //lpWindowName
+					0x50010003,      //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					gapW*3 + thirdW, //x
-					380,          //y
-					thirdW,       //nWidth
-					16,           //nHeight
-					hWnd,         //hWndParent
-					IDC_ACT_COPY, //ID
-					hInstanceDLL, //hInstance
-					0             //lpParam
+					380,             //y
+					thirdW,          //nWidth
+					16,              //nHeight
+					hWnd,            //hWndParent
+					IDC_ACT_COPY,    //ID
+					hInstanceDLL,    //hInstance
+					0                //lpParam
 				);
 				setWindowFontAndText(hWndActCopy, hGuiFont, _localize("C&opy"));
 				checked(hWndActCopy, action & ACT_COPY);
 
 				// Checkbox show
 				hWndActShow = createWindowEx(
-					0,            //dwExStyle
-					"BUTTON",     //lpClassName
-					0,            //lpWindowName
-					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
+					0,                 //dwExStyle
+					"BUTTON",          //lpClassName
+					0,                 //lpWindowName
+					0x50010003,        //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					gapW*4 + thirdW*2, //x
-					380,          //y
-					thirdW,       //nWidth
-					16,           //nHeight
-					hWnd,         //hWndParent
-					IDC_ACT_SHOW, //ID
-					hInstanceDLL, //hInstance
-					0             //lpParam
+					380,               //y
+					thirdW,            //nWidth
+					16,                //nHeight
+					hWnd,              //hWndParent
+					IDC_ACT_SHOW,      //ID
+					hInstanceDLL,      //hInstance
+					0                  //lpParam
 				);
 				setWindowFontAndText(hWndActShow, hGuiFont, _localize("Sho&w"));
 				checked(hWndActShow, action & ACT_SHOW);
@@ -4143,35 +4143,35 @@ function converterDialog(modal) {
 
 				// Convert button window
 				hWndConvert = createWindowEx(
-					0,            //dwExStyle
-					"BUTTON",     //lpClassName
-					0,            //lpWindowName
-					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
+					0,                  //dwExStyle
+					"BUTTON",           //lpClassName
+					0,                  //lpWindowName
+					0x50010000,         //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					btnX + gapW + btnW, //x
-					415 + dh,     //y
-					btnW,         //nWidth
-					23,           //nHeight
-					hWnd,         //hWndParent
-					IDC_CONVERT,  //ID
-					hInstanceDLL, //hInstance
-					0             //lpParam
+					415 + dh,           //y
+					btnW,               //nWidth
+					23,                 //nHeight
+					hWnd,               //hWndParent
+					IDC_CONVERT,        //ID
+					hInstanceDLL,       //hInstance
+					0                   //lpParam
 				);
 				setWindowFontAndText(hWndConvert, hGuiFont, _localize("Convert"));
 
 				// Cancel button window
 				hWndCancel = createWindowEx(
-					0,            //dwExStyle
-					"BUTTON",     //lpClassName
-					0,            //lpWindowName
-					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
+					0,                      //dwExStyle
+					"BUTTON",               //lpClassName
+					0,                      //lpWindowName
+					0x50010000,             //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					btnX + (gapW + btnW)*2, //x
-					415 + dh,     //y
-					btnW,         //nWidth
-					23,           //nHeight
-					hWnd,         //hWndParent
-					IDC_CANCEL,   //ID
-					hInstanceDLL, //hInstance
-					0             //lpParam
+					415 + dh,               //y
+					btnW,                   //nWidth
+					23,                     //nHeight
+					hWnd,                   //hWndParent
+					IDC_CANCEL,             //ID
+					hInstanceDLL,           //hInstance
+					0                       //lpParam
 				);
 				setWindowFontAndText(hWndCancel, hGuiFont, _localize("Cancel"));
 
