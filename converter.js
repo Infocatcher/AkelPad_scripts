@@ -3459,6 +3459,13 @@ function converterDialog(modal) {
 
 	var baseW = 420;
 	var baseH = 449;
+
+	var helpW1 = 24;
+	var helpW2 = 78;
+	var helpW = 8 + helpW1 + helpW2;
+	if(!helpLabels)
+		baseW = Math.max(410, baseW - helpW);
+
 	var dlgMinW = scale.x(baseW) + sizeNonClientX;
 	var dlgMinH = scale.y(baseH) + sizeNonClientY; // + outputH + 12
 	var outputMinH = 20;
@@ -3471,12 +3478,10 @@ function converterDialog(modal) {
 	var dh = action & ACT_SHOW ? outputH + 12 : 0;
 	var gapW = 12;
 	var groupW = baseW - gapW*2;
-	var helpW = 24;
-	var helpW2 = 78;
 	var radioW = 256;
 	var radioW = groupW - gapW*2;
 	if(helpLabels) {
-		radioW -= 8 + helpW + helpW2;
+		radioW -= helpW;
 		var helpDX = gapW*2 + radioW + 8;
 	}
 
@@ -3528,7 +3533,7 @@ function converterDialog(modal) {
 						0x58000000,   //WS_VISIBLE|WS_CHILD|WS_DISABLED
 						helpDX,       //x
 						y,            //y
-						helpW,        //nWidth
+						helpW1,       //nWidth
 						16,           //nHeight
 						hWnd,         //hWndParent
 						IDC_STATIC,   //ID
@@ -3541,7 +3546,7 @@ function converterDialog(modal) {
 						"STATIC",       //lpClassName
 						0,              //lpWindowName
 						0x58000000,     //WS_VISIBLE|WS_CHILD|WS_DISABLED
-						helpDX + helpW, //x
+						helpDX + helpW1,//x
 						y,              //y
 						helpW2,         //nWidth
 						16,             //nHeight
