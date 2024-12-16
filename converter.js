@@ -3532,7 +3532,7 @@ function converterDialog(modal) {
 						0,            //lpWindowName
 						0x58000000,   //WS_VISIBLE|WS_CHILD|WS_DISABLED
 						helpDX,       //x
-						y,            //y
+						y + 1,        //y
 						helpW1,       //nWidth
 						16,           //nHeight
 						hWnd,         //hWndParent
@@ -3547,7 +3547,7 @@ function converterDialog(modal) {
 						0,              //lpWindowName
 						0x58000000,     //WS_VISIBLE|WS_CHILD|WS_DISABLED
 						helpDX + helpW1,//x
-						y,              //y
+						y + 1,          //y
 						helpW2,         //nWidth
 						16,             //nHeight
 						hWnd,           //hWndParent
