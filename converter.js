@@ -4633,9 +4633,22 @@ function converterDialog(modal) {
 		return true;
 	}
 	function enableConvertButtons() {
-		var ok = checked(hWndActInsert) || checked(hWndActCopy) || checked(hWndActShow);
-		enabled(hWndOK, ok);
-		enabled(hWndConvert, ok);
+		var ok = checked(hWndActInsert) || checked(hWndActCopy);
+		var show = checked(hWndActShow);
+		enabled(hWndOK,      ok || show);
+		enabled(hWndConvert, ok || show);
+		var onlyShow = show && !ok;
+		oSys.Call("user32::ShowWindow", hWndOK, !onlyShow);
+		defaultButton(hWndOK,     !onlyShow);
+		defaultButton(hWndConvert, onlyShow);
+	}
+	function defaultButton(hWndBtn, isDefault) {
+		var style = oSys.Call("User32::GetWindowLong" + _TCHAR, hWndBtn, -16 /*GWL_STYLE*/);
+		if(isDefault)
+			style |= 0x0001 /*BS_DEFPUSHBUTTON*/;
+		else
+			style &= ~0x0001 /*BS_DEFPUSHBUTTON*/;
+		AkelPad.SendMessage(hWndBtn, 244 /*BM_SETSTYLE*/, style, 1);
 	}
 	function windowText(hWnd, pText) {
 		if(arguments.length > 1)
