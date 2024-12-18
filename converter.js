@@ -3494,6 +3494,7 @@ function converterDialog(modal) {
 	var dlgH = dlgMinH + scale.y(dh);
 
 	var handleResize = true;
+	var onlyShow;
 
 	// Create dialog
 	hWndDialog = oSys.Call(
@@ -4203,7 +4204,7 @@ function converterDialog(modal) {
 				if(wParam == 27 /*VK_ESCAPE*/)
 					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_CANCEL, 0);
 				else if(wParam == 13 /*VK_RETURN*/) {
-					if(ctrl || shift) // Ctrl+Enter, Shift+Enter
+					if(ctrl || shift || onlyShow) // Ctrl+Enter, Shift+Enter
 						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_CONVERT, 0);
 					else // Enter
 						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_OK, 0);
@@ -4637,7 +4638,7 @@ function converterDialog(modal) {
 		var show = checked(hWndActShow);
 		enabled(hWndOK,      ok || show);
 		enabled(hWndConvert, ok || show);
-		var onlyShow = show && !ok;
+		onlyShow = show && !ok;
 		oSys.Call("user32::ShowWindow", hWndOK, !onlyShow);
 		defaultButton(hWndOK,     !onlyShow);
 		defaultButton(hWndConvert, onlyShow);
