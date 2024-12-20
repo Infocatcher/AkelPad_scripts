@@ -4183,7 +4183,7 @@ function converterDialog(modal) {
 
 				setHTMLOptions();
 				setBase64Options();
-				enableConvertButtons();
+				enableConvertButtons(true);
 
 				outputMinH = scale.y(outputMinH);
 				outputH = scale.y(outputH);
@@ -4633,12 +4633,14 @@ function converterDialog(modal) {
 
 		return true;
 	}
-	function enableConvertButtons() {
+	function enableConvertButtons(init) {
 		var ok = checked(hWndActInsert) || checked(hWndActCopy);
 		var show = checked(hWndActShow);
 		enabled(hWndOK,      ok || show);
 		enabled(hWndConvert, ok || show);
 		onlyShow = show && !ok;
+		if(init && !onlyShow)
+			return; // Already configured
 		oSys.Call("user32::ShowWindow", hWndOK, !onlyShow);
 		defaultButton(hWndOK,     !onlyShow);
 		defaultButton(hWndConvert, onlyShow);
