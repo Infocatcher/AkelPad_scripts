@@ -2767,6 +2767,7 @@ function pathDelimToWin(str) {
 		var posDelimWin = str.indexOf("\\");
 		var posDelimUnx = str.indexOf("/");
 		if(posDelimWin != -1 && (posDelimUnx == -1 || posDelimUnx > posDelimWin)) {
+			converters.autoMode = "encode";
 			return pathDelimToUnix(str);
 		}
 	}
@@ -3078,6 +3079,7 @@ var convertersNoGUI = {
 	recode: true
 };
 var converters = {
+	autoMode: undefined,
 	// speed: symbols/ms [encodeSpeed, decodeSpeed]
 	html: {
 		prettyName: "HTML",
@@ -3162,8 +3164,10 @@ var converters = {
 		},
 		decode: function(str) {
 			var out = convertToUnicode(str, codePage);
-			if(mode == MODE_AUTO && this.encode(out) != str)
+			if(mode == MODE_AUTO && this.encode(out) != str) {
+				converters.autoMode = "encode";
 				return this.encode(str);
+			}
 			return out;
 		}
 	},
@@ -3234,6 +3238,7 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 	var decode = mode == MODE_DECODE;
 
 	var converter = converters[type];
+	converters.autoMode = undefined;
 	var firstAction = converter.firstAction;
 	var firstDecode = firstAction == "decode";
 	var secondAction = firstDecode ? "encode" : "decode";
@@ -3269,14 +3274,14 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 
 	var res;
 	var actions = [];
-	if(auto && actionObj)
-		actionObj.value = firstAction;
 	if(speedTest)
 		var t = new Date().getTime();
 	if(useFirstAction || auto) {
 		try {
 			res = converter[firstAction](text);
 			actions[actions.length] = firstAction;
+			if(auto && actionObj)
+				actionObj.value = converters.autoMode || firstAction;
 		}
 		catch(e) {
 			if(useFirstAction) { // Don't show in auto mode
