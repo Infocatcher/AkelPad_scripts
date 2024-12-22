@@ -3113,12 +3113,8 @@ var converters = {
 		prettyName: "File Path Delimiter",
 		firstAction: "decode",
 		speed: [380e3, 380e3],
-		encode: function(str) {
-			return pathDelimToUnix(str);
-		},
-		decode: function(str) {
-			return pathDelimToWin(str);
-		}
+		encode: pathDelimToUnix,
+		decode: pathDelimToWin
 	},
 	uri: {
 		prettyName: "URI",
