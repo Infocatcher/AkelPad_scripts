@@ -3275,9 +3275,10 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 	if(useFirstAction || auto) {
 		try {
 			res = converter[firstAction](text);
-			actions[actions.length] = firstAction;
+			var realAction = converters.autoMode || firstAction;
+			actions[actions.length] = realAction;
 			if(auto && actionObj)
-				actionObj.value = converters.autoMode || firstAction;
+				actionObj.value = realAction;
 		}
 		catch(e) {
 			if(useFirstAction) { // Don't show in auto mode
