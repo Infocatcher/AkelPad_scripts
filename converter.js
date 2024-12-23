@@ -3203,7 +3203,7 @@ if(hMainWnd && !AkelPad.IsInclude()) {
 			type = DEFAULT_TYPE;
 		converterDialog();
 	}
-	else if(!AkelPad.GetEditReadOnly(AkelPad.GetEditWnd()))
+	else if(!AkelPad.GetEditReadOnly(0))
 		convert(); // Convert w/o dialog
 }
 
