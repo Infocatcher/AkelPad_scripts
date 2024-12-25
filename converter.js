@@ -86,7 +86,8 @@
 //   -dialog=false                           - don't show dialog
 //   -helpLabels=true                        - show help labels in dialog window
 //   -onlySelected=true                      - use only selected text
-//   -warningTime=4000                       - show warning for slow calculations
+//                =false                     - (default) use all text, if text is not selected
+//   -warningTime=4000                       - show warning for slow calculations (0 to disable warnings)
 //   -test=true                              - display convert speed
 //   -saveOptions=0                          - don't store options
 //               =1                          - (default) save options after converting
