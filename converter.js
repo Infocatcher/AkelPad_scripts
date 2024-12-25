@@ -102,7 +102,7 @@
 //   -decodeCharCodes=true                   - (default: true)  decode &#code; => char
 //   -encodeChars=false                      - (default: false) encode char => &#code;
 //   -encodeAsHex=false                      - use hex instead of decimal
-//   -charsToEncode=/'|[^!-~ \t\n\rа-яё]/ig  - mask for chars to encode
+//   -charsToEncode=/'|[^!-~ \t\n\rА-ёЁ]/g   - mask for chars to encode
 //   -ignoreEntities="lt,gt"                 - don't convert some entities, comma-separated list
 // Arguments for escapes converter:
 //   -customEscapesDecoder=false             - (experimental, default: false) use custom decoder instead of eval()
@@ -125,7 +125,7 @@
 // Usage:
 //   Call("Scripts::Main", 1, "converter.js")
 //   Call("Scripts::Main", 1, "converter.js", `-mode=0 -type="HTML"`)
-//   Call("Scripts::Main", 1, "converter.js", `-mode=0 -type="HTML" -decodeCharCodes=true -encodeChars=true "-charsToEncode=/'|[^!-~ \t\n\rа-яё]/ig"`)
+//   Call("Scripts::Main", 1, "converter.js", `-mode=0 -type="HTML" -decodeCharCodes=true -encodeChars=true "-charsToEncode=/'|[^!-~ \t\n\rА-ёЁ]/g"`)
 //   Call("Scripts::Main", 1, "converter.js", `-mode=0 -type="Escapes" -dialog=false`)
 //   Call("Scripts::Main", 1, "converter.js", `-mode=2 -type="Charset" -codePage=1251 -dialog=false -saveOptions=0`)
 //   Call("Scripts::Main", 1, "converter.js", `-mode=2 -type="Recode" -codePageFrom=20866 -codePageTo=1251 -dialog=false -saveOptions=0`)
@@ -307,10 +307,10 @@ var encodeSpacesEntities  = getArgOrPref("encodeSpacesEntities",  prefs && prefs
 var decodeCharCodes       = getArgOrPref("decodeCharCodes",       prefs && prefs.DWORD, true);
 var encodeChars           = getArgOrPref("encodeChars",           prefs && prefs.DWORD, false);
 var encodeAsHex           = getArgOrPref("encodeAsHex",           prefs && prefs.DWORD, false);
-var charsToEncode         = getArg("charsToEncode", /'|[^!-~ \t\n\rа-яё]/ig);
+var charsToEncode         = getArg("charsToEncode", /'|[^!-~ \t\n\rА-ёЁ]/g);
 // "!-~"     - latin symbols
 // " \t\n\r" - spaces
-// "а-яё"    - cyrillic symbols
+// "А-ёЁ"    - cyrillic symbols
 var ignoreEntities        = getArg("ignoreEntities", "");
 
 var customEscapesDecoder  = getArg("customEscapesDecoder", false);
