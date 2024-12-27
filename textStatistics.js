@@ -282,7 +282,7 @@ function getTextStatistics() {
 
 	var wordsCyr = countOf(txt, /(^|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёА-ЯЁa-zA-Z\d])[а-яёА-ЯЁ]+(-[а-яёА-ЯЁ]+)*(?=$|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёА-ЯЁa-zA-Z\d])/g);
 	var wordsLat = countOf(txt, /(^|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёА-ЯЁa-zA-Z\d])[a-zA-Z]+(-[a-zA-Z]+)*('[sStT])?(?=$|[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]|[^-а-яёА-ЯЁa-zA-Z\d])/g);
-	res +=          _localize("Words: ")    + formatNum(wordsCyr + wordsLat) + "\n";
+	res +=          _localize("Words: ")    + formatSum(wordsCyr, wordsLat) + "\n";
 	res += "  – " + _localize("Cyrillic: ") + formatNum(wordsCyr) + "\n";
 	res += "  – " + _localize("Latin: ")    + formatNum(wordsLat) + "\n";
 
@@ -325,7 +325,7 @@ function getTextStatistics() {
 
 	var numsDec = countOf(txt, /(^|\W)\d+([.,]\d+)?(?=(\W|$))/g); // Be careful with numbers like "0,2"
 	var numsHex = countOf(txt, /(^|\W)0[xX][\da-fA-F]+(?=(\W|$))/g);
-	res +=          _localize("Numbers: ")     + formatNum(numsDec + numsHex) + "\n";
+	res +=          _localize("Numbers: ")     + formatSum(numsDec, numsHex) + "\n";
 	res += "  – " + _localize("Decimal: ")     + formatNum(numsDec) + "\n";
 	res += "  – " + _localize("Hexadecimal: ") + formatNum(numsHex) + "\n";
 
@@ -370,6 +370,17 @@ function formatNum(n) {
 		return _localize("n/a");
 	// 1234567 -> 1 234 567
 	return (n._tsPrefix || "") + ("" + n).replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1\xa0");
+}
+function formatSum() {
+	var sum = 0
+	var prefix = "";
+	for(var i = 0, l = arguments.length; i < l; ++i) {
+		var a = arguments[i];
+		if(a._tsPrefix || null)
+			prefix = a._tsPrefix;
+		sum += a;
+	}
+	return prefix + formatNum(sum);
 }
 function formatWord(s) {
 	if(s.length > maxWord)
