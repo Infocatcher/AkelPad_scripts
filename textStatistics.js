@@ -93,6 +93,9 @@ function _localize(s) {
 		"Line feeds (\\n): ": {
 			ru: "Переводы строки (\\n): "
 		},
+		"Other spaces: ": {
+			ru: "Прочие пробельные символы: "
+		},
 		"Null characters (\\0): ": {
 			ru: "Нулевые символы (\\0): "
 		},
@@ -266,15 +269,24 @@ function getTextStatistics() {
 	res += "\n";
 	progress(40, _localize("Symbols…"));
 
+	var sps = {};
+	sps.sps    = countOf(txt, / /g);
+	sps.tab    = countOf(txt, /\t/g);
+	sps.cr     = countOf(txt, /\r/g);
+	sps.lf     = countOf(txt, /\n/g);
+	// Note: used \v -> \x0b, \f -> \x0c for better compatibility
+	sps.other  = countOf(txt, /[\x0b\x0c\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/g);
+
 	res +=             _localize("Symbols: ")                + formatNum(txt.length) + "\n";
 	res += "  – "    + _localize("Cyrillic: ")               + formatNum(countOf(txt, /[а-яёА-ЯЁ]/g)) + "\n";
 	res += "  – "    + _localize("Latin: ")                  + formatNum(countOf(txt, /[a-zA-Z]/g)) + "\n";
 	res += "  – "    + _localize("Digits: ")                 + formatNum(countOf(txt, /\d/g)) + "\n";
-	res += "  – "    + _localize("Space symbols: ")          + formatNum(countOf(txt, /[\s\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/g)) + "\n";
-	res += "     = " + _localize("Spaces: ")                 + formatNum(countOf(txt, / /g)) + "\n";
-	res += "     = " + _localize("Tabs: ")                   + formatNum(countOf(txt, /\t/g)) + "\n";
-	res += "     = " + _localize("Carriage returns (\\r): ") + formatNum(countOf(txt, /\r/g)) + "\n";
-	res += "     = " + _localize("Line feeds (\\n): ")       + formatNum(countOf(txt, /\n/g)) + "\n";
+	res += "  – "    + _localize("Space symbols: ")          + formatSum(sps.sps, sps.tab, sps.cr, sps.lf, sps.other) + "\n";
+	res += "     = " + _localize("Spaces: ")                 + formatNum(sps.sps)   + "\n";
+	res += "     = " + _localize("Tabs: ")                   + formatNum(sps.tab)   + "\n";
+	res += "     = " + _localize("Carriage returns (\\r): ") + formatNum(sps.cr)    + "\n";
+	res += "     = " + _localize("Line feeds (\\n): ")       + formatNum(sps.lf)    + "\n";
+	res += "     = " + _localize("Other spaces: ")           + formatNum(sps.other) + "\n";
 	res += "  – "    + _localize("Null characters (\\0): ")  + formatNum(countOf(txt, /\0/g)) + "\n";
 
 	res += "\n";
