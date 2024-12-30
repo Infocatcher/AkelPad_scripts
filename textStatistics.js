@@ -361,7 +361,7 @@ function countOf(txt, regexp) {
 	if(regexp.global) try {
 		var t = new Date().getTime() + 3000;
 		var cnt = 0;
-		while(regexp.exec(txt) != null) {
+		while(regexp.exec(txt)) {
 			if(!(++cnt % 100) && new Date().getTime() > t) {
 				getTextStatistics.__error = _localize("Too slow: time limit exceeded…");
 				var n = new Number(cnt);
