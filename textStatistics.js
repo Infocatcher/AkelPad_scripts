@@ -161,7 +161,8 @@ function showTextStatistics() {
 	var res = getTextStatistics();
 	switch(outMode) {
 		default: case 0:
-			AkelPad.MessageBox(hMainWnd, res.replace(/\0/g, "¤"), WScript.ScriptName, 64 /*MB_ICONINFORMATION*/);
+			var icon = getTextStatistics.__error ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/;
+			AkelPad.MessageBox(hMainWnd, res.replace(/\0/g, "¤"), WScript.ScriptName, icon);
 		break;
 		case 1:
 			AkelPad.Call("Log::Output", 4, res, res.length, 2, 0, ".txt");
