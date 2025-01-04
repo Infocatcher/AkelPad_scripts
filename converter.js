@@ -4697,19 +4697,26 @@ function converterDialog(modal) {
 			return;
 
 		var help = "// Hotkeys";
+		function fromLabel(s) {
+			return "// " + s
+				.replace(/(^|[^&])&([^&])/, "$1$2")
+				.replace(/&&/g, "&")
+				.replace(/:.*$/, "");
+		}
 		for(var t in hWndType) {
 			var h = hWndType[t];
 			if(!checked(h))
 				continue;
 			var text = windowText(h);
 			loop: for(var str in _localize._strings) {
+				if(str == text) { // Default locale
+					help = fromLabel(str);
+					break;
+				}
 				var o = _localize._strings[str];
 				for(var lng in o) {
 					if(o[lng] == text) {
-						help = "// " + str
-							.replace(/(^|[^&])&([^&])/, "$1$2")
-							.replace(/&&/g, "&")
-							.replace(/:.*$/, "");
+						help = fromLabel(str);
 						break loop;
 					}
 				}
