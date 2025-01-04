@@ -21,7 +21,7 @@
 //   Delete                   - Delete selection
 //   Ctrl+A                   - Select all
 //   Ctrl+S                   - Save file
-//   F1                       - "Help" (just open this file)
+//   F1                       - "Help" (just open this file and scroll to selected converter)
 
 // HTML entities, encode/decode:
 //   &    <=> &amp;
