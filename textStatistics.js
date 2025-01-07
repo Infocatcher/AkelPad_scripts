@@ -16,6 +16,7 @@
 //   -output=0      - (default) show statistics in massage box
 //          =1      - in Log plugin
 //          =2      - in new document
+//   -coderAlias=".txt" - set alias for Coder plugin (for -output=1 or -output=2)
 
 // Usage:
 //   Call("Scripts::Main", 1, "textStatistics.js")
@@ -27,6 +28,7 @@ var maxLine = AkelPad.GetArgValue("maxLine", 40);
 var maxMixed = AkelPad.GetArgValue("maxMixed", 5);
 var maxWord = AkelPad.GetArgValue("maxWord", 40);
 var outMode = AkelPad.GetArgValue("output", 0);
+var coderAlias = AkelPad.GetArgValue("coderAlias", ".txt");
 
 function _localize(s) {
 	var strings = {
@@ -165,7 +167,7 @@ function showTextStatistics() {
 			AkelPad.MessageBox(hMainWnd, res.replace(/\0/g, "¤"), WScript.ScriptName, icon);
 		break;
 		case 1:
-			AkelPad.Call("Log::Output", 4, res, res.length, 2, 0, ".txt");
+			AkelPad.Call("Log::Output", 4, res, res.length, 2, 0, coderAlias);
 		break;
 		case 2:
 			AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
@@ -177,7 +179,7 @@ function showTextStatistics() {
 				|| AkelPad.IsPluginRunning("Coder::AutoComplete")
 				|| AkelPad.IsPluginRunning("Coder::CodeFold")
 			)
-				AkelPad.Call("Coder::Settings", 1, ".txt");
+				AkelPad.Call("Coder::Settings", 6, coderAlias);
 	}
 }
 function getTextStatistics() {
