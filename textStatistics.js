@@ -9,13 +9,13 @@
 //// Provide some statistic for English and Russian texts
 
 // Arguments:
-//   -maxLine=40    - maximum displayed symbols for longest line
-//   -maxMixed=5    - maximum displayed words with mixed Cyrillic/Latin symbols
-//   -maxWord=40    - maximum displayed symbols for words with mixed Cyrillic/Latin symbols
-//                    (or use -arg=Infinity to display all symbols or words)
-//   -output=0      - (default) show statistics in massage box
-//          =1      - in Log plugin
-//          =2      - in new document
+//   -maxLine=40        - maximum displayed symbols for longest line
+//   -maxMixed=5        - maximum displayed words with mixed Cyrillic/Latin symbols
+//   -maxWord=40        - maximum displayed symbols for words with mixed Cyrillic/Latin symbols
+//                        (or use -arg=Infinity to display all symbols or words)
+//   -output=0          - (default) show statistics in massage box
+//          =1          - in Log plugin
+//          =2          - in new document
 //   -coderAlias=".txt" - set alias for Coder plugin (for -output=1 or -output=2)
 
 // Usage:
@@ -24,10 +24,10 @@
 
 // Windows XP+ (?)
 
-var maxLine = AkelPad.GetArgValue("maxLine", 40);
-var maxMixed = AkelPad.GetArgValue("maxMixed", 5);
-var maxWord = AkelPad.GetArgValue("maxWord", 40);
-var outMode = AkelPad.GetArgValue("output", 0);
+var maxLine    = AkelPad.GetArgValue("maxLine", 40);
+var maxMixed   = AkelPad.GetArgValue("maxMixed", 5);
+var maxWord    = AkelPad.GetArgValue("maxWord", 40);
+var outMode    = AkelPad.GetArgValue("output", 0);
 var coderAlias = AkelPad.GetArgValue("coderAlias", ".txt");
 
 function _localize(s) {
