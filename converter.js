@@ -287,7 +287,7 @@ var saveSize              = getArg("saveSize", true);
 if(saveOptions || savePosition || saveSize)
 	var prefs = new Prefs();
 
-var forceShowDialog       = getArg("dialog", true);
+var useDialog             = getArg("dialog", true);
 var helpLabels            = getArg("helpLabels", true);
 var onlySelected          = getArg("onlySelected", false);
 var warningTime           = getArg("warningTime", 4000);
@@ -3197,9 +3197,9 @@ if(hMainWnd && !AkelPad.IsInclude()) {
 			16 /*MB_ICONERROR*/
 		);
 		type = DEFAULT_TYPE;
-		forceShowDialog = true;
+		useDialog = true;
 	}
-	if(forceShowDialog) {
+	if(useDialog) {
 		if(convertersNoGUI[type])
 			type = DEFAULT_TYPE;
 		converterDialog();
