@@ -148,6 +148,9 @@ function _localize(s) {
 		"Converter “%S” not found!": {
 			ru: "Конвертер «%S» не найден!"
 		},
+		"Usage without dialog window (-dialog=false) is possible only with insert or/and copy action (-action=1, -action=2)": {
+			ru: "Использование без открытия диалогового окна (-dialog=false) возможно только с действием вставки или/и копирования (-action=1, -action=2)"
+		},
 		"Can't encode!\nError:\n%S": {
 			ru: "Не удаётся закодировать!\nОшибка:\n%S"
 		},
@@ -3197,6 +3200,15 @@ if(hMainWnd && !AkelPad.IsInclude()) {
 			16 /*MB_ICONERROR*/
 		);
 		type = DEFAULT_TYPE;
+		useDialog = true;
+	}
+	if(!useDialog && !(action & ACT_INSERT || action & ACT_COPY)) {
+		AkelPad.MessageBox(
+			hMainWnd,
+			_localize("Usage without dialog window (-dialog=false) is possible only with insert or/and copy action (-action=1, -action=2)"),
+			dialogTitle,
+			48 /*MB_ICONEXCLAMATION*/
+		);
 		useDialog = true;
 	}
 	if(useDialog) {
