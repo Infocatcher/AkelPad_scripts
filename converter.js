@@ -24,6 +24,7 @@
 //   F1                       - "Help" (just open this file and scroll to selected converter)
 
 // HTML entities, encode/decode:
+// (-type="HTML")
 //   &    <=> &amp;
 //   <    <=> &lt;
 //   >    <=> &gt;
@@ -32,47 +33,56 @@
 //   char <=> &#code; (see arguments)
 
 // Escape sequences (JavaScript), convert:
+// (-type="Escapes")
 //   \u00a9 <=> ©
 //   \xa9   <=> ©
 
 // Regular expressions special symbols, escape/unescape:
+// (-type="RegExp")
 //   http://example.com/ <=> http:\/\/example\.com\/
 
 // String literals special symbols, escape/unescape:
+// (-type="String")
 //   ab"cd\ef <=> ab\"cd\\ef
 // Select string with commas to don't escape another commas inside:
 //   "ab"cd'ef" <=> "ab\"cd'ef"
 
 // File path delimiter:
+// (-type="Pathdelim")
 //   \ <=> /
 // (Windows style <=> Unix style)
 
 // URI, encode/decode:
+// (-type="URI")
 //   encodeURI()/decodeURI()
 //   https://ru.wikipedia.org/wiki/%D0%A2%D0%B5%D1%81%D1%82 <=> https://ru.wikipedia.org/wiki/Тест
 // URI, full, encode/decode:
+// (-type="URIComponent")
 //   encodeURIComponent()/decodeURIComponent()
 //   https%3A%2F%2Fru.wikipedia.org%2Fwiki%2F%D0%A2%D0%B5%D1%81%D1%82 <=> https://ru.wikipedia.org/wiki/Тест
 
 // Hexadecimal escape/unescape:
+// (-type="Unescape")
 //   JavaScript's escape()/unescape()
 //   "test тест" <=> %22test%20%u0442%u0435%u0441%u0442%22
 
 // Base64 encode/decode:
+// (-type="Base64")
 //   Test, проверка <=> VGVzdCwg0L/RgNC+0LLQtdGA0LrQsA== (used UTF-8 code page)
 // (based on code from http://www.farfarfar.com/scripts/encrypt/)
 
 // Quoted-printable encode/decode:
-// -type="QuotedPrintable"
+// (-type="QuotedPrintable")
 //   [=3D] <=> [=]
 
 // Charset, partial recode:
-// -type="Charset"
+// (-type="Charset")
 //   Encode: WideCharToMultiByte() http://msdn.microsoft.com/en-us/library/dd374130(v=vs.85).aspx
 //   Decode: MultiByteToWideChar() http://msdn.microsoft.com/en-us/library/dd319072(v=vs.85).aspx
 //   Íå÷òî <=> Нечто (with cp1251 aka windows-1251)
 // Charset, recode:
-// -type="Recode" (works like built-in recode command in AkelPad itself, not available from UI)
+// (-type="Recode")
+// Works like built-in recode command in AkelPad itself, not available from UI
 //   бНОПНЯ <=> Вопрос (from cp20866 aka KOI8-R to cp1251 aka windows-1251)
 
 // Arguments:
