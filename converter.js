@@ -2749,7 +2749,7 @@ function unescapeRegExp(str) {
 
 function convertString(str, esc) {
 	//~ todo: more intuitive handling for "ab\\cd'ef\"gh", 'ab\\cd\'ef"gh' ?
-	if(/^(\s*("|'))([\s\S]*)(\2\s*)$/.test(str)) {
+	if(/^(\s*(["'`]))([\s\S]*)(\2\s*)$/.test(str)) {
 		var start  = RegExp.$1;
 		var comma  = RegExp.$2;
 		var middle = RegExp.$3;
@@ -2759,16 +2759,21 @@ function convertString(str, esc) {
 				? middle.replace(/[\\"]/g, "\\$&")
 				: middle.replace(/\\([\\"])/g, "$1");
 		}
-		else {
+		else if(comma == "'") {
 			middle = esc
 				? middle.replace(/[\\']/g, "\\$&")
 				: middle.replace(/\\([\\'])/g, "$1");
 		}
+		else if(comma == "`") {
+			middle = esc
+				? middle.replace(/[\\`]/g, "\\$&")
+				: middle.replace(/\\([\\`])/g, "$1");
+		}
 		return start + middle + end;
 	}
 	return esc
-		? str.replace(/[\\'"]/g, "\\$&")
-		: str.replace(/\\([\\'"])/g, "$1");
+		? str.replace(/[\\'"`]/g, "\\$&")
+		: str.replace(/\\([\\'"`])/g, "$1");
 }
 function escapeString(str) {
 	return convertString(str, true);
