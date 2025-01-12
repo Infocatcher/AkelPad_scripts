@@ -89,11 +89,12 @@
 //   -mode=0                                 - (default) auto encode or decode
 //        =1                                 - encode
 //        =2                                 - decode
-//   -type="RegExp"                          - type of converter ("HTML", "Escapes", "RegExp", "String", "Pathdelim",
-//                                             "URI", "URIComponent", "Unescape", "Base64", "QuotedPrintable"
-//                                             "Charset", "Recode")
-//   -action=1                               - sum of flags: 1 - insert, 2 - copy, 4 - show
-//   -dialog=false                           - don't show dialog
+//   -type="RegExp"                          - type of converter ("HTML", "Escapes", "RegExp", "String",
+//                                             "Pathdelim", "URI", "URIComponent", "Unescape", "Base64",
+//                                             "QuotedPrintable", "Charset", "Recode")
+//   -action=1                               - (default: 1) sum of flags: 1 - insert, 2 - copy, 4 - show
+//   -dialog=true                            - (default) open dialog window (GUI)
+//          =false                             don't open dialog window (usage without GUI)
 //   -helpLabels=true                        - show help labels in dialog window
 //   -onlySelected=true                      - use only selected text
 //                =false                     - (default) use all text, if text is not selected
