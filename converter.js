@@ -44,8 +44,10 @@
 // String literals special symbols, escape/unescape:
 // (-type="String")
 //   ab"cd\ef <=> ab\"cd\\ef
-// Select string with commas to don't escape another commas inside:
+// Select string between identical quotation marks (including these quotation marks)
+// to don't escape the same quotation marks inside:
 //   "ab"cd'ef" <=> "ab\"cd'ef"
+//   'ab"cd'ef' <=> 'ab"cd\'ef'
 
 // File path delimiter:
 // (-type="Pathdelim")
@@ -2751,20 +2753,20 @@ function convertString(str, esc) {
 	//~ todo: more intuitive handling for "ab\\cd'ef\"gh", 'ab\\cd\'ef"gh' ?
 	if(/^(\s*(["'`]))([\s\S]*)(\2\s*)$/.test(str)) {
 		var start  = RegExp.$1;
-		var comma  = RegExp.$2;
+		var quote  = RegExp.$2;
 		var middle = RegExp.$3;
 		var end    = RegExp.$4;
-		if(comma == '"') {
+		if(quote == '"') {
 			middle = esc
 				? middle.replace(/[\\"]/g, "\\$&")
 				: middle.replace(/\\([\\"])/g, "$1");
 		}
-		else if(comma == "'") {
+		else if(quote == "'") {
 			middle = esc
 				? middle.replace(/[\\']/g, "\\$&")
 				: middle.replace(/\\([\\'])/g, "$1");
 		}
-		else if(comma == "`") {
+		else if(quote == "`") {
 			middle = esc
 				? middle.replace(/[\\`]/g, "\\$&")
 				: middle.replace(/\\([\\`])/g, "$1");
