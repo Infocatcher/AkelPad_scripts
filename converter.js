@@ -2867,9 +2867,15 @@ function decodeURICustom(str, cp) {
 	if(!cp)
 		cp = codePageURI;
 	var ret = str.replace(
-		/%([0-9a-f]{2})/ig,
-		function(s, hex) {
-			return convertToUnicode(String.fromCharCode("0x" + hex), cp);
+		/(%[0-9a-fA-F]{2})+/g,
+		function(s) {
+			var decoded = s.replace(
+				/%([0-9a-fA-F]{2})/g,
+				function(s, hex) {
+					return String.fromCharCode("0x" + hex);
+				}
+			);
+			return convertToUnicode(decoded, cp);
 		}
 	);
 	return ret.indexOf("%") == -1 ? ret : str;
