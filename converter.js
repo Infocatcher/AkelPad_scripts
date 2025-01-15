@@ -331,6 +331,7 @@ var ignoreEntities        = getArg("ignoreEntities", "");
 
 var customEscapesDecoder  = getArg("customEscapesDecoder", false);
 var codePageURI           = getArg("codePageURI", CP_NOT_CONVERT);
+var codePageDecURI        = getArg("codePageDecURI", 65001);
 var codePageBase64        = getArg("codePageBase64", CP_CURRENT);
 var maxLineWidth          = getArg("maxLineWidth", 75);
 var toDataURI             = getArgOrPref("toDataURI", prefs && prefs.DWORD, false);
@@ -2865,7 +2866,7 @@ function decodeURIWrapper(str, decodeURIFunc, cp) {
 }
 function decodeURICustom(str, cp) {
 	if(!cp)
-		cp = codePageURI;
+		cp = codePageDecURI;
 	var ret = str.replace(
 		/(%[0-9a-fA-F]{2})+/g,
 		function(s) {
