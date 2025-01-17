@@ -121,6 +121,7 @@
 //   -customEscapesDecoder=false             - (experimental, default: false) use custom decoder instead of eval()
 // Arguments for URIs converters:
 //   -codePageURI=1251                       - code page for URIs encoding, -1 - current, -2 - don't change
+//   -codePageDecURI=65001                   - code page for URIs decoding, -1 - current, -2 - don't change
 // Arguments for URI Component converter:
 //   -toDataURI=true                         - encode as data URI (data:text/plain;charset=UTF-8,Test)
 //   -toBase64=true                          - encode as base64 data URI (data:text/plain;charset=UTF-8;base64,VGVzdA==)
