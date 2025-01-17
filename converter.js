@@ -2859,8 +2859,15 @@ function decodeURIWrapper(str, decodeURIFunc, cp) {
 	}
 	catch(e) {
 		var ret = decodeURICustom(str, cp);
-		if(ret != str)
+		if(ret != str) {
+			AkelPad.MessageBox(
+				hMainWnd,
+				e.name ? e.name + "\n" + e.message : e,
+				dialogTitle + " :: " + converters[decodeURIFunc == decodeURI ? "uri" : "uricomponent"].prettyName,
+				48 /*MB_ICONEXCLAMATION*/
+			);
 			return ret;
+		}
 		throw e;
 	}
 }
@@ -2879,7 +2886,10 @@ function decodeURICustom(str, cp) {
 			return convertToUnicode(decoded, cp);
 		}
 	);
-	return ret.indexOf("%") == -1 ? ret : str;
+	//if(ret.indexOf("%") != -1)
+	//	return str;
+	// Will try to convert malformed URI
+	return ret;
 }
 
 function escapeWrapped(str) {
