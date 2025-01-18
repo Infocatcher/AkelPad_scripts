@@ -120,7 +120,7 @@
 // Arguments for escapes converter:
 //   -customEscapesDecoder=false             - (experimental, default: false) use custom decoder instead of eval()
 // Arguments for URIs converters:
-//   -codePageURI=1251                       - code page for URIs encoding, -1 - current, -2 - don't change
+//   -codePageEncURI=1251                    - code page for URIs encoding, -1 - current, -2 - don't change
 //   -codePageDecURI=65001                   - code page for URIs decoding, -1 - current, -2 - don't change
 // Arguments for URI Component converter:
 //   -toDataURI=true                         - encode as data URI (data:text/plain;charset=UTF-8,Test)
@@ -331,7 +331,7 @@ var charsToEncode         = getArg("charsToEncode", /'|[^!-~ \t\n\rА-ёЁ]/g);
 var ignoreEntities        = getArg("ignoreEntities", "");
 
 var customEscapesDecoder  = getArg("customEscapesDecoder", false);
-var codePageURI           = getArg("codePageURI", CP_NOT_CONVERT);
+var codePageEncURI        = getArg("codePageEncURI", CP_NOT_CONVERT);
 var codePageDecURI        = getArg("codePageDecURI", 65001);
 var codePageBase64        = getArg("codePageBase64", CP_CURRENT);
 var maxLineWidth          = getArg("maxLineWidth", 75);
@@ -365,10 +365,18 @@ if(saveOptions) {
 		prefs.remove("copy");
 }
 var cp = getArg("codePage");
-if(cp !== undefined && getArg("codePageURI") === undefined && getArg("codePageBase64") === undefined) {
-	codePageURI = cp;
+if(
+	cp !== undefined
+	&& getArg("codePageEncURI") === undefined
+	&& getArg("codePageDecURI") === undefined
+	&& getArg("codePageBase64") === undefined
+) {
+	codePageEncURI = codePageDecURI = cp;
 	codePageBase64 = CP_CURRENT;
 }
+var cpu = getArg("codePageURI"); //= Renamed since 2025-01-19: codePageURI -> codePageEncURI
+if(cpu !== undefined && getArg("codePageEncURI") === undefined)
+	codePageEncURI = cpu;
 
 prefs && prefs.end();
 
@@ -2817,22 +2825,22 @@ function encodeURIComponentWrapped(str) {
 		/[\x00-\x20\x22-\x26\x2b\x2c\x2f\x3a-\x40\x5b-\x5e\x60\x7b-\x7d\x7f-\ud7ff\ue000-\uffff]/g
 	);
 	if(toDataURI) {
-		var charsetName = codePageURI == CP_NOT_CONVERT
+		var charsetName = codePageEncURI == CP_NOT_CONVERT
 			? "UTF-8"
-			: getCharsetName(codePageURI);
+			: getCharsetName(codePageEncURI);
 		return "data:text/plain" + (charsetName ? ";charset=" + charsetName : "") + "," + ret;
 	}
 	return ret;
 }
 function encodeURIWrapper(str, encodeURIFunc, pattern) {
-	if(codePageURI == CP_NOT_CONVERT)
+	if(codePageEncURI == CP_NOT_CONVERT)
 		return encodeURIFunc(str);
 	if(/[\ud800-\udfff]/.test(str))
 		throw new URIError("Invalid character detected (\\ud800-\\udfff)");
 	return str.replace(
 		pattern,
 		function(chr) {
-			var enc = convertFromUnicode(chr, codePageURI);
+			var enc = convertFromUnicode(chr, codePageEncURI);
 			if(enc.length > 1) // Multibyte? Use UTF-8 instead :)
 				return chr;
 			var hex = enc.charCodeAt(0).toString(16).toUpperCase();
