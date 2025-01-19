@@ -2840,13 +2840,15 @@ function encodeURIWrapper(str, encodeURIFunc, pattern) {
 	return str.replace(
 		pattern,
 		function(chr) {
+			var out = [];
 			var enc = convertFromUnicode(chr, codePageEncURI);
-			if(enc.length > 1) // Multibyte? Use UTF-8 instead :)
-				return chr;
-			var hex = enc.charCodeAt(0).toString(16).toUpperCase();
-			if(hex.length > 2)
-				return chr;
-			return "%" + ("0" + hex).slice(-2);
+			for(var i = 0, l = enc.length; i < l; ++i) {
+				var hex = enc.charCodeAt(i).toString(16).toUpperCase();
+				if(hex.length > 2)
+					return chr;
+				out.push("%" + ("0" + hex).slice(-2));
+			}
+			return out.join("");
 		}
 	);
 }
