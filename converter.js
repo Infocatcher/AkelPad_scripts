@@ -2567,7 +2567,7 @@ function decodeHTML(str) {
 	if(decodeCharCodes) {
 		str = str
 			.replace(
-				/&#(?:x([\da-f]{1,4})|(\d{1,5}));/ig,
+				/&#(?:[xX]([\da-fA-F]{1,4})|(\d{1,5}));/g,
 				function(s, hex, dec) {
 					var code = hex
 						? parseInt(hex, 16)
@@ -2581,7 +2581,7 @@ function decodeHTML(str) {
 	if(decodeSpecialEntities || decodeSpacesEntities) {
 		str = str
 			.replace(
-				/&([a-z]+\d*);/ig,
+				/&([a-zA-Z]+\d*);/g,
 				function(s, entity) {
 					// "key in object" Doesn't work in old JScript, but "replace(str, function)" doesn't work too
 					if(entitiesBlackList && entity in entitiesBlackList)
@@ -2628,7 +2628,7 @@ function u(c) {
 }
 
 function encodeEscapes(str) {
-	return str.replace(/[^!-~ \t\n\r]/ig, u);
+	return str.replace(/[^!-~ \t\n\r]/g, u);
 }
 function decodeEscapes(str) {
 	if(customEscapesDecoder)
