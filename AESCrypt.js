@@ -1144,8 +1144,8 @@ function pref(name, type, val) {
 }
 function getArg(argName, defaultVal) {
 	var args = {};
-	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
-		if(/^[-\/](\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
+	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; ++i)
+		if(/^[-\/](\w+)(=(.+))?$/.test(WScript.Arguments(i)))
 			args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
 	getArg = function(argName, defaultVal) {
 		argName = argName.toLowerCase();

@@ -36,8 +36,8 @@ function _localize(s) {
 
 // Read arguments:
 var args = {};
-for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
-	if(/^-(\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
+for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; ++i)
+	if(/^[-\/](\w+)(=(.+))?$/.test(WScript.Arguments(i)))
 		args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
 function getArg(argName, defaultVal) {
 	return typeof args[argName] == "undefined" // argName in args

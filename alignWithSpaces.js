@@ -1007,7 +1007,7 @@ function getOffset(hWndEdit, nType /*AEGI_*/, nOffset) {
 function getArg(argName, defaultVal) {
 	var args = {};
 	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; ++i)
-		if(/^[-\/](\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
+		if(/^[-\/](\w+)(=(.+))?$/.test(WScript.Arguments(i)))
 			args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
 	getArg = function(argName, defaultVal) {
 		argName = argName.toLowerCase();
