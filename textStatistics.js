@@ -228,7 +228,7 @@ function getTextStatistics() {
 	var lines = txtn.split("\n");
 	txtn = null;
 	var curLine, curLen;
-	var tabStop = AkelPad.SendMessage(AkelPad.GetEditWnd(), 3239 /*AEM_GETTABSTOP*/, 0, 0) || 8;
+	var tabStop = AkelPad.SendMessage(hWndEdit, 3239 /*AEM_GETTABSTOP*/, 0, 0) || 8;
 	for(var i = 0, l = lines.length; i < l; ++i) {
 		curLine = lines[i];
 		curLen = curLine.length;
@@ -406,7 +406,7 @@ function formatWord(s) {
 	return s;
 }
 function formatLine(s) {
-	var tabWidth = AkelPad.SendMessage(AkelPad.GetEditWnd(), 3239 /*AEM_GETTABSTOP*/, 0, 0) || 8;
+	var tabWidth = AkelPad.SendMessage(hWndEdit, 3239 /*AEM_GETTABSTOP*/, 0, 0) || 8;
 	var tab = stringRepeat(" ", tabWidth);
 	var ret = s.substr(0, maxLine);
 	while(ret.replace(/\t/g, tab).length > maxLine)
