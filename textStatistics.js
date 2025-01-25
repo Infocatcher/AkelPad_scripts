@@ -9,6 +9,8 @@
 //// Provide some statistic for English and Russian texts
 
 // Arguments:
+//   -useSel=true       - (default) show statistics for selected text
+//          =false      - always show statistics for current document
 //   -maxLine=40        - maximum displayed symbols for longest line
 //   -maxMixed=5        - maximum displayed words with mixed Cyrillic/Latin symbols
 //   -maxWord=40        - maximum displayed symbols for words with mixed Cyrillic/Latin symbols
@@ -24,6 +26,7 @@
 
 // Windows XP+ (?)
 
+var useSel     = AkelPad.GetArgValue("useSel", true);
 var maxLine    = AkelPad.GetArgValue("maxLine", 40);
 var maxMixed   = AkelPad.GetArgValue("maxMixed", 5);
 var maxWord    = AkelPad.GetArgValue("maxWord", 40);
@@ -192,7 +195,7 @@ function getTextStatistics() {
 
 	var cFile = AkelPad.GetEditFile(0);
 	var newLine = 4 - AkelPad.GetEditNewLine(0);
-	var txt = AkelPad.GetSelText(newLine);
+	var txt = useSel && AkelPad.GetSelText(newLine);
 	if(txt)
 		var selMark = _localize("[selected text]");
 	else {
