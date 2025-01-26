@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/textStatistics.js
 
 // (c) Infocatcher 2008-2025
-// Version: 0.4.0pre2 - 2025-01-02
+// Version: 0.4.0pre3 - 2025-01-27
 // Author: Infocatcher
 
 //// Provide some statistic for English and Russian texts
