@@ -4306,31 +4306,40 @@ function calcNum(val, showErrors, hWnd, hWndEdit) {
 			16 /*MB_ICONERROR*/
 		);
 		if(hWndEdit && displayCalcErrors && calcNum._hasTipFor != origVal) {
-			//hWndEdit && AkelPad.SendMessage(hWndEdit, 0x1504 /*EM_HIDEBALLOONTIP*/, 0, 0);
-			//typedef struct tagEDITBALLOONTIP {
-			//  DWORD   cbStruct;
-			//  LPCWSTR pszTitle;
-			//  LPCWSTR pszText;
-			//  INT     ttiIcon;
-			//} EDITBALLOONTIP, *PEDITBALLOONTIP;
-			var lpTitle = AkelPad.MemStrPtr(_localize("Error"));
-			var lpText = AkelPad.MemStrPtr(e.name ? e.name + "\n" + e.message : e);
-			var sizeofEditBalloonTip = 4 + 4 + 4 + 4;
-			var lpTip = AkelPad.MemAlloc(sizeofEditBalloonTip);
-			AkelPad.MemCopy(_PtrAdd(lpTip,  0), sizeofEditBalloonTip, 3 /*DT_DWORD*/);
-			AkelPad.MemCopy(_PtrAdd(lpTip,  4), lpTitle,              3 /*DT_DWORD*/);
-			AkelPad.MemCopy(_PtrAdd(lpTip,  8), lpText,               3 /*DT_DWORD*/);
-			AkelPad.MemCopy(_PtrAdd(lpTip, 12), 2 /*TTI_WARNING*/,    3 /*DT_DWORD*/);
-			if(AkelPad.SendMessage(hWndEdit, 0x1503 /*EM_SHOWBALLOONTIP*/, 0, lpTip))
+			var shown = showBalloonTip(
+				hWndEdit,
+				_localize("Error"),
+				e.name ? e.name + "\n" + e.message : e
+			);
+			if(shown)
 				calcNum._hasTipFor = origVal;
-			AkelPad.MemFree(lpTitle);
-			AkelPad.MemFree(lpText);
-			AkelPad.MemFree(lpTip);
 		}
 		return undefined;
 	}
 	calcNum._hasTipFor = undefined;
 	return num;
+}
+function showBalloonTip(hWndAnchor, title, text) {
+	//hWndAnchor && AkelPad.SendMessage(hWndAnchor, 0x1504 /*EM_HIDEBALLOONTIP*/, 0, 0);
+	//typedef struct tagEDITBALLOONTIP {
+	//  DWORD   cbStruct;
+	//  LPCWSTR pszTitle;
+	//  LPCWSTR pszText;
+	//  INT     ttiIcon;
+	//} EDITBALLOONTIP, *PEDITBALLOONTIP;
+	var lpTitle = AkelPad.MemStrPtr(title);
+	var lpText = AkelPad.MemStrPtr(text);
+	var sizeofEditBalloonTip = 4 + 4 + 4 + 4;
+	var lpTip = AkelPad.MemAlloc(sizeofEditBalloonTip);
+	AkelPad.MemCopy(_PtrAdd(lpTip,  0), sizeofEditBalloonTip, 3 /*DT_DWORD*/);
+	AkelPad.MemCopy(_PtrAdd(lpTip,  4), lpTitle,              3 /*DT_DWORD*/);
+	AkelPad.MemCopy(_PtrAdd(lpTip,  8), lpText,               3 /*DT_DWORD*/);
+	AkelPad.MemCopy(_PtrAdd(lpTip, 12), 2 /*TTI_WARNING*/,    3 /*DT_DWORD*/);
+	var shown = AkelPad.SendMessage(hWndAnchor, 0x1503 /*EM_SHOWBALLOONTIP*/, 0, lpTip);
+	AkelPad.MemFree(lpTitle);
+	AkelPad.MemFree(lpText);
+	AkelPad.MemFree(lpTip);
+	return shown;
 }
 function isExpression(str) {
 	// Detect simple expressions like
