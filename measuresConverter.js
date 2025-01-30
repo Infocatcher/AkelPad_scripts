@@ -541,7 +541,7 @@ function _localize(s) {
 			ru: "Ронто (рн, r)"
 		},
 		"Yocto (y)": {
-			ru: "Йокто (и, y)"
+			ru: "Иокто (и, y)"
 		},
 		"Zepto (z)": {
 			ru: "Зепто (з, z)"
@@ -601,7 +601,7 @@ function _localize(s) {
 			ru: "Зетта (З, Z)"
 		},
 		"Yotta (Y)": {
-			ru: "Йотта (И, Y)"
+			ru: "Иотта (И, Y)"
 		},
 		"Ronna (R)": {
 			ru: "Ронна (Рн, R)"
