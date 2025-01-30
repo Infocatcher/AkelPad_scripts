@@ -112,6 +112,8 @@ if(!Array.prototype.indexOf) {
 var measures = {
 	//~ todo: https://en.wikipedia.org/wiki/Conversion_of_units
 	"Prefi&xes": {
+		"Quecto (q)": 1e-30,
+		"Ronto (r)": 1e-27,
 		"Yocto (y)": 1e-24,
 		"Zepto (z)": 1e-21,
 		"Atto (a)":  1e-18,
@@ -132,7 +134,9 @@ var measures = {
 		"Peta (P)":  1e+15,
 		"Exa (E)":   1e+18,
 		"Zetta (Z)": 1e+21,
-		"Yotta (Y)": 1e+24
+		"Yotta (Y)": 1e+24,
+		"Ronna (R)": 1e+27,
+		"Quetta (Q)": 1e+30
 	},
 	"&Binary prefixes": {
 		"(W/o)": 1,
@@ -530,6 +534,12 @@ function _localize(s) {
 		"Prefi&xes": {
 			ru: "Пристав&ки"
 		},
+		"Quecto (q)": {
+			ru: "Квекто (кв, q)"
+		},
+		"Ronto (r)": {
+			ru: "Ронто (рн, r)"
+		},
 		"Yocto (y)": {
 			ru: "Йокто (и, y)"
 		},
@@ -592,6 +602,12 @@ function _localize(s) {
 		},
 		"Yotta (Y)": {
 			ru: "Йотта (И, Y)"
+		},
+		"Ronna (R)": {
+			ru: "Ронна (Рн, R)"
+		},
+		"Quetta (Q)": {
+			ru: "Кветта (Кв, Q)"
 		},
 
 		"&Binary prefixes": {
