@@ -174,6 +174,9 @@ function _localize(s) {
 		"Nothing to convert!": {
 			ru: "Нечего конвертировать!"
 		},
+		"Already copied!": {
+			ru: "Уже скопировано!"
+		},
 		"Required time: %S (estimate)\nContinue?": {
 			ru: "Требуется времени: %S (оценочно)\n Продолжить?"
 		},
@@ -3393,19 +3396,23 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 		return false;
 	}
 
-	var ok = true;
 	if(action & ACT_COPY) {
-		if(res == AkelPad.GetClipboardText())
-			ok = false;
-		else
+		if(res != AkelPad.GetClipboardText())
 			AkelPad.SetClipboardText(res);
+		else {
+			AkelPad.MessageBox(
+				hWnd || hMainWnd,
+				_localize("Already copied!"),
+				dialogTitle + " :: " + converter.prettyName,
+				64 /*MB_ICONINFORMATION*/
+			);
+		}
 	}
 	if(action & ACT_INSERT) {
-		ok = true;
 		insertNoScroll(res, selectAll);
 	}
 
-	if(ok && firstChangedCharObj) {
+	if(firstChangedCharObj) {
 		var _text = text.replace(/\r\n/g, "\n");
 		var _res = res.replace(/\r\n/g, "\n");
 		var indx;
@@ -3423,7 +3430,7 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 		firstChangedCharObj.value = [indx, Math.min(indx + 1, _res.length)];
 	}
 
-	return ok && res;
+	return res;
 }
 function converterDialog(modal) {
 	var hInstanceDLL = AkelPad.GetInstanceDll();
