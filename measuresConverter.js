@@ -30,6 +30,10 @@
 //   Ctrl+F5                           - Force update currencies data (right-click or Ctrl+click on "Update" button)
 //   Shift+F5                          - Force update data only for current currencies (double click on row)
 
+// Notes:
+// Right-click on buttons handled as WM_CONTEXTMENU message and therefore also may be called for focused button
+// (Tab/Shift+Tab to focus) using context menu keyboard button or Shift+F10 hotkey
+
 // Arguments:
 //   -preferSources="fx,er,cw"     - priority for currency rate sources (from left to right, comma-separated):
 //                                   fx - fxexchangerate.com (faster updates)
