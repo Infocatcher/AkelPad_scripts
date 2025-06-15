@@ -28,6 +28,10 @@
 //   Ctrl+Shift+-                 - set lines count for arguments text field to 1 (right-click on "−" button)
 //   Escape                       - Cancel
 
+// Notes:
+//   Right-click on buttons handled as WM_CONTEXTMENU message and therefore also may be called for focused button
+//   (Tab/Shift+Tab to focus) using context menu keyboard button or Shift+F10 hotkey
+
 // Arguments:
 //   -selectOpenedScript=5        - select currently opened script in the list, sum of flags:
 //                                    1 - select on startup (will be ignored, if used -script argument)
