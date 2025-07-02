@@ -1734,6 +1734,9 @@ function _localize(s) {
 		"(comma-separated list, example: EUR,USD)": {
 			ru: "(разделенный запятыми список, например: EUR,USD)"
 		},
+		"(restored default list)": {
+			ru: "(восстановлен список по умолчанию)"
+		},
 		"By name": {
 			ru: "По имени"
 		},
@@ -3809,15 +3812,15 @@ function converterDialog(modal) {
 		for(;;) {
 			var title = dialogTitle + _localize(": currencies");
 			var wl2 = AkelPad.InputBox(hWndDialog, title, _localize("Preferred currencies:") + msg, wlTmp || wl);
-			if(!wl2 || /^[A-Z]{3}( *, *[A-Z]{3})+$/.test(wl2)) {
-				if(wl2 == "")
-					wl2 = defaultCurrenciesWL;
+			if(wl2 == undefined || /^[A-Z]{3}( *, *[A-Z]{3})+$/.test(wl2))
 				break;
+			if(/^\s*$/.test(wl2)) {
+				msg = "\n" + _localize("(restored default list)");
+				wlTmp = defaultCurrenciesWL;
+				continue;
 			}
-			else {
-				msg = "\n" + _localize("(comma-separated list, example: EUR,USD)");
-				wlTmp = wl2;
-			}
+			msg = "\n" + _localize("(comma-separated list, example: EUR,USD)");
+			wlTmp = wl2;
 		}
 		if(!wl2)
 			return;
