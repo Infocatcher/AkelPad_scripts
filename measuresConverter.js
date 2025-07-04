@@ -2073,11 +2073,11 @@ function getURL(src, code) {
 			// -> https://w.fxexchangerate.com/converter.php (not updated?)
 			return "https://www.fxexchangerate.com/currency-converter-widget.html?" + new Date().getTime(); // BASE_CURRENCY == "USD" !
 		case "er":
-			//return "https://exchange-rates.org/converter/" + code + "/" + BASE_CURRENCY + "/1/N";
+			//return "https://www.exchange-rates.org/converter/" + code.toLowerCase() + "-" + BASE_CURRENCY.toLowerCase();
 			// Will use https://translate.google.com/ as proxy
 			return "https://www-exchange--rates-org.translate.goog/converter/"
-				+ code + "/" + BASE_CURRENCY
-				+ "/1/N?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en";
+				+ code.toLowerCase() + "-" + BASE_CURRENCY.toLowerCase()
+				+ "?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en";
 		case "cw":
 		default:
 			return "https://currency.world/convert/" + code + "/" + BASE_CURRENCY + "?" +  + new Date().getTime();
