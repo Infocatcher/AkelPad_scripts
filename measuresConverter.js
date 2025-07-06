@@ -2005,7 +2005,7 @@ function getCurrencyRatio(code) {
 		currencyRatios[code]
 		&& (
 			dialog // Don't use synchronous updater during dialog creation!
-			|| new Date().getTime() - currencyRatios[code].timestamp < offlineExpire
+			|| now() - currencyRatios[code].timestamp < offlineExpire
 		)
 	)
 		return currencyRatios[code].ratio;
@@ -2020,7 +2020,7 @@ function getCurrencyRatio(code) {
 		if(!isNaN(ratio)) {
 			currencyRatios[code] = {
 				ratio: ratio,
-				timestamp: new Date().getTime()
+				timestamp: now()
 			};
 			return ratio;
 		}
@@ -2071,16 +2071,16 @@ function getURL(src, code) {
 		case "fx":
 			// See https://www.fxexchangerate.com/currency-converter-widget.html
 			// -> https://w.fxexchangerate.com/converter.php (not updated?)
-			return "https://www.fxexchangerate.com/currency-converter-widget.html?" + new Date().getTime(); // BASE_CURRENCY == "USD" !
+			return "https://www.fxexchangerate.com/currency-converter-widget.html?" + now(); // BASE_CURRENCY == "USD" !
 		case "er":
-			//return "https://www.exchange-rates.org/converter/" + code.toLowerCase() + "-" + BASE_CURRENCY.toLowerCase() + "?" + new Date().getTime();
+			//return "https://www.exchange-rates.org/converter/" + code.toLowerCase() + "-" + BASE_CURRENCY.toLowerCase() + "?" + now();
 			// Will use https://translate.google.com/ as proxy
 			return "https://www-exchange--rates-org.translate.goog/converter/"
 				+ code.toLowerCase() + "-" + BASE_CURRENCY.toLowerCase()
-				+ "?" + new Date().getTime() + "&_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en";
+				+ "?" + now() + "&_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en";
 		case "cw":
 		default:
-			return "https://currency.world/convert/" + code + "/" + BASE_CURRENCY + "?" +  + new Date().getTime();
+			return "https://currency.world/convert/" + code + "/" + BASE_CURRENCY + "?" + now();
 	}
 }
 function shouldCacheURL(url) {
@@ -2258,7 +2258,7 @@ var asyncUpdater = {
 				if(cacheKey && !_this.cache[cacheKey]) {
 					_this.cache[cacheKey] = {
 						request: request,
-						timestamp: new Date().getTime()
+						timestamp: now()
 					};
 				}
 				var ratio = getRatioFromResponse(request.responseText, code);
@@ -2270,7 +2270,7 @@ var asyncUpdater = {
 					++state.success;
 					currencyRatios[code] = {
 						ratio: ratio,
-						timestamp: _timestamp || new Date().getTime()
+						timestamp: _timestamp || now()
 					};
 				}
 			}
@@ -2317,7 +2317,7 @@ var asyncUpdater = {
 function updateCurrencyDataAsync(force, onStart, onProgress, onComplete, maskInclude, isStartup) {
 	var codes = [];
 	var currencies = measures[CURRENCY];
-	var now = new Date().getTime();
+	var curTime = now();
 	for(var currency in currencies) {
 		var code = currencies[currency];
 		if(typeof code != "string")
@@ -2327,7 +2327,7 @@ function updateCurrencyDataAsync(force, onStart, onProgress, onComplete, maskInc
 		if(
 			!force
 			&& currencyRatios[code]
-			&& now - currencyRatios[code].timestamp < offlineExpire
+			&& curTime - currencyRatios[code].timestamp < offlineExpire
 		)
 			continue;
 		codes.push(code);
@@ -3876,7 +3876,7 @@ function converterDialog(modal) {
 		if(report == undefined)
 			report = 2;
 		var btnLabel = update._btnLabel || (update._btnLabel = windowText(hWndUpdate));
-		var startTime = new Date().getTime();
+		var startTime = now();
 		updateCurrencyDataAsync(
 			force,
 			function onStart() {
@@ -3920,7 +3920,7 @@ function converterDialog(modal) {
 						title += " :: " + _localize("Aborted");
 					else if(state.stopped)
 						title += " :: " + _localize("Stopped");
-					var elapsedTime = ((new Date().getTime() - startTime)/1000).toLocaleString();
+					var elapsedTime = ((now() - startTime)/1000).toLocaleString();
 					var msg = _localize(
 						state.success == state.total
 							? "Successfully updated: %P/%T (%ET s)"
@@ -4429,6 +4429,9 @@ function localeNumbers() {
 	return (localeNumbers = function() {
 		return ln;
 	})();
+}
+function now() {
+	return new Date().getTime();
 }
 
 function ensureTimers() {
