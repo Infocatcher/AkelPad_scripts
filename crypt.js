@@ -2463,9 +2463,12 @@ function passwordPrompt(caption, label, modal, decryptObj, cryptorObj) {
 								decrypt = decryptObj.value;
 							if(cryptorObj)
 								cryptor = cryptorObj.value;
+							var hWndFocused = oSys.Call("user32::GetFocus");
 							controlsEnabled(false);
+							var restoreFocus = !oSys.Call("user32::GetFocus");
 							encryptOrDecrypt(pass);
 							controlsEnabled(true);
+							restoreFocus && oSys.Call("user32::SetFocus", hWndFocused);
 						}
 						if(idc == IDC_OK)
 							closeDialog();
