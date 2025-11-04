@@ -495,7 +495,6 @@ var measures = {
 		"Swedish Krona":                 "SEK",
 		"Singapore Dollar":              "SGD",
 		"St Helena Pound":               "SHP",
-		"Slovak Koruna":                 "SKK",
 		"Sierra Leone Leone":            "SLL",
 		"Somali Shilling":               "SOS",
 		"Surinamese Dollar":             "SRD",
@@ -1595,9 +1594,6 @@ function _localize(s) {
 		"Singapore Dollar": {
 			ru: "Сингапурский доллар"
 		},
-		"Slovak Koruna": {
-			ru: "Словацкая крона"
-		},
 		"Solomon Islands Dollar": {
 			ru: "Соломоновых островов доллар"
 		},
@@ -2040,8 +2036,8 @@ var missingCurrencies = {
 	// exchange-rates.org
 	er: [
 		"AFN", "AWG", "BTC", "BTN", "CDF", "EEK", "ERN", "ETH", "FKP", "GYD", "KMF", "KPW",
-		"LRD", "LTL", "LVL", "MGA", "MNT", "MRU", "MVR", "MZN", "PGK", "SBD", "SHP", "SKK",
-		"SLL", "SRD", "STD", "SVC", "TJS", "TOP", "VUV", "WST", "XAU", "ZWL"
+		"LRD", "LTL", "LVL", "MGA", "MNT", "MRU", "MVR", "MZN", "PGK", "SBD", "SHP", "SLL",
+		"SRD", "STD", "SVC", "TJS", "TOP", "VUV", "WST", "XAU", "ZWL"
 	],
 	// fxexchangerate.com
 	fx: [
@@ -2049,7 +2045,7 @@ var missingCurrencies = {
 	],
 	// currency.world
 	cw: [
-		"EEK", "LTL", "SKK", "STD"
+		"EEK", "LTL", "STD"
 	]
 };
 function notMissing(server, code) {
