@@ -8,7 +8,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // Scripts from http://jsbeautifier.org/
-// [built from https://github.com/beautify-web/js-beautify/tree/release 2024-02-16 16:16:34 UTC]
+// [built from https://github.com/beautify-web/js-beautify/tree/release 2025-02-27 17:58:08 UTC]
 
 
 //== js/test/generated/beautify-javascript-tests.js
@@ -31152,7 +31152,7 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
         // Indenting angular control flow with default indent size
         reset_options();
         set_name('Indenting angular control flow with default indent size');
-        opts.templating = 'angular, handlebars';
+        opts.templating = 'angular';
         bth(
             '@if (a > b) {\n' +
             '{{a}} is greater than {{b}}\n' +
@@ -31452,28 +31452,61 @@ function run_html_tests(test_obj, Urlencoded, js_beautify, html_beautify, css_be
             '            max-width: 100%;\n' +
             '        }\n' +
             '    }\n' +
-            '</style>',
-            //  -- output --
+            '</style>');
+
+        // CSS @media, the inside of <script> tag and control flows should be indented correctly
+        test_fragment(
+            '<head>\n' +
             '<style type="text/css">\n' +
             '@media only screen and (min-width:480px) {\n' +
-            '        .mj-column-per-100\n' +
-            '        {\n' +
-            '        width:\n' +
-            '        100%\n' +
-            '        !important;\n' +
-            '        max-width:\n' +
-            '        100%;\n' +
+            '.mj-column-per-100 {\n' +
+            'width: 100% !important;\n' +
+            'max-width: 100%;\n' +
             '}\n' +
-            '    }\n' +
-            '</style>');
+            '}\n' +
+            '</style>\n' +
+            '<script>\n' +
+            'if(someExpression) {\n' +
+            'callFunc();\n' +
+            '}\n' +
+            '</script>\n' +
+            '</head>\n' +
+            '<body>\n' +
+            '<div>\n' +
+            '@if(someOtherExpression) {\n' +
+            'Text\n' +
+            '}\n' +
+            '</div>\n' +
+            '</body>',
+            //  -- output --
+            '<head>\n' +
+            '    <style type="text/css">\n' +
+            '        @media only screen and (min-width:480px) {\n' +
+            '            .mj-column-per-100 {\n' +
+            '                width: 100% !important;\n' +
+            '                max-width: 100%;\n' +
+            '            }\n' +
+            '        }\n' +
+            '    </style>\n' +
+            '    <script>\n' +
+            '        if (someExpression) {\n' +
+            '            callFunc();\n' +
+            '        }\n' +
+            '    </script>\n' +
+            '</head>\n' +
+            '<body>\n' +
+            '    <div>\n' +
+            '        @if(someOtherExpression) {\n' +
+            '            Text\n' +
+            '        }\n' +
+            '    </div>\n' +
+            '</body>');
 
 
         //============================================================
-        // No indenting for angular control flow should be done if indent_handlebars is false
+        // No indenting for angular control flow should be done if angular templating is not set
         reset_options();
-        set_name('No indenting for angular control flow should be done if indent_handlebars is false');
-        opts.templating = 'angular, handlebars';
-        opts.indent_handlebars = false;
+        set_name('No indenting for angular control flow should be done if angular templating is not set');
         bth(
             '@if (a > b) {\n' +
             '{{a}} is greater than {{b}}\n' +
