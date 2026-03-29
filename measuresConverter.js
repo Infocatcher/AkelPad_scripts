@@ -3787,6 +3787,7 @@ function converterDialog(modal) {
 			var maskInclude = {};
 			maskInclude[curItem] = maskInclude[curItem2] = true;
 		}
+		asyncUpdater.noReport = false;
 		update(force, onlyCurrent ? 1 : 2, maskInclude, onlyCurrent);
 	}
 	function toggleCurrenciesWL() {
@@ -3956,6 +3957,7 @@ function converterDialog(modal) {
 		setDialogTitle();
 	}
 	function selfUpdate() {
+		updateSelf = false;
 		var db = [];
 		var ts = Infinity;
 		var tsMax = 0;
