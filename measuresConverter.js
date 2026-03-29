@@ -1873,7 +1873,7 @@ var saveOptions  = getArg("saveOptions",  true);
 var savePosition = getArg("savePosition", true);
 var saveOffline  = getArg("saveOffline",  true);
 
-var preferSources         = getArg("preferSources", "fx,er,cw");
+var preferSources         = getArg("preferSources", "fx,cw"); // "fx,er,cw"
 var testSource            = getArg("testSource");
 var offlineExpire         = getArg("offlineExpire", 16*60*60*1000);
 var updateOnStartup       = getArg("updateOnStartup", true);
@@ -2183,6 +2183,7 @@ var asyncUpdater = {
 	maxErrors: updateMaxErrors,
 	queue: [],
 	requests: {},
+	//__urls: [],
 	state: {
 		total:         0,
 		processed:     0,
@@ -2289,6 +2290,7 @@ var asyncUpdater = {
 			state.details.push("Missing source URL: " + code);
 			return null;
 		}
+		//_this.__urls.push(url);
 		++state.processed;
 		var cacheKey = shouldCacheURL(url);
 		var cached = cacheKey && this.cache[cacheKey];
@@ -4299,6 +4301,7 @@ function converterDialog(modal) {
 
 	AkelPad.ScriptNoMutex(); // Allow other scripts running
 	AkelPad.WindowGetMessage(); // Message loop
+	//WScript.Echo(asyncUpdater.__urls.join("\n"));
 
 	AkelPad.WindowUnregisterClass(dialogClass);
 }
