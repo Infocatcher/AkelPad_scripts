@@ -47,7 +47,9 @@
 //                         =1      - show only errors
 //                         =2      - always show
 //                         =4      - silently close: don't prevent dialog window from closing
-//   -updateSelf=false             - (use at your own risk!) update default currencies data
+//   -updateSelf=false             - (default) don't update default currencies data
+//              =true              - (use at your own risk!) update default currencies data
+//              =5*60*1000         - the same as -updateSelf=true + also override -offlineExpire (to handle network errors)
 //   -updateMaxErrors=4            - abort update, if reached too many errors (use -1 to ignore errors)
 //   -convertNumbers=true          - convert numbers (1234.5 -> 1 234,5)
 //   -displayCalcErrors=true       - always display calculation errors (e.g. for "1++2")
@@ -1917,6 +1919,8 @@ var dialog = getArg("dialog", true);
 if(updateSelf) {
 	updateOnStartup = true;
 	updateOnStartupReport = 2;
+	if(typeof updateSelf == "number")
+		offlineExpire = updateSelf;
 }
 
 if(updateMaxErrors < 0 || testSource)
