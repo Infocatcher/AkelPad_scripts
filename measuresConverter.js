@@ -2146,6 +2146,7 @@ function loadOfflineCurrencyData(readMode, forceDefault) {
 			|| code == "ZMK" // Removed since 2023-02-25
 			|| code == "ZWD" // Removed since 2023-03-02
 			|| code == "MRO" // Removed since 2023-12-09
+			|| code == "SKK" // Removed since 2025-11-04
 		)
 			continue;
 		var ratio = +parts[1];
