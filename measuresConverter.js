@@ -3906,12 +3906,10 @@ function converterDialog(modal) {
 						state && saveOffline && saveOfflineCurrencyData(true);
 					}
 				}
+				var hasErrors = state && (state.errors || state.parseErrors || state.abortedErrors);
 				if(
 					!report
-					|| (
-						report == 1
-						&& (!state || !state.errors && !state.parseErrors && !state.abortedErrors)
-					)
+					|| report == 1 && !hasErrors
 					|| asyncUpdater.noReport
 				) {
 					doPendingUpdate();
@@ -3955,7 +3953,14 @@ function converterDialog(modal) {
 				asyncUpdater.endingState = true;
 				AkelPad.MessageBox(hWndDialog, msg, title, icon);
 				asyncUpdater.endingState = false;
-				updateSelf && selfUpdate();
+				if(
+					updateSelf
+					&& !maskInclude
+					&& !hasErrors
+				) {
+					updateSelf = false;
+					selfUpdate();
+				}
 				doPendingUpdate();
 			},
 			maskInclude,
@@ -3964,7 +3969,6 @@ function converterDialog(modal) {
 		setDialogTitle();
 	}
 	function selfUpdate() {
-		updateSelf = false;
 		var db = [];
 		var ts = Infinity;
 		var tsMax = 0;
