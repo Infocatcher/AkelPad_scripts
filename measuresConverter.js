@@ -2112,7 +2112,7 @@ function getRatioFromResponse(response, code) {
 		response.indexOf("var fxrates=") != -1
 		&& new RegExp(';fxrates\\["' + code + '"\\]=([^;]+);').test(response)
 	)
-		return 1/validateRatio(+RegExp.$1);
+		return validateRatio(+RegExp.$1, true);
 
 	return NaN;
 }
@@ -2120,10 +2120,10 @@ function stringToNumber(s) {
 	// Expected English format: 12,345.6
 	return +s.replace(/\s+|,/g, "");
 }
-function validateRatio(n) {
+function validateRatio(n, inverse) {
 	if(isFinite(n) && n > 0)
-		return n;
-	return NaN;
+		return inverse ? 1/n : n;
+	return undefined;
 }
 function loadOfflineCurrencyData(readMode, forceDefault) {
 	if(readMode && !oSet.Begin(WScript.ScriptBaseName, 0x1 /*POB_READ*/))
@@ -2266,7 +2266,7 @@ var asyncUpdater = {
 				var ratio = getRatioFromResponse(request.responseText, code);
 				if(isNaN(ratio)) {
 					++state.parseErrors;
-					state.details.push("Parse error: " + code + " " + url);
+					state.details.push((ratio == undefined ? "Invalid ratio: " : "Parse error: ") + code + " " + url);
 				}
 				else {
 					++state.success;
