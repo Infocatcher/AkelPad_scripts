@@ -496,7 +496,7 @@ var measures = {
 		"Sudanese Pound":                "SDG",
 		"Swedish Krona":                 "SEK",
 		"Singapore Dollar":              "SGD",
-		"St Helena Pound":               "SHP",
+		"Saint Helena Pound":            "SHP",
 		"Sierra Leone Leone":            "SLL",
 		"Somali Shilling":               "SOS",
 		"Surinamese Dollar":             "SRD",
@@ -508,7 +508,7 @@ var measures = {
 		"Tajikistani Somoni":            "TJS",
 		"Turkmenistan Manat":            "TMT",
 		"Tunisian Dinar":                "TND",
-		"Tonga Pa'ang":                  "TOP",
+		"Tonga Pa'anga":                 "TOP",
 		"Turkish Lira":                  "TRY",
 		"Trinidad and Tobago Dollar":    "TTD",
 		"Taiwan Dollar":                 "TWD",
@@ -1608,7 +1608,7 @@ function _localize(s) {
 		"Sri Lanka Rupee": {
 			ru: "Шри–Ланкийская рупия"
 		},
-		"St Helena Pound": {
+		"Saint Helena Pound": {
 			ru: "Святой Елены фунт"
 		},
 		"Sudanese Pound": {
@@ -1641,7 +1641,7 @@ function _localize(s) {
 		"Thai Baht": {
 			ru: "Тайский бахт"
 		},
-		"Tonga Pa'ang": {
+		"Tonga Pa'anga": {
 			ru: "Тонганская паанга"
 		},
 		"Trinidad and Tobago Dollar": {
