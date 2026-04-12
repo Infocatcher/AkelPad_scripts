@@ -2045,7 +2045,9 @@ var missingCurrencies = {
 	],
 	// fxexchangerate.com
 	fx: [
-		"ETH", "MRU", "VES"
+		"ETH", "MRU", "VES",
+		// Available, but with 0 ratio
+		"SHP", "TOP" //= n/a since 2026-04-10
 	],
 	// currency.world
 	cw: [
