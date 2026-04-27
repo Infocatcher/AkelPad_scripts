@@ -6,7 +6,7 @@
 // Version: 0.1.2 - 2012-12-11
 // Author: Infocatcher
 
-//// Replace diacritic letters with ASCII equivalents
+//// Replace diacritic letters with ASCII equivalents and remove special modifier symbols
 
 var map = {
 	"à": "a",
@@ -349,11 +349,12 @@ var map = {
 	"Ӗ": "E",
 	"ӗ": "e"
 };
+var modifiers = /[\u0300-\u036f\u0489]/g; // Characters from https://www.zalgogenerator.com/scripts/scripts.js
 
 function replaceLetters(str) {
 	for(var s in map)
 		str = str.replace(new RegExp(s, "g"), map[s]);
-	return str;
+	return str.replace(modifiers, "");
 }
 
 var hMainWnd = AkelPad.GetMainWnd();
