@@ -2,8 +2,8 @@
 // https://infocatcher.ucoz.net/js/akelpad_scripts/replaceDiacriticLetters.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/replaceDiacriticLetters.js
 
-// (c) Infocatcher 2008, 2011-2012
-// Version: 0.1.2 - 2012-12-11
+// (c) Infocatcher 2008-2026
+// Version: 0.1.3 - 2026-04-28
 // Author: Infocatcher
 
 //// Replace diacritic letters with ASCII equivalents and remove special modifier symbols
