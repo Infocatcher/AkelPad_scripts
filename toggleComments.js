@@ -3,7 +3,7 @@
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/toggleComments.js
 
 // (c) Infocatcher 2008-2022
-// Version: 0.4.4.2 - 2026-05-30
+// Version: 0.4.5.0 - 2026-05-30
 // Author: Infocatcher
 
 //===================
