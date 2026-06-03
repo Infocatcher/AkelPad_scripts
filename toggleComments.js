@@ -1199,8 +1199,8 @@ function restoreLineScroll(hWnd, nBeforeLine)
 function getCurrentExt() {
 	var ext;
 	var cFile = AkelPad.GetEditFile(0);
-	if(cFile && /\.([^.]+)$/i.test(cFile)) {
-		ext = RegExp.$1.toLowerCase(); // js, css, etc.
+	if(cFile && /([^\\\/.]+)$/i.test(cFile)) {
+		ext = RegExp.$1.toLowerCase(); // …/foo.ext -> ext, …/foo -> foo
 		if(ext && !commentsSets[ext])
 			ext = null;
 	}
