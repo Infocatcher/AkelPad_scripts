@@ -109,7 +109,13 @@ var commentsSets = {
 	nsi: [ null, null, [";", "#"] ],
 	au3: [ ["#comments-start", "#cs"], ["#comments-end", "#ce"], [";"] ],
 	lua: [ ["--[["], ["]]"], ["--"] ],
-	ps1: [ ["<#"], ["#>"], ["#"] ]
+	ps1: [ ["<#"], ["#>"], ["#"] ],
+	// Without extensions, like \hosts
+	dockerfile: "sh",
+	gitconfig: "ini",
+	gitignore: "sh",
+	hosts: "sh",
+	makefile: "sh"
 };
 var commentsRegions = {
 	// Example:
