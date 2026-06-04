@@ -80,15 +80,11 @@ var commentsSets = {
 	coder: [ null, null, [";"] ],
 	cpp: "c",
 	css: [ ["/*"], ["*/"], null ],
-	dockerfile: "sh",
 	dpr: [ ["{", "(*"], ["}", "*)"], ["//"] ],
 	dtd: "html",
-	gitconfig: "ini",
-	gitignore: "sh",
 	h: "c",
 	hhp: "ini",
 	highlight: [ null, null, [";"] ],
-	hosts: "sh",
 	htaccess: [ null, null, ["#"] ],
 	htm: "html",
 	html: [ ["<!--"], ["-->"], null ],
@@ -101,7 +97,6 @@ var commentsSets = {
 	lss: [ ["%REM"], ["%END REM"], ["'"] ],
 	lst: "py",
 	lua: [ ["--[["], ["]]"], ["--"] ],
-	makefile: "sh",
 	manifest: [ null, null, ["#"] ],
 	mnu: "ini",		//AkelPad menu file
 	nsi: [ null, null, [";", "#"] ],
@@ -128,6 +123,18 @@ var commentsSets = {
 	xml:   "html",
 	xsl:   "html",
 	xul:   "html"
+	"1s": [ null, null, ["//"] ],
+	"1c": "1s",
+	nsi: [ null, null, [";", "#"] ],
+	au3: [ ["#comments-start", "#cs"], ["#comments-end", "#ce"], [";"] ],
+	lua: [ ["--[["], ["]]"], ["--"] ],
+	ps1: [ ["<#"], ["#>"], ["#"] ],
+	// Without extensions, like \hosts
+	dockerfile: "sh",
+	gitconfig: "ini",
+	gitignore: "sh",
+	hosts: "sh",
+	makefile: "sh"
 };
 var commentsRegions = {
 	// Example:
@@ -1217,20 +1224,10 @@ function restoreLineScroll(hWnd, nBeforeLine)
 function getCurrentExt() {
 	var ext;
 	var cFile = AkelPad.GetEditFile(0);
-	if(cFile) {
-		// Strip the path, keep only the filename
-		var fileName = cFile.replace(/^.*[\\\/]/, "").toLowerCase();
-
-		// 1. Check if the full filename matches an entry (e.g. "hosts")
-		if(commentsSets[fileName]) {
-			ext = fileName;
-		}
-		// 2. Otherwise, fall back to extension detection
-		else if(/\.([^.]+)$/i.test(fileName)) {
-			ext = RegExp.$1.toLowerCase(); // js, css, etc.
-			if(ext && !commentsSets[ext])
-				ext = null;
-		}
+	if(cFile && /([^\\\/.]+)$/i.test(cFile)) {
+		ext = RegExp.$1.toLowerCase(); // …/foo.ext -> ext, …/foo -> foo
+		if(ext && !commentsSets[ext])
+			ext = null;
 	}
 	
 	if(!ext || !searchRegions && commentsRegions[ext]) {
