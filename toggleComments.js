@@ -1,9 +1,9 @@
-﻿// https://akelpad.sourceforge.net/forum/viewtopic.php?p=9924#p9924
+// https://akelpad.sourceforge.net/forum/viewtopic.php?p=9924#p9924
 // https://infocatcher.ucoz.net/js/akelpad_scripts/toggleComments.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/toggleComments.js
 
 // (c) Infocatcher 2008-2022
-// Version: 0.4.4.1 - 2022-10-01
+// Version: 0.4.5.0 - 2026-05-30
 // Author: Infocatcher
 
 //===================
@@ -63,47 +63,66 @@ var commentsSets = {
 	//   otherExtension: "extension"
 	// Use "null" (without commas) for unavailable comments type.
 	// First string will be used for comments adding (blockCommentStart0 and blockCommentEnd0 in example).
-	c: [ ["/*"], ["*/"], ["//"] ],
-	cpp:  "c",
-	h:    "c",
-	js:   "c",
-	jsm:  "c",
-	java: "c",
 	"..php..": [ ["/*"], ["*/"], ["//", "#"] ], // Reserved
-	php: "..php..", // In case of -searchRegions=true we use html comments in *.php files and check <?php ... ?>
-	dpr: [ ["{", "(*"], ["}", "*)"], ["//"] ],
-	//pas: [ ["{", "(*"], ["}", "*)"], null ],
-	pas: "dpr",
-	html: [ ["<!--"], ["-->"], null ],
-	xhtml: "html",
-	shtml: "html",
-	htm:   "html",
-	xml:   "html",
-	xsl:   "html",
-	xul:   "html",
-	xbl:   "html",
-	rdf:   "html",
-	dtd:   "html",
-	css: [ ["/*"], ["*/"], null ],
-	less: [ ["/*"], ["*/"], ["//"] ],
-	asm: [ null, null, [";"] ],
-	ini: [ null, null, [";", "#"] ],
-	bat: [ null, null, ["::", "rem "] ],
-	cmd: "bat",
-	vbs: [ null, null, ["'", "rem "] ],
-	lss: [ ["%REM"], ["%END REM"], ["'"] ],
-	manifest: [ null, null, ["#"] ],
-	properties: [ null, null, ["#"] ],
-	highlight: [ null, null, [";"] ],
-	coder: [ null, null, [";"] ],
-	sql: [ ["/*"], ["*/"], ["--"] ],
-	htaccess: [ null, null, ["#"] ],
+	"1c": "1s",
+	"1s": [ null, null, ["//"] ],
 	//ahk: [ ["\r/*"], ["\r*/"], [";"] ],
 	ahk: [ null, null, [";"] ],
+	asm: [ null, null, [";"] ],
+	au3: [ ["#comments-start", "#cs"], ["#comments-end", "#ce"], [";"] ],
+	aucfg: [ null, null, ["#"] ],
 	awk: [ null, null, ["#"] ],
-	sh: [ null, null, ["#"] ],
+	bas: [ null, null, ["'", '"'] ],
+	bat: [ null, null, ["::", "rem "] ],
+	c: [ null, null, ["//"] ],
+	cfg: "aucfg",
+	cmd: "bat",
+	coder: [ null, null, [";"] ],
+	cpp: "c",
+	css: [ ["/*"], ["*/"], null ],
+	dpr: [ ["{", "(*"], ["}", "*)"], ["//"] ],
+	dtd: "html",
+	h: "c",
+	hhp: "ini",
+	highlight: [ null, null, [";"] ],
+	htaccess: [ null, null, ["#"] ],
+	htm: "html",
+	html: [ ["<!--"], ["-->"], null ],
+	ini: [ null, null, [";", "#"] ],
+	iss: "c",
+	java: "c",
+	js:   "c",
+	jsm:  "c",
+	less: [ ["/*"], ["*/"], ["//"] ],
+	lss: [ ["%REM"], ["%END REM"], ["'"] ],
+	lst: "py",
+	lua: [ ["--[["], ["]]"], ["--"] ],
+	manifest: [ null, null, ["#"] ],
+	mnu: "ini",		//AkelPad menu file
+	nsi: [ null, null, [";", "#"] ],
+	//pas: [ ["{", "(*"], ["}", "*)"], null ],
+	pas: "dpr",
+	pb: "ahk",
+	php: "..php..", // In case of -searchRegions=true we use html comments in *.php files and check <?php ... ?>
+	php: [ ["<?"], ["?>"], null ],
+	properties: [ null, null, ["#"] ],
+	ps1: [ ["<#"], ["#>"], ["#"] ],
 	py: [ null, null, ["#"] ],
 	pyw: "py",
+	rdf: "html",
+	reg: "ini",
+	sh: [ null, null, ["#"] ],
+	shtml: "html",
+	spck: [ null, null, [";"] ],
+	sql: [ ["/*"], ["*/"], ["--"] ],
+	tcg: [ null, null, [" ;; "] ],
+	tpl: [ ["{*"], ["*}"], ["//"] ],
+	vbs: [ null, null, ["'", "rem "] ],
+	xbl:   "html",
+	xhtml: "html",
+	xml:   "html",
+	xsl:   "html",
+	xul:   "html"
 	"1s": [ null, null, ["//"] ],
 	"1c": "1s",
 	nsi: [ null, null, [";", "#"] ],
@@ -1210,6 +1229,7 @@ function getCurrentExt() {
 		if(ext && !commentsSets[ext])
 			ext = null;
 	}
+	
 	if(!ext || !searchRegions && commentsRegions[ext]) {
 		var coderExt = getCoderExt();
 		if(coderExt)
