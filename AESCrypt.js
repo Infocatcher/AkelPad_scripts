@@ -290,7 +290,11 @@ Aes.Ctr.encrypt = function(plaintext, password, nBits) {
   for (var i=0; i<nBytes; i++) {
     pwBytes[i] = isNaN(password.charCodeAt(i)) ? 0 : password.charCodeAt(i);
   }
-  var key = Aes.cipher(pwBytes, Aes.keyExpansion(pwBytes));  // gives us 16-byte key
+  // stretch the password-derived bytes through many rounds of AES (poor-man's key-stretching
+  // using only the existing Aes primitives) to mitigate brute-force/dictionary attacks against
+  // the weak initial key material
+  var key = pwBytes;
+  for (var s=0; s<10000; s++) key = Aes.cipher(key, Aes.keyExpansion(pwBytes));  // gives us 16-byte key
   key = key.concat(key.slice(0, nBytes-16));  // expand key to 16/24/32 bytes long
 
   // initialise counter block (NIST SP800-38A §B.2): millisecond time-stamp for nonce in 1st 8 bytes,
@@ -360,7 +364,11 @@ Aes.Ctr.decrypt = function(ciphertext, password, nBits) {
   for (var i=0; i<nBytes; i++) {
     pwBytes[i] = isNaN(password.charCodeAt(i)) ? 0 : password.charCodeAt(i);
   }
-  var key = Aes.cipher(pwBytes, Aes.keyExpansion(pwBytes));
+  // stretch the password-derived bytes through many rounds of AES (poor-man's key-stretching
+  // using only the existing Aes primitives) to mitigate brute-force/dictionary attacks against
+  // the weak initial key material
+  var key = pwBytes;
+  for (var s=0; s<10000; s++) key = Aes.cipher(key, Aes.keyExpansion(pwBytes));
   key = key.concat(key.slice(0, nBytes-16));  // expand key to 16/24/32 bytes long
 
   // recover nonce from 1st 8 bytes of ciphertext
